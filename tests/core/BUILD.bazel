@@ -88,3 +88,13 @@ cc_test(
         "@googletest//:gtest_main",
     ],
 )
+
+cc_test(
+    name = "test_frame_diff",
+    srcs = ["test_frame_diff.cpp"],
+    deps = [
+        "//src/core:query",
+        "//src/core:normalize",
+        "@googletest//:gtest_main",
+    ],
+)

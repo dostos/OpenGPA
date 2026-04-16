@@ -51,11 +51,13 @@ def create_app(query_engine, engine=None, auth_token: str = "",
     from .routes_pixel import router as pixel_router
     from .routes_control import router as control_router
     from .routes_scene import router as scene_router
+    from .routes_diff import router as diff_router
 
     app.include_router(frames_router, prefix="/api/v1")
     app.include_router(drawcalls_router, prefix="/api/v1")
     app.include_router(pixel_router, prefix="/api/v1")
     app.include_router(control_router, prefix="/api/v1")
     app.include_router(scene_router, prefix="/api/v1")
+    app.include_router(diff_router, prefix="/api/v1")
 
     return app

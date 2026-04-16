@@ -146,6 +146,18 @@ std::optional<QueryEngine::PixelResult> QueryEngine::get_pixel(
     return result;
 }
 
+// ─── Frame diff ───────────────────────────────────────────────────────────────
+
+std::optional<FrameDiff> QueryEngine::compare_frames(
+        uint64_t frame_id_a, uint64_t frame_id_b,
+        FrameDiffer::DiffDepth depth) const {
+    const NormalizedFrame* a = get_normalized(frame_id_a);
+    if (!a) return std::nullopt;
+    const NormalizedFrame* b = get_normalized(frame_id_b);
+    if (!b) return std::nullopt;
+    return differ_.diff(*a, *b, depth);
+}
+
 // ─── Normalized frame access ──────────────────────────────────────────────────
 
 const NormalizedFrame* QueryEngine::get_normalized_frame(uint64_t frame_id) const {

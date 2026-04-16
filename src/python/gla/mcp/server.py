@@ -117,12 +117,18 @@ TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "compare_frames",
-        "description": "Compare two frames and return a diff summary.",
+        "description": "Compare two frames and return a diff at the requested depth.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "frame_id_a": {"type": "integer", "description": "First frame ID"},
                 "frame_id_b": {"type": "integer", "description": "Second frame ID"},
+                "depth": {
+                    "type": "string",
+                    "enum": ["summary", "drawcalls", "pixels"],
+                    "description": "Diff depth level",
+                    "default": "summary",
+                },
             },
             "required": ["frame_id_a", "frame_id_b"],
         },
@@ -267,8 +273,12 @@ def _tool_query_scene(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_compare_frames(client: APIClient, args: Dict[str, Any]) -> str:  # noqa: ARG001
-    return json.dumps({"error": "not implemented"}, indent=2)
+def _tool_compare_frames(client: APIClient, args: Dict[str, Any]) -> str:
+    frame_id_a = int(args["frame_id_a"])
+    frame_id_b = int(args["frame_id_b"])
+    depth = str(args.get("depth", "summary"))
+    data = client.get(f"/diff/{frame_id_a}/{frame_id_b}", {"depth": depth})
+    return json.dumps(data, indent=2)
 
 
 def _tool_control_capture(client: APIClient, args: Dict[str, Any]) -> str:

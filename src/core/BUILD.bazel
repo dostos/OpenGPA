@@ -41,8 +41,14 @@ cc_library(
 
 cc_library(
     name = "query",
-    srcs = ["query/query_engine.cpp"],
-    hdrs = ["query/query_engine.h"],
+    srcs = [
+        "query/frame_diff.cpp",
+        "query/query_engine.cpp",
+    ],
+    hdrs = [
+        "query/frame_diff.h",
+        "query/query_engine.h",
+    ],
     deps = [
         ":normalize",
         ":store",

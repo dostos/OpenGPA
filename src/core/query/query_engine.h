@@ -1,6 +1,7 @@
 #pragma once
 #include "src/core/normalize/normalized_types.h"
 #include "src/core/normalize/normalizer.h"
+#include "src/core/query/frame_diff.h"
 #include "src/core/store/frame_store.h"
 #include <cstdint>
 #include <optional>
@@ -40,12 +41,18 @@ public:
     std::optional<PixelResult> get_pixel(
         uint64_t frame_id, uint32_t x, uint32_t y) const;
 
+    // Frame diff
+    std::optional<FrameDiff> compare_frames(
+        uint64_t frame_id_a, uint64_t frame_id_b,
+        FrameDiffer::DiffDepth depth = FrameDiffer::DiffDepth::Summary) const;
+
     // Normalized frame access (for semantic analysis)
     const NormalizedFrame* get_normalized_frame(uint64_t frame_id) const;
 
 private:
     gla::store::FrameStore& store_;
     gla::Normalizer& normalizer_;
+    FrameDiffer differ_;
 
     // Deferred normalization cache: frame_id -> NormalizedFrame
     mutable std::unordered_map<uint64_t, NormalizedFrame> cache_;

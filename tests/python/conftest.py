@@ -114,6 +114,24 @@ def mock_query_engine() -> MagicMock:
         else None
     )
 
+    # Frame diff — routes call compare_frames()
+    def _make_frame_diff(fid_a, fid_b, depth="summary"):
+        if fid_a not in (1, 2) or fid_b not in (1, 2):
+            return None
+        diff = MagicMock()
+        diff.frame_id_a           = fid_a
+        diff.frame_id_b           = fid_b
+        diff.draw_calls_added     = 1
+        diff.draw_calls_removed   = 0
+        diff.draw_calls_modified  = 2
+        diff.draw_calls_unchanged = 5
+        diff.pixels_changed       = 1234
+        diff.draw_call_diffs      = []
+        diff.pixel_diffs          = []
+        return diff
+
+    qe.compare_frames.side_effect = _make_frame_diff
+
     return qe
 
 

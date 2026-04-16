@@ -5,6 +5,7 @@
 #include "src/core/engine.h"
 #include "src/core/normalize/normalizer.h"
 #include "src/core/normalize/normalized_types.h"
+#include "src/core/query/frame_diff.h"
 #include "src/core/query/query_engine.h"
 #include "src/core/store/frame_store.h"
 #include "src/core/semantic/camera_extractor.h"
@@ -81,6 +82,49 @@ PYBIND11_MODULE(_gla_core, m) {
             return py::bytes(reinterpret_cast<const char*>(dc.index_data.data()),
                              dc.index_data.size());
         });
+
+    // -------------------------------------------------------------------------
+    // DrawCallDiff
+    // -------------------------------------------------------------------------
+    py::class_<gla::DrawCallDiff>(m, "DrawCallDiff")
+        .def_readonly("dc_id",             &gla::DrawCallDiff::dc_id)
+        .def_readonly("added",             &gla::DrawCallDiff::added)
+        .def_readonly("removed",           &gla::DrawCallDiff::removed)
+        .def_readonly("modified",          &gla::DrawCallDiff::modified)
+        .def_readonly("shader_changed",    &gla::DrawCallDiff::shader_changed)
+        .def_readonly("params_changed",    &gla::DrawCallDiff::params_changed)
+        .def_readonly("pipeline_changed",  &gla::DrawCallDiff::pipeline_changed)
+        .def_readonly("textures_changed",  &gla::DrawCallDiff::textures_changed)
+        .def_readonly("changed_param_names", &gla::DrawCallDiff::changed_param_names);
+
+    // -------------------------------------------------------------------------
+    // PixelDiff
+    // -------------------------------------------------------------------------
+    py::class_<gla::PixelDiff>(m, "PixelDiff")
+        .def_readonly("x",   &gla::PixelDiff::x)
+        .def_readonly("y",   &gla::PixelDiff::y)
+        .def_readonly("a_r", &gla::PixelDiff::a_r)
+        .def_readonly("a_g", &gla::PixelDiff::a_g)
+        .def_readonly("a_b", &gla::PixelDiff::a_b)
+        .def_readonly("a_a", &gla::PixelDiff::a_a)
+        .def_readonly("b_r", &gla::PixelDiff::b_r)
+        .def_readonly("b_g", &gla::PixelDiff::b_g)
+        .def_readonly("b_b", &gla::PixelDiff::b_b)
+        .def_readonly("b_a", &gla::PixelDiff::b_a);
+
+    // -------------------------------------------------------------------------
+    // FrameDiff
+    // -------------------------------------------------------------------------
+    py::class_<gla::FrameDiff>(m, "FrameDiff")
+        .def_readonly("frame_id_a",          &gla::FrameDiff::frame_id_a)
+        .def_readonly("frame_id_b",          &gla::FrameDiff::frame_id_b)
+        .def_readonly("draw_calls_added",    &gla::FrameDiff::draw_calls_added)
+        .def_readonly("draw_calls_removed",  &gla::FrameDiff::draw_calls_removed)
+        .def_readonly("draw_calls_modified", &gla::FrameDiff::draw_calls_modified)
+        .def_readonly("draw_calls_unchanged",&gla::FrameDiff::draw_calls_unchanged)
+        .def_readonly("pixels_changed",      &gla::FrameDiff::pixels_changed)
+        .def_readonly("draw_call_diffs",     &gla::FrameDiff::draw_call_diffs)
+        .def_readonly("pixel_diffs",         &gla::FrameDiff::pixel_diffs);
 
     // -------------------------------------------------------------------------
     // FrameStore (opaque reference — only exposed so Engine.frame_store() works)
@@ -163,6 +207,16 @@ PYBIND11_MODULE(_gla_core, m) {
         .def("get_pixel",
              &gla::QueryEngine::get_pixel,
              py::arg("frame_id"), py::arg("x"), py::arg("y"))
+        .def("compare_frames",
+             [](const gla::QueryEngine& qe, uint64_t a, uint64_t b,
+                const std::string& depth_str) {
+                 gla::FrameDiffer::DiffDepth depth = gla::FrameDiffer::DiffDepth::Summary;
+                 if (depth_str == "drawcalls") depth = gla::FrameDiffer::DiffDepth::DrawCalls;
+                 else if (depth_str == "pixels") depth = gla::FrameDiffer::DiffDepth::Pixels;
+                 return qe.compare_frames(a, b, depth);
+             },
+             py::arg("frame_id_a"), py::arg("frame_id_b"),
+             py::arg("depth") = std::string("summary"))
         .def("get_normalized_frame",
              [](const gla::QueryEngine& qe, uint64_t frame_id) -> const gla::NormalizedFrame* {
                  return qe.get_normalized_frame(frame_id);
