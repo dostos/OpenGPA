@@ -14,7 +14,7 @@ def get_pixel(frame_id: int, x: int, y: int, request: Request) -> Dict[str, Any]
     Returns 404 if the frame does not exist or the coordinates are out of bounds.
     """
     qe = request.app.state.query_engine
-    result = qe.query_pixel(frame_id, x, y)
+    result = qe.get_pixel(frame_id, x, y)
     if result is None:
         raise HTTPException(
             status_code=404,

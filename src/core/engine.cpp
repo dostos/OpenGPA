@@ -252,7 +252,7 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                            uint64_t frame_id) {
     store::RawFrame frame{};
     frame.frame_id  = frame_id;
-    frame.api_type  = 0; // GL (TODO: carry api_type from handshake)
+    frame.api_type  = 0; // GL
 
     // Record a monotonic timestamp
     struct timespec ts{};
@@ -260,11 +260,38 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
     frame.timestamp = static_cast<double>(ts.tv_sec) +
                       static_cast<double>(ts.tv_nsec) * 1e-9;
 
-    // Store raw bulk data as fb_color for now.
-    // Full FlatBuffer draw-call deserialization is a TODO.
-    if (shm_data && data_size > 0) {
+    // Parse the shim's binary frame layout:
+    //   [0..3]   width  (uint32_t, LE)
+    //   [4..7]   height (uint32_t, LE)
+    //   [8..]    color  (width * height * 4 bytes, RGBA8)
+    //   [8+w*h*4..] depth (width * height * 4 bytes, float32)
+    //
+    // Minimum valid frame requires at least the 8-byte header.
+    if (shm_data && data_size >= 8) {
         const auto* bytes = static_cast<const uint8_t*>(shm_data);
-        frame.fb_color.assign(bytes, bytes + data_size);
+
+        uint32_t w, h;
+        std::memcpy(&w, bytes + 0, 4);
+        std::memcpy(&h, bytes + 4, 4);
+
+        frame.fb_width  = w;
+        frame.fb_height = h;
+
+        const uint64_t color_bytes = static_cast<uint64_t>(w) * h * 4u;
+        const uint64_t depth_bytes = static_cast<uint64_t>(w) * h * 4u;
+
+        const uint8_t* color_ptr = bytes + 8;
+        const uint8_t* depth_ptr = color_ptr + color_bytes;
+
+        if (data_size >= 8 + color_bytes && w > 0 && h > 0) {
+            frame.fb_color.assign(color_ptr, color_ptr + color_bytes);
+        }
+
+        if (data_size >= 8 + color_bytes + depth_bytes && w > 0 && h > 0) {
+            const uint32_t pixel_count = w * h;
+            frame.fb_depth.resize(pixel_count);
+            std::memcpy(frame.fb_depth.data(), depth_ptr, depth_bytes);
+        }
     }
 
     store_.store(std::move(frame));
