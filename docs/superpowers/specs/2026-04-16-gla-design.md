@@ -65,9 +65,14 @@ GLA is a live graphics debugger designed for AI agents. It intercepts graphics A
 
 **NFR-4: Compatibility**
 - NFR-4.1: Linux x86_64 as the primary platform.
-- NFR-4.2: OpenGL 3.3+ (core and compatibility profile), OpenGL ES 2.0/3.0.
+- NFR-4.2: OpenGL 3.3+ (core and compatibility profile), OpenGL ES 2.0/3.0 (via EGL).
 - NFR-4.3: Vulkan 1.0+ with common extensions (KHR_swapchain, etc.).
 - NFR-4.4: WebGL 1.0 and 2.0 in Chromium-based browsers.
+
+**NFR-5: Security**
+- NFR-5.1: The REST API must bind to localhost (127.0.0.1) only. No network-accessible listener.
+- NFR-5.2: A shared secret (token) must be exchanged at shim-engine connection time and required on all REST/MCP requests. Generated per-session, passed to the shim via environment variable.
+- NFR-5.3: The MCP server must use stdio transport (not SSE over HTTP) by default to avoid exposing a network endpoint.
 
 ### 2.3 Out of Scope (v1)
 
@@ -140,24 +145,36 @@ GLA is a live graphics debugger designed for AI agents. It intercepts graphics A
 
 **Python Interface** — Thin layer exposing the engine's capabilities over HTTP and MCP.
 - REST API via FastAPI, wrapping the C++ query engine through pybind11 bindings.
-- MCP server as a thin adapter over the REST API.
+- MCP server calls the Python query functions directly (same process, no HTTP round-trip), sharing the pybind11 bindings with the REST layer.
 - Handles serialization (JSON for metadata, base64 PNG for images), pagination, and response formatting.
 - Responsible for "LLM-friendly" response formatting: semantic summaries alongside raw data.
 
 ### 3.3 IPC Design
 
+**Version Handshake:**
+When a shim connects to the core engine, the first message on the Unix socket is a handshake containing: protocol version, FlatBuffers schema hash, API type (GL/VK/WebGL), and process ID. The engine rejects connections with incompatible versions and logs a diagnostic. This prevents silent corruption from version-mismatched shim/engine builds.
+
 **Native shims (OpenGL, Vulkan) to Core Engine:**
 
 ```
 Shared Memory (POSIX shm, ~256MB ring buffer):
-  - Pre-allocated at shim initialization.
-  - Shim writes bulk data (vertex buffers, textures, framebuffer pixels)
-    as raw binary at current write offset.
-  - POSIX semaphore per ring buffer for synchronization.
+  - Lifecycle: The CORE ENGINE creates the shm segment at startup with a
+    well-known name (e.g., /gla_capture_{engine_pid}). The shim opens it
+    by name (passed via GLA_SHM_NAME env var). On engine shutdown, the
+    engine calls shm_unlink. On target app crash, the engine detects the
+    broken socket connection and cleans up the shm segment.
+  - Ring buffer protocol: N slots (default 4), each slot holds one frame's
+    bulk data. Slot header: {state: FREE|WRITING|READY|READING, frame_id,
+    data_size}. Shim claims a FREE slot (CAS to WRITING), writes data,
+    sets READY. Engine claims READY slot (CAS to READING), processes,
+    sets FREE. If no FREE slot: drop the frame (non-capture mode) or
+    block (capture mode). POSIX semaphore signals slot transitions.
+  - Multi-app: Each target app gets its own shm segment. The engine
+    manages multiple segments identified by connection.
 
 Unix Domain Socket (control channel):
   - Shim sends FlatBuffer-encoded frame metadata:
-    {frame_id, draw_call_count, resource_table_offsets, ...}
+    {frame_id, draw_call_count, resource_table_offsets, shm_slot_index}
   - Engine sends control commands:
     {pause, resume, step_n_frames, capture_settings}
   - Lightweight, low-latency for signaling.
@@ -172,6 +189,10 @@ WebSocket (browser) -> Node.js Bridge -> Unix Domain Socket -> Core Engine
   - Relay translates WebSocket frames to Unix socket messages.
   - Frame metadata as JSON (converted to FlatBuffers by the relay).
   - Bulk data (readPixels output) as binary WebSocket frames.
+  - Performance note: Full-resolution readPixels (1920x1080 RGBA = ~8MB)
+    is too expensive for every frame. Default: metadata-only capture.
+    Full framebuffer readback is on-demand (triggered by query or explicit
+    capture command). Optionally downscale to 1/4 resolution for preview.
 ```
 
 ### 3.4 Data Model
@@ -301,7 +322,7 @@ SceneInfo {
 - **Function generation**: Auto-generated wrapper stubs from Khronos `gl.xml` registry. Each wrapper calls the real function (via stored original pointer) and records the call.
 - **State tracking**: Shadow state — maintain an in-process mirror of the GL state machine. Intercept all state-setting calls (`glBindTexture`, `glUseProgram`, `glUniform*`, `glEnable`, etc.) and update the shadow. At capture time, serialize the shadow, not `glGet*` results.
 - **Readback**: PBO (Pixel Buffer Object) double-buffering for async framebuffer and texture readback. `glFenceSync` to avoid GPU stalls.
-- **Context handling**: Intercept `glXMakeCurrent`/`eglMakeCurrent` to track per-thread context. Maintain per-context shadow state. Handle shared contexts via `glXCreateContext(..., shareList)`.
+- **Context handling**: Intercept `glXMakeCurrent`/`eglMakeCurrent` to track per-thread context. Maintain per-context shadow state. Handle shared contexts via `glXCreateContext(..., shareList)`. EGL path also covers OpenGL ES 2.0/3.0 applications (same interception mechanism, ES-specific entry points generated from `gl.xml` with ES profile).
 - **Frame boundary**: Intercept `glXSwapBuffers`/`eglSwapBuffers`. Snapshot shadow state + issue readbacks. Block on condition variable if server requests pause.
 
 #### 3.5.2 Vulkan Layer
@@ -309,8 +330,8 @@ SceneInfo {
 - **Deployment**: Implicit layer registered via JSON manifest in `~/.local/share/vulkan/implicit_layer.d/gla_layer.json`. Activated via `VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture` or always-on.
 - **Dispatch chaining**: Implement `vkGetInstanceProcAddr`/`vkGetDeviceProcAddr`. Store next-layer function pointers in a dispatch table.
 - **Command buffer recording**: Intercept `vkCmdDraw*`, `vkCmdBindPipeline`, `vkCmdBindDescriptorSets`, `vkCmdBeginRenderPass`, etc. Record metadata in a parallel structure alongside the application's command buffer.
-- **Frame boundary**: Intercept `vkQueuePresentKHR`. Call `vkQueueWaitIdle` to ensure GPU completion, then snapshot. Block if pause requested.
-- **Async handling**: Command buffers are recorded then submitted later. At `vkQueueSubmit`, associate recorded metadata with the submission. At present time, all metadata for the frame is available.
+- **Frame boundary**: Intercept `vkQueuePresentKHR`. During **non-capture** mode, record only lightweight metadata (no GPU sync, no readback) to meet NFR-1.1 (<5% overhead). During **capture** mode (triggered by pause or explicit capture command), inject a `VkFence` at the present call, wait on it to ensure GPU completion, then snapshot state and issue readbacks. This avoids the performance and correctness hazards of `vkQueueWaitIdle` (which would serialize all queues and risk deadlocking multi-queue applications with timeline semaphore dependencies).
+- **Async handling**: Command buffers are recorded then submitted later. At `vkQueueSubmit`, associate recorded metadata with the submission. At present time, all metadata for the frame is available. Multi-queue applications are handled by tracking per-queue submissions independently and correlating them at present time via the swapchain image index.
 
 #### 3.5.3 WebGL Shim
 
@@ -381,6 +402,7 @@ inspect_drawcall(frame_id, drawcall_id, include)
 
 query_pixel(frame_id, x, y)
   Returns: color, depth, stencil at (x,y) + which draw call produced it
+  Note: Draw call attribution uses a per-draw-call ID buffer — see Section 3.8.
 
 query_scene(frame_id, query_type, spatial_params)
   query_type: "objects" | "camera" | "spatial"
@@ -445,14 +467,31 @@ The reconstructor runs on demand when scene queries are made. Results are cached
 
 **Stage 4: Bounding Box Computation**
 1. For each object group, read vertex positions from bulk data.
-2. For meshes < 100k vertices: full scan to compute AABB.
-3. For meshes >= 100k vertices: stratified 10% sample, add 15% margin.
+2. For meshes below a configurable threshold (default 100k vertices): full scan to compute AABB.
+3. For larger meshes: stratified sampling (configurable rate, default 10%) with configurable margin (default 15%). These defaults are initial estimates and should be validated empirically during M3 development.
 4. Transform AABB to world space using model matrix.
 
 **Stage 5: Light and Material Detection** (best-effort)
 1. Scan shader parameters for light-related names and structures.
 2. Detect PBR parameters (metallic, roughness) and texture slot assignments.
 3. Low confidence — always flagged as heuristic.
+
+**Graceful Degradation:**
+When the semantic pipeline fails entirely (e.g., obfuscated/auto-generated shader parameter names), `query_scene` returns a structured fallback:
+- Camera: "undetected" with the raw matrices that were considered (if any).
+- Objects: one SceneObject per draw call with confidence=0, using raw draw call data (vertex count, primitive type, pipeline state) instead of semantic info.
+- Lights: empty list.
+The response always includes a `reconstruction_quality` field: "full", "partial", or "raw_only".
+
+### 3.8 Pixel Attribution (Draw Call ID Buffer)
+
+Pixel-level queries ("which draw call produced the color at pixel (x,y)?") require a per-pixel draw call ID. Implementation:
+
+1. **Capture-time**: When a frame capture is triggered, the engine replays the frame's draw calls into an offscreen framebuffer with a modified fragment shader that outputs the draw call ID as the color value (R=id&0xFF, G=(id>>8)&0xFF, B=(id>>16)&0xFF). This is a second rendering pass executed by the core engine, not the target app.
+2. **OpenGL**: Use a FBO with an integer texture attachment. Inject a trivial fragment shader override via `glUseProgram` for each draw call, outputting `gl_PrimitiveID`-based or draw-call-index-based IDs.
+3. **Vulkan**: Use a secondary render pass with a uint32 color attachment. Modify the fragment shader module in the pipeline to output the draw call index.
+4. **Fallback**: If shader replacement is not possible (e.g., complex shader dependencies), use depth-buffer comparison: for each pixel, find the draw call whose depth output matches the final depth buffer value. This is approximate but avoids shader modification.
+5. **Cost**: This is expensive (full-frame re-render). Pixel attribution is computed on-demand, not for every capture. The `/pixel/{x}/{y}/history` endpoint triggers it on first access for a given frame, then caches the ID buffer.
 
 ## 4. Technology Stack
 
@@ -533,7 +572,144 @@ gla/
 | Semantic confidence | Explicit confidence scores | Never guess silently; let the querying agent decide what to trust |
 | Frame storage | Ring buffer (last 60 frames) | Bounded memory; sufficient for interactive debugging |
 
-## 9. References
+## 9. Evaluation Scenarios
+
+This section defines concrete scenarios for evaluating GLA's effectiveness as a debugging tool for agents, with a focus on **token efficiency** — how many tokens an LLM needs to consume to solve a given 3D debugging problem with vs. without GLA.
+
+### 9.1 Evaluation Framework
+
+**Metrics:**
+- **Token cost**: Total input + output tokens consumed by the LLM to reach a correct diagnosis/fix.
+- **Tool calls**: Number of GLA queries needed to solve the problem.
+- **Accuracy**: Whether the LLM correctly identifies the root cause.
+- **Time-to-diagnosis**: Wall-clock time from problem statement to correct diagnosis.
+
+**Baseline (without GLA):** The LLM has access to source code only. It must read shader code, scene setup code, rendering loop code, and reason about what the rendered output *would* look like — purely from code analysis.
+
+**With GLA:** The LLM can query the actual rendered state: what's on screen, what the transforms are, what the pixel values are. It reasons from observed facts, not from code simulation.
+
+### 9.2 Scenario Categories
+
+#### Category A: Visual Correctness Bugs
+
+Bugs where the rendered output is wrong but the code compiles and runs without errors. These are the hardest to debug from code alone because the LLM must mentally simulate the rendering pipeline.
+
+**A1: Object Not Visible**
+- **Setup**: A 3D scene where one object should be visible but isn't. Cause: incorrect model matrix (translated off-screen), backface culling with wrong winding order, or depth test failure (object behind the near plane).
+- **Without GLA**: LLM reads the scene setup code, matrix math, camera setup, and tries to compute whether the object falls within the frustum. Requires understanding the full transform chain. Estimated: 5,000-15,000 tokens of code reading + multi-step reasoning.
+- **With GLA**: `query_scene(objects)` → object not in list OR object listed with `visible: false` and its bounding box. `inspect_drawcall(dc_id, include=["pipeline"])` → reveals cull_mode or depth_func. 2-3 tool calls, ~500 tokens of query results.
+- **Expected token reduction**: 5-10x.
+
+**A2: Wrong Color / Lighting**
+- **Setup**: An object renders but with incorrect color. Cause: wrong texture bound, shader uniform not set, or lighting calculation bug.
+- **Without GLA**: LLM traces the texture loading path, uniform upload code, shader source. Must mentally execute the shader. Estimated: 8,000-20,000 tokens.
+- **With GLA**: `query_pixel(x, y)` → actual color. `inspect_drawcall(dc_id, include=["shader", "textures"])` → see exactly which texture is bound and what uniform values the shader received. 2-3 tool calls, ~800 tokens.
+- **Expected token reduction**: 10-20x.
+
+**A3: Z-Fighting / Depth Artifacts**
+- **Setup**: Two overlapping surfaces flicker because they're at the same depth.
+- **Without GLA**: LLM must identify which objects overlap in 3D space from code, check if their z-values would be close enough to cause precision issues. Requires understanding depth buffer precision.
+- **With GLA**: `query_pixel(x, y)` at flickering location → depth value. `compare_frames(frame_a, frame_b, depth="pixels")` → see which draw calls alternate at that pixel. Immediate root cause identification.
+- **Expected token reduction**: 10-30x.
+
+**A4: Incorrect Transform / Rotation**
+- **Setup**: Object appears at wrong position or orientation. Cause: matrix multiplication order wrong, wrong coordinate system convention (Y-up vs Z-up), or wrong uniform uploaded.
+- **Without GLA**: LLM reads matrix construction code, tries to compute final position mentally.
+- **With GLA**: `query_scene(objects)` → actual world transform of the object. Compare against expected. `inspect_drawcall(dc_id, include=["shader"])` → see exact matrix values the shader received.
+- **Expected token reduction**: 5-15x.
+
+#### Category B: Performance Debugging
+
+**B1: Redundant Draw Calls**
+- **Setup**: Scene renders correctly but slowly. Cause: objects drawn multiple times, unnecessary render passes.
+- **Without GLA**: LLM reads the rendering loop, tries to trace control flow to find duplicate draws. Hard if the rendering is data-driven.
+- **With GLA**: `query_frame(overview)` → draw call count. `query_frame(drawcalls)` → scan for draw calls with identical vertex buffers / transforms. `compare_frames` → confirm same output with fewer draws.
+- **Expected token reduction**: 3-10x.
+
+**B2: Overdraw Analysis**
+- **Setup**: Too many fragments processed. Cause: objects drawn front-to-back without depth pre-pass, or transparent objects covering large screen area.
+- **With GLA**: `query_pixel(x, y).history` → see the full chain of draw calls that touched that pixel. Count how many fragments were processed for a given pixel across the frame.
+
+#### Category C: Regression Detection / Automated QA
+
+**C1: Visual Regression Test**
+- **Setup**: After a code change, verify that the rendered output hasn't changed unexpectedly.
+- **Agent workflow**: Capture frame before and after code change. `compare_frames(before, after, depth="pixels")` → list of pixels that differ. If diff is non-empty and unexpected, flag as regression.
+- **Token efficiency**: A single `compare_frames` call replaces manual screenshot comparison. The structured diff (which draw calls changed, which pixels differ) lets the LLM immediately identify what changed rather than pixel-diffing images.
+
+**C2: Shader Output Verification**
+- **Setup**: LLM agent writes a shader. Verify it produces the expected output.
+- **Agent workflow**: Compile and render a test scene. `query_pixel(x, y)` at several test locations. Compare against expected values. `query_scene(camera)` to confirm the camera is set up correctly.
+- **Token efficiency**: Direct numerical verification instead of visual inspection. The LLM gets exact float values, not a screenshot to interpret.
+
+#### Category D: Complex 3D Task Solving
+
+**D1: Scene Understanding for Code Generation**
+- **Setup**: LLM agent needs to modify a 3D scene (add an object, change a light, adjust camera) and verify the result.
+- **Without GLA**: Agent writes code, runs it, has no feedback on what actually rendered. Must iterate blindly.
+- **With GLA**: Agent writes code → runs it → `query_scene` → verifies objects are where expected → adjusts if needed. Closed-loop development with structured feedback.
+- **Expected token reduction per iteration**: 3-5x (each iteration is cheaper because the feedback is precise structured data, not "look at this screenshot and figure out what went wrong").
+
+**D2: Multi-Object Scene Debugging**
+- **Setup**: A scene with 50+ objects. Several have incorrect materials/positions. Identify and fix all issues.
+- **Without GLA**: LLM reads all scene setup code, reasons about each object. Scales linearly with scene complexity.
+- **With GLA**: `query_scene(objects)` → structured list of all 50 objects with positions, bounds, materials. Filter for anomalies (objects at origin when they shouldn't be, objects with missing textures, objects outside expected bounds). Scales with the number of *problems*, not the number of objects.
+- **Expected token reduction**: 10-50x for large scenes.
+
+**D3: Deferred Rendering Pipeline Debugging**
+- **Setup**: A deferred rendering pipeline where the G-buffer pass works but the lighting pass produces wrong results.
+- **Without GLA**: LLM reads both passes' shader code + setup code. Must understand the full deferred pipeline to diagnose. Extremely token-expensive.
+- **With GLA**: Capture the frame. Query the G-buffer render pass outputs (normals, albedo, depth) — verify they're correct. Then query the lighting pass — inspect its inputs (are the G-buffer textures bound correctly?) and outputs (is the lighting calculation producing expected values?). Isolate the bug to a specific pass with structured data.
+
+### 9.3 Token Efficiency Hypothesis
+
+**Core claim**: GLA reduces the token cost of 3D debugging tasks by converting *code simulation* problems into *data inspection* problems.
+
+Without GLA, an LLM debugging a rendering issue must:
+1. Read source code (shaders, scene setup, rendering loop): **2,000-20,000 tokens** depending on codebase size.
+2. Mentally simulate the rendering pipeline (matrix transforms, rasterization, blending): **1,000-10,000 tokens** of chain-of-thought reasoning.
+3. Hypothesize about what the output looks like: **unreliable**, often requiring multiple iterations.
+
+With GLA:
+1. Query the actual state (1-5 tool calls): **200-2,000 tokens** of structured results.
+2. Compare observed vs. expected: **500-2,000 tokens** of reasoning.
+3. Identify root cause from concrete discrepancy: **high reliability**, often single-iteration.
+
+**Projected savings by category:**
+
+| Category | Without GLA (tokens) | With GLA (tokens) | Reduction |
+|----------|---------------------|-------------------|-----------|
+| A: Visual bugs | 10,000-30,000 | 1,000-3,000 | 5-20x |
+| B: Performance | 5,000-15,000 | 1,000-3,000 | 3-10x |
+| C: Regression/QA | 5,000-10,000 | 500-2,000 | 5-10x |
+| D: Complex 3D tasks | 20,000-100,000 | 2,000-10,000 | 10-50x |
+
+### 9.4 Evaluation Test Suite
+
+To validate these claims, GLA should ship with a test suite of intentionally broken 3D scenes:
+
+```
+tests/eval/
+  a1_missing_object/       # object translated off-screen
+  a2_wrong_color/          # wrong texture bound
+  a3_z_fighting/           # overlapping coplanar surfaces
+  a4_wrong_transform/      # matrix multiplication order bug
+  b1_redundant_draws/      # same object drawn 3x
+  c1_visual_regression/    # before/after scene pair
+  d1_scene_modification/   # "add a red cube at (5,0,0)" task
+  d2_multi_object_debug/   # 50-object scene with 5 broken objects
+  d3_deferred_pipeline/    # broken lighting in deferred renderer
+```
+
+Each scenario includes:
+1. A minimal OpenGL application with the bug.
+2. A description of the expected correct output.
+3. A ground-truth diagnosis (what the bug is and how to fix it).
+4. A script that runs an LLM agent (with and without GLA) and measures tokens consumed, tool calls, and whether the correct diagnosis was reached.
+
+This test suite serves dual purposes: validating GLA's usefulness and benchmarking LLM capability on graphics debugging tasks.
+
+## 10. References
 
 - [apitrace](https://github.com/apitrace/apitrace) — OpenGL/Vulkan call tracing (MIT)
 - [RenderDoc](https://github.com/baldurk/renderdoc) — Frame capture and debugging (MIT)
