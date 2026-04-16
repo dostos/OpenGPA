@@ -58,18 +58,31 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
     gla_init();
     gla_real_gl.glDrawArrays(mode, first, count);
     gla_shadow_record_draw(&gla_shadow);
+    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+                               (uint32_t)count, /*index_count=*/0,
+                               /*instance_count=*/1);
+    (void)first;
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
     gla_init();
     gla_real_gl.glDrawElements(mode, count, type, indices);
     gla_shadow_record_draw(&gla_shadow);
+    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+                               /*vertex_count=*/(uint32_t)count,
+                               /*index_count=*/(uint32_t)count,
+                               /*instance_count=*/1);
+    (void)type; (void)indices;
 }
 
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei instancecount) {
     gla_init();
     gla_real_gl.glDrawArraysInstanced(mode, first, count, instancecount);
     gla_shadow_record_draw(&gla_shadow);
+    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+                               (uint32_t)count, /*index_count=*/0,
+                               (uint32_t)instancecount);
+    (void)first;
 }
 
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
@@ -77,6 +90,11 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
     gla_init();
     gla_real_gl.glDrawElementsInstanced(mode, count, type, indices, instancecount);
     gla_shadow_record_draw(&gla_shadow);
+    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+                               /*vertex_count=*/(uint32_t)count,
+                               /*index_count=*/(uint32_t)count,
+                               (uint32_t)instancecount);
+    (void)type; (void)indices;
 }
 
 /* --------------------------------------------------------------------------
@@ -246,7 +264,8 @@ void glGetIntegerv(GLenum pname, GLint* data) {
 
 void glXSwapBuffers(Display* dpy, GLXDrawable drawable) {
     gla_init();
-    gla_frame_on_swap();   /* capture before swap */
+    gla_frame_on_swap();             /* capture before swap (includes draw call data) */
+    gla_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
     gla_shadow_new_frame(&gla_shadow);
     gla_real_gl.glXSwapBuffers(dpy, drawable);
 }

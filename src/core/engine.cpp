@@ -261,10 +261,33 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                       static_cast<double>(ts.tv_nsec) * 1e-9;
 
     // Parse the shim's binary frame layout:
-    //   [0..3]   width  (uint32_t, LE)
-    //   [4..7]   height (uint32_t, LE)
-    //   [8..]    color  (width * height * 4 bytes, RGBA8)
-    //   [8+w*h*4..] depth (width * height * 4 bytes, float32)
+    //   [0..3]      width  (uint32_t, LE)
+    //   [4..7]      height (uint32_t, LE)
+    //   [8..]       color  (width * height * 4 bytes, RGBA8)
+    //   [8+w*h*4..] depth  (width * height * 4 bytes, float32)
+    //   [8+2*w*h*4..] draw call data:
+    //       uint32  draw_call_count
+    //       per draw call:
+    //           uint32  id
+    //           uint32  primitive_type
+    //           uint32  vertex_count
+    //           uint32  index_count
+    //           uint32  instance_count
+    //           uint32  shader_program_id
+    //           int32[4] viewport
+    //           int32[4] scissor
+    //           uint8   scissor_enabled, depth_test, depth_write, _pad
+    //           uint32  depth_func
+    //           uint8   blend_enabled, _pad[3]
+    //           uint32  blend_src
+    //           uint32  blend_dst
+    //           uint8   cull_enabled, _pad[3]
+    //           uint32  cull_mode
+    //           uint32  front_face
+    //           uint32  texture_count
+    //           texture_count * { uint32 slot, uint32 texture_id }
+    //           uint32  param_count
+    //           param_count * { uint32 location, uint32 type, uint32 data_size, <data> }
     //
     // Minimum valid frame requires at least the 8-byte header.
     if (shm_data && data_size >= 8) {
@@ -291,6 +314,139 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
             const uint32_t pixel_count = w * h;
             frame.fb_depth.resize(pixel_count);
             std::memcpy(frame.fb_depth.data(), depth_ptr, depth_bytes);
+        }
+
+        // --- Draw call metadata ---
+        const uint64_t pixel_section = 8 + color_bytes + depth_bytes;
+        if (data_size > pixel_section + 4) {
+            const uint8_t* dc_ptr = bytes + pixel_section;
+            const uint8_t* dc_end = bytes + data_size;
+
+            // Helper lambda: read T from dc_ptr and advance it
+            auto read_u32 = [&](uint32_t& out) -> bool {
+                if (dc_ptr + 4 > dc_end) return false;
+                std::memcpy(&out, dc_ptr, 4);
+                dc_ptr += 4;
+                return true;
+            };
+            auto read_i32 = [&](int32_t& out) -> bool {
+                if (dc_ptr + 4 > dc_end) return false;
+                std::memcpy(&out, dc_ptr, 4);
+                dc_ptr += 4;
+                return true;
+            };
+            auto read_u8 = [&](uint8_t& out) -> bool {
+                if (dc_ptr + 1 > dc_end) return false;
+                out = *dc_ptr++;
+                return true;
+            };
+            auto skip = [&](size_t n) -> bool {
+                if (dc_ptr + n > dc_end) return false;
+                dc_ptr += n;
+                return true;
+            };
+
+            uint32_t dc_count = 0;
+            if (!read_u32(dc_count)) goto done_dc;
+            if (dc_count > 65536) dc_count = 0; // sanity cap
+
+            frame.draw_calls.reserve(dc_count);
+
+            for (uint32_t i = 0; i < dc_count; ++i) {
+                store::RawDrawCall dc{};
+
+                uint32_t id, prim, vc, ic, inst, prog;
+                if (!read_u32(id))   break;
+                if (!read_u32(prim)) break;
+                if (!read_u32(vc))   break;
+                if (!read_u32(ic))   break;
+                if (!read_u32(inst)) break;
+                if (!read_u32(prog)) break;
+
+                dc.id               = id;
+                dc.primitive_type   = prim;
+                dc.vertex_count     = vc;
+                dc.index_count      = ic;
+                dc.instance_count   = inst;
+                dc.shader_program_id = prog;
+
+                // viewport[4]
+                for (int k = 0; k < 4; ++k) {
+                    if (!read_i32(dc.pipeline.viewport[k])) goto done_dc;
+                }
+                // scissor[4]
+                for (int k = 0; k < 4; ++k) {
+                    if (!read_i32(dc.pipeline.scissor[k])) goto done_dc;
+                }
+
+                // booleans + pad
+                uint8_t b0, b1, b2, pad;
+                if (!read_u8(b0)) goto done_dc;
+                if (!read_u8(b1)) goto done_dc;
+                if (!read_u8(b2)) goto done_dc;
+                if (!read_u8(pad)) goto done_dc;
+                dc.pipeline.scissor_enabled = (b0 != 0);
+                dc.pipeline.depth_test      = (b1 != 0);
+                dc.pipeline.depth_write     = (b2 != 0);
+
+                uint32_t depth_func;
+                if (!read_u32(depth_func)) goto done_dc;
+                dc.pipeline.depth_func = depth_func;
+
+                // blend
+                uint8_t blend_en;
+                if (!read_u8(blend_en)) goto done_dc;
+                if (!skip(3)) goto done_dc; // pad
+                dc.pipeline.blend_enabled = (blend_en != 0);
+                if (!read_u32(dc.pipeline.blend_src)) goto done_dc;
+                if (!read_u32(dc.pipeline.blend_dst)) goto done_dc;
+
+                // cull
+                uint8_t cull_en;
+                if (!read_u8(cull_en)) goto done_dc;
+                if (!skip(3)) goto done_dc; // pad
+                dc.pipeline.cull_enabled = (cull_en != 0);
+                if (!read_u32(dc.pipeline.cull_mode))  goto done_dc;
+                if (!read_u32(dc.pipeline.front_face)) goto done_dc;
+
+                // textures
+                uint32_t tex_count;
+                if (!read_u32(tex_count)) goto done_dc;
+                if (tex_count > 32) tex_count = 32; // sanity
+                dc.textures.reserve(tex_count);
+                for (uint32_t t = 0; t < tex_count; ++t) {
+                    store::RawDrawCall::Texture tex{};
+                    if (!read_u32(tex.slot))       goto done_dc;
+                    if (!read_u32(tex.texture_id)) goto done_dc;
+                    // width/height/format not serialised in shim yet — leave 0
+                    dc.textures.push_back(std::move(tex));
+                }
+
+                // shader params
+                uint32_t param_count;
+                if (!read_u32(param_count)) goto done_dc;
+                if (param_count > 256) param_count = 256; // sanity
+                dc.params.reserve(param_count);
+                for (uint32_t p = 0; p < param_count; ++p) {
+                    store::RawDrawCall::Param param{};
+                    uint32_t loc, type, dsz;
+                    if (!read_u32(loc))  goto done_dc;
+                    if (!read_u32(type)) goto done_dc;
+                    if (!read_u32(dsz))  goto done_dc;
+                    if (dsz > 64) goto done_dc; // sanity: max uniform is mat4 = 64 bytes
+                    param.type = type;
+                    if (dsz > 0) {
+                        if (dc_ptr + dsz > dc_end) goto done_dc;
+                        param.data.assign(dc_ptr, dc_ptr + dsz);
+                        dc_ptr += dsz;
+                    }
+                    (void)loc; // name not serialised yet
+                    dc.params.push_back(std::move(param));
+                }
+
+                frame.draw_calls.push_back(std::move(dc));
+            }
+            done_dc:;
         }
     }
 

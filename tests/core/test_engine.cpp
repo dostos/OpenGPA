@@ -129,6 +129,128 @@ TEST_F(EngineTest, FrameIngestionViaShm) {
 }
 
 // ---------------------------------------------------------------------------
+// Helper: build a minimal valid SHM frame with one draw call
+// ---------------------------------------------------------------------------
+static std::vector<uint8_t> build_frame_with_draw_call(
+        uint32_t width, uint32_t height,
+        uint32_t prim, uint32_t vertex_count,
+        uint32_t index_count, uint32_t instance_count,
+        uint32_t shader_prog)
+{
+    std::vector<uint8_t> buf;
+    auto push_u32 = [&](uint32_t v) {
+        buf.push_back(v & 0xFF);
+        buf.push_back((v >> 8) & 0xFF);
+        buf.push_back((v >> 16) & 0xFF);
+        buf.push_back((v >> 24) & 0xFF);
+    };
+    auto push_i32 = [&](int32_t v) { push_u32(static_cast<uint32_t>(v)); };
+    auto push_u8  = [&](uint8_t  v) { buf.push_back(v); };
+
+    // header
+    push_u32(width);
+    push_u32(height);
+
+    // color pixels (all zero)
+    buf.resize(buf.size() + (size_t)width * height * 4, 0);
+    // depth pixels (all zero)
+    buf.resize(buf.size() + (size_t)width * height * 4, 0);
+
+    // draw_call_count = 1
+    push_u32(1);
+
+    // One draw call record
+    push_u32(0);              // id
+    push_u32(prim);           // primitive_type
+    push_u32(vertex_count);   // vertex_count
+    push_u32(index_count);    // index_count
+    push_u32(instance_count); // instance_count
+    push_u32(shader_prog);    // shader_program_id
+
+    // viewport[4]
+    push_i32(0); push_i32(0); push_i32((int32_t)width); push_i32((int32_t)height);
+    // scissor[4]
+    push_i32(0); push_i32(0); push_i32(0); push_i32(0);
+    // scissor_enabled, depth_test, depth_write, pad
+    push_u8(0); push_u8(1); push_u8(1); push_u8(0);
+    // depth_func (GL_LESS = 0x0201)
+    push_u32(0x0201);
+    // blend_enabled, pad[3]
+    push_u8(0); push_u8(0); push_u8(0); push_u8(0);
+    // blend_src, blend_dst
+    push_u32(0); push_u32(0);
+    // cull_enabled, pad[3]
+    push_u8(0); push_u8(0); push_u8(0); push_u8(0);
+    // cull_mode, front_face
+    push_u32(0x0405); push_u32(0x0901);
+
+    // texture_count = 0
+    push_u32(0);
+    // param_count = 0
+    push_u32(0);
+
+    return buf;
+}
+
+// ---------------------------------------------------------------------------
+// 3b. DrawCallRoundTrip — write a frame with draw call data; engine parses it
+// ---------------------------------------------------------------------------
+TEST_F(EngineTest, DrawCallRoundTrip) {
+    const uint32_t W = 4, H = 4;
+    const uint32_t GL_TRIANGLES = 0x0004;
+
+    auto shm_client = gla::ShmRingBuffer::open(kShmName);
+    ASSERT_NE(shm_client, nullptr);
+
+    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    ASSERT_GE(client.fd(), 0);
+
+    std::vector<uint8_t> payload =
+        build_frame_with_draw_call(W, H, GL_TRIANGLES,
+                                   /*vertex_count=*/3, /*index_count=*/0,
+                                   /*instance_count=*/1, /*shader_prog=*/7);
+
+    auto wslot = shm_client->claim_write_slot();
+    ASSERT_NE(wslot.data, nullptr);
+    ASSERT_LE(payload.size(), (size_t)1024 * 1024);
+    std::memcpy(wslot.data, payload.data(), payload.size());
+    shm_client->commit_write(wslot.index, payload.size());
+    ASSERT_TRUE(client.send_frame_ready(/*frame_id=*/77, wslot.index));
+
+    // Wait for the engine to process the frame
+    for (int i = 0; i < 200; ++i) {
+        const gla::store::RawFrame* f = engine_->frame_store().get(77);
+        if (f && !f->draw_calls.empty()) break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    }
+
+    const gla::store::RawFrame* frame = engine_->frame_store().get(77);
+    ASSERT_NE(frame, nullptr) << "Frame 77 not found in store";
+
+    // Pixel buffers
+    EXPECT_EQ(frame->fb_width,  W);
+    EXPECT_EQ(frame->fb_height, H);
+    EXPECT_EQ(frame->fb_color.size(), (size_t)W * H * 4);
+    EXPECT_EQ(frame->fb_depth.size(), (size_t)W * H);
+
+    // Draw call
+    ASSERT_EQ(frame->draw_calls.size(), 1u);
+    const auto& dc = frame->draw_calls[0];
+    EXPECT_EQ(dc.id,               0u);
+    EXPECT_EQ(dc.primitive_type,   GL_TRIANGLES);
+    EXPECT_EQ(dc.vertex_count,     3u);
+    EXPECT_EQ(dc.index_count,      0u);
+    EXPECT_EQ(dc.instance_count,   1u);
+    EXPECT_EQ(dc.shader_program_id, 7u);
+    EXPECT_EQ(dc.pipeline.depth_test,  true);
+    EXPECT_EQ(dc.pipeline.depth_write, true);
+    EXPECT_EQ(dc.pipeline.depth_func,  0x0201u);
+    EXPECT_EQ(dc.pipeline.cull_mode,   0x0405u);
+    EXPECT_TRUE(dc.textures.empty());
+    EXPECT_TRUE(dc.params.empty());
+}
+
+// ---------------------------------------------------------------------------
 // 4. PauseResume — request_pause() → is_paused() true; request_resume() → false
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, PauseResume) {

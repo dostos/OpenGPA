@@ -120,12 +120,7 @@ class TestFrameCapture:
     """Verify frames were captured from mini_gl_app."""
 
     def test_frame_overview(self, captured_frames):
-        """Frame should be captured with correct viewport dimensions.
-
-        Note: The M1/M2 shim captures framebuffer pixels only — draw call
-        metadata serialization is not yet implemented in the shim. Therefore
-        draw_call_count is expected to be 0 at this milestone.
-        """
+        """Frame should be captured with correct viewport dimensions and draw calls."""
         import requests
         r = requests.get(f"{BASE_URL}/frames/current/overview", headers=auth_headers())
         assert r.status_code == 200, f"Unexpected status: {r.status_code}, body: {r.text}"
@@ -133,15 +128,14 @@ class TestFrameCapture:
         # framebuffer dimensions must match the 400x300 viewport in mini_gl_app
         assert data["framebuffer_width"] == 400
         assert data["framebuffer_height"] == 300
-        # draw_call_count: the shim does not serialize draw call metadata yet
-        assert data["draw_call_count"] == 0  # TODO: update when shim serializes draw calls
+        # draw_call_count: shim now serializes draw call metadata
+        assert data["draw_call_count"] >= 1
 
     def test_draw_calls(self, captured_frames):
-        """Draw call list endpoint returns 200 with an empty list.
+        """Draw call list endpoint returns >= 1 draw call with correct fields.
 
-        The shim captures framebuffer data only; draw call metadata is not
-        yet serialized into the SHM frame. The endpoint must still return a
-        valid (empty) response.
+        The shim now serializes draw call metadata (primitive type, vertex
+        count, shader params, textures, pipeline state) into the SHM frame.
         """
         import requests
         # Get latest frame
@@ -153,9 +147,16 @@ class TestFrameCapture:
         r = requests.get(f"{BASE_URL}/frames/{frame_id}/drawcalls", headers=auth_headers())
         assert r.status_code == 200, f"Unexpected status: {r.status_code}, body: {r.text}"
         data = r.json()
-        # items is an empty list since draw call serialization is not yet done
         assert isinstance(data["items"], list)
-        assert data["total"] == 0  # matches draw_call_count from overview
+        assert data["total"] >= 1, "Expected at least one draw call from mini_gl_app"
+
+        # First draw call should be a triangle (mini_gl_app draws a single triangle)
+        dc = data["items"][0]
+        assert "id" in dc
+        assert "primitive_type" in dc
+        assert "vertex_count" in dc
+        # mini_gl_app uses glDrawArrays with GL_TRIANGLES (0x0004) and 3 vertices
+        assert dc["vertex_count"] == 3
 
     def test_pixel_center_is_red(self, captured_frames):
         """Center of screen should be red (triangle)."""
