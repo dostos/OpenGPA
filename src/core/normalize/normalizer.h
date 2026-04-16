@@ -6,8 +6,9 @@ namespace gla {
 
 class Normalizer {
 public:
+    virtual ~Normalizer() = default;
     // Convert a raw frame to normalized representation
-    NormalizedFrame normalize(const gla::store::RawFrame& raw) const;
+    virtual NormalizedFrame normalize(const gla::store::RawFrame& raw) const;
 };
 
 }  // namespace gla

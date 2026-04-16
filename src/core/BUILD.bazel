@@ -43,6 +43,10 @@ cc_library(
     name = "query",
     srcs = ["query/query_engine.cpp"],
     hdrs = ["query/query_engine.h"],
+    deps = [
+        ":normalize",
+        ":store",
+    ],
     visibility = ["//visibility:public"],
 )
 
