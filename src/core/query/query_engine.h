@@ -40,6 +40,9 @@ public:
     std::optional<PixelResult> get_pixel(
         uint64_t frame_id, uint32_t x, uint32_t y) const;
 
+    // Normalized frame access (for semantic analysis)
+    const NormalizedFrame* get_normalized_frame(uint64_t frame_id) const;
+
 private:
     gla::store::FrameStore& store_;
     gla::Normalizer& normalizer_;

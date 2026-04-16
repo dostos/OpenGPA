@@ -3,6 +3,9 @@ load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 pybind_extension(
     name = "_gla_core",
     srcs = ["py_gla.cpp"],
-    deps = ["//src/core:gla_core"],
+    deps = [
+        "//src/core:gla_core",
+        "//src/core:semantic",
+    ],
     visibility = ["//visibility:public"],
 )

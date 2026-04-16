@@ -146,4 +146,10 @@ std::optional<QueryEngine::PixelResult> QueryEngine::get_pixel(
     return result;
 }
 
+// ─── Normalized frame access ──────────────────────────────────────────────────
+
+const NormalizedFrame* QueryEngine::get_normalized_frame(uint64_t frame_id) const {
+    return get_normalized(frame_id);
+}
+
 }  // namespace gla
