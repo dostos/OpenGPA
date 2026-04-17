@@ -11,14 +11,34 @@
 Guard: code_only.total_tokens <= 0 -> ambiguous (avoid division by zero).
 """
 from __future__ import annotations
+import json
+import re
 from dataclasses import dataclass
+from typing import Optional
 from gla.eval.metrics import EvalResult
+from gla.eval.curation.llm_client import LLMClient
+from gla.eval.curation.prompts import load_prompt
+
+
+_VALID_CATEGORIES = {
+    "shader_compile_not_exposed", "framework_internal_state",
+    "needs_temporal_diff", "driver_specific",
+    "bug_requires_multi_frame_capture", "scorer_ambiguous",
+    "gla_query_insufficient", "other",
+}
 
 
 @dataclass
 class ObservedClassification:
     verdict: str   # "yes" | "no" | "ambiguous"
     evidence: str
+
+
+@dataclass
+class FailureModeResult:
+    category: str
+    suggested_new_category: Optional[str]
+    details: str
 
 
 def classify_observed_helps(
@@ -66,4 +86,34 @@ def classify_observed_helps(
     return ObservedClassification(
         "ambiguous",
         f"both correct, token_ratio={ratio:.2f} in [0.5, 0.8]",
+    )
+
+
+def attribute_failure_mode(
+    llm_client: LLMClient,
+    scenario_md: str,
+    with_gla_diagnosis: str,
+    code_only_diagnosis: str,
+    ground_truth: str,
+) -> FailureModeResult:
+    """Call the LLM to categorize WHY GLA did not help in a given scenario."""
+    system = load_prompt("classify_failure_mode_system")
+    user = (
+        f"SCENARIO_MD:\n{scenario_md}\n\n"
+        f"GROUND_TRUTH:\n{ground_truth}\n\n"
+        f"WITH_GLA_DIAGNOSIS:\n{with_gla_diagnosis}\n\n"
+        f"CODE_ONLY_DIAGNOSIS:\n{code_only_diagnosis}\n"
+    )
+    resp = llm_client.complete(system=system,
+                               messages=[{"role": "user", "content": user}])
+    m = re.search(r"```json\s*\n(.+?)\n```", resp.text, re.DOTALL)
+    raw = m.group(1) if m else resp.text
+    d = json.loads(raw)
+    cat = d.get("category", "other")
+    if cat not in _VALID_CATEGORIES:
+        cat = "other"
+    return FailureModeResult(
+        category=cat,
+        suggested_new_category=d.get("suggested_new_category"),
+        details=d.get("details", "")[:500],
     )

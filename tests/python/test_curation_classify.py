@@ -1,5 +1,7 @@
 from datetime import datetime, timezone
-from gla.eval.curation.classify import classify_observed_helps, ObservedClassification
+from unittest.mock import MagicMock
+from gla.eval.curation.classify import classify_observed_helps, ObservedClassification, attribute_failure_mode, FailureModeResult
+from gla.eval.curation.llm_client import LLMResponse
 from gla.eval.metrics import EvalResult
 
 def _mk(mode, correct, total_tokens):
@@ -40,3 +42,27 @@ def test_code_only_zero_tokens_degenerate():
     # Degenerate case: code_only has 0 tokens (shouldn't happen but guard)
     r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", True, 0))
     assert r.verdict == "ambiguous"
+
+
+def _fake_response(text):
+    return LLMResponse(text=text, input_tokens=0, output_tokens=0,
+                       cache_creation_input_tokens=0, cache_read_input_tokens=0,
+                       stop_reason="end_turn")
+
+
+def test_attribute_failure_mode_parses_json():
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        '```json\n{"category":"shader_compile_not_exposed",'
+        '"suggested_new_category":null,'
+        '"details":"GLA does not expose compile logs per draw call."}\n```'
+    )
+    r = attribute_failure_mode(
+        llm_client=llm,
+        scenario_md="# scenario md body...",
+        with_gla_diagnosis="wrong",
+        code_only_diagnosis="right",
+        ground_truth="actual root cause...",
+    )
+    assert r.category == "shader_compile_not_exposed"
+    assert "compile logs" in r.details
