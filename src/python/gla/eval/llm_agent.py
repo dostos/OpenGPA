@@ -393,34 +393,42 @@ class EvalAgent:
         )
 
     def _build_system_prompt(self, mode: str) -> str:
+        base = (
+            "You are a graphics debugging expert. An OpenGL application has a "
+            "rendering bug. You MUST read the source code first to understand "
+            "what the application intends to do.\n\n"
+        )
         if mode == "with_gla":
-            return (
-                "You are a graphics debugging expert. You have access to GLA "
-                "(Graphics Library for Agents), a live debugger that lets you "
-                "inspect the actual rendered state of an OpenGL application.\n\n"
-                "You can use these tools to inspect the application's rendering:\n"
+            return base + (
+                "You also have access to GLA (Graphics Library for Agents), a "
+                "live debugger that captured the actual rendered state.\n\n"
+                "Available tools:\n"
+                "- read_source_file: Read the application source code (USE THIS FIRST)\n"
                 "- query_frame: Get frame overview and draw call list\n"
                 "- inspect_drawcall: Deep dive into a specific draw call's state\n"
                 "- query_pixel: Check pixel color/depth at coordinates\n"
                 "- query_scene: Get camera and object information\n"
-                "- compare_frames: Diff two frames\n"
-                "- read_source_file: Read the application source code\n\n"
-                "Your task: diagnose the rendering bug. Be specific about the "
-                "root cause and suggest a fix.\n\n"
-                "Strategy: Start by querying the frame overview and draw calls "
-                "to understand what's being rendered. Then inspect specific draw "
-                "calls or pixels that seem wrong. Use the source code for context.\n\n"
+                "- compare_frames: Diff two frames\n\n"
+                "Strategy:\n"
+                "1. Read the source code to understand what SHOULD happen\n"
+                "2. Query GLA to see what ACTUALLY happened at runtime\n"
+                "3. Compare intent vs reality to identify the root cause\n\n"
                 "End your response with:\n"
                 "DIAGNOSIS: <one-sentence root cause>\n"
                 "FIX: <specific code change needed>"
             )
         else:
-            return (
-                "You are a graphics debugging expert. You have access ONLY to "
-                "the source code of an OpenGL application.\n\n"
-                "You can use read_source_file to read the code.\n\n"
-                "Your task: diagnose the rendering bug by analyzing the code. "
-                "Be specific about the root cause and suggest a fix.\n\n"
+            return base + (
+                "You have access ONLY to the source code. You must reason about "
+                "what the rendered output would be by mentally simulating the "
+                "OpenGL state machine and rendering pipeline.\n\n"
+                "Available tools:\n"
+                "- read_source_file: Read the application source code\n\n"
+                "Strategy:\n"
+                "1. Read the source code thoroughly\n"
+                "2. Trace the GL state (bindings, enables, uniforms) through "
+                "each draw call\n"
+                "3. Identify where the state or output diverges from intent\n\n"
                 "End your response with:\n"
                 "DIAGNOSIS: <one-sentence root cause>\n"
                 "FIX: <specific code change needed>"
