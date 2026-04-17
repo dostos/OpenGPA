@@ -8,6 +8,7 @@
 
 #include <stddef.h>
 #include <string.h>
+#include <stdint.h>
 
 /* -------------------------------------------------------------------------
  * Internal helpers
@@ -257,4 +258,51 @@ void gla_shadow_record_draw(GlaShadowState *state) {
 void gla_shadow_new_frame(GlaShadowState *state) {
     state->frame_number++;
     state->draw_call_count = 0;
+}
+
+/* -------------------------------------------------------------------------
+ * Debug groups (GL_KHR_debug)
+ * ---------------------------------------------------------------------- */
+
+void gla_shadow_push_debug_group(GlaShadowState *state, uint32_t id,
+                                  const char *name) {
+    if (state->debug_group_depth >= GLA_MAX_DEBUG_GROUP_DEPTH) {
+        return;
+    }
+    GlaDebugGroupEntry *entry = &state->debug_group_stack[state->debug_group_depth];
+    strncpy(entry->name, name, GLA_MAX_DEBUG_GROUP_NAME - 1);
+    entry->name[GLA_MAX_DEBUG_GROUP_NAME - 1] = '\0';
+    entry->id = id;
+    state->debug_group_depth++;
+}
+
+void gla_shadow_pop_debug_group(GlaShadowState *state) {
+    if (state->debug_group_depth > 0) {
+        state->debug_group_depth--;
+    }
+}
+
+int gla_shadow_get_debug_group_path(const GlaShadowState *state, char *buf,
+                                     size_t buf_size) {
+    if (buf_size == 0) {
+        return 0;
+    }
+    int written = 0;
+    for (uint32_t i = 0; i < state->debug_group_depth; i++) {
+        if (i > 0) {
+            if ((size_t)(written + 1) < buf_size) {
+                buf[written++] = '/';
+            }
+        }
+        const char *name = state->debug_group_stack[i].name;
+        size_t remaining = buf_size - (size_t)written - 1;
+        size_t name_len = strlen(name);
+        if (name_len > remaining) {
+            name_len = remaining;
+        }
+        memcpy(buf + written, name, name_len);
+        written += (int)name_len;
+    }
+    buf[written] = '\0';
+    return written;
 }

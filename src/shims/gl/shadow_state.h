@@ -1,6 +1,7 @@
 #ifndef GLA_SHADOW_STATE_H
 #define GLA_SHADOW_STATE_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -8,6 +9,13 @@
 #define GLA_MAX_UNIFORMS 256
 #define GLA_MAX_VERTEX_ATTRIBS 16
 #define GLA_MAX_TEXTURES 4096
+#define GLA_MAX_DEBUG_GROUP_DEPTH 32
+#define GLA_MAX_DEBUG_GROUP_NAME 128
+
+typedef struct {
+    char name[GLA_MAX_DEBUG_GROUP_NAME];
+    uint32_t id;
+} GlaDebugGroupEntry;
 
 /* GL enum constants (no GL headers needed) */
 #define GL_TEXTURE0             0x84C0
@@ -83,6 +91,10 @@ typedef struct {
     /* Frame tracking */
     uint64_t frame_number;
     uint32_t draw_call_count;       /* resets each frame */
+
+    /* Debug group stack (GL_KHR_debug) */
+    GlaDebugGroupEntry debug_group_stack[GLA_MAX_DEBUG_GROUP_DEPTH];
+    uint32_t debug_group_depth;
 } GlaShadowState;
 
 /* Initialize to GL defaults */
@@ -127,5 +139,10 @@ void gla_shadow_record_draw(GlaShadowState *state);
 
 /* Frame boundary */
 void gla_shadow_new_frame(GlaShadowState *state);
+
+/* Debug groups (GL_KHR_debug) */
+void gla_shadow_push_debug_group(GlaShadowState *state, uint32_t id, const char *name);
+void gla_shadow_pop_debug_group(GlaShadowState *state);
+int  gla_shadow_get_debug_group_path(const GlaShadowState *state, char *buf, size_t buf_size);
 
 #endif /* GLA_SHADOW_STATE_H */

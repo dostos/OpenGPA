@@ -228,6 +228,80 @@ static void test_frame_boundary(void) {
 }
 
 /* -------------------------------------------------------------------------
+ * 11. DebugGroupPushPop
+ * ---------------------------------------------------------------------- */
+static void test_debug_group_push_pop(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    gla_shadow_push_debug_group(&s, 1, "GroupA");
+    gla_shadow_push_debug_group(&s, 2, "GroupB");
+    assert(s.debug_group_depth == 2);
+
+    gla_shadow_pop_debug_group(&s);
+    assert(s.debug_group_depth == 1);
+
+    gla_shadow_pop_debug_group(&s);
+    assert(s.debug_group_depth == 0);
+
+    /* Extra pop on empty stack should be a no-op */
+    gla_shadow_pop_debug_group(&s);
+    assert(s.debug_group_depth == 0);
+
+    printf("PASS test_debug_group_push_pop\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 12. DebugGroupPath
+ * ---------------------------------------------------------------------- */
+static void test_debug_group_path(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    gla_shadow_push_debug_group(&s, 10, "GBuffer");
+    gla_shadow_push_debug_group(&s, 11, "Player Mesh");
+
+    char buf[256];
+    int len = gla_shadow_get_debug_group_path(&s, buf, sizeof(buf));
+    assert(len == (int)strlen("GBuffer/Player Mesh"));
+    assert(strcmp(buf, "GBuffer/Player Mesh") == 0);
+
+    printf("PASS test_debug_group_path\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 13. DebugGroupEmptyPath
+ * ---------------------------------------------------------------------- */
+static void test_debug_group_empty_path(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    char buf[256];
+    int len = gla_shadow_get_debug_group_path(&s, buf, sizeof(buf));
+    assert(len == 0);
+    assert(buf[0] == '\0');
+
+    printf("PASS test_debug_group_empty_path\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 14. DebugGroupOverflow
+ * ---------------------------------------------------------------------- */
+static void test_debug_group_overflow(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    /* Push GLA_MAX_DEBUG_GROUP_DEPTH + 1 groups */
+    for (int i = 0; i <= GLA_MAX_DEBUG_GROUP_DEPTH; i++) {
+        gla_shadow_push_debug_group(&s, (uint32_t)i, "Group");
+    }
+    /* Depth must be capped at max */
+    assert(s.debug_group_depth == GLA_MAX_DEBUG_GROUP_DEPTH);
+
+    printf("PASS test_debug_group_overflow\n");
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ---------------------------------------------------------------------- */
 int main(void) {
@@ -241,6 +315,10 @@ int main(void) {
     test_blend_state();
     test_buffer_bindings();
     test_frame_boundary();
+    test_debug_group_push_pop();
+    test_debug_group_path();
+    test_debug_group_empty_path();
+    test_debug_group_overflow();
 
     printf("All shadow state tests passed.\n");
     return 0;
