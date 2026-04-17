@@ -1,0 +1,14 @@
+# WebGL shim — browser extension (no compilation needed) + Node.js bridge
+
+filegroup(
+    name = "extension",
+    srcs = glob(["extension/**"]),
+    visibility = ["//visibility:public"],
+)
+
+# Bridge is a Node.js project — no Bazel build needed, just expose the sources.
+filegroup(
+    name = "bridge",
+    srcs = glob(["bridge/**"]),
+    visibility = ["//visibility:public"],
+)
