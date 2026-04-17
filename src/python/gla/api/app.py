@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 
 def create_app(provider=None, auth_token: str = "",
                metadata_store=None,
+               framework_query_engine=None,
                # Legacy kwargs for backward compatibility
                query_engine=None, engine=None,
                scene_reconstructor=None) -> FastAPI:
@@ -58,6 +59,12 @@ def create_app(provider=None, auth_token: str = "",
         metadata_store = MetadataStore()
     app.state.metadata_store = metadata_store
 
+    # Framework query engine — auto-create from provider + metadata_store if not provided
+    if framework_query_engine is None and metadata_store:
+        from gla.framework.query_engine import FrameworkQueryEngine
+        framework_query_engine = FrameworkQueryEngine(provider, metadata_store)
+    app.state.framework_query_engine = framework_query_engine
+
     # Legacy attributes — kept so old code that accesses these directly
     # (e.g. tests that haven't been updated) continues to work.
     app.state.query_engine = getattr(provider, "_qe", None)
@@ -82,6 +89,9 @@ def create_app(provider=None, auth_token: str = "",
     from .routes_scene import router as scene_router
     from .routes_diff import router as diff_router
     from .routes_metadata import router as metadata_router
+    from .routes_objects import router as objects_router
+    from .routes_passes import router as passes_router
+    from .routes_explain import router as explain_router
 
     app.include_router(frames_router, prefix="/api/v1")
     app.include_router(drawcalls_router, prefix="/api/v1")
@@ -90,5 +100,8 @@ def create_app(provider=None, auth_token: str = "",
     app.include_router(scene_router, prefix="/api/v1")
     app.include_router(diff_router, prefix="/api/v1")
     app.include_router(metadata_router, prefix="/api/v1")
+    app.include_router(objects_router, prefix="/api/v1")
+    app.include_router(passes_router, prefix="/api/v1")
+    app.include_router(explain_router, prefix="/api/v1")
 
     return app
