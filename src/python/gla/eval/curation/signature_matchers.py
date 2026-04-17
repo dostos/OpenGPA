@@ -42,6 +42,21 @@ def _dominant_color(img: Image.Image) -> tuple[float, float, float, float]:
 def _color_delta(a, b) -> float:
     return max(abs(a[i] - b[i]) for i in range(min(len(a), len(b))))
 
+@register("color_histogram_in_region")
+def _match_region_histogram(image_png: bytes, spec: dict) -> SignatureMatchResult:
+    img = Image.open(io.BytesIO(image_png)).convert("RGBA")
+    W, H = img.size
+    x0, y0, x1, y1 = spec.get("region", [0, 0, 1, 1])
+    crop = img.crop((int(x0 * W), int(y0 * H), int(x1 * W), int(y1 * H)))
+    actual = _dominant_color(crop)
+    expected = spec.get("dominant_color", [0, 0, 0, 1])
+    tol = spec.get("tolerance", 0.1)
+    delta = _color_delta(actual, expected)
+    return SignatureMatchResult(
+        matched=(delta <= tol),
+        reason=f"region={spec.get('region')}, actual={actual}, delta={delta:.3f}",
+    )
+
 @register("framebuffer_dominant_color")
 def _match_fb_dominant(image_png: bytes, spec: dict) -> SignatureMatchResult:
     img = Image.open(io.BytesIO(image_png))
