@@ -65,6 +65,9 @@ typedef struct {
     /* Uniform / shader params */
     uint32_t param_count;
     GlaShadowUniform params[GLA_MAX_UNIFORMS];
+
+    /* Debug group path (GL_KHR_debug push/pop group stack) */
+    char debug_group_path[512];
 } GlaDrawCallSnapshot;
 
 static GlaDrawCallSnapshot gla_draw_call_buf[GLA_MAX_DRAW_CALLS_PER_FRAME];
@@ -141,6 +144,8 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
                    : GLA_MAX_UNIFORMS;
     memcpy(s->params, shadow->uniforms,
            s->param_count * sizeof(GlaShadowUniform));
+
+    gla_shadow_get_debug_group_path(shadow, s->debug_group_path, sizeof(s->debug_group_path));
 
     gla_draw_call_count++;
 }
@@ -258,6 +263,12 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
                 p += u->data_size;
             }
         }
+
+        /* Wire format: uint16 path_len, then path_len chars (no null terminator) */
+        uint16_t path_len = (uint16_t)strlen(s->debug_group_path);
+        if (p + 2 + path_len > end) break;
+        memcpy(p, &path_len, 2); p += 2;
+        if (path_len > 0) { memcpy(p, s->debug_group_path, path_len); p += path_len; }
     }
 
     return (size_t)(p - buf);

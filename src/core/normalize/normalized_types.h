@@ -52,6 +52,8 @@ struct NormalizedDrawCall {
     // Bulk data (owned copy from raw frame)
     std::vector<uint8_t> vertex_data;
     std::vector<uint8_t> index_data;
+
+    std::string debug_group_path;
 };
 
 struct RenderPass {

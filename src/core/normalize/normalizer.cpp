@@ -80,6 +80,8 @@ NormalizedFrame Normalizer::normalize(const gla::store::RawFrame& raw) const {
         dc.vertex_data = rdc.vertex_data;
         dc.index_data  = rdc.index_data;
 
+        dc.debug_group_path = rdc.debug_group_path;
+
         pass.draw_calls.push_back(std::move(dc));
     }
 

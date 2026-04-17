@@ -479,6 +479,18 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                     dc.params.push_back(std::move(param));
                 }
 
+                // Debug group path: uint16 len + chars
+                if (dc_ptr + 2 <= dc_end) {
+                    uint16_t path_len = 0;
+                    std::memcpy(&path_len, dc_ptr, 2); dc_ptr += 2;
+                    if (path_len > 512) path_len = 512; // sanity
+                    if (path_len > 0 && dc_ptr + path_len <= dc_end) {
+                        dc.debug_group_path.assign(
+                            reinterpret_cast<const char*>(dc_ptr), path_len);
+                        dc_ptr += path_len;
+                    }
+                }
+
                 frame.draw_calls.push_back(std::move(dc));
             }
             done_dc:;

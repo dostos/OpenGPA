@@ -52,6 +52,8 @@ struct RawDrawCall {
         uint32_t location, format, components, stride, offset;
     };
     std::vector<VertexAttr> attributes;
+
+    std::string debug_group_path;
 };
 
 // A captured frame

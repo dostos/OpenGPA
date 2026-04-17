@@ -81,7 +81,8 @@ PYBIND11_MODULE(_gla_core, m) {
         .def_property_readonly("index_data", [](const gla::NormalizedDrawCall& dc) {
             return py::bytes(reinterpret_cast<const char*>(dc.index_data.data()),
                              dc.index_data.size());
-        });
+        })
+        .def_readonly("debug_group_path", &gla::NormalizedDrawCall::debug_group_path);
 
     // -------------------------------------------------------------------------
     // DrawCallDiff
