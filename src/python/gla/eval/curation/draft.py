@@ -43,7 +43,7 @@ class Draft:
     @staticmethod
     def _parse_blocks(text: str) -> tuple[str, str]:
         m_c = re.search(r"```c\s*\n(.+?)\n```", text, re.DOTALL)
-        m_md = re.search(r"```markdown\s*\n(.+?)\n```", text, re.DOTALL)
+        m_md = re.search(r"```markdown\s*\n(.+)\n```\s*$", text, re.DOTALL)
         if not m_c or not m_md:
             raise ValueError("Draft response missing required c or markdown block")
         return m_c.group(1), m_md.group(1)
@@ -52,10 +52,12 @@ class Draft:
     def _validate(c_src: str, md_body: str, issue_url: str) -> None:
         if "// SOURCE:" not in c_src:
             raise ValueError("C source missing // SOURCE: <url> comment")
+        if issue_url not in c_src:
+            raise ValueError("C source // SOURCE: does not match issue URL")
         # Ground Truth Diagnosis must contain a blockquote citation
         m = re.search(r"##\s+Ground Truth Diagnosis\s*\n(.+?)(?=\n##\s+|\Z)",
                       md_body, re.DOTALL | re.IGNORECASE)
         if not m:
-            raise ValueError("Ground Truth Diagnosis section missing citation")
+            raise ValueError("Ground Truth Diagnosis section missing")
         if not re.search(r"^>\s+", m.group(1), re.MULTILINE):
             raise ValueError("Ground Truth Diagnosis missing upstream citation (>) blockquote")

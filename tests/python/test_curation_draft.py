@@ -8,7 +8,7 @@ def _fake_response(text: str) -> LLMResponse:
                        cache_creation_input_tokens=0, cache_read_input_tokens=0,
                        stop_reason="end_turn")
 
-_C_CODE = """// SOURCE: https://x/1
+_C_CODE = """// SOURCE: https://github.com/x/y/issues/1
 #include <GL/gl.h>
 int main() { return 0; }
 """
@@ -82,7 +82,7 @@ def test_draft_parses_c_and_md_blocks():
 
     result = d.draft(thread, triage, scenario_id="r1_test")
     assert "int main()" in result.c_source
-    assert "SOURCE: https://" in result.c_source
+    assert "SOURCE: https://github.com/x/y/issues/1" in result.c_source
     assert "## Bug Signature" in result.md_body
     assert result.scenario_id == "r1_test"
 
@@ -102,10 +102,11 @@ def test_draft_rejects_missing_source_comment():
 
 def test_draft_rejects_missing_blockquote_in_diagnosis():
     """Ground Truth Diagnosis without a blockquote (>) fails validation."""
+    _c_src_x1 = "// SOURCE: https://x/1\n#include <GL/gl.h>\nint main() { return 0; }\n"
     md_without_quote = _MD_BODY.replace('> "the texture is wrong" (quoted from upstream)\n\n', '')
     llm = MagicMock()
     llm.complete.return_value = _fake_response(
-        f"```c\n{_C_CODE}```\n\n```markdown\n{md_without_quote}```"
+        f"```c\n{_c_src_x1}```\n\n```markdown\n{md_without_quote}```"
     )
     d = Draft(llm_client=llm)
     import pytest
@@ -114,3 +115,21 @@ def test_draft_rejects_missing_blockquote_in_diagnosis():
                 TriageResult(verdict="in_scope", fingerprint="other:x",
                              rejection_reason=None, summary=""),
                 scenario_id="r1_test")
+
+def test_draft_preserves_nested_yaml_fence_in_md():
+    """Markdown block containing a yaml fenced block must not be truncated."""
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        f"```c\n{_C_CODE}```\n\n```markdown\n{_MD_BODY}```"
+    )
+    d = Draft(llm_client=llm)
+    result = d.draft(
+        IssueThread(url="https://github.com/x/y/issues/1",
+                    title="t", body="b", comments=[]),
+        TriageResult(verdict="in_scope", fingerprint="state_leak:x",
+                     rejection_reason=None, summary=""),
+        scenario_id="r1_test",
+    )
+    # These assertions are for sections that appear AFTER the yaml block
+    assert "## Predicted GLA Helpfulness" in result.md_body
+    assert "inspect_drawcall exposes it" in result.md_body
