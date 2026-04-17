@@ -180,6 +180,134 @@ def test_pipeline_out_of_scope_is_rejected_before_drafting(tmp_path):
     validator.validate.assert_not_called()
 
 
+def test_pipeline_ambiguous_is_rejected(tmp_path):
+    """Triage verdict 'ambiguous' must short-circuit as rejection."""
+    candidate = DiscoveryCandidate(
+        url="https://x/ambiguous", source_type="issue", title="t"
+    )
+    triage = TriageResult(
+        verdict="ambiguous",
+        fingerprint="other:unknown",
+        rejection_reason=None,
+        summary="not enough info",
+    )
+
+    discoverer = MagicMock()
+    discoverer.run.return_value = [candidate]
+    fetch = MagicMock()
+    fetch.return_value = IssueThread(url=candidate.url, title="t", body="b")
+    triager = MagicMock()
+    triager.triage.return_value = triage
+    drafter = MagicMock()
+    validator = MagicMock()
+    run_eval = MagicMock()
+
+    p = CurationPipeline(
+        discoverer=discoverer,
+        fetch_thread=fetch,
+        triager=triager,
+        drafter=drafter,
+        validator=validator,
+        run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval",
+        workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+    )
+    p.run_batch()
+
+    drafter.draft.assert_not_called()
+    validator.validate.assert_not_called()
+
+    from gla.eval.curation.coverage_log import CoverageLog
+    log = CoverageLog(tmp_path / "log.jsonl")
+    entries = log.read_all()
+    assert len(entries) == 1
+    assert entries[0].outcome == "rejected"
+    assert entries[0].rejection_reason == "out_of_scope_insufficient_info"
+
+
+def test_pipeline_caches_triage_across_runs(tmp_path):
+    """A second run on the same URL must not re-call the triager or drafter."""
+    candidate = DiscoveryCandidate(
+        url="https://github.com/x/y/issues/99",
+        source_type="issue",
+        title="t",
+    )
+    triage = TriageResult(
+        verdict="in_scope",
+        fingerprint="state_leak:unique_key",
+        rejection_reason=None,
+        summary="s",
+    )
+    draft = DraftResult(
+        scenario_id="r1_fake",
+        c_source="// SOURCE: https://github.com/x/y/issues/99\nint main(){}",
+        md_body=_draft_md(),
+    )
+
+    thread = IssueThread(url=candidate.url, title="t", body="b", comments=["c1"])
+
+    def _mk_components(eval_dir: Path, log_path: Path, summary: Path):
+        discoverer = MagicMock()
+        discoverer.run.return_value = [candidate]
+        fetch_fn = MagicMock()
+        fetch_fn.return_value = thread
+        triager = MagicMock()
+        triager.triage.return_value = triage
+        drafter = MagicMock()
+        drafter.draft.return_value = draft
+        validator = MagicMock()
+        validator.validate.return_value = ValidationResult(
+            ok=True, reason="ok",
+            framebuffer_png=b"x",
+            metadata={"draw_call_count": 1, "draw_calls": []},
+        )
+        run_eval = MagicMock()
+        run_eval.run.return_value = RunEvalResult(
+            with_gla=_eval_result("with_gla", True, 1000),
+            code_only=_eval_result("code_only", False, 4000),
+            scorer_ambiguous=False,
+        )
+        pipeline = CurationPipeline(
+            discoverer=discoverer,
+            fetch_thread=fetch_fn,
+            triager=triager,
+            drafter=drafter,
+            validator=validator,
+            run_eval=run_eval,
+            failure_mode_fn=MagicMock(),
+            eval_dir=eval_dir,
+            workdir_root=workdir_root,
+            coverage_log_path=log_path,
+            summary_path=summary,
+        )
+        return pipeline, triager, drafter
+
+    eval_dir1 = tmp_path / "eval1"
+    eval_dir2 = tmp_path / "eval2"
+    workdir_root = tmp_path / ".wd"  # shared across runs
+    log1 = tmp_path / "log1.jsonl"
+    log2 = tmp_path / "log2.jsonl"
+    summary1 = tmp_path / "gaps1.md"
+    summary2 = tmp_path / "gaps2.md"
+
+    # First run
+    p1, triager1, drafter1 = _mk_components(eval_dir1, log1, summary1)
+    p1.run_batch()
+    assert triager1.triage.call_count == 1
+    assert drafter1.draft.call_count == 1
+
+    # Second run with shared workdir_root: triage/draft should be cached.
+    p2, triager2, drafter2 = _mk_components(eval_dir2, log2, summary2)
+    p2.run_batch()
+    assert triager2.triage.call_count == 0, \
+        "Triage should be cached on second run"
+    assert drafter2.draft.call_count == 0, \
+        "Draft should be cached on second run"
+
+
 def test_pipeline_duplicate_fingerprint_skips_drafting(tmp_path):
     from gla.eval.curation.coverage_log import CoverageLog, CoverageEntry
 

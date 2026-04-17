@@ -30,13 +30,25 @@ class Validator:
         self._llm_fallback = llm_fallback
 
     def validate(self, draft: DraftResult) -> ValidationResult:
-        # 1. Write artifacts into eval dir
+        # Write artifacts into eval dir, then validate. On failure, clean up
+        # so failed drafts don't pollute tests/eval/.
         c_path = self.eval_dir / f"{draft.scenario_id}.c"
         md_path = self.eval_dir / f"{draft.scenario_id}.md"
         c_path.write_text(draft.c_source)
         md_path.write_text(draft.md_body)
 
-        # 2. Parse the md for the signature
+        result = self._validate_inner(draft, c_path, md_path)
+
+        if not result.ok:
+            c_path.unlink(missing_ok=True)
+            md_path.unlink(missing_ok=True)
+
+        return result
+
+    def _validate_inner(
+        self, draft: DraftResult, c_path: Path, md_path: Path
+    ) -> ValidationResult:
+        # Parse the md for the signature
         try:
             scenario = ScenarioLoader(eval_dir=str(self.eval_dir)).load(draft.scenario_id)
         except Exception as e:
@@ -44,7 +56,7 @@ class Validator:
         if not scenario.bug_signature:
             return ValidationResult(ok=False, reason="scenario missing Bug Signature")
 
-        # 3. Build and run
+        # Build and run
         try:
             capture = self._runner.build_and_capture(draft.scenario_id)
         except Exception as e:
@@ -55,7 +67,7 @@ class Validator:
         if not fb:
             return ValidationResult(ok=False, reason="no framebuffer captured")
 
-        # 4. Signature match
+        # Signature match
         m = match_signature(fb, scenario.bug_signature, metadata=meta)
         if m.matched:
             return ValidationResult(ok=True, reason="signature matched",

@@ -1,9 +1,45 @@
 from __future__ import annotations
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, Any
 
 from gla.eval.curation.coverage_log import CoverageLog, CoverageEntry
+
+
+_BUILD_LIST_RE = re.compile(
+    r"(for\s+name\s+in\s+\[)([^\]]*)(\])",
+    re.DOTALL,
+)
+
+
+def _append_to_build_bazel(eval_dir: Path, scenario_id: str) -> None:
+    """Append scenario_id to the hardcoded list in tests/eval/BUILD.bazel, if present.
+
+    Idempotent: skip if scenario_id already appears in the list.
+    If BUILD.bazel uses glob() (no hardcoded list), this is a no-op.
+    """
+    build_path = eval_dir / "BUILD.bazel"
+    if not build_path.exists():
+        return
+    text = build_path.read_text()
+    m = _BUILD_LIST_RE.search(text)
+    if not m:
+        # BUILD.bazel doesn't use the expected pattern; leave it alone
+        return
+    body = m.group(2)
+    if f'"{scenario_id}"' in body:
+        return  # already present
+    # Preserve trailing newline-indent style of the existing list. Detect the
+    # indent from the last non-empty entry line.
+    lines = body.rstrip().split("\n")
+    last_line = lines[-1] if lines else ""
+    indent_match = re.match(r"(\s*)", last_line)
+    indent = indent_match.group(1) if indent_match else "    "
+    new_entry = f'\n{indent}"{scenario_id}",'
+    new_body = body.rstrip() + new_entry + "\n"
+    new_text = text[:m.start(2)] + new_body + text[m.end(2):]
+    build_path.write_text(new_text)
 
 
 def commit_scenario(
@@ -28,6 +64,7 @@ def commit_scenario(
     eval_dir.mkdir(parents=True, exist_ok=True)
     (eval_dir / f"{scenario_id}.c").write_text(c_source)
     (eval_dir / f"{scenario_id}.md").write_text(md_body)
+    _append_to_build_bazel(eval_dir, scenario_id)
 
     coverage_log.append(CoverageEntry(
         issue_url=issue_url,

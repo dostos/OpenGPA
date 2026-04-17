@@ -10,6 +10,8 @@ For each discovered candidate, the pipeline runs:
 from __future__ import annotations
 
 import argparse
+import hashlib
+import os
 import re
 from pathlib import Path
 from typing import Callable, Optional
@@ -19,6 +21,17 @@ import yaml
 from gla.eval.curation.classify import classify_observed_helps
 from gla.eval.curation.commit import commit_scenario, log_rejection
 from gla.eval.curation.coverage_log import CoverageLog
+from gla.eval.curation.draft import DraftResult
+from gla.eval.curation.triage import TriageResult
+from gla.eval.curation.workdir import IssueWorkdir
+
+
+def _hash(*parts: str) -> str:
+    """Short stable hash used as the input_hash for IssueWorkdir stages."""
+    h = hashlib.sha256()
+    for p in parts:
+        h.update(p.encode())
+    return h.hexdigest()[:16]
 
 
 def load_config(path: str) -> dict:
@@ -76,6 +89,8 @@ class CurationPipeline:
         return max(nums, default=0) + 1
 
     def _process(self, cand, index: int) -> None:
+        workdir = IssueWorkdir.for_url(self._workdir_root, cand.url)
+
         try:
             thread = self._fetch(cand.url)
         except Exception:
@@ -90,7 +105,25 @@ class CurationPipeline:
             )
             return
 
-        triage = self._triager.triage(thread)
+        # --- Triage (cached on the fetched thread contents) ---
+        triage_hash = _hash(
+            thread.url, thread.title, thread.body, *thread.comments
+        )
+        if workdir.should_skip_stage("triage", current_input_hash=triage_hash):
+            cached = workdir.read_stage("triage")
+            triage = TriageResult(**cached["output"])
+        else:
+            triage = self._triager.triage(thread)
+            workdir.write_stage(
+                "triage",
+                {
+                    "verdict": triage.verdict,
+                    "fingerprint": triage.fingerprint,
+                    "rejection_reason": triage.rejection_reason,
+                    "summary": triage.summary,
+                },
+                input_hash=triage_hash,
+            )
 
         if triage.verdict == "out_of_scope":
             log_rejection(
@@ -103,6 +136,18 @@ class CurationPipeline:
                 rejection_reason=(
                     triage.rejection_reason or "out_of_scope_not_rendering_bug"
                 ),
+            )
+            return
+
+        if triage.verdict == "ambiguous":
+            log_rejection(
+                coverage_log=self._log,
+                summary_path=self._summary,
+                issue_url=cand.url,
+                source_type=cand.source_type,
+                triage_verdict=triage.verdict,
+                fingerprint=triage.fingerprint,
+                rejection_reason="out_of_scope_insufficient_info",
             )
             return
 
@@ -121,21 +166,38 @@ class CurationPipeline:
         slug = re.sub(r"\W+", "_", cand.title.lower()).strip("_")[:40] or "unnamed"
         proposed_scenario_id = f"r{index}_{slug}"
 
-        try:
-            draft = self._drafter.draft(
-                thread, triage, scenario_id=proposed_scenario_id
+        # --- Draft (cached on thread + triage fingerprint + proposed id) ---
+        draft_hash = _hash(
+            triage_hash, triage.fingerprint, triage.summary, proposed_scenario_id
+        )
+        if workdir.should_skip_stage("draft", current_input_hash=draft_hash):
+            cached = workdir.read_stage("draft")
+            draft = DraftResult(**cached["output"])
+        else:
+            try:
+                draft = self._drafter.draft(
+                    thread, triage, scenario_id=proposed_scenario_id
+                )
+            except Exception:
+                log_rejection(
+                    coverage_log=self._log,
+                    summary_path=self._summary,
+                    issue_url=cand.url,
+                    source_type=cand.source_type,
+                    triage_verdict=triage.verdict,
+                    fingerprint=triage.fingerprint,
+                    rejection_reason="not_reproducible",
+                )
+                return
+            workdir.write_stage(
+                "draft",
+                {
+                    "scenario_id": draft.scenario_id,
+                    "c_source": draft.c_source,
+                    "md_body": draft.md_body,
+                },
+                input_hash=draft_hash,
             )
-        except Exception:
-            log_rejection(
-                coverage_log=self._log,
-                summary_path=self._summary,
-                issue_url=cand.url,
-                source_type=cand.source_type,
-                triage_verdict=triage.verdict,
-                fingerprint=triage.fingerprint,
-                rejection_reason="not_reproducible",
-            )
-            return
 
         # Trust the drafter's scenario_id — it is baked into the generated C
         # source and md. The proposed_scenario_id is only a hint to the drafter.
@@ -326,7 +388,14 @@ def main(argv: list[str] | None = None) -> int:
     runner = ScenarioRunner.from_env()
     validator = Validator(eval_dir=args.eval_dir, runner=runner)
 
-    harness = EvalHarness(config={"eval_dir": args.eval_dir})
+    harness = EvalHarness(config={
+        "eval_dir": args.eval_dir,
+        "gla_base_url": os.environ.get("GLA_BASE_URL", "http://127.0.0.1:18080"),
+        "gla_token": os.environ.get("GLA_TOKEN", ""),
+        "shim_path": os.environ.get("GLA_SHIM_PATH", ""),
+        "bazel_bin": os.environ.get("BAZEL", "bazel"),
+        "repo_root": os.environ.get("GLA_REPO_ROOT"),
+    })
     agent_fn = build_agent_fn()
     run_eval = RunEval(harness=harness, agent_fn=agent_fn)
 
