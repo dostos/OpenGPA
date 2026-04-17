@@ -285,7 +285,8 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
     //           uint32  cull_mode
     //           uint32  front_face
     //           uint32  texture_count
-    //           texture_count * { uint32 slot, uint32 texture_id }
+    //           texture_count * { uint32 slot, uint32 texture_id,
+    //                             uint32 width, uint32 height, uint32 format }
     //           uint32  param_count
     //           param_count * { uint32 location, uint32 type, uint32 data_size, <data> }
     //
@@ -418,7 +419,9 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                     store::RawDrawCall::Texture tex{};
                     if (!read_u32(tex.slot))       goto done_dc;
                     if (!read_u32(tex.texture_id)) goto done_dc;
-                    // width/height/format not serialised in shim yet — leave 0
+                    if (!read_u32(tex.width))      goto done_dc;
+                    if (!read_u32(tex.height))     goto done_dc;
+                    if (!read_u32(tex.format))     goto done_dc;
                     dc.textures.push_back(std::move(tex));
                 }
 
@@ -440,7 +443,9 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                         param.data.assign(dc_ptr, dc_ptr + dsz);
                         dc_ptr += dsz;
                     }
-                    (void)loc; // name not serialised yet
+                    // Generate a name from the uniform location if no name was
+                    // serialised by the shim (name query requires GL context).
+                    param.name = "uniform_" + std::to_string(loc);
                     dc.params.push_back(std::move(param));
                 }
 

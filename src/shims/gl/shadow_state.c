@@ -71,6 +71,24 @@ void gla_shadow_bind_texture_2d(GlaShadowState *state, uint32_t texture_id) {
     }
 }
 
+void gla_shadow_tex_image_2d(GlaShadowState *state, uint32_t texture_id,
+                             uint32_t width, uint32_t height,
+                             uint32_t internal_format) {
+    if (texture_id > 0 && texture_id < GLA_MAX_TEXTURES) {
+        state->texture_info[texture_id].width           = width;
+        state->texture_info[texture_id].height          = height;
+        state->texture_info[texture_id].internal_format = internal_format;
+    }
+}
+
+const GlaTextureInfo* gla_shadow_get_texture_info(const GlaShadowState *state,
+                                                   uint32_t texture_id) {
+    if (texture_id > 0 && texture_id < GLA_MAX_TEXTURES) {
+        return &state->texture_info[texture_id];
+    }
+    return NULL;
+}
+
 /* -------------------------------------------------------------------------
  * Shader program
  * ---------------------------------------------------------------------- */

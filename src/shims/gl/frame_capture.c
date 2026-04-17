@@ -6,6 +6,18 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <string.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+/* Declared in gl_shim.c — returns the PID that ran gla_init() */
+pid_t gla_get_init_pid(void);
+
+/* Fork guard: only capture frames in the original init process.
+ * Child processes (from X11/DRI fork) would send empty frames that
+ * overwrite the real app's captures. */
+static int gla_is_original_process(void) {
+    return getpid() == gla_get_init_pid();
+}
 
 /* GL constants not pulled from GL headers */
 #define GL_RGBA            0x1908
@@ -53,7 +65,8 @@ typedef struct {
 
     /* Texture bindings: non-zero slots only */
     uint32_t texture_count;
-    struct { uint32_t slot; uint32_t texture_id; }
+    struct { uint32_t slot; uint32_t texture_id;
+             uint32_t width; uint32_t height; uint32_t format; }
         textures[GLA_MAX_TEXTURE_UNITS];
 
     /* Uniform / shader params */
@@ -81,6 +94,7 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
                                  uint32_t instance_count) {
+    if (!gla_is_original_process()) return;
     if (!gla_ipc_is_connected()) return;
     if (gla_draw_call_count >= GLA_MAX_DRAW_CALLS_PER_FRAME) return;
 
@@ -108,12 +122,23 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
     s->cull_mode       = shadow->cull_mode;
     s->front_face      = shadow->front_face;
 
-    /* Texture bindings — collect non-zero slots */
+    /* Texture bindings — collect non-zero slots, with dimensions */
     s->texture_count = 0;
     for (uint32_t i = 0; i < GLA_MAX_TEXTURE_UNITS; i++) {
-        if (shadow->bound_textures_2d[i] != 0) {
+        uint32_t tid = shadow->bound_textures_2d[i];
+        if (tid != 0) {
             s->textures[s->texture_count].slot       = i;
-            s->textures[s->texture_count].texture_id = shadow->bound_textures_2d[i];
+            s->textures[s->texture_count].texture_id = tid;
+            const GlaTextureInfo* info = gla_shadow_get_texture_info(shadow, tid);
+            if (info) {
+                s->textures[s->texture_count].width  = info->width;
+                s->textures[s->texture_count].height = info->height;
+                s->textures[s->texture_count].format = info->internal_format;
+            } else {
+                s->textures[s->texture_count].width  = 0;
+                s->textures[s->texture_count].height = 0;
+                s->textures[s->texture_count].format = 0;
+            }
             s->texture_count++;
         }
     }
@@ -154,7 +179,8 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
  *   uint32  cull_mode
  *   uint32  front_face
  *   uint32  texture_count
- *   texture_count * { uint32 slot, uint32 texture_id }
+ *   texture_count * { uint32 slot, uint32 texture_id, uint32 width,
+ *                     uint32 height, uint32 format }
  *   uint32  param_count
  *   param_count * { uint32 location, uint32 type, uint32 data_size,
  *                   data_size bytes of data }
@@ -214,12 +240,15 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         memcpy(p, &s->cull_mode,  4); p += 4;
         memcpy(p, &s->front_face, 4); p += 4;
 
-        /* textures */
-        if (p + 4 + s->texture_count * 8 > end) break;
+        /* textures: slot(4) + texture_id(4) + width(4) + height(4) + format(4) = 20 bytes each */
+        if (p + 4 + s->texture_count * 20 > end) break;
         memcpy(p, &s->texture_count, 4); p += 4;
         for (uint32_t t = 0; t < s->texture_count; t++) {
             memcpy(p, &s->textures[t].slot,       4); p += 4;
             memcpy(p, &s->textures[t].texture_id, 4); p += 4;
+            memcpy(p, &s->textures[t].width,      4); p += 4;
+            memcpy(p, &s->textures[t].height,     4); p += 4;
+            memcpy(p, &s->textures[t].format,     4); p += 4;
         }
 
         /* shader params */
@@ -247,6 +276,7 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
  * ---------------------------------------------------------------------- */
 
 void gla_frame_on_swap(void) {
+    if (!gla_is_original_process()) return;
     if (!gla_ipc_is_connected()) return;
 
     uint32_t slot_index;

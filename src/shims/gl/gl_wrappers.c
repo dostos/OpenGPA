@@ -30,6 +30,7 @@ void gla_wrappers_init(void) {
 
     gla_real_gl.glActiveTexture = dlsym(RTLD_NEXT, "glActiveTexture");
     gla_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
+    gla_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
 
     gla_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
     gla_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
@@ -165,6 +166,23 @@ void glBindTexture(GLenum target, GLuint texture) {
     }
 }
 
+void glTexImage2D(GLenum target, GLint level, GLint internalformat,
+                  GLsizei width, GLsizei height, GLint border,
+                  GLenum format, GLenum type, const void* pixels) {
+    gla_init();
+    gla_real_gl.glTexImage2D(target, level, internalformat, width, height,
+                             border, format, type, pixels);
+    /* Track texture dimensions for level 0 of GL_TEXTURE_2D */
+    if (target == GL_TEXTURE_2D && level == 0) {
+        uint32_t tex_id = gla_shadow.bound_textures_2d[gla_shadow.active_texture_unit];
+        if (tex_id > 0) {
+            gla_shadow_tex_image_2d(&gla_shadow, tex_id,
+                                    (uint32_t)width, (uint32_t)height,
+                                    (uint32_t)internalformat);
+        }
+    }
+}
+
 /* --------------------------------------------------------------------------
  * Pipeline state wrappers
  * -------------------------------------------------------------------------- */
@@ -292,6 +310,7 @@ static __GLXextFuncPtr gla_resolve_wrapper(const char* name) {
     /* Textures */
     if (strcmp(name, "glActiveTexture") == 0)          return (__GLXextFuncPtr)glActiveTexture;
     if (strcmp(name, "glBindTexture") == 0)            return (__GLXextFuncPtr)glBindTexture;
+    if (strcmp(name, "glTexImage2D") == 0)             return (__GLXextFuncPtr)glTexImage2D;
     /* State */
     if (strcmp(name, "glEnable") == 0)                 return (__GLXextFuncPtr)glEnable;
     if (strcmp(name, "glDisable") == 0)                return (__GLXextFuncPtr)glDisable;

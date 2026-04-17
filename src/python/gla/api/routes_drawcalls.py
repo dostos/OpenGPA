@@ -25,7 +25,18 @@ def _texture_binding_to_dict(tex) -> Dict[str, Any]:
 
 
 def _pipeline_state_to_dict(ps) -> Dict[str, Any]:
+    viewport = ps.viewport
+    scissor = ps.scissor
     return {
+        "viewport_x": viewport[0],
+        "viewport_y": viewport[1],
+        "viewport_w": viewport[2],
+        "viewport_h": viewport[3],
+        "scissor_enabled": ps.scissor_enabled,
+        "scissor_x": scissor[0],
+        "scissor_y": scissor[1],
+        "scissor_w": scissor[2],
+        "scissor_h": scissor[3],
         "blend_enabled": ps.blend_enabled,
         "blend_src": ps.blend_src,
         "blend_dst": ps.blend_dst,

@@ -37,6 +37,9 @@ typedef struct {
     // Textures
     void (*glActiveTexture)(GLenum texture);
     void (*glBindTexture)(GLenum target, GLuint texture);
+    void (*glTexImage2D)(GLenum target, GLint level, GLint internalformat,
+                         GLsizei width, GLsizei height, GLint border,
+                         GLenum format, GLenum type, const void* pixels);
 
     // State
     void (*glEnable)(GLenum cap);

@@ -7,6 +7,7 @@
 #define GLA_MAX_TEXTURE_UNITS 32
 #define GLA_MAX_UNIFORMS 256
 #define GLA_MAX_VERTEX_ATTRIBS 16
+#define GLA_MAX_TEXTURES 4096
 
 /* GL enum constants (no GL headers needed) */
 #define GL_TEXTURE0             0x84C0
@@ -39,10 +40,20 @@ typedef struct {
     bool     active;
 } GlaShadowUniform;
 
+/* Per-texture dimension/format info, populated by glTexImage2D intercept */
+typedef struct {
+    uint32_t width;
+    uint32_t height;
+    uint32_t internal_format;
+} GlaTextureInfo;
+
 typedef struct {
     /* Texture bindings */
     uint32_t active_texture_unit;                       /* 0-based index */
     uint32_t bound_textures_2d[GLA_MAX_TEXTURE_UNITS];
+
+    /* Per-texture metadata (indexed by texture name/id) */
+    GlaTextureInfo texture_info[GLA_MAX_TEXTURES];
 
     /* Shader program */
     uint32_t        current_program;
@@ -80,6 +91,9 @@ void gla_shadow_init(GlaShadowState *state);
 /* Texture */
 void gla_shadow_active_texture(GlaShadowState *state, uint32_t texture_unit); /* GL_TEXTURE0+n */
 void gla_shadow_bind_texture_2d(GlaShadowState *state, uint32_t texture_id);
+void gla_shadow_tex_image_2d(GlaShadowState *state, uint32_t texture_id,
+                             uint32_t width, uint32_t height, uint32_t internal_format);
+const GlaTextureInfo* gla_shadow_get_texture_info(const GlaShadowState *state, uint32_t texture_id);
 
 /* Shader */
 void gla_shadow_use_program(GlaShadowState *state, uint32_t program_id);
