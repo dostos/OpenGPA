@@ -232,14 +232,9 @@ bool ControlSocketClient::wait_handshake_response() {
 
 bool ControlSocketClient::send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
     FrameReadyPayload p{};
-    // Store as big-endian
-    uint32_t hi = static_cast<uint32_t>(frame_id >> 32);
-    uint32_t lo = static_cast<uint32_t>(frame_id & 0xFFFFFFFF);
-    uint32_t hi_be = htonl(hi);
-    uint32_t lo_be = htonl(lo);
-    std::memcpy(&p.frame_id, &hi_be, 4);
-    std::memcpy(reinterpret_cast<uint8_t*>(&p.frame_id) + 4, &lo_be, 4);
-    p.shm_slot_index = htonl(slot_index);
+    // Native endian — matches the C shim's ipc_client.c
+    p.frame_id = frame_id;
+    p.shm_slot_index = slot_index;
     return send_message(MsgType::MSG_FRAME_READY, &p, sizeof(p));
 }
 

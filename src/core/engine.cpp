@@ -116,16 +116,6 @@ void Engine::run() {
             }
         }
 
-        // Drain SHM slots that were written directly by a shim
-        // (these arrive independently of FRAME_READY in direct-shm mode)
-        {
-            ShmRingBuffer::ReadSlot slot;
-            while ((slot = shm_->claim_read_slot()).data != nullptr) {
-                ingest_frame(slot.data, slot.size, /*frame_id=*/0);
-                shm_->release_read(slot.index);
-            }
-        }
-
         // Send pending control commands to shim clients
         send_control_to_clients();
     }
@@ -181,10 +171,10 @@ void Engine::process_client_messages(int client_fd) {
 
             // Decode big-endian fields
             uint32_t hi, lo;
-            std::memcpy(&hi, &fr.frame_id, 4);
-            std::memcpy(&lo, reinterpret_cast<const uint8_t*>(&fr.frame_id) + 4, 4);
-            uint64_t frame_id = (static_cast<uint64_t>(ntohl(hi)) << 32) | ntohl(lo);
-            uint32_t slot_index = ntohl(fr.shm_slot_index);
+            /* Shim sends FrameReadyPayload in native endian (not network order).
+             * Read fields directly — no ntohl conversion. */
+            uint64_t frame_id = fr.frame_id;
+            uint32_t slot_index = fr.shm_slot_index;
 
             handle_frame_ready(client_fd, frame_id, slot_index);
         }

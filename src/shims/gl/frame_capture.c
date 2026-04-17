@@ -9,15 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/* Declared in gl_shim.c — returns the PID that ran gla_init() */
-pid_t gla_get_init_pid(void);
-
-/* Fork guard: only capture frames in the original init process.
- * Child processes (from X11/DRI fork) would send empty frames that
- * overwrite the real app's captures. */
-static int gla_is_original_process(void) {
-    return getpid() == gla_get_init_pid();
-}
+/* Declared in gl_shim.c — lazy IPC init on first swap */
+void gla_ensure_ipc(void);
 
 /* GL constants not pulled from GL headers */
 #define GL_RGBA            0x1908
@@ -94,7 +87,6 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
                                  uint32_t instance_count) {
-    if (!gla_is_original_process()) return;
     if (!gla_ipc_is_connected()) return;
     if (gla_draw_call_count >= GLA_MAX_DRAW_CALLS_PER_FRAME) return;
 
@@ -276,7 +268,8 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
  * ---------------------------------------------------------------------- */
 
 void gla_frame_on_swap(void) {
-    if (!gla_is_original_process()) return;
+    /* Lazy IPC init — only the process that actually renders will connect */
+    gla_ensure_ipc();
     if (!gla_ipc_is_connected()) return;
 
     uint32_t slot_index;
