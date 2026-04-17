@@ -18,12 +18,20 @@ from typing import Callable, Optional
 
 import yaml
 
+from dataclasses import dataclass
+
 from gla.eval.curation.classify import classify_observed_helps
 from gla.eval.curation.commit import commit_scenario, log_rejection
 from gla.eval.curation.coverage_log import CoverageLog
 from gla.eval.curation.draft import DraftResult
 from gla.eval.curation.triage import TriageResult
 from gla.eval.curation.workdir import IssueWorkdir
+
+
+@dataclass
+class _NoValidateClassification:
+    verdict: str = "ambiguous"
+    evidence: str = "validation skipped (--no-validate)"
 
 
 def _hash(*parts: str) -> str:
@@ -55,6 +63,7 @@ class CurationPipeline:
         workdir_root: Path | str,
         coverage_log_path: Path | str,
         summary_path: Path | str,
+        skip_validate: bool = False,  # NEW: for dev environments without GLA stack
     ):
         self._discoverer = discoverer
         self._fetch = fetch_thread
@@ -67,6 +76,7 @@ class CurationPipeline:
         self._workdir_root = Path(workdir_root)
         self._log = CoverageLog(coverage_log_path)
         self._summary = Path(summary_path)
+        self._skip_validate = skip_validate
 
     def run_batch(self) -> None:
         candidates = self._discoverer.run()
@@ -203,47 +213,60 @@ class CurationPipeline:
         # source and md. The proposed_scenario_id is only a hint to the drafter.
         scenario_id = draft.scenario_id
 
-        vres = self._validator.validate(draft)
-        if not vres.ok:
-            log_rejection(
-                coverage_log=self._log,
-                summary_path=self._summary,
-                issue_url=cand.url,
-                source_type=cand.source_type,
-                triage_verdict=triage.verdict,
-                fingerprint=triage.fingerprint,
-                rejection_reason="symptom_mismatch_at_validation",
-            )
-            return
-
-        run_result = self._run_eval.run(scenario_id)
-        if run_result.scorer_ambiguous:
-            log_rejection(
-                coverage_log=self._log,
-                summary_path=self._summary,
-                issue_url=cand.url,
-                source_type=cand.source_type,
-                triage_verdict=triage.verdict,
-                fingerprint=triage.fingerprint,
-                rejection_reason="eval_scorer_ambiguous",
-            )
-            return
-
-        observed = classify_observed_helps(run_result.with_gla, run_result.code_only)
-        failure_mode: Optional[str] = None
-        failure_details: Optional[str] = None
-        if observed.verdict == "no":
-            try:
-                fm = self._failure_mode_fn(
-                    scenario_md=draft.md_body,
-                    with_gla_diagnosis=run_result.with_gla.diagnosis_text,
-                    code_only_diagnosis=run_result.code_only.diagnosis_text,
-                    ground_truth="",
+        if not self._skip_validate:
+            vres = self._validator.validate(draft)
+            if not vres.ok:
+                log_rejection(
+                    coverage_log=self._log,
+                    summary_path=self._summary,
+                    issue_url=cand.url,
+                    source_type=cand.source_type,
+                    triage_verdict=triage.verdict,
+                    fingerprint=triage.fingerprint,
+                    rejection_reason="symptom_mismatch_at_validation",
                 )
-                failure_mode = fm.category
-                failure_details = fm.details
-            except Exception:
-                failure_mode = "other"
+                return
+
+            run_result = self._run_eval.run(scenario_id)
+            if run_result.scorer_ambiguous:
+                log_rejection(
+                    coverage_log=self._log,
+                    summary_path=self._summary,
+                    issue_url=cand.url,
+                    source_type=cand.source_type,
+                    triage_verdict=triage.verdict,
+                    fingerprint=triage.fingerprint,
+                    rejection_reason="eval_scorer_ambiguous",
+                )
+                return
+
+            observed = classify_observed_helps(run_result.with_gla, run_result.code_only)
+            failure_mode: Optional[str] = None
+            failure_details: Optional[str] = None
+            if observed.verdict == "no":
+                try:
+                    fm = self._failure_mode_fn(
+                        scenario_md=draft.md_body,
+                        with_gla_diagnosis=run_result.with_gla.diagnosis_text,
+                        code_only_diagnosis=run_result.code_only.diagnosis_text,
+                        ground_truth="",
+                    )
+                    failure_mode = fm.category
+                    failure_details = fm.details
+                except Exception:
+                    failure_mode = "other"
+        else:
+            # Skip validation entirely: write artifacts directly, set observed to ambiguous.
+            # Validator normally writes the .c and .md files, so we do it manually here.
+            c_path = self._eval_dir / f"{draft.scenario_id}.c"
+            md_path = self._eval_dir / f"{draft.scenario_id}.md"
+            self._eval_dir.mkdir(parents=True, exist_ok=True)
+            c_path.write_text(draft.c_source)
+            md_path.write_text(draft.md_body)
+            observed = _NoValidateClassification()
+            run_result = None  # prevent eval_summary below from using it
+            failure_mode = None
+            failure_details = None
 
         from gla.eval.scenario import parse_key_value_bullets
 
@@ -258,6 +281,19 @@ class CurationPipeline:
             failure_category=failure_mode,
             failure_details=failure_details,
         )
+
+        eval_summary = None
+        if run_result is not None:
+            eval_summary = {
+                "with_gla": {
+                    "correct_diagnosis": run_result.with_gla.correct_diagnosis,
+                    "total_tokens": run_result.with_gla.total_tokens,
+                },
+                "code_only": {
+                    "correct_diagnosis": run_result.code_only.correct_diagnosis,
+                    "total_tokens": run_result.code_only.total_tokens,
+                },
+            }
 
         commit_scenario(
             eval_dir=self._eval_dir,
@@ -274,16 +310,7 @@ class CurationPipeline:
             predicted_helps=predicted,
             observed_helps=observed.verdict,
             failure_mode=failure_mode,
-            eval_summary={
-                "with_gla": {
-                    "correct_diagnosis": run_result.with_gla.correct_diagnosis,
-                    "total_tokens": run_result.with_gla.total_tokens,
-                },
-                "code_only": {
-                    "correct_diagnosis": run_result.code_only.correct_diagnosis,
-                    "total_tokens": run_result.code_only.total_tokens,
-                },
-            },
+            eval_summary=eval_summary,
         )
 
     @staticmethod
@@ -350,6 +377,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="LLM backend: 'anthropic' uses the SDK (requires ANTHROPIC_API_KEY); "
                              "'claude-code' shells to the `claude` CLI; 'auto' picks claude-code "
                              "if ANTHROPIC_API_KEY is unset.")
+    parser.add_argument("--no-validate", action="store_true",
+                        help="Skip Validator + Run-Eval stages (for dev environments "
+                             "without xvfb-run or a GLA shim). Commits scenarios based "
+                             "on triage + draft only. Do not use in production runs.")
     return parser.parse_args(argv)
 
 
@@ -425,6 +456,7 @@ def main(argv: list[str] | None = None) -> int:
         workdir_root=args.workdir,
         coverage_log_path=args.log,
         summary_path=args.summary,
+        skip_validate=args.no_validate,
     )
     pipeline.run_batch()
     return 0

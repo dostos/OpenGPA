@@ -501,3 +501,52 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
     assert "**Verdict**: yes" in md_text
     summary = (tmp_path / "gaps.md").read_text()
     assert "Scenarios committed: 1" in summary
+
+
+def test_pipeline_skip_validate_commits_without_running_validator(tmp_path):
+    """With skip_validate=True, the pipeline writes scenario files and logs
+    the commit, without invoking the validator or run_eval."""
+    from unittest.mock import MagicMock
+    from gla.eval.curation.pipeline import CurationPipeline
+    from gla.eval.curation.discover import DiscoveryCandidate
+    from gla.eval.curation.triage import IssueThread, TriageResult
+    from gla.eval.curation.draft import DraftResult
+
+    candidate = DiscoveryCandidate(url="https://github.com/x/y/issues/1",
+                                    source_type="issue", title="t")
+    triage = TriageResult(verdict="in_scope", fingerprint="state_leak:unique",
+                           rejection_reason=None, summary="s")
+    draft = DraftResult(scenario_id="r1_test",
+                         c_source="// SOURCE: https://github.com/x/y/issues/1\nint main(){}",
+                         md_body="# R1_TEST\n## Predicted GLA Helpfulness\n- **Verdict**: yes\n")
+
+    discoverer = MagicMock(); discoverer.run.return_value = [candidate]
+    fetch = MagicMock(); fetch.return_value = IssueThread(url=candidate.url, title="t", body="b")
+    triager = MagicMock(); triager.triage.return_value = triage
+    drafter = MagicMock(); drafter.draft.return_value = draft
+    validator = MagicMock()  # should NOT be called
+    run_eval = MagicMock()   # should NOT be called
+
+    p = CurationPipeline(
+        discoverer=discoverer, fetch_thread=fetch, triager=triager,
+        drafter=drafter, validator=validator, run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval", workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+        skip_validate=True,
+    )
+    p.run_batch()
+
+    validator.validate.assert_not_called()
+    run_eval.run.assert_not_called()
+    assert (tmp_path / "eval" / "r1_test.c").exists()
+    assert (tmp_path / "eval" / "r1_test.md").exists()
+
+
+def test_parse_args_no_validate_flag():
+    from gla.eval.curation.pipeline import parse_args
+    args = parse_args(["--no-validate"])
+    assert args.no_validate is True
+    args_default = parse_args([])
+    assert args_default.no_validate is False
