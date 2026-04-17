@@ -22,14 +22,32 @@ The content script (`content.js`) injects `interceptor.js` into the page context
 
 ## Loading the Extension in Chrome
 
-1. Open `chrome://extensions`
-2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked**
-4. Select `src/shims/webgl/extension/`
+### Step 1: Navigate to Extensions Page
+1. Open Chrome and go to `chrome://extensions`
 
-The extension patches all WebGL contexts in every tab automatically.
+### Step 2: Enable Developer Mode
+- Toggle **Developer mode** in the top-right corner
+
+### Step 3: Load Unpacked Extension
+1. Click **Load unpacked**
+2. Navigate to the GLA repository and select `src/shims/webgl/extension/`
+3. The extension will appear in your extensions list as "GLA WebGL Debugger"
+
+The extension patches all WebGL contexts in every tab automatically once loaded.
+
+### Step 4: Verify Extension is Running
+- You should see "GLA WebGL Debugger (0.1.0)" in your extensions list
+- Look for the extension icon in your toolbar (or in the extension menu)
 
 ## Starting the Bridge
+
+The bridge is a Node.js service that relays WebGL interception data from the browser to the GLA engine.
+
+### Prerequisites
+- Node.js 14+ installed
+- WebSocket client (`ws` npm package)
+
+### Setup and Start
 
 ```bash
 cd src/shims/webgl/bridge
@@ -37,8 +55,14 @@ npm install
 npm start
 ```
 
-The bridge must be running before the GLA engine (or at least before the first
-WebGL frame is rendered).
+You should see output like:
+```
+Bridge listening on ws://127.0.0.1:18081
+Bridge connected to IPC socket at /tmp/gla.sock
+```
+
+**Important**: The bridge must be running **before** the GLA engine (or at least before the first
+WebGL frame is rendered in the browser).
 
 ## Environment Variables
 
