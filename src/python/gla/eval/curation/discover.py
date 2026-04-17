@@ -2,7 +2,24 @@ from __future__ import annotations
 import json
 import subprocess
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gla.eval.curation.coverage_log import CoverageLog
+
+
+DEFAULT_QUERIES: dict[str, list[str]] = {
+    "issue": [
+        'repo:mrdoob/three.js is:issue is:open label:"Rendering"',
+        'repo:BabylonJS/Babylon.js is:issue label:"bug"',
+        'repo:playcanvas/engine is:issue label:"area: rendering"',
+        'repo:godotengine/godot is:issue label:"topic:rendering"',
+    ],
+    "commit": [
+        'repo:mrdoob/three.js "fix:" shader',
+        'repo:godotengine/godot "fix:" depth',
+    ],
+}
 
 
 @dataclass
@@ -54,4 +71,45 @@ class GitHubSearch:
                 created_at=item.get("commit", {}).get("author", {}).get("date"),
                 metadata={"sha": item.get("sha")},
             ))
+        return out
+
+
+class Discoverer:
+    def __init__(self, search, coverage_log: "CoverageLog",
+                 queries: dict[str, list[str]], batch_quota: int = 20):
+        self._search = search
+        self._log = coverage_log
+        self._queries = queries
+        self._quota = batch_quota
+
+    def run(self) -> list[DiscoveryCandidate]:
+        seen: set[str] = set()
+        out: list[DiscoveryCandidate] = []
+
+        for q in self._queries.get("issue", []):
+            if len(out) >= self._quota:
+                break
+            for cand in self._search.search_issues(q):
+                if len(out) >= self._quota:
+                    break
+                if cand.url in seen:
+                    continue
+                if self._log.contains_url(cand.url):
+                    continue
+                seen.add(cand.url)
+                out.append(cand)
+
+        for q in self._queries.get("commit", []):
+            if len(out) >= self._quota:
+                break
+            for cand in self._search.search_commits(q):
+                if len(out) >= self._quota:
+                    break
+                if cand.url in seen:
+                    continue
+                if self._log.contains_url(cand.url):
+                    continue
+                seen.add(cand.url)
+                out.append(cand)
+
         return out
