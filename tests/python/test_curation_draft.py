@@ -1,0 +1,116 @@
+from unittest.mock import MagicMock
+from gla.eval.curation.draft import Draft, DraftResult
+from gla.eval.curation.llm_client import LLMResponse
+from gla.eval.curation.triage import IssueThread, TriageResult
+
+def _fake_response(text: str) -> LLMResponse:
+    return LLMResponse(text=text, input_tokens=100, output_tokens=50,
+                       cache_creation_input_tokens=0, cache_read_input_tokens=0,
+                       stop_reason="end_turn")
+
+_C_CODE = """// SOURCE: https://x/1
+#include <GL/gl.h>
+int main() { return 0; }
+"""
+
+_MD_BODY = """# R1_TEST: Test scenario
+
+## Bug
+Something
+
+## Expected Correct Output
+Red quad
+
+## Actual Broken Output
+Blue quad
+
+## Ground Truth Diagnosis
+> "the texture is wrong" (quoted from upstream)
+
+The issue is ...
+
+## Difficulty Rating
+3/5
+
+## Adversarial Principles
+- Stale state
+
+## How GLA Helps
+inspect_drawcall exposes the wrong binding.
+
+## Source
+- **URL**: https://github.com/x/y/issues/1
+- **Type**: issue
+- **Date**: 2024-03-17
+- **Commit SHA**: (n/a)
+- **Attribution**: Reported by @u
+
+## Tier
+core
+
+## API
+opengl
+
+## Framework
+none
+
+## Bug Signature
+```yaml
+type: color_histogram_in_region
+spec:
+  region: [0, 0, 1, 1]
+  dominant_color: [1, 0, 0, 1]
+  tolerance: 0.1
+```
+
+## Predicted GLA Helpfulness
+- **Verdict**: yes
+- **Reasoning**: inspect_drawcall exposes it.
+"""
+
+def test_draft_parses_c_and_md_blocks():
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        f"```c\n{_C_CODE}```\n\n```markdown\n{_MD_BODY}```"
+    )
+    d = Draft(llm_client=llm)
+    thread = IssueThread(url="https://github.com/x/y/issues/1",
+                         title="t", body="b", comments=[])
+    triage = TriageResult(verdict="in_scope",
+                          fingerprint="state_leak:tex_binding",
+                          rejection_reason=None, summary="")
+
+    result = d.draft(thread, triage, scenario_id="r1_test")
+    assert "int main()" in result.c_source
+    assert "SOURCE: https://" in result.c_source
+    assert "## Bug Signature" in result.md_body
+    assert result.scenario_id == "r1_test"
+
+def test_draft_rejects_missing_source_comment():
+    """C source without // SOURCE: comment should fail validation."""
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        "```c\nint main(){return 0;}\n```\n\n```markdown\n# x\n```"
+    )
+    d = Draft(llm_client=llm)
+    import pytest
+    with pytest.raises(ValueError, match="SOURCE"):
+        d.draft(IssueThread(url="https://x/1", title="t", body="b"),
+                TriageResult(verdict="in_scope", fingerprint="other:x",
+                             rejection_reason=None, summary=""),
+                scenario_id="r1_test")
+
+def test_draft_rejects_missing_blockquote_in_diagnosis():
+    """Ground Truth Diagnosis without a blockquote (>) fails validation."""
+    md_without_quote = _MD_BODY.replace('> "the texture is wrong" (quoted from upstream)\n\n', '')
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        f"```c\n{_C_CODE}```\n\n```markdown\n{md_without_quote}```"
+    )
+    d = Draft(llm_client=llm)
+    import pytest
+    with pytest.raises(ValueError, match="citation"):
+        d.draft(IssueThread(url="https://x/1", title="t", body="b"),
+                TriageResult(verdict="in_scope", fingerprint="other:x",
+                             rejection_reason=None, summary=""),
+                scenario_id="r1_test")
