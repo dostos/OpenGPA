@@ -2,14 +2,16 @@
 //
 // Adversarial Eval Scenario E6: Depth Buffer Precision
 //
-// Bug: Projection matrix uses near=0.001, far=100000. The resulting
-// near/far ratio (~1e8) exhausts 24-bit depth buffer precision.
-// Two quads placed at z=-50 and z=-50.01 map to nearly identical
-// depth values, causing z-fighting / flickering.
+// Bug: near=0.001, far=100000 (ratio ~1e8) exhausts 24-bit depth buffer
+// precision at the scene's working depth. Two overlapping quads placed at
+// z=-0.5 and z=-0.500001 map to identical depth buffer values, causing
+// z-fighting (alternating colors per frame / random winner per draw).
 //
 // GLA diagnosis:
-//   query_scene(camera)  -> near=0.001, far=100000
-//   query_pixel at fighting area -> depth values differ by < epsilon
+//   inspect_drawcall(pipeline)  -> depth_test=true
+//   query_pixel at center       -> alternating green/red across frames
+//
+// Clear color: dark purple (0.15, 0.0, 0.15)
 
 #include <X11/Xlib.h>
 #include <GL/gl.h>
@@ -50,6 +52,7 @@ typedef void   (*PFNGLDELETEVERTEXARRAYSPROC)(GLsizei, const GLuint *);
     type name = (type)glXGetProcAddress((const GLubyte *)#name); \
     if (!name) { fprintf(stderr, "Cannot resolve " #name "\n"); return 1; }
 
+/* Vertex shader: transforms aPos with uMVP, passes uColor through */
 static const char *vert_src =
     "#version 120\n"
     "attribute vec3 aPos;\n"
@@ -62,38 +65,20 @@ static const char *frag_src =
     "void main() { gl_FragColor = uColor; }\n";
 
 /* Build column-major perspective matrix.
- * BUG: near=0.001, far=100000 => ratio ~1e8, catastrophic depth precision loss */
+ * BUG: near=0.001, far=100000 => ratio ~1e8.
+ * At z=-0.5 the depth precision is ~0.0001 per LSB, so a 0.000001 difference
+ * rounds to the same depth value => z-fighting. */
 static void make_perspective(float *m, float fovy_deg, float aspect,
                               float near_z, float far_z)
 {
-    float f = 1.0f / tanf(fovy_deg * 3.14159265f / 360.0f);
+    float f  = 1.0f / tanf(fovy_deg * 3.14159265f / 360.0f);
     float nf = 1.0f / (near_z - far_z);
     memset(m, 0, 16 * sizeof(float));
-    m[0]  = f / aspect;
-    m[5]  = f;
+    m[0]  =  f / aspect;
+    m[5]  =  f;
     m[10] = (far_z + near_z) * nf;
     m[11] = -1.0f;
-    m[14] = 2.0f * far_z * near_z * nf;
-}
-
-/* Simple translation matrix (column-major) */
-static void make_translate(float *m, float tx, float ty, float tz)
-{
-    memset(m, 0, 16 * sizeof(float));
-    m[0] = m[5] = m[10] = m[15] = 1.0f;
-    m[12] = tx; m[13] = ty; m[14] = tz;
-}
-
-static void mat4_mul(float *out, const float *a, const float *b)
-{
-    float tmp[16];
-    for (int col = 0; col < 4; col++)
-        for (int row = 0; row < 4; row++) {
-            tmp[col*4+row] = 0.0f;
-            for (int k = 0; k < 4; k++)
-                tmp[col*4+row] += a[k*4+row] * b[col*4+k];
-        }
-    memcpy(out, tmp, 16 * sizeof(float));
+    m[14] =  2.0f * far_z * near_z * nf;
 }
 
 static GLuint compile_shader(
@@ -170,6 +155,7 @@ int main(void)
 
     glViewport(0, 0, 400, 300);
     glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);
 
     GLuint vs = compile_shader(glCreateShader, glShaderSource, glCompileShader,
                                glGetShaderiv, glGetShaderInfoLog,
@@ -195,23 +181,24 @@ int main(void)
     GLint colorLoc = glGetUniformLocation(prog, "uColor");
     GLint posLoc   = glGetAttribLocation(prog,  "aPos");
 
-    /* Two overlapping quads (as two triangles each) at z=-50 and z=-50.01.
-     * With the bugged near/far, these map to depth values within ~1 ULP. */
+    /* Quad A (green) at z=-0.5, Quad B (red) at z=-0.500001.
+     * With near=0.001 far=100000, depth precision is so coarse at z=-0.5 that
+     * both quads map to the same depth buffer value => z-fighting. */
     static const GLfloat verts[] = {
-        /* Quad A at z = -50 */
-        -0.5f, -0.5f, -50.0f,
-         0.5f, -0.5f, -50.0f,
-         0.5f,  0.5f, -50.0f,
-        -0.5f, -0.5f, -50.0f,
-         0.5f,  0.5f, -50.0f,
-        -0.5f,  0.5f, -50.0f,
-        /* Quad B at z = -50.01 (slightly behind A) */
-        -0.5f, -0.5f, -50.01f,
-         0.5f, -0.5f, -50.01f,
-         0.5f,  0.5f, -50.01f,
-        -0.5f, -0.5f, -50.01f,
-         0.5f,  0.5f, -50.01f,
-        -0.5f,  0.5f, -50.01f,
+        /* Quad A at z = -0.5 (green — should be in front) */
+        -0.6f, -0.6f, -0.5f,
+         0.6f, -0.6f, -0.5f,
+         0.6f,  0.6f, -0.5f,
+        -0.6f, -0.6f, -0.5f,
+         0.6f,  0.6f, -0.5f,
+        -0.6f,  0.6f, -0.5f,
+        /* Quad B at z = -0.500001 (red — should be hidden behind A) */
+        -0.6f, -0.6f, -0.500001f,
+         0.6f, -0.6f, -0.500001f,
+         0.6f,  0.6f, -0.500001f,
+        -0.6f, -0.6f, -0.500001f,
+         0.6f,  0.6f, -0.500001f,
+        -0.6f,  0.6f, -0.500001f,
     };
 
     GLuint vao = 0, vbo = 0;
@@ -224,31 +211,26 @@ int main(void)
     glVertexAttribPointer((GLuint)posLoc, 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(GLfloat), (void *)0);
 
-    /* BUG: near/far ratio of 1e8 destroys depth precision */
-    float proj[16];
-    make_perspective(proj, 45.0f, 400.0f / 300.0f, 0.001f, 100000.0f);
-
-    /* Identity view (camera at origin looking -Z) */
-    float view[16];
-    make_translate(view, 0.0f, 0.0f, 0.0f);
-
+    /* BUG: near/far ratio of ~1e8 destroys depth precision.
+     * Use identity (no translation) — quads are in front of origin along -Z. */
     float mvp[16];
-    mat4_mul(mvp, proj, view);
+    make_perspective(mvp, 90.0f, 400.0f / 300.0f, 0.001f, 100000.0f);
 
     for (int i = 0; i < 5; i++) {
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        /* Clear to dark purple */
+        glClearColor(0.15f, 0.0f, 0.15f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(prog);
         glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, mvp);
+        glBindVertexArray(vao);
 
-        /* Draw Quad A (red) */
-        glUniform4f(colorLoc, 1.0f, 0.2f, 0.2f, 1.0f);
+        /* Draw Quad A (green) — should win depth test but z-fights */
+        glUniform4f(colorLoc, 0.0f, 0.9f, 0.0f, 1.0f);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        /* Draw Quad B (blue) — should be hidden behind A,
-         * but z-fighting causes both to appear randomly */
-        glUniform4f(colorLoc, 0.2f, 0.2f, 1.0f, 1.0f);
+        /* Draw Quad B (red) — should lose depth test but z-fights */
+        glUniform4f(colorLoc, 0.9f, 0.0f, 0.0f, 1.0f);
         glDrawArrays(GL_TRIANGLES, 6, 6);
 
         glXSwapBuffers(dpy, win);

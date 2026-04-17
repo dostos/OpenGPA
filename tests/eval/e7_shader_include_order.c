@@ -2,14 +2,15 @@
 //
 // Adversarial Eval Scenario E7: Shader Include Order / Wrong saturate()
 //
-// Bug: The fragment shader defines saturate(x) = max(x, 0.0) instead of
-// clamp(x, 0.0, 1.0). A correct definition is present but commented out
-// above it (simulating an include-order mistake where the wrong block wins).
-// Lighting computations produce HDR values > 1.0 that are never clamped,
-// causing over-bright highlights.
+// Bug: The fragment shader defines saturate(x) = max(x, 0.0) — missing the
+// upper clamp to 1.0. A specular-like term multiplied by 4.0 produces values
+// well above 1.0. The GPU clamps at write-to-framebuffer, so the highlight
+// appears full white (255,255,255) instead of the expected soft colour.
 //
 // GLA diagnosis:
-//   query_pixel at bright highlight area -> color channel > 1.0 (raw framebuffer)
+//   query_pixel at bright centre -> R=255, G=255, B=255 (should be softer)
+//
+// Clear color: dark green (0.0, 0.1, 0.0)
 
 #include <X11/Xlib.h>
 #include <GL/gl.h>
@@ -61,33 +62,35 @@ static const char *vert_src =
     "    gl_Position = vec4(aPos, 1.0);\n"
     "}\n";
 
-/* BUG: The correct saturate() is commented out.
- * The incorrect version (missing upper clamp to 1.0) is active.
- * This simulates the wrong "include block" winning due to ordering. */
+/* BUG: saturate() is missing the upper clamp.
+ * The correct version is commented out (wrong include block wins).
+ * Light facing the surface directly: NdotL=1.0, specular = 1.0 * 4.0 = 4.0.
+ * Without clamp, color = vec3(1.0) + vec3(4.0) = vec3(5.0).
+ * GPU clamps to (1,1,1) on framebuffer write => full white highlight.
+ * Correct saturate would give color = vec3(1.0) + vec3(1.0) = vec3(2.0),
+ * still clamped, but the shader logic is wrong in a detectable way. */
 static const char *frag_src =
     "#version 120\n"
     "varying vec3 vNorm;\n"
     "varying vec3 vPos;\n"
     "uniform vec3 uLightDir;\n"
     "\n"
-    "/* === include: math_utils_v1.glsl (WRONG version, no upper clamp) === */\n"
+    "/* === include: math_utils_v1.glsl (WRONG — missing upper clamp) === */\n"
     "float saturate(float x) { return max(x, 0.0); }\n"
     "/* === end include === */\n"
     "\n"
-    "/* === include: math_utils_v2.glsl (correct version — COMMENTED OUT) ===\n"
+    "/* === include: math_utils_v2.glsl (correct — COMMENTED OUT) ===\n"
     "float saturate(float x) { return clamp(x, 0.0, 1.0); }\n"
     "=== end include === */\n"
     "\n"
     "void main() {\n"
-    "    vec3 N = normalize(vNorm);\n"
-    "    vec3 L = normalize(uLightDir);\n"
-    "    /* Diffuse lighting: NdotL can be in [0,1] normally.\n"
-    "     * With a very bright light (multiplied by 3.0) and wrong saturate,\n"
-    "     * specular term exceeds 1.0 without being clamped. */\n"
+    "    vec3 N      = normalize(vNorm);\n"
+    "    vec3 L      = normalize(uLightDir);\n"
     "    float NdotL = saturate(dot(N, L));\n"
-    "    float specular = saturate(pow(NdotL, 4.0) * 3.0); /* exceeds 1.0 */\n"
-    "    vec3 color = vec3(NdotL) + vec3(specular);\n"
-    "    /* Without proper saturation, color channels can be > 1.0 */\n"
+    "    /* specular: with wrong saturate, pow result * 4.0 can exceed 1.0 */\n"
+    "    float spec  = saturate(pow(NdotL, 2.0) * 4.0);\n"
+    "    /* diffuse tinted orange, specular white */\n"
+    "    vec3 color  = vec3(NdotL * 0.8, NdotL * 0.4, 0.0) + vec3(spec);\n"
     "    gl_FragColor = vec4(color, 1.0);\n"
     "}\n";
 
@@ -188,15 +191,16 @@ int main(void)
     GLint posLoc   = glGetAttribLocation(prog,  "aPos");
     GLint normLoc  = glGetAttribLocation(prog,  "aNorm");
 
-    /* Quad covering center of screen, normal pointing toward camera */
+    /* Quad centred on screen, normal pointing straight at camera (+Z).
+     * Light also from +Z => NdotL = 1.0, spec = 4.0, highlight is white. */
     static const GLfloat verts[] = {
         /* x      y     z      nx    ny    nz */
-        -0.6f, -0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
-         0.6f, -0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
-         0.6f,  0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.6f, -0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
-         0.6f,  0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
-        -0.6f,  0.6f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.7f, -0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
+         0.7f, -0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
+         0.7f,  0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.7f, -0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
+         0.7f,  0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
+        -0.7f,  0.7f,  0.0f,  0.0f, 0.0f, 1.0f,
     };
 
     GLuint vao = 0, vbo = 0;
@@ -214,12 +218,12 @@ int main(void)
                           (void *)(3 * sizeof(GLfloat)));
 
     for (int i = 0; i < 5; i++) {
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        /* Clear to dark green */
+        glClearColor(0.0f, 0.1f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(prog);
-        /* Light directly facing the surface: NdotL = 1.0, specular = 3.0.
-         * Correct saturate would clamp to 1.0; wrong one leaves it at 3.0. */
+        /* Light directly facing surface: NdotL=1.0, spec becomes 4.0 */
         glUniform3f(lightLoc, 0.0f, 0.0f, 1.0f);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);

@@ -1,15 +1,15 @@
 // tests/eval/e9_scissor_not_reset.c
 //
-// Adversarial Eval Scenario E9: Scissor Rect Not Reset
+// Adversarial Eval Scenario E9: Scissor Rect Not Reset Between Passes
 //
-// Bug: A UI pass enables scissor test with a small rect
-// (100, 100, 200, 100). The subsequent 3D pass forgets to disable the
-// scissor test. All 3D geometry is clipped to the UI scissor rect.
-//
-// Result: 3D objects appear only within the small UI rectangle.
+// Bug: Pass 1 (UI) enables GL_SCISSOR_TEST and sets glScissor(100,100,200,100).
+// A white quad is drawn (UI element). Pass 2 (3D) omits glDisable(GL_SCISSOR_TEST).
+// The large blue triangle is clipped to the UI scissor rectangle.
 //
 // GLA diagnosis:
-//   inspect_drawcall(pipeline) for 3D draw -> scissor_enabled=true, rect=(100,100,200,100)
+//   inspect_drawcall(1) pipeline -> scissor_enabled=true, rect=(100,100,200,100)
+//
+// Clear color: dark red (0.15, 0.0, 0.0)
 
 #include <X11/Xlib.h>
 #include <GL/gl.h>
@@ -154,8 +154,8 @@ int main(void)
     GLint colorLoc = glGetUniformLocation(prog, "uColor");
     GLint posLoc   = glGetAttribLocation(prog,  "aPos");
 
-    /* UI quad: a small rectangle in NDC representing a UI element.
-     * In screen space this covers roughly x=[100,300], y=[100,200] at 400x300 */
+    /* UI quad: small white rectangle representing a UI panel.
+     * NDC maps to roughly screen rect x=[100,300], y=[100,200] at 400x300. */
     static const GLfloat ui_verts[] = {
         -0.5f, -0.33f,
          0.5f, -0.33f,
@@ -165,11 +165,13 @@ int main(void)
         -0.5f,  0.33f,
     };
 
-    /* 3D scene: a large triangle covering most of the screen */
+    /* 3D scene: large blue triangle intended to fill most of the screen.
+     * Due to the leaking scissor rect, only the part inside (100,100,200,100)
+     * is visible. */
     static const GLfloat scene_verts[] = {
-        -0.9f, -0.9f,
-         0.9f, -0.9f,
-         0.0f,  0.9f,
+        -0.95f, -0.95f,
+         0.95f, -0.95f,
+         0.0f,   0.95f,
     };
 
     GLuint vao_ui = 0, vbo_ui = 0;
@@ -193,25 +195,26 @@ int main(void)
                           2 * sizeof(GLfloat), (void *)0);
 
     for (int i = 0; i < 5; i++) {
-        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+        /* Clear to dark red */
+        glClearColor(0.15f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        /* === UI Pass ===
-         * Set a small scissor rect for UI clipping and draw a UI element. */
+        /* === Pass 1: UI ===
+         * Enable scissor test with a small rect and draw a white UI quad. */
         glScissor(100, 100, 200, 100);
         glEnable(GL_SCISSOR_TEST);
 
         glUseProgram(prog);
-        glUniform4f(colorLoc, 0.8f, 0.8f, 0.0f, 1.0f); /* yellow UI element */
+        glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f); /* white UI element */
         glBindVertexArray(vao_ui);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        /* === 3D Scene Pass ===
-         * BUG: glDisable(GL_SCISSOR_TEST) is missing here.
-         * The scissor rect from the UI pass still applies. */
-        /* glDisable(GL_SCISSOR_TEST); <-- FIX: uncomment this line */
+        /* === Pass 2: 3D scene ===
+         * BUG: glDisable(GL_SCISSOR_TEST) missing — scissor rect leaks.
+         * Fix: uncomment the line below. */
+        /* glDisable(GL_SCISSOR_TEST); */
 
-        glUniform4f(colorLoc, 0.2f, 0.6f, 1.0f, 1.0f); /* blue 3D triangle */
+        glUniform4f(colorLoc, 0.0f, 0.2f, 0.9f, 1.0f); /* blue 3D triangle */
         glBindVertexArray(vao_scene);
         glDrawArrays(GL_TRIANGLES, 0, 3);
 

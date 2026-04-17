@@ -1,17 +1,18 @@
 // tests/eval/e8_race_texture_upload.c
 //
-// Adversarial Eval Scenario E8: Race Condition Texture Upload
+// Adversarial Eval Scenario E8: Race Condition / Partial Texture Upload
 //
-// Bug: A 1x1 white placeholder texture is uploaded to bootstrap the texture
-// object. The intended 64x64 checkerboard upload is guarded by a flag
-// (upload_complete) that is never set to 1, simulating a race condition
-// where the real upload never fires (e.g., background thread stalls).
+// Bug: A 4x4 coloured checkerboard texture is intended, but only a 1x1
+// placeholder (solid cyan texel) is ever uploaded. The 4x4 glTexImage2D call
+// is commented out, simulating a background loader thread that stalls before
+// completing the upload.
 //
-// Result: object renders with 1x1 white texture instead of the 64x64
-// checkerboard pattern.
+// Result: entire quad renders as a uniform cyan colour — no checkerboard.
 //
 // GLA diagnosis:
-//   inspect_drawcall(textures) -> texture dimensions 1x1, not 64x64
+//   inspect_drawcall(textures) -> texture width=1, height=1 (expected 4x4)
+//
+// Clear color: dark cyan (0.0, 0.1, 0.1)
 
 #include <X11/Xlib.h>
 #include <GL/gl.h>
@@ -85,21 +86,6 @@ static GLuint compile_shader(
     return id;
 }
 
-/* Build a 64x64 checkerboard pattern (RGBA) */
-static void make_checkerboard(unsigned char *buf, int w, int h)
-{
-    for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-            int tile = ((x / 8) + (y / 8)) % 2;
-            unsigned char v = tile ? 255 : 0;
-            buf[(y * w + x) * 4 + 0] = v;
-            buf[(y * w + x) * 4 + 1] = v;
-            buf[(y * w + x) * 4 + 2] = v;
-            buf[(y * w + x) * 4 + 3] = 255;
-        }
-    }
-}
-
 int main(void)
 {
     Display *dpy = XOpenDisplay(NULL);
@@ -171,32 +157,38 @@ int main(void)
     glDeleteShader(vs);
     glDeleteShader(fs);
 
-    GLint texLoc  = glGetUniformLocation(prog, "uTex");
-    GLint posLoc  = glGetAttribLocation(prog,  "aPos");
-    GLint uvLoc   = glGetAttribLocation(prog,  "aUV");
+    GLint texLoc = glGetUniformLocation(prog, "uTex");
+    GLint posLoc = glGetAttribLocation(prog,  "aPos");
+    GLint uvLoc  = glGetAttribLocation(prog,  "aUV");
 
-    /* Create texture and upload 1x1 white placeholder */
+    /* Create texture object */
     GLuint tex = 0;
     glGenTextures(1, &tex);
     glBindTexture(GL_TEXTURE_2D, tex);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    /* Step 1: upload 1x1 white placeholder (simulates "texture object is ready
-     * but real data not yet uploaded") */
-    unsigned char white_1x1[4] = { 255, 255, 255, 255 };
+    /* Step 1: upload 1x1 cyan placeholder.
+     * Simulates the texture object being "ready" but data not yet present. */
+    unsigned char cyan_1x1[4] = { 0, 220, 220, 255 };
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0,
-                 GL_RGBA, GL_UNSIGNED_BYTE, white_1x1);
+                 GL_RGBA, GL_UNSIGNED_BYTE, cyan_1x1);
 
-    /* Step 2 (BUG): should upload the real 64x64 checkerboard here,
-     * but the flag is never set (simulates stalled background thread). */
-    int upload_complete = 0; /* BUG: should be set to 1 by loader thread */
-    if (upload_complete) {
-        unsigned char checker[64 * 64 * 4];
-        make_checkerboard(checker, 64, 64);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0,
-                     GL_RGBA, GL_UNSIGNED_BYTE, checker);
+    /* Step 2 (BUG): the 4x4 real upload never happens — loader thread stalled.
+     * Uncomment the block below to fix the bug.
+    {
+        static const unsigned char checker4x4[4 * 4 * 4] = {
+            255,  0,255,255,   0,  0,  0,255,  255,  0,255,255,   0,  0,  0,255,
+              0,  0,  0,255, 255,  0,255,255,    0,  0,  0,255,  255,  0,255,255,
+            255,  0,255,255,   0,  0,  0,255,  255,  0,255,255,   0,  0,  0,255,
+              0,  0,  0,255, 255,  0,255,255,    0,  0,  0,255,  255,  0,255,255,
+        };
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 4, 4, 0,
+                     GL_RGBA, GL_UNSIGNED_BYTE, checker4x4);
     }
+    */
 
     /* Quad covering most of the viewport with UV coordinates */
     static const GLfloat verts[] = {
@@ -224,7 +216,8 @@ int main(void)
                           (void *)(2 * sizeof(GLfloat)));
 
     for (int i = 0; i < 5; i++) {
-        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        /* Clear to dark cyan */
+        glClearColor(0.0f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(prog);

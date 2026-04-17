@@ -2,18 +2,19 @@
 //
 // Adversarial Eval Scenario E10: Compensating View/Projection Bugs
 //
-// Bug 1: View matrix uses left-handed lookAt (forward = -(target - eye)),
-//        flipping the view direction.
-// Bug 2: Projection matrix uses depth range [1,-1] (inverted Z), which
-//        partially compensates for the inverted view direction.
+// Bug 1 (view): buggy_lookat uses forward = eye - center (negated).
+//   Correct: forward = normalize(center - eye).
+// Bug 2 (projection): m[10] and m[14] are negated vs. standard OpenGL perspective.
 //
-// For the default camera position (looking straight at the scene center),
-// the two errors cancel and the scene appears correct. However, objects
-// placed off-axis appear mirrored on the X axis.
+// For the centred quad (symmetric about X=0), the two errors cancel and it
+// renders correctly. For the off-centre quad (shifted right in world space),
+// the X-axis is effectively mirrored — it appears on the LEFT instead of RIGHT.
 //
 // GLA diagnosis:
-//   query_scene(camera) -> forward vector is (0,0,1) instead of (0,0,-1)
-//   Raw projection matrix shows negated [10] and [14] entries vs. standard.
+//   inspect_drawcall(params) -> view/proj matrices have wrong-sign entries
+//   query_scene(camera)      -> forward vector is (0,0,+1) instead of (0,0,-1)
+//
+// Clear color: dark yellow (0.15, 0.12, 0.0)
 
 #include <X11/Xlib.h>
 #include <GL/gl.h>
@@ -59,30 +60,25 @@ static const char *vert_src =
     "attribute vec3 aPos;\n"
     "uniform mat4 uView;\n"
     "uniform mat4 uProj;\n"
-    "uniform vec4 uColor;\n"
-    "varying vec4 vColor;\n"
     "void main() {\n"
-    "    vColor = uColor;\n"
     "    gl_Position = uProj * uView * vec4(aPos, 1.0);\n"
     "}\n";
 
 static const char *frag_src =
     "#version 120\n"
-    "varying vec4 vColor;\n"
-    "void main() { gl_FragColor = vColor; }\n";
+    "uniform vec4 uColor;\n"
+    "void main() { gl_FragColor = uColor; }\n";
 
-/* Normalize a 3-vector in place */
+/* Helper math */
 static void norm3(float *v)
 {
     float len = sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
     if (len > 1e-6f) { v[0] /= len; v[1] /= len; v[2] /= len; }
 }
-
 static float dot3(const float *a, const float *b)
 {
     return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
 }
-
 static void cross3(float *out, const float *a, const float *b)
 {
     out[0] = a[1]*b[2] - a[2]*b[1];
@@ -90,14 +86,15 @@ static void cross3(float *out, const float *a, const float *b)
     out[2] = a[0]*b[1] - a[1]*b[0];
 }
 
-/* BUG 1: Left-handed lookAt — forward = -(target - eye) instead of (target - eye).
+/* BUG 1: forward direction is negated (eye - center instead of center - eye).
  * Column-major output. */
 static void buggy_lookat(float *m,
                          float ex, float ey, float ez,
                          float cx, float cy, float cz,
                          float ux, float uy, float uz)
 {
-    float fwd[3] = { ex - cx, ey - cy, ez - cz }; /* BUG: sign is inverted */
+    /* BUG: should be (cx-ex, cy-ey, cz-ez) */
+    float fwd[3] = { ex - cx, ey - cy, ez - cz };
     norm3(fwd);
     float up[3] = { ux, uy, uz };
     float right[3];
@@ -107,14 +104,17 @@ static void buggy_lookat(float *m,
     cross3(newUp, right, fwd);
 
     memset(m, 0, 16 * sizeof(float));
-    m[0]  =  right[0]; m[4]  =  right[1]; m[8]   =  right[2]; m[12] = -dot3(right, (float[]){ex,ey,ez});
-    m[1]  =  newUp[0]; m[5]  =  newUp[1]; m[9]   =  newUp[2]; m[13] = -dot3(newUp, (float[]){ex,ey,ez});
-    m[2]  =  fwd[0];   m[6]  =  fwd[1];   m[10]  =  fwd[2];   m[14] = -dot3(fwd,   (float[]){ex,ey,ez});
+    m[0]  =  right[0]; m[4]  =  right[1]; m[8]   =  right[2];
+    m[12] = -dot3(right, (float[]){ex, ey, ez});
+    m[1]  =  newUp[0]; m[5]  =  newUp[1]; m[9]   =  newUp[2];
+    m[13] = -dot3(newUp, (float[]){ex, ey, ez});
+    m[2]  =  fwd[0];   m[6]  =  fwd[1];   m[10]  =  fwd[2];
+    m[14] = -dot3(fwd,  (float[]){ex, ey, ez});
     m[15] = 1.0f;
 }
 
-/* BUG 2: Inverted depth range projection (m[10] and m[14] negated).
- * This partially cancels Bug 1 for on-axis geometry. */
+/* BUG 2: m[10] and m[14] are negated (wrong sign on [2][2] and [2][3]).
+ * This partially cancels Bug 1 for on-axis (X=0) geometry. */
 static void buggy_perspective(float *m, float fovy_deg, float aspect,
                                float near_z, float far_z)
 {
@@ -123,7 +123,7 @@ static void buggy_perspective(float *m, float fovy_deg, float aspect,
     memset(m, 0, 16 * sizeof(float));
     m[0]  =  f / aspect;
     m[5]  =  f;
-    /* BUG: negated vs. standard — depth range is inverted */
+    /* BUG: negated — depth range inverted, partially cancels view bug */
     m[10] = -(far_z + near_z) * nf;
     m[11] = -1.0f;
     m[14] = -(2.0f * far_z * near_z * nf);
@@ -229,24 +229,26 @@ int main(void)
     GLint colorLoc = glGetUniformLocation(prog, "uColor");
     GLint posLoc   = glGetAttribLocation(prog,  "aPos");
 
-    /* Three triangles:
-     *   Center (white): on-axis, appears correct due to bug cancellation.
-     *   Left (red):   at x=-0.5 world space — will appear on wrong side (mirrored).
-     *   Right (green): at x=+0.5 world space — will appear mirrored left.
+    /* Two quads (each as 2 triangles):
+     *   Quad A — centred at X=0, Z=-3: looks correct (bugs cancel for symmetric geo).
+     *   Quad B — centred at X=+0.8, Z=-3: should appear on the RIGHT, but due to
+     *            the X-mirror from the buggy matrices, appears on the LEFT.
      */
     static const GLfloat verts[] = {
-        /* Center triangle */
-         0.0f,  0.3f, -3.0f,
-        -0.2f, -0.3f, -3.0f,
-         0.2f, -0.3f, -3.0f,
-        /* Left triangle (red) */
-        -0.5f,  0.3f, -3.0f,
-        -0.7f, -0.3f, -3.0f,
-        -0.3f, -0.3f, -3.0f,
-        /* Right triangle (green) */
-         0.5f,  0.3f, -3.0f,
-         0.3f, -0.3f, -3.0f,
-         0.7f, -0.3f, -3.0f,
+        /* Quad A: centred (green) at world (0, 0, -3) */
+        -0.25f, -0.25f, -3.0f,
+         0.25f, -0.25f, -3.0f,
+         0.25f,  0.25f, -3.0f,
+        -0.25f, -0.25f, -3.0f,
+         0.25f,  0.25f, -3.0f,
+        -0.25f,  0.25f, -3.0f,
+        /* Quad B: off-centre (orange) at world (0.8, 0, -3) — will appear mirrored */
+         0.55f, -0.25f, -3.0f,
+         1.05f, -0.25f, -3.0f,
+         1.05f,  0.25f, -3.0f,
+         0.55f, -0.25f, -3.0f,
+         1.05f,  0.25f, -3.0f,
+         0.55f,  0.25f, -3.0f,
     };
 
     GLuint vao = 0, vbo = 0;
@@ -259,20 +261,21 @@ int main(void)
     glVertexAttribPointer((GLuint)posLoc, 3, GL_FLOAT, GL_FALSE,
                           3 * sizeof(GLfloat), (void *)0);
 
-    /* Buggy view: camera at (0,0,3) looking at origin — forward should be (0,0,-1)
-     * but buggy_lookat produces (0,0,+1). */
+    /* Buggy view: camera at (0,0,3) looking at origin.
+     * Correct forward = (0,0,-1); buggy_lookat produces (0,0,+1). */
     float view[16];
     buggy_lookat(view,
                  0.0f, 0.0f, 3.0f,  /* eye */
                  0.0f, 0.0f, 0.0f,  /* center */
                  0.0f, 1.0f, 0.0f); /* up */
 
-    /* Buggy projection: inverted depth range partially cancels the view bug */
+    /* Buggy projection: negated depth-range entries partially cancel view bug */
     float proj[16];
-    buggy_perspective(proj, 45.0f, 400.0f / 300.0f, 0.1f, 100.0f);
+    buggy_perspective(proj, 60.0f, 400.0f / 300.0f, 0.1f, 100.0f);
 
     for (int i = 0; i < 5; i++) {
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        /* Clear to dark yellow */
+        glClearColor(0.15f, 0.12f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glUseProgram(prog);
@@ -280,17 +283,13 @@ int main(void)
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, proj);
         glBindVertexArray(vao);
 
-        /* Center (white) — appears in correct location due to symmetry */
-        glUniform4f(colorLoc, 1.0f, 1.0f, 1.0f, 1.0f);
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        /* Quad A: green, centred — appears correct due to bug cancellation */
+        glUniform4f(colorLoc, 0.2f, 0.9f, 0.2f, 1.0f);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        /* Left (red) — BUG: will appear on the RIGHT side (X-mirrored) */
-        glUniform4f(colorLoc, 1.0f, 0.2f, 0.2f, 1.0f);
-        glDrawArrays(GL_TRIANGLES, 3, 3);
-
-        /* Right (green) — BUG: will appear on the LEFT side (X-mirrored) */
-        glUniform4f(colorLoc, 0.2f, 1.0f, 0.2f, 1.0f);
-        glDrawArrays(GL_TRIANGLES, 6, 3);
+        /* Quad B: orange, off-centre right — BUG: appears on LEFT (X-mirrored) */
+        glUniform4f(colorLoc, 1.0f, 0.5f, 0.0f, 1.0f);
+        glDrawArrays(GL_TRIANGLES, 6, 6);
 
         glXSwapBuffers(dpy, win);
     }
