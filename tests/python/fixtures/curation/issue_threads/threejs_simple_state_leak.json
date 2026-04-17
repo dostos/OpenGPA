@@ -1,0 +1,6 @@
+{
+  "url": "https://github.com/mrdoob/three.js/issues/00000",
+  "title": "Second mesh shows first mesh's texture",
+  "body": "After calling .clone() on material, the second draw call shows the first mesh's texture. Expected: different texture per mesh.",
+  "comments": ["Maintainer: This is a known state-leak caused by the cloned material not re-binding its texture."]
+}

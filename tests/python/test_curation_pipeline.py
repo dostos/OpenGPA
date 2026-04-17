@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
@@ -223,3 +224,127 @@ def test_pipeline_duplicate_fingerprint_skips_drafting(tmp_path):
     p.run_batch()
 
     drafter.draft.assert_not_called()
+
+
+def test_pipeline_end_to_end_with_fixture(tmp_path):
+    """Full orchestrator run with an LLM that returns a valid canned draft.
+
+    Bazel build and runtime capture are stubbed out; symptom-match uses a
+    real framebuffer fixture.
+    """
+    import json
+    from gla.eval.curation.pipeline import CurationPipeline
+    from gla.eval.curation.discover import DiscoveryCandidate
+    from gla.eval.curation.triage import IssueThread, Triage
+    from gla.eval.curation.draft import Draft
+    from gla.eval.curation.validate import Validator
+    from gla.eval.curation.run_eval import RunEvalResult
+    from gla.eval.metrics import EvalResult
+    from datetime import datetime, timezone
+
+    # Canned LLM responses: one for triage, one for draft, no failure-mode needed
+    fixture = json.loads(Path(
+        __file__).parent.joinpath(
+        "fixtures/curation/issue_threads/threejs_simple_state_leak.json").read_text())
+
+    from unittest.mock import MagicMock
+    from gla.eval.curation.llm_client import LLMResponse
+
+    triage_resp = (
+        '```json\n{"triage_verdict":"in_scope",'
+        '"root_cause_fingerprint":"state_leak:material_clone_tex_binding",'
+        '"rejection_reason":null,"summary":"state leak"}\n```'
+    )
+
+    c_src = ('// SOURCE: ' + fixture["url"] + '\n'
+             '#include <GL/gl.h>\nint main(){return 0;}\n')
+    md_body = (
+        "# R1_MATERIAL_CLONE: Second mesh inherits first mesh's texture\n\n"
+        "## Bug\nx\n\n"
+        "## Expected Correct Output\nDifferent textures per mesh.\n\n"
+        "## Actual Broken Output\nSame texture on both meshes.\n\n"
+        "## Ground Truth Diagnosis\n"
+        '> "known state-leak caused by the cloned material not re-binding its texture" '
+        '(from upstream maintainer)\n\n'
+        "## Difficulty Rating\n3/5\n\n"
+        "## Adversarial Principles\n- Stale state\n\n"
+        "## How GLA Helps\ninspect_drawcall exposes the stale binding.\n\n"
+        "## Source\n"
+        f"- **URL**: {fixture['url']}\n"
+        "- **Type**: issue\n"
+        "- **Date**: 2024-01-01\n"
+        "- **Commit SHA**: (n/a)\n"
+        "- **Attribution**: Reported by @alice\n\n"
+        "## Tier\ncore\n\n## API\nopengl\n\n## Framework\nnone\n\n"
+        "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
+        "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n\n"
+        "## Predicted GLA Helpfulness\n- **Verdict**: yes\n"
+        "- **Reasoning**: inspect_drawcall exposes the stale binding.\n"
+    )
+    draft_resp = f"```c\n{c_src}```\n\n```markdown\n{md_body}```"
+
+    llm = MagicMock()
+    llm.complete.side_effect = [
+        LLMResponse(text=triage_resp, input_tokens=0, output_tokens=0,
+                    cache_creation_input_tokens=0, cache_read_input_tokens=0,
+                    stop_reason="end_turn"),
+        LLMResponse(text=draft_resp, input_tokens=0, output_tokens=0,
+                    cache_creation_input_tokens=0, cache_read_input_tokens=0,
+                    stop_reason="end_turn"),
+    ]
+
+    triager = Triage(llm_client=llm)
+    drafter = Draft(llm_client=llm)
+
+    # Validator uses a fake runner that returns a red PNG
+    red_png = Path(__file__).parent.joinpath(
+        "fixtures/curation/framebuffers/solid_red.png").read_bytes()
+    fake_runner = MagicMock()
+    fake_runner.build_and_capture.return_value = {
+        "framebuffer_png": red_png,
+        "metadata": {"draw_call_count": 2, "draw_calls": []},
+    }
+    validator = Validator(eval_dir=tmp_path / "eval", runner=fake_runner)
+
+    # Run-eval returns with_gla correct, code_only wrong
+    def _mk(mode, correct, total):
+        return EvalResult(scenario_id="r1_material_clone_second_mesh_inherits_first_mesh_s_texture",
+                          mode=mode, correct_diagnosis=correct, correct_fix=correct,
+                          diagnosis_text="d", input_tokens=0, output_tokens=0,
+                          total_tokens=total, tool_calls=0, num_turns=0,
+                          time_seconds=0.0, model="x",
+                          timestamp=datetime.now(timezone.utc).isoformat())
+    run_eval = MagicMock()
+    run_eval.run.return_value = RunEvalResult(
+        with_gla=_mk("with_gla", True, 1000),
+        code_only=_mk("code_only", False, 4000),
+        scorer_ambiguous=False,
+    )
+
+    discoverer = MagicMock()
+    discoverer.run.return_value = [
+        DiscoveryCandidate(url=fixture["url"], source_type="issue",
+                           title=fixture["title"]),
+    ]
+    fetch = MagicMock()
+    fetch.return_value = IssueThread(url=fixture["url"], title=fixture["title"],
+                                      body=fixture["body"],
+                                      comments=fixture["comments"])
+
+    p = CurationPipeline(
+        discoverer=discoverer, fetch_thread=fetch, triager=triager,
+        drafter=drafter, validator=validator, run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval", workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+    )
+    p.run_batch()
+
+    committed = list((tmp_path / "eval").glob("r1_*.c"))
+    assert len(committed) == 1
+    md_text = committed[0].with_suffix(".md").read_text()
+    assert "Observed GLA Helpfulness" in md_text
+    assert "**Verdict**: yes" in md_text
+    summary = (tmp_path / "gaps.md").read_text()
+    assert "Scenarios committed: 1" in summary
