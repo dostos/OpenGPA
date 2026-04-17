@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import re
+import subprocess
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -78,3 +79,29 @@ class Triage:
         return TriageResult(verdict=verdict, fingerprint=fp,
                             rejection_reason=reason,
                             summary=d.get("summary", "")[:200])
+
+
+def fetch_issue_thread(url: str) -> IssueThread:
+    m = re.search(r"github\.com/([^/]+)/([^/]+)/issues/(\d+)", url)
+    if not m:
+        raise ValueError(f"Not a GitHub issue URL: {url}")
+    owner, repo, number = m.group(1), m.group(2), m.group(3)
+
+    issue_proc = subprocess.run(
+        ["gh", "api", f"repos/{owner}/{repo}/issues/{number}"],
+        capture_output=True, text=True, check=True,
+    )
+    issue = json.loads(issue_proc.stdout)
+
+    comments_proc = subprocess.run(
+        ["gh", "api", f"repos/{owner}/{repo}/issues/{number}/comments"],
+        capture_output=True, text=True, check=True,
+    )
+    comments = json.loads(comments_proc.stdout)
+
+    return IssueThread(
+        url=url,
+        title=issue.get("title", ""),
+        body=issue.get("body", "") or "",
+        comments=[c.get("body", "") for c in comments],
+    )

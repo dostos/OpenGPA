@@ -1,6 +1,6 @@
 import json
-from unittest.mock import MagicMock
-from gla.eval.curation.triage import Triage, TriageResult, IssueThread
+from unittest.mock import patch, MagicMock
+from gla.eval.curation.triage import Triage, TriageResult, IssueThread, fetch_issue_thread
 from gla.eval.curation.llm_client import LLMResponse
 
 def _fake_response(text: str) -> LLMResponse:
@@ -39,6 +39,21 @@ def test_triage_parses_out_of_scope_response():
     result = t.triage(thread)
     assert result.verdict == "out_of_scope"
     assert result.rejection_reason == "out_of_scope_compile_error"
+
+def test_fetch_issue_thread_calls_gh_api():
+    issue_json = '{"title":"x","body":"b","number":42}'
+    comments_json = '[{"body":"c1"},{"body":"c2"}]'
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = [
+            MagicMock(stdout=issue_json, returncode=0),
+            MagicMock(stdout=comments_json, returncode=0),
+        ]
+        thread = fetch_issue_thread("https://github.com/owner/repo/issues/42")
+
+    assert thread.title == "x"
+    assert thread.body == "b"
+    assert thread.comments == ["c1", "c2"]
+
 
 def test_triage_rejects_invalid_fingerprint_category():
     llm = MagicMock()
