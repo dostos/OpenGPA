@@ -1,10 +1,18 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-# All .c files in this directory compile to cc_binary targets. This lets the
-# curation pipeline add real-world scenarios (r<N>_<slug>.c) without editing
-# BUILD.bazel by hand.
 [cc_binary(
-    name = f[:-len(".c")],
-    srcs = [f],
+    name = name,
+    srcs = [name + ".c"],
     linkopts = ["-lGL", "-lX11", "-lm"],
-) for f in glob(["*.c"])]
+) for name in [
+    "e1_state_leak",
+    "e2_nan_propagation",
+    "e3_index_buffer_obo",
+    "e4_double_negation_cull",
+    "e5_uniform_collision",
+    "e6_depth_precision",
+    "e7_shader_include_order",
+    "e8_race_texture_upload",
+    "e9_scissor_not_reset",
+    "e10_compensating_vp",
+]]

@@ -662,26 +662,34 @@ Bugs where the rendered output is wrong but the code compiles and runs without e
 
 ### 9.3 Token Efficiency Hypothesis
 
-**Core claim**: GLA reduces the token cost of 3D debugging tasks by converting *code simulation* problems into *data inspection* problems.
+**Core claim**: GLA improves debugging **accuracy** and reduces **reasoning tokens** by replacing mental simulation with data inspection. Both modes read the source code — the savings come from eliminating chain-of-thought state simulation.
+
+**Important**: The LLM reads the source code in BOTH modes. GLA does not eliminate code reading — it eliminates the need to mentally simulate what the code produces at runtime. The fair comparison is:
 
 Without GLA, an LLM debugging a rendering issue must:
 1. Read source code (shaders, scene setup, rendering loop): **2,000-20,000 tokens** depending on codebase size.
-2. Mentally simulate the rendering pipeline (matrix transforms, rasterization, blending): **1,000-10,000 tokens** of chain-of-thought reasoning.
-3. Hypothesize about what the output looks like: **unreliable**, often requiring multiple iterations.
+2. Mentally simulate the rendering pipeline (matrix transforms, rasterization, blending): **1,000-10,000 tokens** of chain-of-thought reasoning. This is error-prone and often fails on subtle bugs.
+3. Hypothesize about what the output looks like: **unreliable**, often requiring multiple iterations of re-reading and re-reasoning.
 
 With GLA:
-1. Query the actual state (1-5 tool calls): **200-2,000 tokens** of structured results.
-2. Compare observed vs. expected: **500-2,000 tokens** of reasoning.
-3. Identify root cause from concrete discrepancy: **high reliability**, often single-iteration.
+1. Read source code (same as above): **2,000-20,000 tokens**.
+2. Query the actual runtime state (1-5 tool calls): **500-2,000 tokens** of structured results.
+3. Compare code intent vs. GLA observations: **200-500 tokens** of reasoning.
+4. Identify root cause from concrete discrepancy: **high reliability**, often single-iteration.
 
-**Projected savings by category:**
+**Where the savings come from**: Step 2 (mental simulation) is replaced by GLA queries. The simulation step is both the most expensive (1,000-10,000 tokens of chain-of-thought) and the most unreliable (wrong conclusions lead to re-reading and re-reasoning loops). GLA queries are cheaper (~500-2,000 tokens) and provide ground truth.
 
-| Category | Without GLA (tokens) | With GLA (tokens) | Reduction |
-|----------|---------------------|-------------------|-----------|
-| A: Visual bugs | 10,000-30,000 | 1,000-3,000 | 5-20x |
-| B: Performance | 5,000-15,000 | 1,000-3,000 | 3-10x |
-| C: Regression/QA | 5,000-10,000 | 500-2,000 | 5-10x |
-| D: Complex 3D tasks | 20,000-100,000 | 2,000-10,000 | 10-50x |
+**Projected savings by category (reasoning tokens only, excluding shared code reading):**
+
+| Category | Code-Only Reasoning | GLA Queries + Reasoning | Reasoning Reduction | Accuracy Improvement |
+|----------|--------------------|-----------------------|--------------------|---------------------|
+| A: Visual bugs | 3,000-10,000 | 700-2,500 | 2-5x | Low→High |
+| B: Performance | 2,000-8,000 | 500-2,000 | 2-4x | Medium→High |
+| C: Regression/QA | 2,000-5,000 | 300-1,000 | 3-5x | Medium→High |
+| D: Complex 3D tasks | 5,000-30,000 | 1,000-5,000 | 3-8x | Low→High |
+| E: Adversarial | 5,000-20,000 | 700-3,000 | 3-10x | Very Low→High |
+
+**The primary value proposition is accuracy, not token savings.** For adversarial scenarios (E1-E10), code-only debugging often produces *wrong* diagnoses regardless of token budget. GLA provides concrete runtime evidence that makes correct diagnosis reliable.
 
 ### 9.4 Adversarial Scenarios (Category E)
 
