@@ -11,3 +11,4 @@ __pycache__/
 *.log
 .mcp.json
 /tmp/
+examples/vulkan/minimal_app
