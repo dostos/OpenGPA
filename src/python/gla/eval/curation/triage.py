@@ -1,0 +1,80 @@
+from __future__ import annotations
+import json
+import re
+from dataclasses import dataclass, field
+from typing import Optional
+
+from gla.eval.curation.llm_client import LLMClient
+from gla.eval.curation.prompts import load_prompt
+
+_VALID_CATEGORIES = {
+    "state_leak", "uniform_lifecycle", "matrix_math", "numeric_precision",
+    "depth_precision", "winding_culling", "sync", "shader_compile",
+    "bind_point_collision", "other",
+}
+
+_VALID_VERDICTS = {"in_scope", "out_of_scope", "ambiguous"}
+
+_VALID_REJECTIONS = {
+    None, "out_of_scope_compile_error", "out_of_scope_not_rendering_bug",
+    "out_of_scope_insufficient_info", "not_reproducible", "non_english",
+}
+
+
+@dataclass
+class IssueThread:
+    url: str
+    title: str
+    body: str
+    comments: list[str] = field(default_factory=list)
+
+
+@dataclass
+class TriageResult:
+    verdict: str
+    fingerprint: str
+    rejection_reason: Optional[str]
+    summary: str
+
+
+class Triage:
+    def __init__(self, llm_client: LLMClient, model: str = "claude-opus-4-7"):
+        self._llm = llm_client
+        self._system = load_prompt("triage_system")
+
+    def triage(self, thread: IssueThread) -> TriageResult:
+        user = self._format_thread(thread)
+        resp = self._llm.complete(
+            system=self._system,
+            messages=[{"role": "user", "content": user}],
+        )
+        parsed = self._parse_json_block(resp.text)
+        return self._normalize(parsed)
+
+    def _format_thread(self, t: IssueThread) -> str:
+        parts = [f"URL: {t.url}", f"Title: {t.title}", "", "Body:", t.body]
+        for i, c in enumerate(t.comments):
+            parts.extend(["", f"Comment {i+1}:", c])
+        return "\n".join(parts)
+
+    @staticmethod
+    def _parse_json_block(text: str) -> dict:
+        m = re.search(r"```json\s*\n(.+?)\n```", text, re.DOTALL)
+        raw = m.group(1) if m else text
+        return json.loads(raw)
+
+    def _normalize(self, d: dict) -> TriageResult:
+        verdict = d.get("triage_verdict", "ambiguous")
+        if verdict not in _VALID_VERDICTS:
+            verdict = "ambiguous"
+        fp = d.get("root_cause_fingerprint", "other:unknown")
+        category, _, spec = fp.partition(":")
+        if category not in _VALID_CATEGORIES:
+            category, spec = "other", spec or "unknown"
+        fp = f"{category}:{spec or 'unknown'}"
+        reason = d.get("rejection_reason")
+        if reason not in _VALID_REJECTIONS:
+            reason = None
+        return TriageResult(verdict=verdict, fingerprint=fp,
+                            rejection_reason=reason,
+                            summary=d.get("summary", "")[:200])
