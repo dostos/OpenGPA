@@ -393,19 +393,33 @@ def run(base_url: str, token: str) -> None:
 
 
 def main() -> None:
+    import os
+
     parser = argparse.ArgumentParser(description="GLA MCP stdio server")
     parser.add_argument(
         "--base-url",
-        default="http://127.0.0.1:8080/api/v1",
-        help="GLA REST API base URL (default: http://127.0.0.1:8080/api/v1)",
+        default=None,
+        help="GLA REST API base URL (default: GLA_BASE_URL env or http://127.0.0.1:8080/api/v1)",
     )
     parser.add_argument(
         "--token",
-        default="",
-        help="Bearer token for the GLA REST API",
+        default=None,
+        help="Bearer token for the GLA REST API (default: GLA_TOKEN env)",
     )
     args = parser.parse_args()
-    run(base_url=args.base_url, token=args.token)
+
+    # Env vars take precedence over built-in defaults; CLI args override env vars.
+    base_url = (
+        args.base_url
+        or os.environ.get("GLA_BASE_URL", "http://127.0.0.1:8080/api/v1")
+    )
+    # GLA_BASE_URL may point at the server root; ensure it ends with /api/v1
+    if not base_url.endswith("/api/v1"):
+        base_url = base_url.rstrip("/") + "/api/v1"
+
+    token = args.token or os.environ.get("GLA_TOKEN", "")
+
+    run(base_url=base_url, token=token)
 
 
 if __name__ == "__main__":
