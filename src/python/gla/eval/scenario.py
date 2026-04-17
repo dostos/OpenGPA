@@ -9,7 +9,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 
 @dataclass
@@ -26,6 +26,22 @@ class ScenarioMetadata:
     gla_advantage: str                 # how GLA helps
     source_path: str                   # absolute path to .c file
     binary_name: str                   # bazel target name (same as id)
+    # --- New fields (all optional; existing E1-E10 continue to parse) ---
+    source_url: Optional[str] = None
+    source_type: Optional[str] = None           # "issue" | "fix_commit" | "stackoverflow"
+    source_date: Optional[str] = None           # ISO-8601 date
+    source_commit_sha: Optional[str] = None
+    source_attribution: Optional[str] = None
+    tier: Optional[str] = None                  # "core" | "showcase" | None for legacy
+    api: Optional[str] = None                   # "opengl" | "opengles" | "webgl1" | "webgl2"
+    framework: Optional[str] = None             # "none" | "three.js" | ...
+    bug_signature: Optional[dict[str, Any]] = None   # {type: str, spec: dict}
+    predicted_helps: Optional[str] = None       # "yes" | "no" | "ambiguous"
+    predicted_helps_reasoning: Optional[str] = None
+    observed_helps: Optional[str] = None        # "yes" | "no" | "ambiguous"
+    observed_helps_evidence: Optional[str] = None
+    failure_mode: Optional[str] = None
+    failure_mode_details: Optional[str] = None
 
 
 # Section heading aliases — maps canonical name -> list of accepted headings
