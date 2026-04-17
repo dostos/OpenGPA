@@ -14,9 +14,17 @@ import re
 from pathlib import Path
 from typing import Callable, Optional
 
+import yaml
+
 from gla.eval.curation.classify import classify_observed_helps
 from gla.eval.curation.commit import commit_scenario, log_rejection
 from gla.eval.curation.coverage_log import CoverageLog
+
+
+def load_config(path: str) -> dict:
+    """Load a YAML config file and return its contents as a dict."""
+    with open(path, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
 
 
 class CurationPipeline:
@@ -267,6 +275,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--batch-quota", type=int, default=20)
     parser.add_argument(
+        "--config", default=None,
+        help="Path to YAML config file (overrides --batch-quota and queries)",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Run discovery + triage only; do not draft/validate/commit",
@@ -277,6 +289,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     """CLI entry point. Constructs real stage instances and runs a batch."""
     args = parse_args(argv)
+    cfg = load_config(args.config) if args.config else {}
+    batch_quota = cfg.get("batch_quota", args.batch_quota)
 
     # Imports kept inside main() so `--help` / module import does not need
     # network-capable deps (e.g. anthropic) to load.
@@ -295,13 +309,15 @@ def main(argv: list[str] | None = None) -> int:
     from gla.eval.runner import ScenarioRunner
     from gla.eval.llm_agent import build_agent_fn
 
+    queries = cfg.get("queries", DEFAULT_QUERIES)
+
     llm = LLMClient.from_env()
     log = CoverageLog(args.log)
     disc = Discoverer(
         search=GitHubSearch(),
         coverage_log=log,
-        queries=DEFAULT_QUERIES,
-        batch_quota=args.batch_quota,
+        queries=queries,
+        batch_quota=batch_quota,
     )
     triager = Triage(llm_client=llm)
     drafter = Draft(llm_client=llm)

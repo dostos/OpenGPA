@@ -11,6 +11,21 @@ from gla.eval.curation.run_eval import RunEvalResult
 from gla.eval.metrics import EvalResult
 
 
+def test_load_config_overrides_default_queries(tmp_path):
+    from gla.eval.curation.pipeline import load_config
+    cfg_path = tmp_path / "cfg.yaml"
+    cfg_path.write_text(
+        "batch_quota: 5\n"
+        "queries:\n"
+        "  issue:\n"
+        "    - repo:test/repo is:issue label:\"bug\"\n"
+        "  commit: []\n"
+    )
+    cfg = load_config(str(cfg_path))
+    assert cfg["batch_quota"] == 5
+    assert cfg["queries"]["issue"] == ["repo:test/repo is:issue label:\"bug\""]
+
+
 def test_parse_args_defaults():
     args = parse_args(["--batch-quota", "10"])
     assert args.batch_quota == 10

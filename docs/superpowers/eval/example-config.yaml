@@ -1,0 +1,7 @@
+batch_quota: 20
+queries:
+  issue:
+    - 'repo:mrdoob/three.js is:issue label:"Rendering"'
+    - 'repo:BabylonJS/Babylon.js is:issue label:"bug"'
+  commit:
+    - 'repo:mrdoob/three.js "fix:" shader'
