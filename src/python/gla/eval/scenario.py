@@ -11,6 +11,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+import yaml
+
 
 @dataclass
 class ScenarioMetadata:
@@ -53,11 +55,54 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "difficulty": ["difficulty rating", "difficulty"],
     "adversarial_principles": ["adversarial principles"],
     "gla_advantage": ["how gla helps", "gla advantage"],
+    "source": ["source"],
+    "tier": ["tier"],
+    "api": ["api"],
+    "framework": ["framework"],
+    "bug_signature": ["bug signature"],
+    "predicted_helps": ["predicted gla helpfulness", "predicted helpfulness"],
+    "observed_helps": ["observed gla helpfulness", "observed helpfulness"],
+    "failure_mode": ["failure mode"],
 }
 
 
 def _normalise_heading(heading: str) -> str:
     return heading.strip().lower()
+
+
+def parse_key_value_bullets(text: str) -> dict[str, str]:
+    """Parse `- **Key**: value` bullet lines into a dict. Public helper."""
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        m = re.match(r"-\s+\*\*(.+?)\*\*:\s*(.+)", line.strip())
+        if m:
+            key = m.group(1).strip().lower().replace(" ", "_")
+            out[key] = m.group(2).strip()
+    return out
+
+
+# Internal callers may alias the private name to preserve stability inside
+# scenario.py, but external callers should use `parse_key_value_bullets`.
+_extract_key_value_bullets = parse_key_value_bullets
+
+
+def _extract_yaml_block(text: str) -> Optional[dict]:
+    m = re.search(r"```yaml\n(.+?)\n```", text, re.DOTALL)
+    if not m:
+        return None
+    try:
+        return yaml.safe_load(m.group(1))
+    except yaml.YAMLError:
+        return None
+
+
+def _extract_single_line(text: str) -> Optional[str]:
+    """Return the first non-empty trimmed line, or None."""
+    for line in text.splitlines():
+        s = line.strip()
+        if s:
+            return s
+    return None
 
 
 def _parse_md(text: str) -> dict[str, str]:
@@ -176,6 +221,31 @@ class ScenarioLoader:
         difficulty_text = sections.get("difficulty", "")
         diagnosis_text = sections.get("ground_truth_diagnosis", "")
 
+        source_kv = _extract_key_value_bullets(sections.get("source", ""))
+        source_url = source_kv.get("url")
+        source_type = source_kv.get("type")
+        source_date = source_kv.get("date")
+        _sha = source_kv.get("commit_sha", "")
+        source_commit_sha = None if _sha in ("", "(n/a)") else _sha
+        source_attribution = source_kv.get("attribution")
+
+        tier = _extract_single_line(sections.get("tier", ""))
+        api = _extract_single_line(sections.get("api", ""))
+        framework = _extract_single_line(sections.get("framework", ""))
+        bug_signature = _extract_yaml_block(sections.get("bug_signature", ""))
+
+        predicted_kv = _extract_key_value_bullets(sections.get("predicted_helps", ""))
+        predicted_helps = predicted_kv.get("verdict")
+        predicted_helps_reasoning = predicted_kv.get("reasoning")
+
+        observed_kv = _extract_key_value_bullets(sections.get("observed_helps", ""))
+        observed_helps = observed_kv.get("verdict")
+        observed_helps_evidence = observed_kv.get("evidence")
+
+        failure_kv = _extract_key_value_bullets(sections.get("failure_mode", ""))
+        failure_mode = failure_kv.get("category")
+        failure_mode_details = failure_kv.get("details")
+
         return ScenarioMetadata(
             id=scenario_id,
             title=sections.get("_title", scenario_id),
@@ -191,6 +261,21 @@ class ScenarioLoader:
             gla_advantage=sections.get("gla_advantage", ""),
             source_path=str(c_path.resolve()),
             binary_name=scenario_id,
+            source_url=source_url,
+            source_type=source_type,
+            source_date=source_date,
+            source_commit_sha=source_commit_sha,
+            source_attribution=source_attribution,
+            tier=tier,
+            api=api,
+            framework=framework,
+            bug_signature=bug_signature,
+            predicted_helps=predicted_helps,
+            predicted_helps_reasoning=predicted_helps_reasoning,
+            observed_helps=observed_helps,
+            observed_helps_evidence=observed_helps_evidence,
+            failure_mode=failure_mode,
+            failure_mode_details=failure_mode_details,
         )
 
     def load_all(self) -> list[ScenarioMetadata]:

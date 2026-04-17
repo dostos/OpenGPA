@@ -1,5 +1,92 @@
 """Tests for extended ScenarioMetadata fields (real-world curation pipeline)."""
-from gla.eval.scenario import ScenarioMetadata
+import textwrap
+from pathlib import Path
+from gla.eval.scenario import ScenarioMetadata, ScenarioLoader
+
+
+def test_parser_extracts_new_sections(tmp_path):
+    md = textwrap.dedent('''
+        # R1: Test Scenario
+
+        ## Bug
+        Something is wrong.
+
+        ## Expected Correct Output
+        Red quad.
+
+        ## Actual Broken Output
+        Blue quad.
+
+        ## Ground Truth Diagnosis
+        The texture is wrong.
+
+        ## Difficulty Rating
+        3/5
+
+        ## Adversarial Principles
+        - Stale state
+
+        ## How GLA Helps
+        inspect_drawcall exposes the binding.
+
+        ## Source
+        - **URL**: https://github.com/mrdoob/three.js/issues/12345
+        - **Type**: issue
+        - **Date**: 2024-03-17
+        - **Commit SHA**: (n/a)
+        - **Attribution**: Reported by @alice
+
+        ## Tier
+        core
+
+        ## API
+        opengl
+
+        ## Framework
+        none
+
+        ## Bug Signature
+        ```yaml
+        type: color_histogram_in_region
+        spec:
+          region: [0.0, 0.0, 1.0, 1.0]
+          dominant_color: [1.0, 0.0, 0.0, 1.0]
+          tolerance: 0.1
+        ```
+
+        ## Predicted GLA Helpfulness
+        - **Verdict**: yes
+        - **Reasoning**: The binding is visible via inspect_drawcall.
+    ''').strip()
+
+    (tmp_path / "r1_test.md").write_text(md)
+    (tmp_path / "r1_test.c").write_text("int main(){}")
+
+    loader = ScenarioLoader(eval_dir=str(tmp_path))
+    s = loader.load("r1_test")
+
+    assert s.source_url == "https://github.com/mrdoob/three.js/issues/12345"
+    assert s.source_type == "issue"
+    assert s.source_date == "2024-03-17"
+    assert s.source_attribution == "Reported by @alice"
+    assert s.tier == "core"
+    assert s.api == "opengl"
+    assert s.framework == "none"
+    assert s.bug_signature["type"] == "color_histogram_in_region"
+    assert s.bug_signature["spec"]["dominant_color"] == [1.0, 0.0, 0.0, 1.0]
+    assert s.predicted_helps == "yes"
+    assert s.predicted_helps_reasoning.startswith("The binding")
+
+
+def test_parser_backward_compatible_with_e1(monkeypatch):
+    """Existing E1-E10 scenarios still parse (new fields default to None)."""
+    from pathlib import Path
+    eval_dir = Path(__file__).parent.parent / "eval"
+    loader = ScenarioLoader(eval_dir=str(eval_dir))
+    s = loader.load("e1_state_leak")
+    assert s.id == "e1_state_leak"
+    assert s.source_url is None
+    assert s.tier is None
 
 
 def test_scenario_metadata_has_new_fields():
