@@ -71,6 +71,7 @@ spec:
 ```
 
 ## Rules
-- EVERY diagnostic claim in Ground Truth Diagnosis must quote from the upstream thread (via >).
+- EVERY diagnostic claim in Ground Truth Diagnosis must quote from the upstream thread, a linked PR, or a linked commit (via `>` blockquote). The quote source can be the issue body, a comment, a PR description ("=== Linked PR #NNN ===" block), or a commit message ("=== Linked commit XXX ===" block) — any of these count as upstream.
+- If no blockquotable diagnosis exists anywhere in the provided context (issue body + comments + linked PRs/commits), raise an error by omitting the Ground Truth Diagnosis section entirely — do NOT fabricate a quote. The draft validation will then reject it and the pipeline will log a `not_reproducible` rejection.
 - Do not copy code from the upstream repository. Port the *pattern* into a minimal program.
 - Bug Signature types (pick one): `color_histogram_in_region`, `unexpected_color`, `nan_or_inf_in_uniform`, `high_overdraw`, `missing_draw_call`, `unexpected_state_in_draw`, `framebuffer_dominant_color`.

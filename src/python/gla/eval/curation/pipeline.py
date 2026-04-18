@@ -149,18 +149,6 @@ class CurationPipeline:
             )
             return
 
-        if triage.verdict == "ambiguous":
-            log_rejection(
-                coverage_log=self._log,
-                summary_path=self._summary,
-                issue_url=cand.url,
-                source_type=cand.source_type,
-                triage_verdict=triage.verdict,
-                fingerprint=triage.fingerprint,
-                rejection_reason="out_of_scope_insufficient_info",
-            )
-            return
-
         if self._log.contains_fingerprint(triage.fingerprint):
             log_rejection(
                 coverage_log=self._log,
