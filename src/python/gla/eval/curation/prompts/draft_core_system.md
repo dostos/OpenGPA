@@ -71,7 +71,12 @@ spec:
 ```
 
 ## Rules
-- EVERY diagnostic claim in Ground Truth Diagnosis must quote from the upstream thread, a linked PR, or a linked commit (via `>` blockquote). The quote source can be the issue body, a comment, a PR description ("=== Linked PR #NNN ===" block), or a commit message ("=== Linked commit XXX ===" block) — any of these count as upstream.
-- If no blockquotable diagnosis exists anywhere in the provided context (issue body + comments + linked PRs/commits), raise an error by omitting the Ground Truth Diagnosis section entirely — do NOT fabricate a quote. The draft validation will then reject it and the pipeline will log a `not_reproducible` rejection.
+- EVERY diagnostic claim in Ground Truth Diagnosis MUST be grounded in upstream evidence. Cite via ANY of:
+  - `> verbatim quote` — a blockquote of a direct statement from the issue thread, a linked PR description, a commit message, or a comment. Strongest form.
+  - `PR #NNN` or `pull request #NNN` — reference the fix PR by number when its diff makes the root cause self-evident but no prose quote exists.
+  - `commit <sha>` (7+ hex chars) or `(abc1234)` — reference the fix commit by SHA; the commit message often IS the diagnosis.
+  - Full URL: `https://github.com/.../pull/NNN` or `/commit/<sha>` — acceptable anywhere.
+  Use whichever citation style best fits the source. You may combine them (e.g., a blockquote followed by "(see PR #NNN for the fix)").
+- If NO citation of any form can be written (i.e., you cannot point to any upstream artifact that corroborates your diagnosis), OMIT the Ground Truth Diagnosis section entirely. Validation will then reject the draft with a `not_reproducible` reason. DO NOT fabricate citations or invent PR numbers.
 - Do not copy code from the upstream repository. Port the *pattern* into a minimal program.
 - Bug Signature types (pick one): `color_histogram_in_region`, `unexpected_color`, `nan_or_inf_in_uniform`, `high_overdraw`, `missing_draw_call`, `unexpected_state_in_draw`, `framebuffer_dominant_color`.

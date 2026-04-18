@@ -205,3 +205,80 @@ def test_draft_preserves_nested_yaml_fence_in_md():
     # These assertions are for sections that appear AFTER the yaml block
     assert "## Predicted GLA Helpfulness" in result.md_body
     assert "inspect_drawcall exposes it" in result.md_body
+
+
+def test_draft_accepts_pr_reference_as_citation():
+    """A diagnosis that cites 'PR #1234' without a blockquote is valid."""
+    c_src = "// SOURCE: https://github.com/x/y/issues/1\nint main(){return 0;}\n"
+    md = _MD_BODY.replace(
+        '> "the texture is wrong" (quoted from upstream)',
+        "The root cause is addressed by PR #1234 which changes the binding order.",
+    )
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(f"```c\n{c_src}```\n\n```markdown\n{md}```")
+    d = Draft(llm_client=llm)
+    result = d.draft(
+        IssueThread(url="https://github.com/x/y/issues/1", title="t", body="b"),
+        TriageResult(verdict="in_scope", fingerprint="other:x",
+                     rejection_reason=None, summary=""),
+        scenario_id="r1_test",
+    )
+    # Should not raise
+    assert result.scenario_id == "r1_test"
+
+
+def test_draft_accepts_commit_sha_citation():
+    """A diagnosis that cites 'commit abc1234...' is valid."""
+    c_src = "// SOURCE: https://github.com/x/y/issues/1\nint main(){return 0;}\n"
+    md = _MD_BODY.replace(
+        '> "the texture is wrong" (quoted from upstream)',
+        "Fixed in commit abc1234def56 which adds the missing re-bind.",
+    )
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(f"```c\n{c_src}```\n\n```markdown\n{md}```")
+    d = Draft(llm_client=llm)
+    result = d.draft(
+        IssueThread(url="https://github.com/x/y/issues/1", title="t", body="b"),
+        TriageResult(verdict="in_scope", fingerprint="other:x",
+                     rejection_reason=None, summary=""),
+        scenario_id="r1_test",
+    )
+    assert result.scenario_id == "r1_test"
+
+
+def test_draft_accepts_github_pr_url_as_citation():
+    c_src = "// SOURCE: https://github.com/x/y/issues/1\nint main(){return 0;}\n"
+    md = _MD_BODY.replace(
+        '> "the texture is wrong" (quoted from upstream)',
+        "See https://github.com/mrdoob/three.js/pull/9876 for the fix.",
+    )
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(f"```c\n{c_src}```\n\n```markdown\n{md}```")
+    d = Draft(llm_client=llm)
+    result = d.draft(
+        IssueThread(url="https://github.com/x/y/issues/1", title="t", body="b"),
+        TriageResult(verdict="in_scope", fingerprint="other:x",
+                     rejection_reason=None, summary=""),
+        scenario_id="r1_test",
+    )
+    assert result.scenario_id == "r1_test"
+
+
+def test_draft_still_rejects_diagnosis_with_no_citation_of_any_kind():
+    """A diagnosis with no blockquote, no PR/commit ref, no URL still fails."""
+    c_src = "// SOURCE: https://github.com/x/y/issues/1\nint main(){return 0;}\n"
+    md = _MD_BODY.replace(
+        '> "the texture is wrong" (quoted from upstream)',
+        "The bug is that the texture binding is wrong.",  # bare prose, no cite
+    )
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(f"```c\n{c_src}```\n\n```markdown\n{md}```")
+    d = Draft(llm_client=llm)
+    import pytest
+    with pytest.raises(ValueError, match="citation"):
+        d.draft(
+            IssueThread(url="https://github.com/x/y/issues/1", title="t", body="b"),
+            TriageResult(verdict="in_scope", fingerprint="other:x",
+                         rejection_reason=None, summary=""),
+            scenario_id="r1_test",
+        )

@@ -56,13 +56,39 @@ class Draft:
             raise ValueError("C source missing // SOURCE: <url> comment")
         if issue_url not in c_src:
             raise ValueError("C source // SOURCE: does not match issue URL")
-        # Ground Truth Diagnosis must contain a blockquote citation
+        # Ground Truth Diagnosis section must exist
         m = re.search(r"##\s+Ground Truth Diagnosis\s*\n(.+?)(?=\n##\s+|\Z)",
                       md_body, re.DOTALL | re.IGNORECASE)
         if not m:
             raise ValueError("Ground Truth Diagnosis section missing")
-        if not re.search(r"^>\s+", m.group(1), re.MULTILINE):
-            raise ValueError("Ground Truth Diagnosis missing upstream citation (>) blockquote")
+        diagnosis_body = m.group(1)
+
+        # Diagnosis must cite upstream via ONE of:
+        #   (a) Blockquote (> ...): verbatim quote from issue/PR/commit
+        #   (b) PR reference (PR #NNN, pull request #NNN)
+        #   (c) Commit reference (commit <hex>, (abc1234), or bare <hex>{7,} near "commit"/"PR")
+        #   (d) GitHub URL to pull/commit
+        has_blockquote = bool(re.search(r"^>\s+", diagnosis_body, re.MULTILINE))
+        has_pr_ref = bool(re.search(
+            r"\b(?:PR|pull\s+request|pull/)\s*#?(\d+)\b",
+            diagnosis_body, re.IGNORECASE,
+        ))
+        has_commit_ref = bool(re.search(
+            r"\b(?:commit\s+|/commit/)([a-f0-9]{7,})\b",
+            diagnosis_body, re.IGNORECASE,
+        ))
+        has_github_url = bool(re.search(
+            r"github\.com/[\w.-]+/[\w.-]+/(?:pull|commit)/[\w]+",
+            diagnosis_body, re.IGNORECASE,
+        ))
+
+        if not (has_blockquote or has_pr_ref or has_commit_ref or has_github_url):
+            raise ValueError(
+                "Ground Truth Diagnosis missing upstream citation. "
+                "Cite via (a) a > blockquote, (b) 'PR #NNN' / 'pull request #NNN', "
+                "(c) 'commit <sha>' where sha is 7+ hex chars, or "
+                "(d) a github.com/.../pull|commit/... URL."
+            )
         # Bug Signature must be a well-formed yaml dict with 'type' and 'spec'
         m_sig = re.search(
             r"##\s+Bug Signature\s*\n.*?```yaml\s*\n(.+?)\n```",
