@@ -62,9 +62,10 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     # Shader params attached directly to the draw call
     param = MagicMock()
     param.name = "uColor"
-    param.type = "vec4"
-    # Use bytes instead of floats so that base64 encoding works
-    param.data = bytes([255, 0, 0, 255])
+    # GL_FLOAT_VEC4 = 0x8B52; encode vec4(1.0, 0.0, 0.0, 1.0) as 16 raw bytes
+    import struct as _struct
+    param.type = 0x8B52  # GL_FLOAT_VEC4
+    param.data = _struct.pack("<4f", 1.0, 0.0, 0.0, 1.0)
     dc.params = [param]
     # Texture bindings attached directly to the draw call
     tex = MagicMock()

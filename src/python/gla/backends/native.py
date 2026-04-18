@@ -70,13 +70,56 @@ class NativeBackend(FrameProvider):
             "front_face": ps.front_face,
         }
 
+    # GL type enum → (component_count, struct_format)
+    # Single floats and matrices use 'f' (IEEE 754 float32 LE).
+    # GL_INT uses 'i' (signed int32 LE).
+    _GL_TYPE_DECODE = {
+        0x1406: (1,  "f"),   # GL_FLOAT
+        0x8B50: (2,  "f"),   # GL_FLOAT_VEC2
+        0x8B51: (3,  "f"),   # GL_FLOAT_VEC3
+        0x8B52: (4,  "f"),   # GL_FLOAT_VEC4
+        0x8B5B: (9,  "f"),   # GL_FLOAT_MAT3
+        0x8B5C: (16, "f"),   # GL_FLOAT_MAT4
+        0x1404: (1,  "i"),   # GL_INT
+    }
+
+    @staticmethod
+    def _decode_param_bytes(raw: bytes, gl_type: int):
+        """Decode raw uniform bytes into a Python list of float/int values.
+
+        Returns a list of decoded values, or None if the type is unknown or the
+        byte count does not match the expected component count.
+        """
+        import struct
+
+        entry = NativeBackend._GL_TYPE_DECODE.get(gl_type)
+        if entry is None:
+            return None
+        count, fmt = entry
+        item_size = 4  # all supported types are 32-bit components
+        expected_bytes = count * item_size
+        if len(raw) != expected_bytes:
+            return None
+        values = list(struct.unpack_from("<" + fmt * count, raw))
+        return values
+
     @staticmethod
     def _convert_drawcall(dc) -> DrawCallInfo:
         import base64
         params = []
         for p in (dc.params or []):
             raw = p.data if isinstance(p.data, bytes) else bytes(p.data) if p.data else b""
-            params.append({"name": p.name, "type": p.type, "data": base64.b64encode(raw).decode("ascii")})
+            gl_type = p.type if isinstance(p.type, int) else 0
+            decoded = NativeBackend._decode_param_bytes(raw, gl_type)
+            entry: dict = {
+                "name": p.name,
+                "type": gl_type,
+                "data": base64.b64encode(raw).decode("ascii"),
+            }
+            if decoded is not None:
+                # Scalar uniforms: unwrap single-element list for convenience.
+                entry["value"] = decoded[0] if len(decoded) == 1 else decoded
+            params.append(entry)
 
         textures = []
         for t in (dc.textures or []):
