@@ -398,7 +398,7 @@ def main(argv: list[str] | None = None) -> int:
         Discoverer,
         DEFAULT_QUERIES,
     )
-    from gla.eval.curation.triage import Triage, fetch_issue_thread
+    from gla.eval.curation.triage import Triage, fetch_thread
     from gla.eval.curation.draft import Draft
     from gla.eval.curation.validate import Validator
     from gla.eval.curation.run_eval import RunEval
@@ -446,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
 
     pipeline = CurationPipeline(
         discoverer=disc,
-        fetch_thread=fetch_issue_thread,
+        fetch_thread=fetch_thread,
         triager=triager,
         drafter=drafter,
         validator=validator,

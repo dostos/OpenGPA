@@ -81,6 +81,13 @@ class Triage:
                             summary=d.get("summary", "")[:200])
 
 
+def fetch_thread(url: str) -> IssueThread:
+    """Dispatch to fetch_issue_thread or fetch_commit_thread based on URL."""
+    if "/commit/" in url:
+        return fetch_commit_thread(url)
+    return fetch_issue_thread(url)
+
+
 def fetch_issue_thread(url: str) -> IssueThread:
     m = re.search(r"github\.com/([^/]+)/([^/]+)/issues/(\d+)", url)
     if not m:
@@ -105,3 +112,56 @@ def fetch_issue_thread(url: str) -> IssueThread:
         body=issue.get("body", "") or "",
         comments=[c.get("body", "") for c in comments],
     )
+
+
+def fetch_commit_thread(url: str) -> IssueThread:
+    """Fetch a commit's message + diff as an IssueThread.
+
+    Commit URL format: https://github.com/owner/repo/commit/<sha>
+    Uses `gh api repos/{owner}/{repo}/commits/{sha}` which returns
+    {sha, commit: {message, author}, files: [{filename, patch, ...}], ...}
+    """
+    m = re.search(r"github\.com/([^/]+)/([^/]+)/commit/([a-f0-9]+)", url)
+    if not m:
+        raise ValueError(f"Not a GitHub commit URL: {url}")
+    owner, repo, sha = m.group(1), m.group(2), m.group(3)
+
+    proc = subprocess.run(
+        ["gh", "api", f"repos/{owner}/{repo}/commits/{sha}"],
+        capture_output=True, text=True, check=True,
+    )
+    commit_data = json.loads(proc.stdout)
+
+    message = commit_data.get("commit", {}).get("message", "")
+    # Title is first line of message; body is rest
+    lines = message.split("\n", 1)
+    title = lines[0][:200]
+    body = lines[1].strip() if len(lines) > 1 else ""
+
+    # Extract diffs from `files`, but truncate aggressively — we only need enough
+    # for Claude to see the fix pattern. Cap total diff to ~20KB.
+    files = commit_data.get("files") or []
+    diff_parts: list[str] = []
+    total_size = 0
+    MAX_DIFF_BYTES = 20000
+    for f in files:
+        patch = f.get("patch") or ""
+        if not patch:
+            continue
+        filename = f.get("filename", "?")
+        chunk = f"--- {filename}\n{patch}\n"
+        if total_size + len(chunk) > MAX_DIFF_BYTES:
+            remaining = MAX_DIFF_BYTES - total_size
+            if remaining > 200:
+                chunk = chunk[:remaining] + "\n... [truncated]"
+                diff_parts.append(chunk)
+            break
+        diff_parts.append(chunk)
+        total_size += len(chunk)
+
+    diff = "\n".join(diff_parts)
+    # Use "body" for commit message body, put diff into comments[] so the
+    # existing Triage._format_thread renders it cleanly.
+    comments = [f"=== Diff ===\n{diff}"] if diff else []
+
+    return IssueThread(url=url, title=title, body=body, comments=comments)
