@@ -624,3 +624,96 @@ def test_parse_args_no_validate_flag():
     assert args.no_validate is True
     args_default = parse_args([])
     assert args_default.no_validate is False
+
+
+def test_pipeline_resolves_snapshot_sha_from_pr_ref(tmp_path):
+    """When draft includes (auto-resolve from PR #NNN), pipeline resolves it
+    to the parent SHA from gh api before committing."""
+    from unittest.mock import MagicMock, patch
+    from gla.eval.curation.pipeline import CurationPipeline
+    from gla.eval.curation.discover import DiscoveryCandidate
+    from gla.eval.curation.triage import IssueThread, TriageResult
+    from gla.eval.curation.draft import DraftResult
+    from gla.eval.curation.validate import ValidationResult
+    from gla.eval.curation.run_eval import RunEvalResult
+    from gla.eval.metrics import EvalResult
+    from datetime import datetime, timezone
+    import json as _json
+
+    candidate = DiscoveryCandidate(
+        url="https://github.com/mrdoob/three.js/issues/1",
+        source_type="issue", title="t",
+    )
+    triage = TriageResult(verdict="in_scope",
+                          fingerprint="state_leak:unique",
+                          rejection_reason=None, summary="s")
+
+    md_with_sentinel = (
+        "# R1\n"
+        "## Bug\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
+        "## Ground Truth Diagnosis\n> q from PR #1234\n"
+        "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
+        "## How OpenGPA Helps\nh\n"
+        "## Source\n- **URL**: https://github.com/mrdoob/three.js/issues/1\n"
+        "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
+        "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
+        "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n"
+        "## Upstream Snapshot\n"
+        "- **Repo**: https://github.com/mrdoob/three.js\n"
+        "- **SHA**: (auto-resolve from PR #1234)\n"
+        "## Predicted OpenGPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+    )
+    draft = DraftResult(
+        scenario_id="r1_fake",
+        files={
+            "main.c": "// SOURCE: https://github.com/mrdoob/three.js/issues/1\nint main(){}",
+            "scenario.md": md_with_sentinel,
+        },
+    )
+
+    discoverer = MagicMock(); discoverer.run.return_value = [candidate]
+    fetch = MagicMock(); fetch.return_value = IssueThread(
+        url=candidate.url, title="t", body="b")
+    triager = MagicMock(); triager.triage.return_value = triage
+    drafter = MagicMock(); drafter.draft.return_value = draft
+    validator = MagicMock()
+    validator.validate.return_value = ValidationResult(
+        ok=True, reason="ok", framebuffer_png=b"x",
+        metadata={"draw_call_count": 1, "draw_calls": []})
+    def _mk(mode, correct, total):
+        return EvalResult(scenario_id="r1_fake", mode=mode,
+                          correct_diagnosis=correct, correct_fix=correct,
+                          diagnosis_text="d", input_tokens=0, output_tokens=0,
+                          total_tokens=total, tool_calls=0, num_turns=0,
+                          time_seconds=0.0, model="x",
+                          timestamp=datetime.now(timezone.utc).isoformat())
+    run_eval = MagicMock()
+    run_eval.run.return_value = RunEvalResult(
+        with_gla=_mk("with_gla", True, 1000),
+        code_only=_mk("code_only", False, 4000),
+        scorer_ambiguous=False,
+    )
+
+    pr_response = _json.dumps({"base": {"sha": "resolved_parent_sha"}})
+
+    p = CurationPipeline(
+        discoverer=discoverer, fetch_thread=fetch, triager=triager,
+        drafter=drafter, validator=validator, run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval", workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+    )
+
+    # Mock subprocess.run for the SHA-resolution call. Don't intercept gh calls
+    # inside the fetch helpers — fetch is a MagicMock so they never fire.
+    with patch("gla.eval.curation.pipeline.subprocess.run") as mock_sp:
+        mock_sp.return_value = MagicMock(stdout=pr_response, returncode=0)
+        p.run_batch()
+
+    # Scenario committed; the md file should have the resolved SHA
+    md_path = tmp_path / "eval" / "r1_fake" / "scenario.md"
+    assert md_path.exists()
+    committed_md = md_path.read_text()
+    assert "resolved_parent_sha" in committed_md
+    assert "(auto-resolve" not in committed_md

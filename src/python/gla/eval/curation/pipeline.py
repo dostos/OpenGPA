@@ -47,6 +47,61 @@ def _hash(*parts: str) -> str:
     return h.hexdigest()[:16]
 
 
+_AUTO_RESOLVE_PR_RE = re.compile(
+    r"\(auto-resolve\s+from\s+PR\s+#?(\d+)\)", re.IGNORECASE
+)
+_AUTO_RESOLVE_COMMIT_RE = re.compile(
+    r"\(auto-resolve\s+from\s+commit\s+([a-f0-9]{7,})\)", re.IGNORECASE
+)
+
+
+def _resolve_snapshot_sha(md_body: str, default_owner: str, default_repo: str) -> str:
+    """Replace (auto-resolve from PR #NNN) / (auto-resolve from commit SHA)
+    markers in the scenario.md with the actual parent SHA via `gh api`.
+
+    If resolution fails (gh not available, PR doesn't exist, network error),
+    leave the marker in place — the drafter's text remains visible and a
+    human can finish the resolution later.
+    """
+    def _resolve_pr(m: re.Match) -> str:
+        pr_num = m.group(1)
+        try:
+            proc = subprocess.run(
+                ["gh", "api", f"repos/{default_owner}/{default_repo}/pulls/{pr_num}"],
+                capture_output=True, text=True, timeout=30,
+            )
+            if proc.returncode != 0:
+                return m.group(0)  # leave unresolved
+            data = _json.loads(proc.stdout)
+            parent_sha = data.get("base", {}).get("sha")
+            if not parent_sha:
+                return m.group(0)
+            return parent_sha
+        except (subprocess.SubprocessError, _json.JSONDecodeError):
+            return m.group(0)
+
+    def _resolve_commit(m: re.Match) -> str:
+        sha = m.group(1)
+        try:
+            proc = subprocess.run(
+                ["gh", "api", f"repos/{default_owner}/{default_repo}/commits/{sha}"],
+                capture_output=True, text=True, timeout=30,
+            )
+            if proc.returncode != 0:
+                return m.group(0)
+            data = _json.loads(proc.stdout)
+            parents = data.get("parents") or []
+            if not parents:
+                return m.group(0)
+            return parents[0].get("sha", m.group(0))
+        except (subprocess.SubprocessError, _json.JSONDecodeError):
+            return m.group(0)
+
+    out = _AUTO_RESOLVE_PR_RE.sub(_resolve_pr, md_body)
+    out = _AUTO_RESOLVE_COMMIT_RE.sub(_resolve_commit, out)
+    return out
+
+
 def _extract_default_repo(url: str) -> tuple[str, str]:
     """Parse ``owner``/``repo`` from a GitHub URL; returns ``("", "")`` on failure."""
     m = re.search(r"github\.com/([^/]+)/([^/]+)/", url)
@@ -251,6 +306,13 @@ class CurationPipeline:
                     rejection_reason="not_reproducible",
                 )
                 return
+            # Resolve upstream snapshot SHA placeholders if present
+            if owner and repo and "scenario.md" in draft.files:
+                resolved_md = _resolve_snapshot_sha(
+                    draft.files["scenario.md"], owner, repo
+                )
+                if resolved_md != draft.files["scenario.md"]:
+                    draft.files["scenario.md"] = resolved_md
             workdir.write_stage(
                 "draft",
                 {
