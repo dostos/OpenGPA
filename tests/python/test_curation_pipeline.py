@@ -157,7 +157,7 @@ def test_pipeline_out_of_scope_is_rejected_before_drafting(tmp_path):
     triage = TriageResult(
         verdict="out_of_scope",
         fingerprint="other:n_a",
-        rejection_reason="out_of_scope_compile_error",
+        rejection_reason="out_of_scope_not_rendering_bug",
         summary="",
     )
 
@@ -221,9 +221,10 @@ def test_pipeline_ambiguous_reaches_drafter(tmp_path):
     )
     p.run_batch()
 
-    # Drafter WAS called — ambiguous no longer short-circuits
-    drafter.draft.assert_called_once()
-    # Since drafter raised, validator and run_eval were NOT called
+    # Drafter WAS called — ambiguous no longer short-circuits. Pipeline retries
+    # once on ValueError, so two calls total before giving up.
+    assert drafter.draft.call_count == 2
+    # Since drafter raised on both attempts, validator and run_eval were NOT called
     validator.validate.assert_not_called()
     run_eval.run.assert_not_called()
     # Coverage log has a rejection entry with reason not_reproducible (drafter failed)
@@ -717,3 +718,109 @@ def test_pipeline_resolves_snapshot_sha_from_pr_ref(tmp_path):
     committed_md = md_path.read_text()
     assert "resolved_parent_sha" in committed_md
     assert "(auto-resolve" not in committed_md
+
+
+def test_pipeline_retries_draft_on_value_error(tmp_path):
+    """When draft raises ValueError, pipeline retries once with error feedback.
+    Second success commits normally."""
+    candidate = DiscoveryCandidate(
+        url="https://github.com/x/y/issues/1", source_type="issue", title="t",
+    )
+    triage = TriageResult(
+        verdict="in_scope", fingerprint="state_leak:unique_key",
+        rejection_reason=None, summary="s",
+    )
+
+    successful_draft = DraftResult(
+        scenario_id="r1_fake",
+        files={
+            "main.c": "// SOURCE: https://github.com/x/y/issues/1\nint main(){}",
+            "scenario.md": _draft_md(),
+        },
+    )
+
+    drafter = MagicMock()
+    # First call raises ValueError; second call succeeds
+    drafter.draft.side_effect = [
+        ValueError("Ground Truth Diagnosis missing upstream citation"),
+        successful_draft,
+    ]
+
+    discoverer = MagicMock(); discoverer.run.return_value = [candidate]
+    fetch_fn = MagicMock()
+    fetch_fn.return_value = IssueThread(url=candidate.url, title="t", body="b")
+    triager = MagicMock(); triager.triage.return_value = triage
+    validator = MagicMock()
+    validator.validate.return_value = ValidationResult(
+        ok=True, reason="ok", framebuffer_png=b"x",
+        metadata={"draw_call_count": 1, "draw_calls": []},
+    )
+    run_eval = MagicMock()
+    run_eval.run.return_value = RunEvalResult(
+        with_gla=_eval_result("with_gla", True, 1000),
+        code_only=_eval_result("code_only", False, 4000),
+        scorer_ambiguous=False,
+    )
+
+    p = CurationPipeline(
+        discoverer=discoverer, fetch_thread=fetch_fn, triager=triager,
+        drafter=drafter, validator=validator, run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval", workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+    )
+    p.run_batch()
+
+    # Drafter was called twice (first failed, second succeeded)
+    assert drafter.draft.call_count == 2
+    # Second call had previous_error kwarg with the first error's message
+    second_call_kwargs = drafter.draft.call_args_list[1].kwargs
+    assert second_call_kwargs.get("previous_error") is not None
+    assert "citation" in second_call_kwargs["previous_error"].lower()
+    # Scenario committed
+    assert (tmp_path / "eval" / "r1_fake" / "main.c").exists()
+
+
+def test_pipeline_gives_up_after_second_draft_failure(tmp_path):
+    """After TWO ValueError failures, pipeline logs not_reproducible."""
+    from gla.eval.curation.coverage_log import CoverageLog
+
+    candidate = DiscoveryCandidate(
+        url="https://github.com/x/y/issues/1", source_type="issue", title="t",
+    )
+    triage = TriageResult(
+        verdict="in_scope", fingerprint="state_leak:unique_key",
+        rejection_reason=None, summary="s",
+    )
+
+    drafter = MagicMock()
+    drafter.draft.side_effect = [
+        ValueError("first error"),
+        ValueError("second error"),
+    ]
+
+    discoverer = MagicMock(); discoverer.run.return_value = [candidate]
+    fetch_fn = MagicMock()
+    fetch_fn.return_value = IssueThread(url=candidate.url, title="t", body="b")
+    triager = MagicMock(); triager.triage.return_value = triage
+    validator = MagicMock()
+    run_eval = MagicMock()
+
+    p = CurationPipeline(
+        discoverer=discoverer, fetch_thread=fetch_fn, triager=triager,
+        drafter=drafter, validator=validator, run_eval=run_eval,
+        failure_mode_fn=MagicMock(),
+        eval_dir=tmp_path / "eval", workdir_root=tmp_path / ".wd",
+        coverage_log_path=tmp_path / "log.jsonl",
+        summary_path=tmp_path / "gaps.md",
+    )
+    p.run_batch()
+
+    assert drafter.draft.call_count == 2  # retried once, total 2 attempts
+    assert validator.validate.call_count == 0  # never got past draft
+    log = CoverageLog(tmp_path / "log.jsonl")
+    entries = log.read_all()
+    assert len(entries) == 1
+    assert entries[0].outcome == "rejected"
+    assert entries[0].rejection_reason == "not_reproducible"

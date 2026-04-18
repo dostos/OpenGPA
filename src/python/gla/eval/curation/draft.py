@@ -106,8 +106,15 @@ class Draft:
         self._system = load_prompt("draft_core_system")
 
     def draft(self, thread: IssueThread, triage: TriageResult,
-              scenario_id: str) -> DraftResult:
-        user = (
+              scenario_id: str,
+              previous_error: Optional[str] = None) -> DraftResult:
+        """Generate a scenario draft.
+
+        If ``previous_error`` is provided, it's included in the user message as
+        feedback from a failed prior attempt. The drafter should address the
+        specific issue and produce a valid draft on retry.
+        """
+        base_user = (
             f"Scenario ID: {scenario_id}\n"
             f"Triage fingerprint: {triage.fingerprint}\n"
             f"Triage summary: {triage.summary}\n\n"
@@ -116,6 +123,18 @@ class Draft:
             f"Body:\n{thread.body}\n\n"
             + "\n".join(f"Comment {i+1}:\n{c}" for i, c in enumerate(thread.comments))
         )
+
+        if previous_error:
+            user = (
+                base_user
+                + "\n\n---\n\n"
+                + "IMPORTANT: Your previous draft attempt was rejected by validation with this error:\n\n"
+                + f"    {previous_error}\n\n"
+                + "Please produce a new draft that fixes this specific issue. All other rules still apply."
+            )
+        else:
+            user = base_user
+
         resp = self._llm.complete(
             system=self._system,
             messages=[{"role": "user", "content": user}],

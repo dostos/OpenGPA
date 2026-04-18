@@ -295,7 +295,32 @@ class CurationPipeline:
                 draft = self._drafter.draft(
                     thread, triage, scenario_id=proposed_scenario_id
                 )
+            except ValueError as first_err:
+                # ValueError is a validation/structure failure from the drafter
+                # itself (missing SOURCE comment, no citation, malformed YAML,
+                # etc.). These are typically recoverable drafter mistakes —
+                # give the drafter ONE retry with the specific error as
+                # feedback. Do NOT cache the retry attempt: the first failure
+                # is exactly what we're trying to avoid replaying.
+                try:
+                    draft = self._drafter.draft(
+                        thread, triage,
+                        scenario_id=proposed_scenario_id,
+                        previous_error=str(first_err),
+                    )
+                except Exception:
+                    log_rejection(
+                        coverage_log=self._log,
+                        summary_path=self._summary,
+                        issue_url=cand.url,
+                        source_type=cand.source_type,
+                        triage_verdict=triage.verdict,
+                        fingerprint=triage.fingerprint,
+                        rejection_reason="not_reproducible",
+                    )
+                    return
             except Exception:
+                # Non-ValueError (network, LLM backend, etc.) — don't retry.
                 log_rejection(
                     coverage_log=self._log,
                     summary_path=self._summary,
