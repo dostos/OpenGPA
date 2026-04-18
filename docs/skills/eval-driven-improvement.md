@@ -1,3 +1,7 @@
+<!-- 
+  This is a reference copy. The active skill lives at:
+  ~/.claude/skills/eval-driven-improvement/SKILL.md
+-->
 ---
 name: eval-driven-improvement
 description: Use when a feature/fix lands and you need to validate it actually helps, or when exploring whether OpenGPA covers a new bug class. Triggers on phrases like "run the eval", "does this help", "test the improvement", "next iteration".
