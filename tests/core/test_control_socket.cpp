@@ -185,16 +185,11 @@ TEST_F(ControlSocketTest, FrameReadyMessage) {
     EXPECT_EQ(type, gla::ipc::MsgType::MSG_FRAME_READY);
     ASSERT_EQ(payload.size(), sizeof(gla::ipc::FrameReadyPayload));
 
-    // Decode payload (big-endian)
-    uint32_t hi_be, lo_be, slot_be;
-    std::memcpy(&hi_be, payload.data(), 4);
-    std::memcpy(&lo_be, payload.data() + 4, 4);
-    std::memcpy(&slot_be, payload.data() + 8, 4);
-    uint64_t frame_id = (static_cast<uint64_t>(ntohl(hi_be)) << 32) | ntohl(lo_be);
-    uint32_t slot = ntohl(slot_be);
-
-    EXPECT_EQ(frame_id, 42u);
-    EXPECT_EQ(slot, 2u);
+    // Decode payload (native endian — matches C shim and C++ client)
+    gla::ipc::FrameReadyPayload fr{};
+    std::memcpy(&fr, payload.data(), sizeof(fr));
+    EXPECT_EQ(fr.frame_id, 42u);
+    EXPECT_EQ(fr.shm_slot_index, 2u);
 
     ::close(cfd);
     client_thread.join();
@@ -279,15 +274,10 @@ TEST_F(ControlSocketTest, MultipleMessages) {
         EXPECT_EQ(type, gla::ipc::MsgType::MSG_FRAME_READY) << "Message " << i;
         ASSERT_EQ(payload.size(), sizeof(gla::ipc::FrameReadyPayload));
 
-        uint32_t hi_be, lo_be, slot_be;
-        std::memcpy(&hi_be, payload.data(), 4);
-        std::memcpy(&lo_be, payload.data() + 4, 4);
-        std::memcpy(&slot_be, payload.data() + 8, 4);
-        uint64_t frame_id = (static_cast<uint64_t>(ntohl(hi_be)) << 32) | ntohl(lo_be);
-        uint32_t slot = ntohl(slot_be);
-
-        EXPECT_EQ(frame_id, static_cast<uint64_t>(i) * 10) << "Message " << i;
-        EXPECT_EQ(slot, static_cast<uint32_t>(i)) << "Message " << i;
+        gla::ipc::FrameReadyPayload fr{};
+        std::memcpy(&fr, payload.data(), sizeof(fr));
+        EXPECT_EQ(fr.frame_id, static_cast<uint64_t>(i) * 10) << "Message " << i;
+        EXPECT_EQ(fr.shm_slot_index, static_cast<uint32_t>(i)) << "Message " << i;
     }
 
     ::close(cfd);
