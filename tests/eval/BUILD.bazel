@@ -23,4 +23,5 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
     "r20_webgpu_negative_scale_inverts_front_face",
     "r31_weird_r164_webgl_renderer_regression_wit",
     "r36_opengl_proximity_fade_could_not_create_3",
+    "r44_4_6_dev3_ssr_glitch_with_half_size_disab",
 ]]
