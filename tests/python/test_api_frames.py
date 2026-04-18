@@ -12,6 +12,8 @@ class TestCurrentFrameOverview:
         assert data["framebuffer_width"] == 800
         assert data["framebuffer_height"] == 600
         assert data["timestamp"] == pytest.approx(1234.5)
+        assert "clear_count" in data
+        assert data["clear_count"] == 0
 
     def test_get_current_overview_no_auth_401(self, client):
         resp = client.get("/api/v1/frames/current/overview")

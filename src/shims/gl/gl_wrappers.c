@@ -32,6 +32,8 @@ void gla_wrappers_init(void) {
     gla_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
     gla_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
 
+    gla_real_gl.glClear       = dlsym(RTLD_NEXT, "glClear");
+
     gla_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
     gla_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
     gla_real_gl.glDepthFunc   = dlsym(RTLD_NEXT, "glDepthFunc");
@@ -42,9 +44,10 @@ void gla_wrappers_init(void) {
     gla_real_gl.glViewport    = dlsym(RTLD_NEXT, "glViewport");
     gla_real_gl.glScissor     = dlsym(RTLD_NEXT, "glScissor");
 
-    gla_real_gl.glBindVertexArray  = dlsym(RTLD_NEXT, "glBindVertexArray");
-    gla_real_gl.glBindBuffer       = dlsym(RTLD_NEXT, "glBindBuffer");
-    gla_real_gl.glBindFramebuffer  = dlsym(RTLD_NEXT, "glBindFramebuffer");
+    gla_real_gl.glBindVertexArray      = dlsym(RTLD_NEXT, "glBindVertexArray");
+    gla_real_gl.glBindBuffer           = dlsym(RTLD_NEXT, "glBindBuffer");
+    gla_real_gl.glBindFramebuffer      = dlsym(RTLD_NEXT, "glBindFramebuffer");
+    gla_real_gl.glFramebufferTexture2D = dlsym(RTLD_NEXT, "glFramebufferTexture2D");
 
     gla_real_gl.glReadPixels   = dlsym(RTLD_NEXT, "glReadPixels");
     gla_real_gl.glGetIntegerv  = dlsym(RTLD_NEXT, "glGetIntegerv");
@@ -187,6 +190,16 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat,
 }
 
 /* --------------------------------------------------------------------------
+ * Clear wrapper
+ * -------------------------------------------------------------------------- */
+
+void glClear(GLbitfield mask) {
+    gla_init();
+    gla_real_gl.glClear(mask);
+    gla_shadow_record_clear(&gla_shadow, (uint32_t)mask);
+}
+
+/* --------------------------------------------------------------------------
  * Pipeline state wrappers
  * -------------------------------------------------------------------------- */
 
@@ -266,6 +279,14 @@ void glBindFramebuffer(GLenum target, GLuint framebuffer) {
     gla_shadow_bind_framebuffer(&gla_shadow, target, framebuffer);
 }
 
+void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget,
+                             GLuint texture, GLint level) {
+    gla_init();
+    if (gla_real_gl.glFramebufferTexture2D)
+        gla_real_gl.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    gla_shadow_framebuffer_texture_2d(&gla_shadow, target, attachment, texture);
+}
+
 /* --------------------------------------------------------------------------
  * Readback pass-throughs (no shadow state to update)
  * -------------------------------------------------------------------------- */
@@ -332,6 +353,8 @@ static __GLXextFuncPtr gla_resolve_wrapper(const char* name) {
     if (strcmp(name, "glActiveTexture") == 0)          return (__GLXextFuncPtr)glActiveTexture;
     if (strcmp(name, "glBindTexture") == 0)            return (__GLXextFuncPtr)glBindTexture;
     if (strcmp(name, "glTexImage2D") == 0)             return (__GLXextFuncPtr)glTexImage2D;
+    /* Clear */
+    if (strcmp(name, "glClear") == 0)                  return (__GLXextFuncPtr)glClear;
     /* State */
     if (strcmp(name, "glEnable") == 0)                 return (__GLXextFuncPtr)glEnable;
     if (strcmp(name, "glDisable") == 0)                return (__GLXextFuncPtr)glDisable;
@@ -346,6 +369,7 @@ static __GLXextFuncPtr gla_resolve_wrapper(const char* name) {
     if (strcmp(name, "glBindVertexArray") == 0)        return (__GLXextFuncPtr)glBindVertexArray;
     if (strcmp(name, "glBindBuffer") == 0)             return (__GLXextFuncPtr)glBindBuffer;
     if (strcmp(name, "glBindFramebuffer") == 0)        return (__GLXextFuncPtr)glBindFramebuffer;
+    if (strcmp(name, "glFramebufferTexture2D") == 0)   return (__GLXextFuncPtr)glFramebufferTexture2D;
     /* Readback */
     if (strcmp(name, "glReadPixels") == 0)             return (__GLXextFuncPtr)glReadPixels;
     if (strcmp(name, "glGetIntegerv") == 0)            return (__GLXextFuncPtr)glGetIntegerv;

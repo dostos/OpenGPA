@@ -177,6 +177,7 @@ class RenderDocBackend(FrameProvider):
         return FrameOverview(
             frame_id=self.FRAME_ID,
             draw_call_count=draw_count,
+            clear_count=0,
             fb_width=fb_w,
             fb_height=fb_h,
             timestamp=0.0,

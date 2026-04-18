@@ -244,11 +244,62 @@ void gla_shadow_bind_framebuffer(GlaShadowState *state, uint32_t target,
 }
 
 /* -------------------------------------------------------------------------
+ * FBO attachment tracking
+ * ---------------------------------------------------------------------- */
+
+void gla_shadow_framebuffer_texture_2d(GlaShadowState *state, uint32_t target,
+                                        uint32_t attachment, uint32_t texture) {
+    (void)target; /* GL_FRAMEBUFFER */
+    uint32_t fbo_id = state->bound_fbo;
+    if (fbo_id == 0) return; /* default FBO — nothing to track */
+
+    /* Find existing slot for this FBO, or allocate a new one */
+    GlaFboInfo *slot = NULL;
+    for (uint32_t i = 0; i < state->fbo_count; i++) {
+        if (state->fbo_info[i].fbo_id == fbo_id) {
+            slot = &state->fbo_info[i];
+            break;
+        }
+    }
+    if (!slot) {
+        if (state->fbo_count >= GLA_MAX_FBOS) return; /* table full */
+        slot = &state->fbo_info[state->fbo_count];
+        memset(slot, 0, sizeof(*slot));
+        slot->fbo_id = fbo_id;
+        state->fbo_count++;
+    }
+
+    if (attachment == GL_COLOR_ATTACHMENT0) {
+        slot->color_attachment_tex = texture;
+    } else if (attachment == GL_DEPTH_ATTACHMENT) {
+        slot->depth_attachment_tex = texture;
+    }
+}
+
+const GlaFboInfo* gla_shadow_get_fbo_info(const GlaShadowState *state,
+                                            uint32_t fbo_id) {
+    for (uint32_t i = 0; i < state->fbo_count; i++) {
+        if (state->fbo_info[i].fbo_id == fbo_id) {
+            return &state->fbo_info[i];
+        }
+    }
+    return NULL;
+}
+
+/* -------------------------------------------------------------------------
  * Draw call tracking
  * ---------------------------------------------------------------------- */
 
 void gla_shadow_record_draw(GlaShadowState *state) {
     state->draw_call_count++;
+}
+
+void gla_shadow_record_clear(GlaShadowState *state, uint32_t mask) {
+    if (state->clear_count >= GLA_MAX_CLEARS_PER_FRAME) return;
+    GlaClearRecord *r = &state->clear_records[state->clear_count];
+    r->mask             = mask;
+    r->draw_call_before = state->draw_call_count;
+    state->clear_count++;
 }
 
 /* -------------------------------------------------------------------------
@@ -258,6 +309,7 @@ void gla_shadow_record_draw(GlaShadowState *state) {
 void gla_shadow_new_frame(GlaShadowState *state) {
     state->frame_number++;
     state->draw_call_count = 0;
+    state->clear_count     = 0;
 }
 
 /* -------------------------------------------------------------------------

@@ -81,11 +81,21 @@ NormalizedFrame Normalizer::normalize(const gla::store::RawFrame& raw) const {
         dc.index_data  = rdc.index_data;
 
         dc.debug_group_path = rdc.debug_group_path;
+        dc.fbo_color_attachment_tex = rdc.fbo_color_attachment_tex;
 
         pass.draw_calls.push_back(std::move(dc));
     }
 
     frame.render_passes.push_back(std::move(pass));
+
+    // Clear records
+    frame.clear_records.reserve(raw.clear_records.size());
+    for (const auto& rc : raw.clear_records) {
+        ClearRecord cr;
+        cr.mask             = rc.mask;
+        cr.draw_call_before = rc.draw_call_before;
+        frame.clear_records.push_back(cr);
+    }
 
     // Framebuffer
     frame.fb_width   = raw.fb_width;

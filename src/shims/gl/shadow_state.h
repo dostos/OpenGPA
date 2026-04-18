@@ -11,11 +11,18 @@
 #define GLA_MAX_TEXTURES 4096
 #define GLA_MAX_DEBUG_GROUP_DEPTH 32
 #define GLA_MAX_DEBUG_GROUP_NAME 128
+#define GLA_MAX_CLEARS_PER_FRAME 16
+#define GLA_MAX_FBOS 64
 
 typedef struct {
     char name[GLA_MAX_DEBUG_GROUP_NAME];
     uint32_t id;
 } GlaDebugGroupEntry;
+
+typedef struct {
+    uint32_t mask;             /* GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT */
+    uint32_t draw_call_before; /* how many draw calls happened before this clear */
+} GlaClearRecord;
 
 /* GL enum constants (no GL headers needed) */
 #define GL_TEXTURE0             0x84C0
@@ -37,6 +44,8 @@ typedef struct {
 #define GL_FLOAT_MAT3           0x8B5B
 #define GL_FLOAT_MAT4           0x8B5C
 #define GL_INT                  0x1404
+#define GL_COLOR_ATTACHMENT0    0x8CE0
+#define GL_DEPTH_ATTACHMENT     0x8D00
 
 /* Uniform value (up to mat4 = 16 floats = 64 bytes) */
 typedef struct {
@@ -54,6 +63,13 @@ typedef struct {
     uint32_t height;
     uint32_t internal_format;
 } GlaTextureInfo;
+
+/* Per-FBO attachment tracking */
+typedef struct {
+    uint32_t fbo_id;
+    uint32_t color_attachment_tex;   /* texture ID attached as COLOR_ATTACHMENT0 */
+    uint32_t depth_attachment_tex;   /* texture ID attached as DEPTH_ATTACHMENT */
+} GlaFboInfo;
 
 typedef struct {
     /* Texture bindings */
@@ -88,9 +104,17 @@ typedef struct {
     uint32_t bound_ebo;             /* GL_ELEMENT_ARRAY_BUFFER */
     uint32_t bound_fbo;             /* GL_FRAMEBUFFER */
 
+    /* FBO attachment tracking */
+    GlaFboInfo fbo_info[GLA_MAX_FBOS];
+    uint32_t fbo_count;
+
     /* Frame tracking */
     uint64_t frame_number;
     uint32_t draw_call_count;       /* resets each frame */
+
+    /* Per-frame clear records */
+    GlaClearRecord clear_records[GLA_MAX_CLEARS_PER_FRAME];
+    uint32_t clear_count;           /* resets each frame */
 
     /* Debug group stack (GL_KHR_debug) */
     GlaDebugGroupEntry debug_group_stack[GLA_MAX_DEBUG_GROUP_DEPTH];
@@ -134,8 +158,16 @@ void gla_shadow_bind_vao(GlaShadowState *state, uint32_t vao);
 void gla_shadow_bind_buffer(GlaShadowState *state, uint32_t target, uint32_t buffer);
 void gla_shadow_bind_framebuffer(GlaShadowState *state, uint32_t target, uint32_t fbo);
 
+/* FBO attachment tracking */
+void gla_shadow_framebuffer_texture_2d(GlaShadowState *state, uint32_t target,
+                                        uint32_t attachment, uint32_t texture);
+const GlaFboInfo* gla_shadow_get_fbo_info(const GlaShadowState *state, uint32_t fbo_id);
+
 /* Draw call tracking */
 void gla_shadow_record_draw(GlaShadowState *state);
+
+/* Clear tracking */
+void gla_shadow_record_clear(GlaShadowState *state, uint32_t mask);
 
 /* Frame boundary */
 void gla_shadow_new_frame(GlaShadowState *state);

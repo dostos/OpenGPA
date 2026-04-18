@@ -54,11 +54,19 @@ struct NormalizedDrawCall {
     std::vector<uint8_t> index_data;
 
     std::string debug_group_path;
+
+    // FBO color attachment texture (for feedback loop detection)
+    uint32_t fbo_color_attachment_tex = 0;
 };
 
 struct RenderPass {
     uint32_t target_framebuffer = 0;  // 0 = default
     std::vector<NormalizedDrawCall> draw_calls;
+};
+
+struct ClearRecord {
+    uint32_t mask;             // GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT
+    uint32_t draw_call_before; // how many draw calls had been issued before this clear
 };
 
 struct NormalizedFrame {
@@ -67,6 +75,9 @@ struct NormalizedFrame {
 
     // Draw calls grouped under render passes (v1: single implicit pass)
     std::vector<RenderPass> render_passes;
+
+    // glClear calls recorded this frame
+    std::vector<ClearRecord> clear_records;
 
     // Framebuffer
     uint32_t fb_width = 0, fb_height = 0;

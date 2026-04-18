@@ -10,6 +10,7 @@ typedef void (*__GLXextFuncPtr)(void);
 
 // GL types
 typedef unsigned int GLenum;
+typedef unsigned int GLbitfield;
 typedef int GLint;
 typedef int GLsizei;
 typedef unsigned int GLuint;
@@ -41,6 +42,9 @@ typedef struct {
                          GLsizei width, GLsizei height, GLint border,
                          GLenum format, GLenum type, const void* pixels);
 
+    // Clear
+    void (*glClear)(GLbitfield mask);
+
     // State
     void (*glEnable)(GLenum cap);
     void (*glDisable)(GLenum cap);
@@ -56,6 +60,8 @@ typedef struct {
     void (*glBindVertexArray)(GLuint array);
     void (*glBindBuffer)(GLenum target, GLuint buffer);
     void (*glBindFramebuffer)(GLenum target, GLuint framebuffer);
+    void (*glFramebufferTexture2D)(GLenum target, GLenum attachment, GLenum textarget,
+                                   GLuint texture, GLint level);
 
     // Readback (for frame capture)
     void (*glReadPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels);

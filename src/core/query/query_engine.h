@@ -17,6 +17,7 @@ public:
     struct FrameOverview {
         uint64_t frame_id;
         uint32_t draw_call_count;
+        uint32_t clear_count;
         uint32_t fb_width, fb_height;
         double timestamp;
     };

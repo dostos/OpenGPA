@@ -40,6 +40,7 @@ class NativeBackend(FrameProvider):
         return FrameOverview(
             frame_id=ov.frame_id,
             draw_call_count=ov.draw_call_count,
+            clear_count=getattr(ov, "clear_count", 0),
             fb_width=ov.fb_width,
             fb_height=ov.fb_height,
             timestamp=ov.timestamp,
@@ -131,6 +132,8 @@ class NativeBackend(FrameProvider):
                 "format": t.format,
             })
 
+        fbo_tex = getattr(dc, "fbo_color_attachment_tex", 0) or 0
+
         return DrawCallInfo(
             id=dc.id,
             primitive_type=dc.primitive_type,
@@ -141,6 +144,7 @@ class NativeBackend(FrameProvider):
             pipeline_state=NativeBackend._convert_pipeline(dc.pipeline),
             params=params,
             textures=textures,
+            fbo_color_attachment_tex=fbo_tex,
         )
 
     # -- FrameProvider implementation ----------------------------------------

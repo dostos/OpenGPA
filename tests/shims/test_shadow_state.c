@@ -351,6 +351,125 @@ static void test_debug_group_overflow(void) {
 }
 
 /* -------------------------------------------------------------------------
+ * 15. ClearRecording
+ * ---------------------------------------------------------------------- */
+static void test_clear_recording(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    assert(s.clear_count == 0);
+
+    /* GL_COLOR_BUFFER_BIT = 0x4000, GL_DEPTH_BUFFER_BIT = 0x100 */
+    gla_shadow_record_clear(&s, 0x4000);
+    assert(s.clear_count == 1);
+    assert(s.clear_records[0].mask == 0x4000);
+    assert(s.clear_records[0].draw_call_before == 0);
+
+    /* Record a draw call, then another clear */
+    gla_shadow_record_draw(&s);
+    gla_shadow_record_clear(&s, 0x4100u); /* color + depth */
+    assert(s.clear_count == 2);
+    assert(s.clear_records[1].mask == 0x4100u);
+    assert(s.clear_records[1].draw_call_before == 1);
+
+    /* New frame resets clear_count */
+    gla_shadow_new_frame(&s);
+    assert(s.clear_count == 0);
+    assert(s.draw_call_count == 0);
+
+    printf("PASS test_clear_recording\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 16. ClearOverflow
+ * ---------------------------------------------------------------------- */
+static void test_clear_overflow(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    /* Fill up to the cap */
+    for (int i = 0; i <= GLA_MAX_CLEARS_PER_FRAME; i++) {
+        gla_shadow_record_clear(&s, (uint32_t)i);
+    }
+    /* Count must be capped at GLA_MAX_CLEARS_PER_FRAME */
+    assert(s.clear_count == GLA_MAX_CLEARS_PER_FRAME);
+
+    printf("PASS test_clear_overflow\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 17. FramebufferTexture2D — color attachment tracking
+ * ---------------------------------------------------------------------- */
+static void test_framebuffer_texture_2d_color(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    /* Bind FBO 5, attach texture 42 as COLOR_ATTACHMENT0 */
+    gla_shadow_bind_framebuffer(&s, GL_FRAMEBUFFER, 5);
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 42);
+
+    const GlaFboInfo* info = gla_shadow_get_fbo_info(&s, 5);
+    assert(info != NULL);
+    assert(info->fbo_id               == 5);
+    assert(info->color_attachment_tex == 42);
+    assert(info->depth_attachment_tex == 0);
+
+    /* Attach texture 99 as DEPTH_ATTACHMENT */
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, 99);
+    info = gla_shadow_get_fbo_info(&s, 5);
+    assert(info->depth_attachment_tex == 99);
+
+    /* Overwrite color attachment */
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 77);
+    info = gla_shadow_get_fbo_info(&s, 5);
+    assert(info->color_attachment_tex == 77);
+
+    printf("PASS test_framebuffer_texture_2d_color\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 18. FramebufferTexture2D — default FBO (id=0) is ignored
+ * ---------------------------------------------------------------------- */
+static void test_framebuffer_texture_2d_default_fbo(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    /* FBO 0 is the default framebuffer — attachments should be ignored */
+    gla_shadow_bind_framebuffer(&s, GL_FRAMEBUFFER, 0);
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 10);
+
+    assert(s.fbo_count == 0);
+
+    printf("PASS test_framebuffer_texture_2d_default_fbo\n");
+}
+
+/* -------------------------------------------------------------------------
+ * 19. FramebufferTexture2D — multiple distinct FBOs
+ * ---------------------------------------------------------------------- */
+static void test_framebuffer_texture_2d_multiple_fbos(void) {
+    GlaShadowState s;
+    gla_shadow_init(&s);
+
+    gla_shadow_bind_framebuffer(&s, GL_FRAMEBUFFER, 1);
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 11);
+
+    gla_shadow_bind_framebuffer(&s, GL_FRAMEBUFFER, 2);
+    gla_shadow_framebuffer_texture_2d(&s, GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, 22);
+
+    assert(s.fbo_count == 2);
+
+    const GlaFboInfo* a = gla_shadow_get_fbo_info(&s, 1);
+    const GlaFboInfo* b = gla_shadow_get_fbo_info(&s, 2);
+    assert(a != NULL && a->color_attachment_tex == 11);
+    assert(b != NULL && b->color_attachment_tex == 22);
+
+    /* Lookup of unknown FBO returns NULL */
+    assert(gla_shadow_get_fbo_info(&s, 99) == NULL);
+
+    printf("PASS test_framebuffer_texture_2d_multiple_fbos\n");
+}
+
+/* -------------------------------------------------------------------------
  * main
  * ---------------------------------------------------------------------- */
 int main(void) {
@@ -370,6 +489,11 @@ int main(void) {
     test_debug_group_path();
     test_debug_group_empty_path();
     test_debug_group_overflow();
+    test_clear_recording();
+    test_clear_overflow();
+    test_framebuffer_texture_2d_color();
+    test_framebuffer_texture_2d_default_fbo();
+    test_framebuffer_texture_2d_multiple_fbos();
 
     printf("All shadow state tests passed.\n");
     return 0;

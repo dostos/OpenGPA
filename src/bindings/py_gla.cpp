@@ -79,7 +79,8 @@ PYBIND11_MODULE(_gla_core, m) {
             return py::bytes(reinterpret_cast<const char*>(dc.index_data.data()),
                              dc.index_data.size());
         })
-        .def_readonly("debug_group_path", &gla::NormalizedDrawCall::debug_group_path);
+        .def_readonly("debug_group_path", &gla::NormalizedDrawCall::debug_group_path)
+        .def_readonly("fbo_color_attachment_tex", &gla::NormalizedDrawCall::fbo_color_attachment_tex);
 
     // -------------------------------------------------------------------------
     // DrawCallDiff
@@ -159,11 +160,19 @@ PYBIND11_MODULE(_gla_core, m) {
              py::return_value_policy::reference_internal);
 
     // -------------------------------------------------------------------------
+    // ClearRecord
+    // -------------------------------------------------------------------------
+    py::class_<gla::ClearRecord>(m, "ClearRecord")
+        .def_readonly("mask",             &gla::ClearRecord::mask)
+        .def_readonly("draw_call_before", &gla::ClearRecord::draw_call_before);
+
+    // -------------------------------------------------------------------------
     // QueryEngine::FrameOverview
     // -------------------------------------------------------------------------
     py::class_<gla::QueryEngine::FrameOverview>(m, "FrameOverview")
         .def_readonly("frame_id",        &gla::QueryEngine::FrameOverview::frame_id)
         .def_readonly("draw_call_count", &gla::QueryEngine::FrameOverview::draw_call_count)
+        .def_readonly("clear_count",     &gla::QueryEngine::FrameOverview::clear_count)
         .def_readonly("fb_width",        &gla::QueryEngine::FrameOverview::fb_width)
         .def_readonly("fb_height",       &gla::QueryEngine::FrameOverview::fb_height)
         .def_readonly("timestamp",       &gla::QueryEngine::FrameOverview::timestamp);
@@ -223,7 +232,8 @@ PYBIND11_MODULE(_gla_core, m) {
              py::return_value_policy::reference_internal);
 
     // -------------------------------------------------------------------------
-    // NormalizedFrame  (opaque — exposed for QueryEngine.get_normalized_frame)
+    // NormalizedFrame  (exposes clear_records for diagnostics)
     // -------------------------------------------------------------------------
-    py::class_<gla::NormalizedFrame>(m, "NormalizedFrame");
+    py::class_<gla::NormalizedFrame>(m, "NormalizedFrame")
+        .def_readonly("clear_records", &gla::NormalizedFrame::clear_records);
 }

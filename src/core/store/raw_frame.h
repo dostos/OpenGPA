@@ -54,6 +54,15 @@ struct RawDrawCall {
     std::vector<VertexAttr> attributes;
 
     std::string debug_group_path;
+
+    // FBO attachment info (color attachment texture ID at time of draw)
+    uint32_t fbo_color_attachment_tex = 0;
+};
+
+// A per-frame glClear record
+struct RawClearRecord {
+    uint32_t mask;             // GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT
+    uint32_t draw_call_before; // how many draw calls had already been issued before this clear
 };
 
 // A captured frame
@@ -63,6 +72,9 @@ struct RawFrame {
     uint32_t api_type;  // 0=GL, 1=VK, 2=WebGL
 
     std::vector<RawDrawCall> draw_calls;
+
+    // glClear calls recorded this frame
+    std::vector<RawClearRecord> clear_records;
 
     // Framebuffer data
     uint32_t fb_width, fb_height;

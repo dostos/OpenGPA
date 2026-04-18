@@ -19,6 +19,7 @@ from typing import Any, Dict, List, Optional
 class FrameOverview:
     frame_id: int
     draw_call_count: int
+    clear_count: int
     fb_width: int
     fb_height: int
     timestamp: float
@@ -45,6 +46,7 @@ class DrawCallInfo:
     pipeline_state: Dict[str, Any] = field(default_factory=dict)
     params: List[Dict[str, Any]] = field(default_factory=list)
     textures: List[Dict[str, Any]] = field(default_factory=list)
+    fbo_color_attachment_tex: int = 0
 
 
 # ---------------------------------------------------------------------------

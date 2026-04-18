@@ -55,11 +55,12 @@ std::optional<QueryEngine::FrameOverview> QueryEngine::frame_overview(uint64_t f
     }
 
     return FrameOverview{
-        .frame_id       = nf->frame_id,
+        .frame_id        = nf->frame_id,
         .draw_call_count = dc_count,
-        .fb_width       = nf->fb_width,
-        .fb_height      = nf->fb_height,
-        .timestamp      = nf->timestamp,
+        .clear_count     = static_cast<uint32_t>(nf->clear_records.size()),
+        .fb_width        = nf->fb_width,
+        .fb_height       = nf->fb_height,
+        .timestamp       = nf->timestamp,
     };
 }
 

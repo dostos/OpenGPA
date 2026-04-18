@@ -496,8 +496,31 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                     }
                 }
 
+                // FBO color attachment texture (uint32)
+                if (dc_ptr + 4 <= dc_end) {
+                    std::memcpy(&dc.fbo_color_attachment_tex, dc_ptr, 4);
+                    dc_ptr += 4;
+                }
+
                 frame.draw_calls.push_back(std::move(dc));
             }
+
+            // --- Clear records ---
+            // Wire format: uint32 clear_count, then clear_count * { uint32 mask, uint32 draw_call_before }
+            if (dc_ptr + 4 <= dc_end) {
+                uint32_t clear_count = 0;
+                if (read_u32(clear_count)) {
+                    if (clear_count > 16) clear_count = 16; // sanity cap = GLA_MAX_CLEARS_PER_FRAME
+                    frame.clear_records.reserve(clear_count);
+                    for (uint32_t c = 0; c < clear_count; ++c) {
+                        store::RawClearRecord cr{};
+                        if (!read_u32(cr.mask))             break;
+                        if (!read_u32(cr.draw_call_before)) break;
+                        frame.clear_records.push_back(cr);
+                    }
+                }
+            }
+
             done_dc:;
         }
     }

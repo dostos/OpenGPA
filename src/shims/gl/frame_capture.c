@@ -68,10 +68,14 @@ typedef struct {
 
     /* Debug group path (GL_KHR_debug push/pop group stack) */
     char debug_group_path[512];
+
+    /* FBO color attachment texture (for feedback loop detection) */
+    uint32_t fbo_color_attachment_tex;
 } GlaDrawCallSnapshot;
 
 static GlaDrawCallSnapshot gla_draw_call_buf[GLA_MAX_DRAW_CALLS_PER_FRAME];
 static uint32_t            gla_draw_call_count = 0;
+
 
 /* -------------------------------------------------------------------------
  * Public: reset draw call buffer at frame start
@@ -146,6 +150,12 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
 
     gla_shadow_get_debug_group_path(shadow, s->debug_group_path, sizeof(s->debug_group_path));
 
+    /* FBO color attachment texture — look up the current bound FBO's attachment */
+    {
+        const GlaFboInfo* fbo = gla_shadow_get_fbo_info(shadow, shadow->bound_fbo);
+        s->fbo_color_attachment_tex = fbo ? fbo->color_attachment_tex : 0;
+    }
+
     gla_draw_call_count++;
 }
 
@@ -180,6 +190,9 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
  *   uint32  param_count
  *   param_count * { uint32 location, uint32 type, uint32 data_size,
  *                   data_size bytes of data }
+ *   uint16  debug_group_path_len
+ *   debug_group_path_len chars (no null terminator)
+ *   uint32  fbo_color_attachment_tex
  *
  * Returns the number of bytes written.  The caller must ensure `buf` has
  * enough room; `buf_max` is the hard ceiling.
@@ -268,8 +281,46 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         if (p + 2 + path_len > end) break;
         memcpy(p, &path_len, 2); p += 2;
         if (path_len > 0) { memcpy(p, s->debug_group_path, path_len); p += path_len; }
+
+        /* FBO color attachment texture (uint32) */
+        if (p + 4 > end) break;
+        memcpy(p, &s->fbo_color_attachment_tex, 4); p += 4;
     }
 
+    return (size_t)(p - buf);
+}
+
+/* -------------------------------------------------------------------------
+ * Serialise clear records into a byte buffer.
+ *
+ * Wire format:
+ *   uint32  clear_count
+ *   clear_count * { uint32 mask, uint32 draw_call_before }
+ *
+ * Returns bytes written.
+ * ---------------------------------------------------------------------- */
+
+static size_t serialise_clear_records(const GlaShadowState* shadow,
+                                       uint8_t* buf, size_t buf_max) {
+    uint8_t* p   = buf;
+    uint8_t* end = buf + buf_max;
+
+    uint32_t n = shadow->clear_count;
+    if (n > GLA_MAX_CLEARS_PER_FRAME) n = GLA_MAX_CLEARS_PER_FRAME;
+
+    /* Need 4 (count) + n * 8 bytes */
+    if (p + 4 + (uint64_t)n * 8 > end) {
+        /* Fall back: write count=0 */
+        n = 0;
+        if (p + 4 > end) return 0;
+    }
+
+    memcpy(p, &n, 4); p += 4;
+    for (uint32_t i = 0; i < n; i++) {
+        const GlaClearRecord* r = &shadow->clear_records[i];
+        memcpy(p, &r->mask,             4); p += 4;
+        memcpy(p, &r->draw_call_before, 4); p += 4;
+    }
     return (size_t)(p - buf);
 }
 
@@ -336,6 +387,14 @@ void gla_frame_on_swap(void) {
 
         size_t written = serialise_draw_calls(ptr, kDrawCallBudget);
         ptr += written;
+
+        /* Clear records — append immediately after draw calls */
+        const size_t kClearBudget = 4u + (size_t)GLA_MAX_CLEARS_PER_FRAME * 8u;
+        size_t remaining = (kDrawCallBudget > written) ? (kDrawCallBudget - written) : 0;
+        if (remaining >= kClearBudget) {
+            size_t cwritten = serialise_clear_records(&gla_shadow, ptr, remaining);
+            ptr += cwritten;
+        }
     }
 
     uint64_t total_size = (uint64_t)((uintptr_t)ptr - (uintptr_t)slot);

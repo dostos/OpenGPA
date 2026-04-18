@@ -31,6 +31,7 @@ def _make_overview(frame_id: int = 1) -> MagicMock:
     ov = MagicMock()
     ov.frame_id = frame_id
     ov.draw_call_count = 42
+    ov.clear_count = 0
     ov.fb_width = 800
     ov.fb_height = 600
     ov.timestamp = 1234.5
@@ -75,6 +76,7 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     tex.height = 512
     tex.format = "RGBA8"
     dc.textures = [tex]
+    dc.fbo_color_attachment_tex = 0
     return dc
 
 
