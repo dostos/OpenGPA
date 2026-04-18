@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import re
 import subprocess
 from dataclasses import dataclass, field
 from typing import Optional, TYPE_CHECKING
@@ -10,16 +11,77 @@ if TYPE_CHECKING:
 
 DEFAULT_QUERIES: dict[str, list[str]] = {
     "issue": [
-        'repo:mrdoob/three.js is:issue is:open label:"Rendering"',
-        'repo:BabylonJS/Babylon.js is:issue label:"bug"',
-        'repo:playcanvas/engine is:issue label:"area: rendering"',
-        'repo:godotengine/godot is:issue label:"topic:rendering"',
+        # three.js: no rendering label exists, so use closed+completed + specific
+        # visual-symptom terms
+        'repo:mrdoob/three.js is:issue is:closed reason:completed "z-fighting" OR "winding" OR "culling"',
+        'repo:mrdoob/three.js is:issue is:closed reason:completed "shader" "uniform"',
+        'repo:mrdoob/three.js is:issue is:closed reason:completed "NaN" OR "Inf" texture',
+        # Godot: has topic:rendering label, use it
+        'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" shader',
+        'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" "z-fighting" OR "depth"',
+        # Babylon: has "bug" label, pair with rendering terms
+        'repo:BabylonJS/Babylon.js is:issue is:closed reason:completed label:"bug" shader precision',
     ],
     "commit": [
-        'repo:mrdoob/three.js "fix:" shader',
-        'repo:godotengine/godot "fix:" depth',
+        # Fix commits — Task A just landed support for these. Commit messages
+        # contain the diagnosis directly.
+        'repo:mrdoob/three.js "fix:" "z-fighting" OR "culling" OR "precision"',
+        'repo:godotengine/godot "fix:" "shader" OR "depth buffer"',
     ],
 }
+
+
+# Title/label patterns that strongly suggest the issue is NOT a visual rendering bug.
+# Matched case-insensitively against candidate.title and (lowercased) label names.
+_NON_RENDERING_KEYWORDS = [
+    # Type system / API surface
+    r"\btypescript\b", r"\btype\s+def", r"\btype\s+error",
+    r"\bd\.ts\b", r"\btyping\b",
+    # Docs / examples / tutorials
+    r"\bdocs?\b", r"\bdocumentation\b", r"\bexample\b", r"\btutorial\b",
+    r"\breadme\b", r"\bfaq\b",
+    # Build / packaging / ci
+    r"\bbuild\s+error\b", r"\bnpm\b", r"\byarn\b", r"\bpnpm\b",
+    r"\bbundle\b", r"\bbundler\b", r"\brollup\b", r"\bvite\b",
+    r"\bpackage\.json\b", r"\bci\b", r"\bgithub\s+actions\b",
+    # Editor / dev tools
+    r"\beditor\b", r"\binspector\b", r"\beslint\b", r"\btslint\b",
+    r"\bvscode\b", r"\bnode\s+material\s+editor\b", r"\bNME\b",
+    # API surface (non-visual)
+    r"\bapi\s+change\b", r"\bdeprecation\b", r"\brefactor\b",
+    # Input / UI / DOM
+    r"\bdom\b", r"\bkeyboard\b", r"\bpointer\s+event\b",
+    r"\bfocus\b", r"\btouch\s+event\b", r"\binput\s+focus\b",
+    # Support / question
+    r"\bquestion\b", r"\bhow\s+to\b", r"\bplease\s+help\b",
+]
+
+_NON_RENDERING_LABELS = {
+    "documentation", "docs", "typescript", "types", "editor",
+    "tooling", "build", "ci", "duplicate", "question",
+    "needs-info", "needs info", "workflow", "examples",
+}
+
+_NON_RENDERING_RE = re.compile("|".join(_NON_RENDERING_KEYWORDS), re.IGNORECASE)
+
+
+def _is_obviously_non_rendering(cand: "DiscoveryCandidate") -> bool:
+    """Cheap pre-triage filter.
+
+    Returns True when the title or any label strongly suggests the issue is NOT
+    a visual rendering bug — so we can skip the LLM triage call entirely.
+
+    Conservative: false negatives (letting through non-rendering bugs) are fine,
+    triage will catch them; false positives (rejecting real rendering bugs) are
+    what we want to avoid, so the patterns only match terms that are
+    overwhelmingly non-visual in our source repos.
+    """
+    if _NON_RENDERING_RE.search(cand.title or ""):
+        return True
+    label_set = {l.lower().strip() for l in (cand.labels or [])}
+    if label_set & _NON_RENDERING_LABELS:
+        return True
+    return False
 
 
 @dataclass
@@ -96,6 +158,12 @@ class Discoverer:
                     continue
                 if self._log.contains_url(cand.url):
                     continue
+                if _is_obviously_non_rendering(cand):
+                    # Record as rejected at discovery so we still get the denominator
+                    # and don't re-check on next batch.
+                    self._log_discovery_rejection(cand, reason="out_of_scope_not_rendering_bug")
+                    seen.add(cand.url)
+                    continue
                 seen.add(cand.url)
                 out.append(cand)
 
@@ -109,7 +177,36 @@ class Discoverer:
                     continue
                 if self._log.contains_url(cand.url):
                     continue
+                if _is_obviously_non_rendering(cand):
+                    self._log_discovery_rejection(cand, reason="out_of_scope_not_rendering_bug")
+                    seen.add(cand.url)
+                    continue
                 seen.add(cand.url)
                 out.append(cand)
 
         return out
+
+    def _log_discovery_rejection(self, cand: "DiscoveryCandidate",
+                                  reason: str) -> None:
+        """Log a pre-triage rejection to the coverage log.
+
+        Mirrors the shape that `log_rejection` in commit.py produces, but written
+        directly here to avoid a circular import from commit.py -> discover.py.
+        """
+        from gla.eval.curation.coverage_log import CoverageEntry
+        from datetime import datetime, timezone
+        self._log.append(CoverageEntry(
+            issue_url=cand.url,
+            reviewed_at=datetime.now(timezone.utc).isoformat(),
+            source_type=cand.source_type,
+            triage_verdict="out_of_scope",
+            root_cause_fingerprint=None,
+            outcome="rejected",
+            scenario_id=None,
+            tier=None,
+            rejection_reason=reason,
+            predicted_helps=None,
+            observed_helps=None,
+            failure_mode=None,
+            eval_summary=None,
+        ))

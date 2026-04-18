@@ -80,3 +80,76 @@ def test_discoverer_respects_batch_quota(tmp_path):
                    queries={"issue": ["q1"], "commit": []}, batch_quota=5)
     candidates = d.run()
     assert len(candidates) == 5
+
+def test_is_obviously_non_rendering_by_title():
+    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+
+    non_rendering_titles = [
+        "TypeScript: Camera.rotationQuaternion should allow null type",
+        "Docs: update webgl renderer tutorial",
+        "NME: SmoothStep block losing input focus",
+        "Build error on npm install",
+        "ESLint config broken in examples folder",
+        "VSCode plugin crashes on startup",
+    ]
+    for title in non_rendering_titles:
+        cand = DiscoveryCandidate(url=f"https://x/{title[:5]}",
+                                   source_type="issue", title=title)
+        assert _is_obviously_non_rendering(cand) is True, \
+            f"expected reject: {title}"
+
+def test_is_obviously_non_rendering_by_labels():
+    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+    cand = DiscoveryCandidate(url="https://x/1", source_type="issue",
+                               title="Plausible rendering-looking title",
+                               labels=["documentation"])
+    assert _is_obviously_non_rendering(cand) is True
+
+def test_is_obviously_non_rendering_lets_real_rendering_through():
+    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+
+    rendering_titles = [
+        "Z-fighting on large outdoor scenes with far clip",
+        "Shader uniform not updated after material clone",
+        "Transmission feedback loop when antialias:false",
+        "InstanceNode UBO exceeds GL_MAX_UNIFORM_BLOCK_SIZE",
+        "CubeTexture flipped on one axis",
+    ]
+    for title in rendering_titles:
+        cand = DiscoveryCandidate(url=f"https://x/{title[:5]}",
+                                   source_type="issue", title=title,
+                                   labels=["Bug"])
+        assert _is_obviously_non_rendering(cand) is False, \
+            f"expected accept: {title}"
+
+def test_discoverer_skips_obviously_non_rendering(tmp_path):
+    from gla.eval.curation.discover import Discoverer, DiscoveryCandidate
+    from gla.eval.curation.coverage_log import CoverageLog
+
+    class FakeSearch:
+        def search_issues(self, q, per_page=30):
+            return [
+                DiscoveryCandidate(url="https://x/typescript-1", source_type="issue",
+                                   title="TypeScript: fix camera typing"),
+                DiscoveryCandidate(url="https://x/real-1", source_type="issue",
+                                   title="z-fighting in shadows"),
+            ]
+        def search_commits(self, q, per_page=30):
+            return []
+
+    log = CoverageLog(tmp_path / "log.jsonl")
+    d = Discoverer(search=FakeSearch(), coverage_log=log,
+                   queries={"issue": ["q1"], "commit": []}, batch_quota=10)
+    candidates = d.run()
+
+    urls = [c.url for c in candidates]
+    # TypeScript one was filtered at discovery
+    assert "https://x/typescript-1" not in urls
+    # Real rendering bug made it through
+    assert "https://x/real-1" in urls
+    # The filtered one should have a rejection entry in the log
+    entries = log.read_all()
+    assert any(e.issue_url == "https://x/typescript-1"
+               and e.outcome == "rejected"
+               and e.rejection_reason == "out_of_scope_not_rendering_bug"
+               for e in entries)
