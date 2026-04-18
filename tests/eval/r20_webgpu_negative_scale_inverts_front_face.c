@@ -1,0 +1,152 @@
+// SOURCE: https://github.com/mrdoob/three.js/issues/31764
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <X11/Xlib.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/glx.h>
+
+#ifndef GLX_CONTEXT_MAJOR_VERSION_ARB
+#define GLX_CONTEXT_MAJOR_VERSION_ARB 0x2091
+#define GLX_CONTEXT_MINOR_VERSION_ARB 0x2092
+#define GLX_CONTEXT_PROFILE_MASK_ARB  0x9126
+#define GLX_CONTEXT_CORE_PROFILE_BIT_ARB 0x00000001
+#endif
+
+typedef GLXContext (*glXCreateContextAttribsARBProc)(Display*, GLXFBConfig, GLXContext, Bool, const int*);
+
+static const char* VS =
+    "#version 330 core\n"
+    "layout(location=0) in vec2 pos;\n"
+    "uniform mat4 u_model;\n"
+    "void main(){ gl_Position = u_model * vec4(pos, 0.0, 1.0); }\n";
+
+static const char* FS =
+    "#version 330 core\n"
+    "out vec4 FragColor;\n"
+    "void main(){ FragColor = vec4(1.0, 0.25, 0.25, 1.0); }\n";
+
+static GLuint compile_shader(GLenum type, const char* src) {
+    GLuint s = glCreateShader(type);
+    glShaderSource(s, 1, &src, NULL);
+    glCompileShader(s);
+    GLint ok; glGetShaderiv(s, GL_COMPILE_STATUS, &ok);
+    if (!ok) {
+        char log[1024]; glGetShaderInfoLog(s, sizeof log, NULL, log);
+        fprintf(stderr, "shader compile error: %s\n", log);
+        exit(1);
+    }
+    return s;
+}
+
+int main(void) {
+    Display* dpy = XOpenDisplay(NULL);
+    if (!dpy) { fprintf(stderr, "XOpenDisplay failed\n"); return 1; }
+    int screen = DefaultScreen(dpy);
+
+    int fb_attrs[] = {
+        GLX_X_RENDERABLE,  True,
+        GLX_DRAWABLE_TYPE, GLX_WINDOW_BIT,
+        GLX_RENDER_TYPE,   GLX_RGBA_BIT,
+        GLX_X_VISUAL_TYPE, GLX_TRUE_COLOR,
+        GLX_RED_SIZE, 8, GLX_GREEN_SIZE, 8, GLX_BLUE_SIZE, 8,
+        GLX_DEPTH_SIZE, 24,
+        GLX_DOUBLEBUFFER, True,
+        None
+    };
+    int nfb = 0;
+    GLXFBConfig* fbc = glXChooseFBConfig(dpy, screen, fb_attrs, &nfb);
+    if (!fbc || nfb == 0) { fprintf(stderr, "no FBConfig\n"); return 1; }
+    GLXFBConfig fbconfig = fbc[0];
+    XFree(fbc);
+
+    XVisualInfo* vi = glXGetVisualFromFBConfig(dpy, fbconfig);
+    XSetWindowAttributes swa;
+    memset(&swa, 0, sizeof swa);
+    swa.colormap = XCreateColormap(dpy, RootWindow(dpy, vi->screen), vi->visual, AllocNone);
+    swa.event_mask = StructureNotifyMask;
+    Window win = XCreateWindow(dpy, RootWindow(dpy, vi->screen), 0, 0, 400, 200, 0,
+        vi->depth, InputOutput, vi->visual, CWColormap | CWEventMask, &swa);
+    XMapWindow(dpy, win);
+
+    glXCreateContextAttribsARBProc glXCreateContextAttribsARB =
+        (glXCreateContextAttribsARBProc)glXGetProcAddressARB((const GLubyte*)"glXCreateContextAttribsARB");
+    int ctx_attrs[] = {
+        GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
+        GLX_CONTEXT_MINOR_VERSION_ARB, 3,
+        GLX_CONTEXT_PROFILE_MASK_ARB,  GLX_CONTEXT_CORE_PROFILE_BIT_ARB,
+        None
+    };
+    GLXContext ctx = glXCreateContextAttribsARB(dpy, fbconfig, NULL, True, ctx_attrs);
+    if (!ctx) { fprintf(stderr, "context creation failed\n"); return 1; }
+    glXMakeCurrent(dpy, win, ctx);
+
+    GLuint vs = compile_shader(GL_VERTEX_SHADER, VS);
+    GLuint fs = compile_shader(GL_FRAGMENT_SHADER, FS);
+    GLuint prog = glCreateProgram();
+    glAttachShader(prog, vs); glAttachShader(prog, fs);
+    glLinkProgram(prog);
+    GLint u_model = glGetUniformLocation(prog, "u_model");
+
+    // Single triangle, CCW in its own local space (viewed from +Z).
+    float verts[] = {
+        -0.3f, -0.3f,
+         0.3f, -0.3f,
+         0.0f,  0.3f,
+    };
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao); glBindVertexArray(vao);
+    glGenBuffers(1, &vbo); glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof verts, verts, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+
+    // Pipeline analogue of the WebGPU backend before the fix: cull back faces
+    // with front-face = CCW, and do NOT compensate for negative-determinant
+    // model transforms. A mesh with negative scale flips winding to CW in
+    // clip space, so the renderer silently culls its visible surface.
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+    glCullFace(GL_BACK);
+
+    glViewport(0, 0, 400, 200);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(prog);
+    glBindVertexArray(vao);
+
+    // Left: identity scale, translated left. Winding stays CCW — drawn as red.
+    float left[16] = {0};
+    left[0]=1.0f; left[5]=1.0f; left[10]=1.0f; left[15]=1.0f; left[12]=-0.5f;
+    glUniformMatrix4fv(u_model, 1, GL_FALSE, left);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    // Right: NEGATIVE Y scale (mirror), translated right. det(M) < 0, so the
+    // triangle's effective winding becomes CW. With frontFace=CCW + cull=BACK
+    // the renderer drops it entirely — the bug manifestation.
+    float right[16] = {0};
+    right[0]=1.0f; right[5]=-1.0f; right[10]=1.0f; right[15]=1.0f; right[12]=0.5f;
+    glUniformMatrix4fv(u_model, 1, GL_FALSE, right);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    unsigned char left_px[4]  = {0};
+    unsigned char right_px[4] = {0};
+    glReadPixels(100, 100, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, left_px);
+    glReadPixels(300, 100, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, right_px);
+    printf("left  center RGBA = %u %u %u %u\n", left_px[0], left_px[1], left_px[2], left_px[3]);
+    printf("right center RGBA = %u %u %u %u\n", right_px[0], right_px[1], right_px[2], right_px[3]);
+    printf("expected: both red (negative-scale mesh should still render, mirrored)\n");
+    printf("actual:   right %s\n",
+        right_px[0] > 128 ? "red (ok — winding compensated)"
+                          : "black (negative-det mesh culled — WebGPU-style bug)");
+
+    glXSwapBuffers(dpy, win);
+    glXMakeCurrent(dpy, None, NULL);
+    glXDestroyContext(dpy, ctx);
+    XDestroyWindow(dpy, win);
+    XFreeColormap(dpy, swa.colormap);
+    XCloseDisplay(dpy);
+    return 0;
+}
