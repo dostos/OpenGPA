@@ -47,6 +47,10 @@ class ScenarioMetadata:
     observed_helps_evidence: Optional[str] = None
     failure_mode: Optional[str] = None
     failure_mode_details: Optional[str] = None
+    # --- Upstream snapshot fields (G1) ---
+    upstream_snapshot_repo: Optional[str] = None
+    upstream_snapshot_sha: Optional[str] = None
+    upstream_snapshot_relevant_files: list[str] = field(default_factory=list)
 
 
 # Section heading aliases — maps canonical name -> list of accepted headings
@@ -66,6 +70,7 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "predicted_helps": ["predicted gla helpfulness", "predicted opengpa helpfulness", "predicted helpfulness"],
     "observed_helps": ["observed gla helpfulness", "observed opengpa helpfulness", "observed helpfulness"],
     "failure_mode": ["failure mode"],
+    "upstream_snapshot": ["upstream snapshot"],
 }
 
 
@@ -193,6 +198,45 @@ def _extract_fix(diagnosis_text: str) -> str:
     return diagnosis_text
 
 
+def _parse_upstream_snapshot(section_text: str) -> tuple[Optional[str], Optional[str], list[str]]:
+    """Parse `## Upstream Snapshot` body into (repo, sha, relevant_files).
+
+    Expected format::
+
+        - **Repo**: https://github.com/owner/repo
+        - **SHA**: <hex>
+        - **Relevant Files**:
+          - path/one.c
+          - path/two.h
+    """
+    kv = parse_key_value_bullets(section_text)
+    repo = kv.get("repo")
+    sha = kv.get("sha")
+    # Relevant files: a sub-list under "- **Relevant Files**:"
+    relevant: list[str] = []
+    lines = section_text.splitlines()
+    in_files = False
+    for line in lines:
+        stripped = line.strip()
+        if re.match(r"-\s+\*\*Relevant Files\*\*:\s*(.*)$", stripped, re.IGNORECASE):
+            in_files = True
+            # Inline file on same line, if any: "- **Relevant Files**: foo.c"
+            m = re.match(r"-\s+\*\*Relevant Files\*\*:\s*(.+)$", stripped, re.IGNORECASE)
+            if m and m.group(1).strip():
+                relevant.append(m.group(1).strip())
+            continue
+        if not in_files:
+            continue
+        # Indented bullet lines like "  - src/foo.c" or "    - bar.c"
+        m2 = re.match(r"^\s*-\s+(.+?)\s*$", line)
+        if m2 and line.startswith((" ", "\t")):
+            relevant.append(m2.group(1).strip())
+        elif line.startswith("- "):
+            # A new top-level bullet ends the files list
+            in_files = False
+    return repo, sha, relevant
+
+
 class ScenarioLoader:
     """Loads OpenGPA evaluation scenarios from the tests/eval directory."""
 
@@ -217,6 +261,12 @@ class ScenarioLoader:
         Scenarios are stored as directories containing a scenario.md and
         one or more source files (``main.c`` + optional ``.h``, ``.glsl``,
         ``.js``, ``.html``, ``.json``, ...).
+
+        When ``tier == "snapshot"``, ``main.c`` is optional — the primary
+        source is the upstream repo referenced in the ``## Upstream Snapshot``
+        section.  In that case ``source_path`` is ``""`` and ``source_files``
+        is empty.  For ``tier: core`` and ``tier: showcase`` a C source file
+        is still expected; snapshot refs are supplementary.
         """
         scenario_dir = self._eval_dir / scenario_id
         md_path = scenario_dir / "scenario.md"
@@ -278,6 +328,10 @@ class ScenarioLoader:
         failure_mode = failure_kv.get("category")
         failure_mode_details = failure_kv.get("details")
 
+        upstream_repo, upstream_sha, upstream_files_list = _parse_upstream_snapshot(
+            sections.get("upstream_snapshot", "")
+        )
+
         return ScenarioMetadata(
             id=scenario_id,
             title=sections.get("_title", scenario_id),
@@ -310,6 +364,9 @@ class ScenarioLoader:
             observed_helps_evidence=observed_helps_evidence,
             failure_mode=failure_mode,
             failure_mode_details=failure_mode_details,
+            upstream_snapshot_repo=upstream_repo,
+            upstream_snapshot_sha=upstream_sha,
+            upstream_snapshot_relevant_files=upstream_files_list,
         )
 
     def load_all(self) -> list[ScenarioMetadata]:

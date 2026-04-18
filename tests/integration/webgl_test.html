@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<!--
+  OpenGPA WebGL Capture Path — Minimal Integration Test
+  =====================================================
+  This page creates a WebGL canvas and draws a colored triangle.
+
+  When the Chrome extension is loaded (src/shims/webgl/extension/), the
+  content.js injects interceptor.js at document_start.  interceptor.js
+  monkey-patches WebGLRenderingContext so every drawArrays / drawElements
+  call is recorded and forwarded to the Node.js bridge
+  (ws://127.0.0.1:18081) at the end of each requestAnimationFrame tick.
+
+  Usage (manual validation):
+    1. Start the bridge:
+         cd src/shims/webgl/bridge
+         npm install && npm start
+
+    2. Load the extension unpacked in Chrome:
+         chrome://extensions -> Developer mode -> Load unpacked
+         -> select src/shims/webgl/extension/
+
+    3. Open this file in Chrome (file:// or via a local HTTP server).
+
+    4. Open DevTools -> Console.  Expected output:
+         [OpenGPA] Patched WebGL prototype
+         [OpenGPA] Patched WebGL2 prototype
+         [OpenGPA] Connected to bridge
+       Then per-frame:
+         [OpenGPA] frame posted  (from the status div below)
+
+    5. Bridge stdout will show:
+         [bridge] WebGL client connected
+         [bridge] Frame 0: 1 draw call(s) viewport=[0,0,300,150]
+         [bridge] Frame 1: 1 draw call(s) ...
+         ...
+
+  Without the extension, the page still renders correctly (passthrough mode).
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>OpenGPA WebGL Test</title>
+  <style>
+    body { background: #1a1a2e; color: #eee; font-family: monospace; padding: 1em; }
+    canvas { border: 1px solid #555; display: block; margin: 1em 0; }
+    #status { font-size: 0.85em; color: #7f7; white-space: pre; }
+  </style>
+</head>
+<body>
+  <h2>OpenGPA WebGL Capture Path — Test</h2>
+  <p>A colored triangle is rendered via WebGL. With the extension active, each
+     frame is intercepted and forwarded to the Node.js bridge.</p>
+  <canvas id="c" width="300" height="150"></canvas>
+  <div id="status">Initializing…</div>
+
+  <!--
+    In a real extension scenario, interceptor.js is injected BEFORE this
+    script runs (run_at: document_start via content.js).  For standalone
+    testing without the extension, the script tag below loads a local copy
+    of interceptor.js so you can observe the monkey-patching in DevTools.
+
+    Comment out the line below when testing with the actual extension to
+    avoid double-patching.
+  -->
+  <script src="../../src/shims/webgl/extension/interceptor.js"></script>
+
+  <script>
+    'use strict';
+
+    const statusEl = document.getElementById('status');
+    function log(msg) {
+      statusEl.textContent += '\n' + msg;
+      console.log(msg);
+    }
+
+    // ------------------------------------------------------------------
+    // WebGL setup
+    // ------------------------------------------------------------------
+    const canvas = document.getElementById('c');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+    if (!gl) {
+      log('ERROR: WebGL not supported');
+      throw new Error('WebGL not supported');
+    }
+
+    log('WebGL context created: ' + (gl instanceof WebGLRenderingContext ? 'WebGL1' : 'WebGL2'));
+
+    // Vertex shader — pass-through with colour attribute
+    const vsSrc = `
+      attribute vec2 a_pos;
+      attribute vec3 a_color;
+      varying vec3 v_color;
+      void main() {
+        gl_Position = vec4(a_pos, 0.0, 1.0);
+        v_color = a_color;
+      }
+    `;
+
+    // Fragment shader
+    const fsSrc = `
+      precision mediump float;
+      varying vec3 v_color;
+      void main() {
+        gl_FragColor = vec4(v_color, 1.0);
+      }
+    `;
+
+    function compileShader(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+        throw new Error('Shader compile error: ' + gl.getShaderInfoLog(s));
+      }
+      return s;
+    }
+
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, vsSrc));
+    gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, fsSrc));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      throw new Error('Program link error: ' + gl.getProgramInfoLog(prog));
+    }
+    gl.useProgram(prog);
+    log('Shader program compiled and linked');
+
+    // Interleaved vertex data: x, y, r, g, b
+    const vertices = new Float32Array([
+       0.0,  0.6,  1.0, 0.2, 0.2,   // top    — red
+      -0.6, -0.5,  0.2, 1.0, 0.2,   // bottom-left  — green
+       0.6, -0.5,  0.2, 0.2, 1.0,   // bottom-right — blue
+    ]);
+    const STRIDE = 5 * 4; // 5 floats × 4 bytes
+
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+    const aPos   = gl.getAttribLocation(prog, 'a_pos');
+    const aColor = gl.getAttribLocation(prog, 'a_color');
+    gl.enableVertexAttribArray(aPos);
+    gl.enableVertexAttribArray(aColor);
+    gl.vertexAttribPointer(aPos,   2, gl.FLOAT, false, STRIDE, 0);
+    gl.vertexAttribPointer(aColor, 3, gl.FLOAT, false, STRIDE, 2 * 4);
+
+    // ------------------------------------------------------------------
+    // Render loop — each iteration is one interceptable frame
+    // ------------------------------------------------------------------
+    let frameCount = 0;
+    const MAX_FRAMES = 300; // ~5 seconds at 60 fps, then stop
+
+    function render() {
+      gl.clearColor(0.1, 0.1, 0.15, 1.0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.viewport(0, 0, canvas.width, canvas.height);
+      gl.drawArrays(gl.TRIANGLES, 0, 3); // <-- this call is intercepted
+
+      frameCount++;
+      if (frameCount <= MAX_FRAMES) {
+        if (frameCount % 60 === 0) {
+          log(`frame posted (total: ${frameCount})`);
+        }
+        requestAnimationFrame(render);
+      } else {
+        log('Render loop finished (' + MAX_FRAMES + ' frames). Check bridge output.');
+      }
+    }
+
+    log('Starting render loop…');
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>

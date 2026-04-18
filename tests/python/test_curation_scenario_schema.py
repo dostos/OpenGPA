@@ -1,7 +1,7 @@
 """Tests for extended ScenarioMetadata fields (real-world curation pipeline)."""
 import textwrap
 from pathlib import Path
-from gla.eval.scenario import ScenarioMetadata, ScenarioLoader
+from gla.eval.scenario import ScenarioMetadata, ScenarioLoader, _parse_upstream_snapshot
 
 
 def test_parser_extracts_new_sections(tmp_path):
@@ -142,3 +142,177 @@ def test_scenario_metadata_has_new_fields():
     assert s.tier == "core"
     assert s.bug_signature["type"] == "color_histogram_in_region"
     assert s.observed_helps is None
+
+
+# ---------------------------------------------------------------------------
+# G1: Upstream snapshot schema tests
+# ---------------------------------------------------------------------------
+
+def test_scenario_metadata_upstream_snapshot_fields_default():
+    s = ScenarioMetadata(
+        id="x", title="x", bug_description="x", expected_output="x",
+        actual_output="x", ground_truth_diagnosis="x", ground_truth_fix="x",
+        difficulty=1, adversarial_principles=[], gla_advantage="",
+        source_path="", binary_name="x",
+    )
+    assert s.upstream_snapshot_repo is None
+    assert s.upstream_snapshot_sha is None
+    assert s.upstream_snapshot_relevant_files == []
+
+
+def test_parser_extracts_upstream_snapshot_section(tmp_path):
+    md = textwrap.dedent("""
+        # R1: Godot shader bug
+
+        ## Bug
+        Shader miscompiles.
+
+        ## Expected Correct Output
+        X.
+
+        ## Actual Broken Output
+        Y.
+
+        ## Ground Truth Diagnosis
+        See PR #12345.
+
+        ## Difficulty Rating
+        3/5
+
+        ## Adversarial Principles
+        - Distant cause
+
+        ## How OpenGPA Helps
+        ...
+
+        ## Tier
+        snapshot
+
+        ## API
+        opengl
+
+        ## Framework
+        godot
+
+        ## Upstream Snapshot
+        - **Repo**: https://github.com/godotengine/godot
+        - **SHA**: abc1234def
+        - **Relevant Files**:
+          - drivers/gles3/shaders/scene.glsl
+          - servers/rendering/renderer_rd/shader_compiler.cpp
+    """).strip()
+
+    (tmp_path / "r1_godot").mkdir()
+    (tmp_path / "r1_godot" / "scenario.md").write_text(md)
+    # No main.c — snapshot-only scenario
+
+    loader = ScenarioLoader(eval_dir=str(tmp_path))
+    s = loader.load("r1_godot")
+    assert s.upstream_snapshot_repo == "https://github.com/godotengine/godot"
+    assert s.upstream_snapshot_sha == "abc1234def"
+    assert "drivers/gles3/shaders/scene.glsl" in s.upstream_snapshot_relevant_files
+    assert "servers/rendering/renderer_rd/shader_compiler.cpp" in s.upstream_snapshot_relevant_files
+    assert s.tier == "snapshot"
+
+
+def test_scenario_without_upstream_snapshot_section_has_nones(tmp_path):
+    md = textwrap.dedent("""
+        # R2: Core
+
+        ## Bug
+        B.
+        ## Ground Truth Diagnosis
+        > q
+    """).strip()
+    (tmp_path / "r2_core").mkdir()
+    (tmp_path / "r2_core" / "scenario.md").write_text(md)
+    (tmp_path / "r2_core" / "main.c").write_text("int main(){}")
+
+    loader = ScenarioLoader(eval_dir=str(tmp_path))
+    s = loader.load("r2_core")
+    assert s.upstream_snapshot_repo is None
+    assert s.upstream_snapshot_sha is None
+    assert s.upstream_snapshot_relevant_files == []
+
+
+def test_snapshot_tier_without_main_c_still_loads(tmp_path):
+    """tier: snapshot scenarios may omit main.c; source_path falls back to empty."""
+    md = textwrap.dedent("""
+        # R3: Snapshot-only
+
+        ## Bug
+        B.
+
+        ## Ground Truth Diagnosis
+        > q from PR #5
+
+        ## Tier
+        snapshot
+
+        ## Upstream Snapshot
+        - **Repo**: https://github.com/o/r
+        - **SHA**: deadbeef
+    """).strip()
+    (tmp_path / "r3_snap").mkdir()
+    (tmp_path / "r3_snap" / "scenario.md").write_text(md)
+    # No main.c
+
+    loader = ScenarioLoader(eval_dir=str(tmp_path))
+    s = loader.load("r3_snap")
+    assert s.tier == "snapshot"
+    assert s.source_path == "" or s.source_path.endswith("/r3_snap")
+    assert s.source_files == []  # no C source files
+    assert s.upstream_snapshot_repo == "https://github.com/o/r"
+    assert s.upstream_snapshot_sha == "deadbeef"
+
+
+def test_relevant_files_nested_bullet_list(tmp_path):
+    """Relevant files appear as an indented bullet list under the key."""
+    md_nested = textwrap.dedent("""
+        # R4
+
+        ## Bug
+        b
+        ## Ground Truth Diagnosis
+        > q
+
+        ## Upstream Snapshot
+        - **Repo**: https://github.com/o/r
+        - **SHA**: abc
+        - **Relevant Files**:
+          - src/foo.c
+          - src/bar.c
+    """).strip()
+    (tmp_path / "r4").mkdir()
+    (tmp_path / "r4" / "scenario.md").write_text(md_nested)
+    (tmp_path / "r4" / "main.c").write_text("int main(){}")
+
+    loader = ScenarioLoader(eval_dir=str(tmp_path))
+    s = loader.load("r4")
+    assert s.upstream_snapshot_relevant_files == ["src/foo.c", "src/bar.c"]
+
+
+def test_parse_upstream_snapshot_helper_empty():
+    """Helper returns (None, None, []) on empty input."""
+    repo, sha, files = _parse_upstream_snapshot("")
+    assert repo is None
+    assert sha is None
+    assert files == []
+
+
+def test_parse_upstream_snapshot_helper_full():
+    """Helper parses all three fields correctly."""
+    section = textwrap.dedent("""
+        - **Repo**: https://github.com/mrdoob/three.js
+        - **SHA**: deadcafe1234
+        - **Relevant Files**:
+          - src/renderers/webgpu/WebGPUShadowMap.js
+          - src/nodes/lighting/ShadowNode.js
+    """).strip()
+    repo, sha, files = _parse_upstream_snapshot(section)
+    assert repo == "https://github.com/mrdoob/three.js"
+    assert sha == "deadcafe1234"
+    assert files == [
+        "src/renderers/webgpu/WebGPUShadowMap.js",
+        "src/nodes/lighting/ShadowNode.js",
+    ]

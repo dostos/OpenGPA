@@ -71,6 +71,47 @@ WebGL frame is rendered in the browser).
 | `GLA_SOCKET_PATH` | `/tmp/gla.sock`  | Unix socket path to the OpenGPA engine   |
 | `GLA_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
 
+## Validation Status (as of 2026-04-16)
+
+The following was verified with Node.js v20.19.5 / npm 10.8.2 on Linux:
+
+| Component | Check | Result |
+|---|---|---|
+| `manifest.json` | Valid JSON + MV3 fields | PASS |
+| `interceptor.js` | Node syntax check | PASS |
+| `content.js` | Node syntax check | PASS |
+| `background.js` | Node syntax check | PASS |
+| `gla-threejs-plugin.js` | Node syntax check | PASS |
+| `bridge/package.json` | `npm install` (`ws` dep) | PASS — 0 vulnerabilities |
+| Bridge startup | `node bridge.js` | PASS — WebSocket server binds on `ws://127.0.0.1:18081` |
+| Bridge engine connection | Unix socket connect | EXPECTED FAIL — engine not running; bridge retries every 3 s cleanly |
+
+### What works end-to-end today
+
+- The bridge starts, binds the WebSocket port, and enters a graceful
+  reconnect loop when the engine socket is absent.
+- All JS files are syntactically valid and structurally sound.
+- The manifest is a valid Manifest V3 extension with correct `content_scripts`
+  and `web_accessible_resources` sections.
+- A minimal HTML test page is at `tests/integration/webgl_test.html`.  It
+  renders a coloured triangle via WebGL1 and demonstrates the interception
+  path: frame data is sent over WebSocket after each `requestAnimationFrame`
+  tick if the bridge is running.
+
+### What is needed for full E2E testing
+
+1. **Chrome / Chromium** — the extension requires a real browser; there is no
+   headless-WebGL runner available in this environment.  Options:
+   - Use `puppeteer` with `--load-extension` flag in a CI image that has Chrome.
+   - Use Playwright with `--channel chromium` and `launchPersistentContext`
+     (supports loading extensions).
+2. **Running OpenGPA engine** — the bridge forwards frame metadata to the engine
+   over a Unix socket (`/tmp/gla.sock` by default).  Without the engine the
+   bridge operates in passthrough (log-only) mode.
+3. **Shared-memory (SHM) native addon** — full pixel readback requires a native
+   Node.js addon (`node-addon-api` + `shm_open`/`mmap`) or an inline
+   variable-length socket message.  Planned for M6+.
+
 ## Known Limitations (v1)
 
 - **No shared memory (SHM).** The bridge sends only frame metadata (frame ID +
