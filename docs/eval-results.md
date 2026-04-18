@@ -1,88 +1,79 @@
-# GLA Eval Results
+# OpenGPA Eval Results
 
 ## Methodology
 
-- 10 adversarial scenarios (E1-E10), each a minimal OpenGL app with an intentional bug
-- Two modes: **Code-Only** (source code reading only) and **With GLA** (source + live REST API queries)
+- 18 scenarios: 10 synthetic (e1-e10) + 8 real-world (r-prefix, from Three.js/Godot GitHub issues)
+- Two modes: **Code-Only** (source + description) and **With GLA** (source + description + live REST API)
 - Agent: Claude Sonnet, non-directive prompts ("use whatever approach you think is best")
-- Tracked: accuracy, tool sequence, pixel queries vs state queries
+- Tracked: accuracy, tool sequence, unique GLA insights
 
-## Accuracy
+## Round 1: Synthetic Scenarios (e1-e10) — WITH hint comments
 
-| Scenario | Bug Type | Code-Only | With GLA |
-|----------|----------|-----------|----------|
-| E1: State Leak | Missing glUniform4f | Correct | Correct |
-| E2: NaN Propagation | Singular matrix -> Inf | Correct | Correct |
-| E3: Index Buffer OBO | sizeof(ptr) vs sizeof(data) | Correct | Correct |
-| E4: Double Negation Cull | GL_CW + negative scale | Correct | Correct |
-| E5: Uniform Collision | Swapped program indices | Correct | Correct + found bug is silent at runtime |
-| E6: Depth Precision | near/far ratio 1e8 | Correct | Correct + depth=0.998 confirms |
-| E7: Shader Include | saturate() missing clamp | Correct | Correct + pixel (255,255,255) confirms |
-| E8: Race Texture | 1x1 placeholder | Correct | Correct + tex API shows 1x1 |
-| E9: Scissor Not Reset | Missing glDisable | Correct | Correct + scissor rect on DC1 visible |
-| E10: Compensating VP | Negated fwd + negated proj | Correct | Correct + pixel position proves mirror |
+Both modes: 10/10 correct, high confidence. The bug-revealing comments (`// BUG:`, `// should be`) made code-only trivially easy. **Result: eval was unfair.**
 
-**Both modes: 10/10 accuracy.** GLA provided additional runtime evidence on 6/10 scenarios.
+## Round 2: Real-World Scenarios (r-prefix) — WITH hint comments
 
-## Tool Usage Pattern (With GLA mode)
+Both modes: 7/7 correct, high confidence. Again, comments made it too easy.
 
-Every scenario followed the same pattern:
+## Round 3 (pending): All scenarios — AFTER hint stripping
+
+Comments stripped. The bugs are structurally present but not self-documented. This is the fair comparison. **Not yet run.**
+
+## GLA Unique Insights (from Round 2)
+
+Even when both modes get the right answer, GLA provides **runtime evidence** that code-only cannot:
+
+| Scenario | GLA Signal | Why Code-Only Can't See It |
+|----------|-----------|---------------------------|
+| r16 shadow cull | cull_mode=GL_FRONT (1028) | Distinguishes from r14's GL_BACK — same visual symptom, different root cause |
+| r20 neg scale | det(model_matrix)=-1 from captured mat4 | Need to compute 4x4 determinant mentally from code |
+| r17 SVG z-fight | Both DCs have uniform uZ=0.0 | Need to trace uniform value through code |
+| r5 feedback loop | texture_id=1 bound to sampler AND FBO simultaneously | Need to trace FBO allocation + texture binding |
+| r1 UBO overflow | Draw issued but pixel=clear color | Need to know GL_MAX_UNIFORM_BLOCK_SIZE limit |
+| r31 missing clear | 2 DCs per frame, no glClear between them | Need to trace render loop control flow |
+| e5 uniform collision | Bug doesn't manifest (uniform locs identical) | Impossible without runtime data |
+
+## Tool Usage Patterns
+
+**With GLA mode tool sequence (consistent across all scenarios):**
 ```
-read_source -> query_drawcalls -> inspect_drawcall -> query_pixel
+read_source → query_drawcalls → inspect_drawcall → query_pixel
 ```
 
-- Pixel queries: 10/10 scenarios (100%)
-- State queries (inspect_drawcall): 10/10 scenarios (100%)
-- Texture queries: 1/10 (E8 only)
-- Scene queries: 0/10
+- **Pixel queries**: Used in 100% of scenarios (framebuffer trap confirmed)
+- **State queries** (inspect_drawcall): Also 100% — used alongside pixels, not instead of
+- **Texture queries**: Used when textures relevant (r5, e8)
+- **Scene queries**: 0% — not useful without Tier 3 metadata
 
-**Framebuffer trap observation**: The agent queried pixels in every scenario, even when
-structured state (pipeline flags, shader params) was sufficient for diagnosis. However,
-it also used inspect_drawcall in every case, suggesting pixels were used for CONFIRMATION
-rather than as the primary diagnostic tool.
+## GLA Capture Limitations Found
 
-## Where GLA Added Unique Value
+| Limitation | Impact | Fix Needed |
+|-----------|--------|-----------|
+| `explain_pixel` returns draw_call_id=null | Can't trace pixel → specific draw call | Implement draw call ID buffer |
+| Vec3 uniform values garbled | Multi-component float uniforms serialize wrong | Fix serialization for vec2/vec3/vec4 types |
+| Render pass auto-detection empty | `list_render_passes` returns nothing without metadata | Expected — Tier 2 debug markers needed |
+| shader_id always 3 | All scenarios show same program ID | Expected — single program per scenario |
 
-### E5: Silent Bug Detection
-Code-only analysis reported the uniform cache as buggy (swapped indices). GLA pixel data
-showed the output was actually CORRECT — the bug doesn't manifest because both programs
-assign location 0 to their only uniform. Code-only would produce a false positive.
+## Improvement Backlog (from eval findings)
 
-### E6: Quantitative Confirmation
-GLA returned depth=0.998 at the z-fighting location, numerically proving that the depth
-buffer precision is exhausted at z=-0.5 with near=0.001/far=100000.
+### P0: Fix vec3 uniform serialization
+Several scenarios (r17, e10) depend on reading vec3/vec4 uniform values. Currently garbled.
 
-### E9: Direct State Evidence
-GLA showed scissor_enabled=true with rect=(100,100,200,100) on draw call 1 (the 3D pass),
-directly proving the state leak from the UI pass without requiring mental simulation.
+### P1: Implement draw call ID buffer for pixel attribution
+`explain_pixel` is the most powerful query but currently can't map pixel → draw call.
 
-## Limitations of This Eval
+### P2: Add glClear interception
+r31 (missing clear) would be immediately diagnosable if GLA tracked clear calls between draw calls.
 
-1. **Scenarios too easy for code-only**: Bugs have visible markers (comments, commented-out
-   correct code). Real-world bugs don't self-document. The eval needs harder scenarios where
-   the bug is structurally hidden.
-
-2. **Single model**: Only tested Claude Sonnet. Different models may show different
-   code-only accuracy and GLA tool usage patterns.
-
-3. **Small sample**: 10 scenarios is not statistically significant. A proper eval needs
-   50+ scenarios across difficulty tiers.
-
-4. **Synthetic bugs**: All bugs are intentionally placed. Real bugs arise from
-   misunderstanding, not intentional omission.
+### P3: Track FBO attachments in shadow state
+r5 (feedback loop) requires knowing which texture is attached to the current FBO. Currently not captured.
 
 ## Conclusions
 
-1. **GLA's primary value is runtime confirmation, not initial diagnosis.** For bugs
-   visible in source code, both approaches work. GLA adds proof.
+1. **GLA's primary value is distinguishing bugs with identical symptoms.** r14 and r16 both produce black screens from culling. Code analysis can find both, but GLA instantly distinguishes them via `cull_mode` (1028 vs 1029).
 
-2. **GLA uniquely detects silent bugs** (E5) — cases where code looks wrong but runtime
-   behavior is correct. This is impossible with code-only analysis.
+2. **GLA detects silent/compensating bugs.** e5's uniform collision doesn't manifest at runtime. Only GLA can confirm this (code-only reports a false positive).
 
-3. **Agents default to pixel queries** even with structured state inspection available.
-   Future work should investigate whether steering agents toward state inspection first
-   improves token efficiency.
+3. **The eval scenarios need hint-stripped code** for a fair comparison. Round 3 (pending) will show the real accuracy gap.
 
-4. **Harder eval scenarios needed** — real-world graphics bugs from GitHub issues,
-   Stack Overflow, and engine bug trackers where the root cause is not obvious from
-   reading the code.
+4. **The improvement backlog is concrete** — each limitation was discovered by running the eval, not hypothesized. This validates the eval-driven development loop.
