@@ -8,6 +8,113 @@ from typing import Optional
 from gla.eval.curation.llm_client import LLMClient
 from gla.eval.curation.prompts import load_prompt
 
+_PR_REF_RE = re.compile(
+    r"(?:^|[\s\(])"
+    r"(?:https?://github\.com/([^/\s]+)/([^/\s]+)/(?:pull|issues|commit)/(?:(\d+)|([a-f0-9]{7,}))"
+    r"|#(\d+))",
+    re.IGNORECASE,
+)
+
+_MAX_LINKED_REF_BODY = 5000  # characters per fetched reference
+
+
+def _extract_pr_refs(text: str, default_owner: str, default_repo: str) -> list[tuple[str, str, str]]:
+    """Find GitHub references in text.
+
+    Returns list of (owner, repo, ref) tuples. `ref` is either a commit SHA
+    (hex string) or an issue/PR number (digit string). Deduplicated.
+
+    Handles both:
+    - Fully-qualified URLs: `https://github.com/owner/repo/pull/123`,
+      `https://github.com/owner/repo/commit/abc123...`
+    - Short-form references: `#123` (assumed to refer to default_owner/default_repo)
+
+    Commit SHAs must be >= 7 hex chars (enforced in the regex pattern).
+    """
+    out: list[tuple[str, str, str]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for m in _PR_REF_RE.finditer(text or ""):
+        owner_url, repo_url, num_url, sha, num_short = m.groups()
+        if owner_url and repo_url:
+            owner, repo = owner_url, repo_url
+            ref = num_url if num_url else sha
+        elif num_short:
+            owner, repo, ref = default_owner, default_repo, num_short
+        else:
+            continue
+        if not ref:
+            continue
+        # sha group only fires for hex strings >= 7 chars (enforced by regex {7,}),
+        # so no length check needed here — but guard anyway for safety.
+        if sha and len(ref) < 7:
+            continue
+        key = (owner.lower(), repo.lower(), ref.lower())
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append((owner, repo, ref))
+    return out
+
+
+def _fetch_linked_context(refs: list[tuple[str, str, str]], limit: int = 3) -> list[str]:
+    """Fetch body + title of up to `limit` referenced issues/PRs/commits.
+
+    Returns a list of rendered context blocks suitable for appending to an
+    IssueThread.comments list.
+
+    Failures are swallowed — a broken link must not break the parent fetch.
+    """
+    blocks: list[str] = []
+    for i, (owner, repo, ref) in enumerate(refs[:limit]):
+        try:
+            # Commit refs are hex; issue/PR are digits
+            if ref.isdigit():
+                # Try PR first, fall back to issue
+                endpoint_pr = f"repos/{owner}/{repo}/pulls/{ref}"
+                proc = subprocess.run(
+                    ["gh", "api", endpoint_pr],
+                    capture_output=True, text=True,
+                )
+                if proc.returncode == 0:
+                    data = json.loads(proc.stdout)
+                    title = data.get("title", "")
+                    body = (data.get("body") or "")[:_MAX_LINKED_REF_BODY]
+                    blocks.append(
+                        f"=== Linked PR #{ref}: {title} ===\n{body}"
+                    )
+                    continue
+                # Fall back to issue
+                endpoint_issue = f"repos/{owner}/{repo}/issues/{ref}"
+                proc = subprocess.run(
+                    ["gh", "api", endpoint_issue],
+                    capture_output=True, text=True,
+                )
+                if proc.returncode == 0:
+                    data = json.loads(proc.stdout)
+                    title = data.get("title", "")
+                    body = (data.get("body") or "")[:_MAX_LINKED_REF_BODY]
+                    blocks.append(
+                        f"=== Linked issue #{ref}: {title} ===\n{body}"
+                    )
+            else:
+                # Commit ref
+                endpoint = f"repos/{owner}/{repo}/commits/{ref}"
+                proc = subprocess.run(
+                    ["gh", "api", endpoint],
+                    capture_output=True, text=True,
+                )
+                if proc.returncode == 0:
+                    data = json.loads(proc.stdout)
+                    message = (data.get("commit", {}).get("message", ""))[:_MAX_LINKED_REF_BODY]
+                    blocks.append(
+                        f"=== Linked commit {ref[:8]} ===\n{message}"
+                    )
+        except (subprocess.SubprocessError, json.JSONDecodeError):
+            # Non-fatal — skip this ref
+            continue
+    return blocks
+
+
 _VALID_CATEGORIES = {
     "state_leak", "uniform_lifecycle", "matrix_math", "numeric_precision",
     "depth_precision", "winding_culling", "sync", "shader_compile",
@@ -106,11 +213,24 @@ def fetch_issue_thread(url: str) -> IssueThread:
     )
     comments = json.loads(comments_proc.stdout)
 
+    title = issue.get("title", "")
+    body = issue.get("body", "") or ""
+    comment_bodies = [c.get("body", "") for c in comments]
+
+    # NEW: extract and fetch linked PRs/issues/commits
+    all_text = "\n".join([body] + comment_bodies)
+    refs = _extract_pr_refs(all_text, default_owner=owner, default_repo=repo)
+    # Skip references to the current issue itself
+    refs = [r for r in refs if not (r[0].lower() == owner.lower()
+                                     and r[1].lower() == repo.lower()
+                                     and r[2] == number)]
+    linked_blocks = _fetch_linked_context(refs, limit=3)
+
     return IssueThread(
         url=url,
-        title=issue.get("title", ""),
-        body=issue.get("body", "") or "",
-        comments=[c.get("body", "") for c in comments],
+        title=title,
+        body=body,
+        comments=comment_bodies + linked_blocks,
     )
 
 

@@ -109,6 +109,106 @@ def test_fetch_thread_dispatches_by_url_shape():
     assert r2.title == "c"
 
 
+def test_extract_pr_refs_finds_short_form():
+    from gla.eval.curation.triage import _extract_pr_refs
+    text = "Fixed by #1234 and also see #5678."
+    refs = _extract_pr_refs(text, "owner", "repo")
+    nums = [r[2] for r in refs]
+    assert "1234" in nums
+    assert "5678" in nums
+    assert refs[0][0] == "owner"
+
+def test_extract_pr_refs_finds_full_urls():
+    from gla.eval.curation.triage import _extract_pr_refs
+    text = "See https://github.com/mrdoob/three.js/pull/12345 for context."
+    refs = _extract_pr_refs(text, "owner", "repo")
+    assert any(r == ("mrdoob", "three.js", "12345") for r in refs)
+
+def test_extract_pr_refs_handles_commit_urls():
+    from gla.eval.curation.triage import _extract_pr_refs
+    text = "Fixed in https://github.com/owner/repo/commit/abc123def456"
+    refs = _extract_pr_refs(text, "owner", "repo")
+    assert any(r == ("owner", "repo", "abc123def456") for r in refs)
+
+def test_extract_pr_refs_dedupes():
+    from gla.eval.curation.triage import _extract_pr_refs
+    text = "See #1234, also #1234 and https://github.com/o/r/pull/1234"
+    refs = _extract_pr_refs(text, "o", "r")
+    assert len(refs) == 1
+
+def test_fetch_issue_thread_follows_pr_reference():
+    """When the issue body references a PR via #NNNN, the PR body is appended."""
+    issue_json = json.dumps({
+        "title": "Z-fighting on far plane",
+        "body": "Fixed by #9999. See that PR for details.",
+        "number": 42,
+    })
+    comments_json = json.dumps([])
+    pr_json = json.dumps({
+        "title": "fix: use logarithmic depth near far plane",
+        "body": "Root cause: depth precision collapses when far/near > 1e6.",
+    })
+
+    with patch("subprocess.run") as mock_run:
+        # fetch_issue_thread makes 2 calls (issue + comments) then
+        # _fetch_linked_context makes 1 (PR) → 3 total.
+        mock_run.side_effect = [
+            MagicMock(stdout=issue_json, returncode=0),
+            MagicMock(stdout=comments_json, returncode=0),
+            MagicMock(stdout=pr_json, returncode=0),
+        ]
+        thread = fetch_issue_thread("https://github.com/owner/repo/issues/42")
+
+    # The linked PR body should be in comments
+    joined = "\n".join(thread.comments)
+    assert "logarithmic depth" in joined
+    assert "#9999" in joined  # ref header
+
+def test_fetch_issue_thread_swallows_broken_links(caplog):
+    """If a referenced PR 404s, the issue fetch still succeeds."""
+    issue_json = json.dumps({
+        "title": "Broken link test",
+        "body": "See #9999",
+        "number": 42,
+    })
+    comments_json = json.dumps([])
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = [
+            MagicMock(stdout=issue_json, returncode=0),
+            MagicMock(stdout=comments_json, returncode=0),
+            # PR fetch: returncode != 0 (404 from gh)
+            MagicMock(stdout="", returncode=1),
+            # Issue fallback fetch: also fails
+            MagicMock(stdout="", returncode=1),
+        ]
+        thread = fetch_issue_thread("https://github.com/owner/repo/issues/42")
+
+    # Thread was returned successfully despite the 404s
+    assert thread.title == "Broken link test"
+    # No linked-content blocks added
+    assert all("Linked" not in c for c in thread.comments)
+
+def test_fetch_issue_thread_skips_self_reference():
+    """A PR ref that matches the parent issue shouldn't self-fetch."""
+    issue_json = json.dumps({
+        "title": "Self-ref test",
+        "body": "See #42 (this very issue)",
+        "number": 42,
+    })
+    comments_json = json.dumps([])
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.side_effect = [
+            MagicMock(stdout=issue_json, returncode=0),
+            MagicMock(stdout=comments_json, returncode=0),
+        ]
+        thread = fetch_issue_thread("https://github.com/owner/repo/issues/42")
+
+    # Only 2 gh calls (issue + comments), no self-fetch
+    assert mock_run.call_count == 2
+
+
 def test_fetch_commit_thread_truncates_large_diffs():
     huge_patch = "\n".join(f"+ line {i}" for i in range(3000))  # ~36KB
     commit_json = json.dumps({
