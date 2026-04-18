@@ -29,8 +29,8 @@ def test_commit_appends_log_and_writes_summary(tmp_path):
         eval_summary={"with_gla": {"correct_diagnosis": True, "total_tokens": 100}},
     )
 
-    assert (eval_dir / "r1_test.c").read_text() == "int main(){}"
-    assert (eval_dir / "r1_test.md").exists()
+    assert (eval_dir / "r1_test" / "main.c").read_text() == "int main(){}"
+    assert (eval_dir / "r1_test" / "scenario.md").exists()
     entries = log.read_all()
     assert len(entries) == 1
     assert entries[0].scenario_id == "r1_test"
@@ -62,24 +62,25 @@ def test_commit_creates_eval_dir_if_missing(tmp_path):
         eval_summary=None,
     )
 
-    assert (eval_dir / "r2_missing_dir.c").read_text() == "void f(){}"
-    assert (eval_dir / "r2_missing_dir.md").read_text() == "# R2\n"
+    assert (eval_dir / "r2_missing_dir" / "main.c").read_text() == "void f(){}"
+    assert (eval_dir / "r2_missing_dir" / "scenario.md").read_text() == "# R2\n"
     entries = log.read_all()
     assert entries[0].outcome == "scenario_committed"
     assert entries[0].failure_mode == "shader_compile_not_exposed"
 
 
-def test_commit_appends_to_build_bazel(tmp_path):
-    """commit_scenario should append the new scenario_id to the hardcoded list."""
+def test_commit_leaves_build_bazel_untouched(tmp_path):
+    """BUILD.bazel is now glob-driven: commit_scenario must not modify it."""
     eval_dir = tmp_path / "eval"
     eval_dir.mkdir()
-    (eval_dir / "BUILD.bazel").write_text(
+    original = (
         'load("@rules_cc//cc:defs.bzl", "cc_binary")\n\n'
-        '[cc_binary(name=name, srcs=[name+".c"], linkopts=["-lGL"])\n'
-        ' for name in [\n'
-        '    "e1_state_leak",\n'
-        ']]\n'
+        '_SCENARIO_MDS = glob(["*/scenario.md"])\n'
+        '_SCENARIO_DIRS = [m[:-len("/scenario.md")] for m in _SCENARIO_MDS]\n'
+        '[cc_binary(name=d, srcs=glob([d + "/*.c"]), linkopts=["-lGL"]) '
+        'for d in _SCENARIO_DIRS if glob([d + "/*.c"])]\n'
     )
+    (eval_dir / "BUILD.bazel").write_text(original)
     log = CoverageLog(tmp_path / "log.jsonl")
     commit_scenario(
         eval_dir=eval_dir, scenario_id="r1_test",
@@ -90,37 +91,12 @@ def test_commit_appends_to_build_bazel(tmp_path):
         tier="core", predicted_helps="yes", observed_helps="yes",
         failure_mode=None, eval_summary=None,
     )
-    build_text = (eval_dir / "BUILD.bazel").read_text()
-    assert '"e1_state_leak"' in build_text  # existing preserved
-    assert '"r1_test"' in build_text         # new appended
+    # BUILD.bazel is auto-discovering scenarios — commit_scenario must not
+    # edit it at all.
+    assert (eval_dir / "BUILD.bazel").read_text() == original
 
 
-def test_commit_idempotent_on_build_bazel(tmp_path):
-    """Re-committing same scenario_id doesn't duplicate in BUILD.bazel."""
-    eval_dir = tmp_path / "eval"
-    eval_dir.mkdir()
-    (eval_dir / "BUILD.bazel").write_text(
-        'load("@rules_cc//cc:defs.bzl", "cc_binary")\n\n'
-        '[cc_binary(name=name, srcs=[name+".c"], linkopts=["-lGL"])\n'
-        ' for name in [\n'
-        '    "r1_test",\n'
-        ']]\n'
-    )
-    log = CoverageLog(tmp_path / "log.jsonl")
-    commit_scenario(
-        eval_dir=eval_dir, scenario_id="r1_test",
-        c_source="int main(){}", md_body="# x",
-        coverage_log=log, summary_path=tmp_path / "gaps.md",
-        issue_url="https://x/1", source_type="issue",
-        triage_verdict="in_scope", fingerprint="state_leak:x",
-        tier="core", predicted_helps="yes", observed_helps="yes",
-        failure_mode=None, eval_summary=None,
-    )
-    build_text = (eval_dir / "BUILD.bazel").read_text()
-    assert build_text.count('"r1_test"') == 1
-
-
-def test_commit_skips_build_bazel_when_absent(tmp_path):
+def test_commit_without_build_bazel_is_fine(tmp_path):
     """If BUILD.bazel doesn't exist, commit_scenario is still fine."""
     eval_dir = tmp_path / "eval"
     eval_dir.mkdir()
@@ -136,29 +112,9 @@ def test_commit_skips_build_bazel_when_absent(tmp_path):
     )
     # no exception; no build file created
     assert not (eval_dir / "BUILD.bazel").exists()
-
-
-def test_commit_skips_build_bazel_when_no_list_pattern(tmp_path):
-    """If BUILD.bazel uses glob() instead of hardcoded list, leave untouched."""
-    eval_dir = tmp_path / "eval"
-    eval_dir.mkdir()
-    original = (
-        'load("@rules_cc//cc:defs.bzl", "cc_binary")\n'
-        '[cc_binary(name=name[:-2], srcs=[name]) '
-        'for name in glob(["*.c"])]\n'
-    )
-    (eval_dir / "BUILD.bazel").write_text(original)
-    log = CoverageLog(tmp_path / "log.jsonl")
-    commit_scenario(
-        eval_dir=eval_dir, scenario_id="r3_globbed",
-        c_source="int main(){}", md_body="# x",
-        coverage_log=log, summary_path=tmp_path / "gaps.md",
-        issue_url="https://x/3", source_type="issue",
-        triage_verdict="in_scope", fingerprint="state_leak:z",
-        tier="core", predicted_helps="yes", observed_helps="yes",
-        failure_mode=None, eval_summary=None,
-    )
-    assert (eval_dir / "BUILD.bazel").read_text() == original
+    # Scenario is written to its directory
+    assert (eval_dir / "r2_nobuild" / "main.c").exists()
+    assert (eval_dir / "r2_nobuild" / "scenario.md").exists()
 
 
 def test_log_rejection_appends_rejected_entry_and_writes_summary(tmp_path):

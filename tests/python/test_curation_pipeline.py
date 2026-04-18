@@ -144,8 +144,8 @@ def test_pipeline_happy_path_commits_one_scenario(tmp_path):
     )
     p.run_batch()
 
-    assert (eval_dir / "r1_fake.c").exists()
-    assert (eval_dir / "r1_fake.md").exists()
+    assert (eval_dir / "r1_fake" / "main.c").exists()
+    assert (eval_dir / "r1_fake" / "scenario.md").exists()
     assert log_path.exists()
     assert "Scenarios committed: 1" in summary_path.read_text()
 
@@ -297,7 +297,7 @@ def test_pipeline_ambiguous_drafter_succeeds(tmp_path):
     p.run_batch()
 
     # Scenario was committed
-    assert (tmp_path / "eval" / "r1_fake.c").exists()
+    assert (tmp_path / "eval" / "r1_fake" / "main.c").exists()
     # Coverage log shows scenario_committed despite ambiguous triage
     from gla.eval.curation.coverage_log import CoverageLog
     log = CoverageLog(tmp_path / "log.jsonl")
@@ -563,9 +563,9 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
     )
     p.run_batch()
 
-    committed = list((tmp_path / "eval").glob("r1_*.c"))
+    committed = list((tmp_path / "eval").glob("r1_*/main.c"))
     assert len(committed) == 1
-    md_text = committed[0].with_suffix(".md").read_text()
+    md_text = (committed[0].parent / "scenario.md").read_text()
     assert "Observed GLA Helpfulness" in md_text
     assert "**Verdict**: yes" in md_text
     summary = (tmp_path / "gaps.md").read_text()
@@ -609,8 +609,8 @@ def test_pipeline_skip_validate_commits_without_running_validator(tmp_path):
 
     validator.validate.assert_not_called()
     run_eval.run.assert_not_called()
-    assert (tmp_path / "eval" / "r1_test.c").exists()
-    assert (tmp_path / "eval" / "r1_test.md").exists()
+    assert (tmp_path / "eval" / "r1_test" / "main.c").exists()
+    assert (tmp_path / "eval" / "r1_test" / "scenario.md").exists()
 
 
 def test_parse_args_no_validate_flag():

@@ -26,8 +26,11 @@ class ScenarioMetadata:
     difficulty: int                    # 1-5
     adversarial_principles: list[str]  # bullet points from Adversarial Principles
     gla_advantage: str                 # how GLA helps
-    source_path: str                   # absolute path to .c file
+    source_path: str                   # absolute path to primary source file (main.c)
     binary_name: str                   # bazel target name (same as id)
+    # --- Directory-form scenario fields ---
+    scenario_dir: Optional[str] = None                      # absolute path to scenario dir
+    source_files: list[str] = field(default_factory=list)   # basenames of source files in dir
     # --- New fields (all optional; existing E1-E10 continue to parse) ---
     source_url: Optional[str] = None
     source_type: Optional[str] = None           # "issue" | "fix_commit" | "stackoverflow"
@@ -209,12 +212,40 @@ class ScenarioLoader:
     # ------------------------------------------------------------------
 
     def load(self, scenario_id: str) -> ScenarioMetadata:
-        """Load a single scenario by ID (e.g. 'e1_state_leak')."""
-        md_path = self._eval_dir / f"{scenario_id}.md"
-        c_path = self._eval_dir / f"{scenario_id}.c"
+        """Load a single scenario by ID (e.g. 'e1_state_leak').
+
+        Scenarios are stored as directories containing a scenario.md and
+        one or more source files (``main.c`` + optional ``.h``, ``.glsl``,
+        ``.js``, ``.html``, ``.json``, ...).
+        """
+        scenario_dir = self._eval_dir / scenario_id
+        md_path = scenario_dir / "scenario.md"
 
         if not md_path.exists():
             raise FileNotFoundError(f"Scenario .md not found: {md_path}")
+
+        # Discover source files in the scenario directory.
+        # TODO: recurse into subdirs (e.g. upstream_snapshot/) once multi-file
+        # scenarios ship; for v1 we only list top-level files.
+        allowed_exts = {".c", ".h", ".glsl", ".vert", ".frag", ".js", ".html", ".json"}
+        source_files: list[str] = []
+        for entry in sorted(scenario_dir.iterdir()):
+            if entry.is_dir():
+                continue
+            if entry.name == "scenario.md":
+                continue
+            if entry.suffix in allowed_exts:
+                source_files.append(entry.name)
+
+        # Primary source path: prefer main.c, else first .c alphabetically, else "".
+        c_files = sorted(f for f in source_files if f.endswith(".c"))
+        if "main.c" in c_files:
+            primary = scenario_dir / "main.c"
+        elif c_files:
+            primary = scenario_dir / c_files[0]
+        else:
+            primary = None
+        source_path = str(primary.resolve()) if primary is not None else ""
 
         text = md_path.read_text(encoding="utf-8")
         sections = _parse_md(text)
@@ -260,8 +291,10 @@ class ScenarioLoader:
                 sections.get("adversarial_principles", "")
             ),
             gla_advantage=sections.get("gla_advantage", ""),
-            source_path=str(c_path.resolve()),
+            source_path=source_path,
             binary_name=scenario_id,
+            scenario_dir=str(scenario_dir.resolve()),
+            source_files=source_files,
             source_url=source_url,
             source_type=source_type,
             source_date=source_date,
@@ -280,10 +313,14 @@ class ScenarioLoader:
         )
 
     def load_all(self) -> list[ScenarioMetadata]:
-        """Load all available scenarios in sorted order."""
+        """Load all available scenarios in sorted order.
+
+        Discovers every subdirectory of ``eval_dir`` that contains a
+        ``scenario.md`` file.
+        """
         ids = sorted(
-            p.stem
-            for p in self._eval_dir.glob("*.md")
-            if not p.stem.startswith(".")
+            p.parent.name
+            for p in self._eval_dir.glob("*/scenario.md")
+            if not p.parent.name.startswith(".")
         )
         return [self.load(sid) for sid in ids]

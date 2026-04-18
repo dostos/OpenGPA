@@ -245,10 +245,12 @@ class CurationPipeline:
                     failure_mode = "other"
         else:
             # Skip validation entirely: write artifacts directly, set observed to ambiguous.
-            # Validator normally writes the .c and .md files, so we do it manually here.
-            c_path = self._eval_dir / f"{draft.scenario_id}.c"
-            md_path = self._eval_dir / f"{draft.scenario_id}.md"
-            self._eval_dir.mkdir(parents=True, exist_ok=True)
+            # Validator normally writes the main.c and scenario.md files, so we do
+            # it manually here into the per-scenario directory.
+            scenario_dir = self._eval_dir / draft.scenario_id
+            scenario_dir.mkdir(parents=True, exist_ok=True)
+            c_path = scenario_dir / "main.c"
+            md_path = scenario_dir / "scenario.md"
             c_path.write_text(draft.c_source)
             md_path.write_text(draft.md_body)
             observed = _NoValidateClassification()

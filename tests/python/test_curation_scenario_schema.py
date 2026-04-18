@@ -59,8 +59,9 @@ def test_parser_extracts_new_sections(tmp_path):
         - **Reasoning**: The binding is visible via inspect_drawcall.
     ''').strip()
 
-    (tmp_path / "r1_test.md").write_text(md)
-    (tmp_path / "r1_test.c").write_text("int main(){}")
+    (tmp_path / "r1_test").mkdir()
+    (tmp_path / "r1_test" / "scenario.md").write_text(md)
+    (tmp_path / "r1_test" / "main.c").write_text("int main(){}")
 
     loader = ScenarioLoader(eval_dir=str(tmp_path))
     s = loader.load("r1_test")
@@ -81,10 +82,11 @@ def test_parser_extracts_new_sections(tmp_path):
 def test_load_all_includes_real_world_scenarios(tmp_path):
     """load_all discovers both e-prefixed and r-prefixed scenarios via glob."""
     for prefix in ("e1_test", "r1_test"):
-        (tmp_path / f"{prefix}.md").write_text(
+        (tmp_path / prefix).mkdir()
+        (tmp_path / prefix / "scenario.md").write_text(
             f"# {prefix}\n## Bug\nbug\n## Ground Truth Diagnosis\ngt"
         )
-        (tmp_path / f"{prefix}.c").write_text("int main(){}")
+        (tmp_path / prefix / "main.c").write_text("int main(){}")
 
     loader = ScenarioLoader(eval_dir=str(tmp_path))
     ids = [s.id for s in loader.load_all()]

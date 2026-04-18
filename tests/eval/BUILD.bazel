@@ -1,32 +1,15 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
+# Each scenario is a directory containing scenario.md + one or more .c files.
+# Discover all subdirectories that contain scenario.md, compile their .c files
+# into a single cc_binary named after the directory.
+
+# Get scenario directories: every dir that has a scenario.md in it.
+_SCENARIO_MDS = glob(["*/scenario.md"])
+_SCENARIO_DIRS = [m[:-len("/scenario.md")] for m in _SCENARIO_MDS]
+
 [cc_binary(
-    name = name,
-    srcs = [name + ".c"],
+    name = d,
+    srcs = glob([d + "/*.c"]),
     linkopts = ["-lGL", "-lX11", "-lm"],
-) for name in [
-    "e1_state_leak",
-    "e2_nan_propagation",
-    "e3_index_buffer_obo",
-    "e4_double_negation_cull",
-    "e5_uniform_collision",
-    "e6_depth_precision",
-    "e7_shader_include_order",
-    "e8_race_texture_upload",
-    "e9_scissor_not_reset",
-    "e10_compensating_vp",
-    "s1_stale_texture_unit",
-    "s2_blend_never_enabled",
-    "s3_depth_never_cleared",
-    "s4_fbo_texture_leak",
-    "r1_webgl_backend_instancenode_ubo_exceeds_g",
-    "r5_feedback_loop_error_with_transmission_an",
-    "r14_using_quadmesh_with_a_custom_vertexnode_",
-    "r16_change_shadow_pass_side_selection_logic",
-    "r17_svg_path_seems_to_render_weird_in_some_c",
-    "r20_webgpu_negative_scale_inverts_front_face",
-    "r31_weird_r164_webgl_renderer_regression_wit",
-    "r36_opengl_proximity_fade_could_not_create_3",
-    "r44_4_6_dev3_ssr_glitch_with_half_size_disab",
-    "r52_smeary_visuals_with_taa_on_since_switchi",
-]]
+) for d in _SCENARIO_DIRS if glob([d + "/*.c"])]

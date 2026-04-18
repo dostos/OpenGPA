@@ -74,9 +74,16 @@ class TestScenarioLoader:
         assert len(scenario.adversarial_principles) > 0
         # GLA advantage text present
         assert len(scenario.gla_advantage) > 0
-        # Source path ends with .c
-        assert scenario.source_path.endswith("e1_state_leak.c")
+        # Source path now points to the scenario dir's main.c
+        assert scenario.source_path.endswith("e1_state_leak/main.c")
         assert scenario.binary_name == "e1_state_leak"
+
+    def test_scenario_metadata_lists_source_files(self):
+        loader = ScenarioLoader(eval_dir=str(EVAL_DIR))
+        s = loader.load("e1_state_leak")
+        assert "main.c" in s.source_files
+        assert s.scenario_dir.endswith("e1_state_leak")
+        assert s.source_path.endswith("main.c")
 
     def test_load_e9_scissor(self):
         """ScenarioLoader handles alternative section names (Difficulty, GLA Advantage)."""

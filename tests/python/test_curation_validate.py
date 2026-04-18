@@ -45,9 +45,9 @@ def test_validator_builds_runs_and_signature_matches(tmp_path):
 
     assert result.ok is True
     assert result.reason == "signature matched"
-    # The C source and md were written to tmp_path
-    assert (tmp_path / "r_test_ok.c").exists()
-    assert (tmp_path / "r_test_ok.md").exists()
+    # The C source and md were written to the scenario directory
+    assert (tmp_path / "r_test_ok" / "main.c").exists()
+    assert (tmp_path / "r_test_ok" / "scenario.md").exists()
 
 def test_validator_fails_on_signature_mismatch(tmp_path):
     """Validator returns ok=False when captured frame doesn't match the signature."""
@@ -116,8 +116,8 @@ def test_validator_cleans_up_on_mismatch(tmp_path):
     v = Validator(eval_dir=tmp_path, runner=fake_runner)
     result = v.validate(draft)
     assert result.ok is False
-    assert not (tmp_path / f"{scenario_id}.c").exists()
-    assert not (tmp_path / f"{scenario_id}.md").exists()
+    assert not (tmp_path / scenario_id / "main.c").exists()
+    assert not (tmp_path / scenario_id / "scenario.md").exists()
 
 
 def test_validator_cleans_up_when_build_fails(tmp_path):
@@ -146,8 +146,8 @@ def test_validator_cleans_up_when_build_fails(tmp_path):
     result = v.validate(draft)
     assert result.ok is False
     assert "build/run failed" in result.reason
-    assert not (tmp_path / f"{scenario_id}.c").exists()
-    assert not (tmp_path / f"{scenario_id}.md").exists()
+    assert not (tmp_path / scenario_id / "main.c").exists()
+    assert not (tmp_path / scenario_id / "scenario.md").exists()
 
 
 def test_validator_keeps_files_on_success(tmp_path):
@@ -180,8 +180,8 @@ def test_validator_keeps_files_on_success(tmp_path):
     v = Validator(eval_dir=tmp_path, runner=fake_runner)
     result = v.validate(draft)
     assert result.ok is True
-    assert (tmp_path / f"{scenario_id}.c").exists()
-    assert (tmp_path / f"{scenario_id}.md").exists()
+    assert (tmp_path / scenario_id / "main.c").exists()
+    assert (tmp_path / scenario_id / "scenario.md").exists()
 
 
 def test_validator_uses_llm_fallback_on_ambiguous(tmp_path):

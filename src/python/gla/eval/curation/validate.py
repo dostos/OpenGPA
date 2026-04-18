@@ -32,16 +32,25 @@ class Validator:
     def validate(self, draft: DraftResult) -> ValidationResult:
         # Write artifacts into eval dir, then validate. On failure, clean up
         # so failed drafts don't pollute tests/eval/.
-        c_path = self.eval_dir / f"{draft.scenario_id}.c"
-        md_path = self.eval_dir / f"{draft.scenario_id}.md"
+        scenario_dir = self.eval_dir / draft.scenario_id
+        scenario_dir.mkdir(parents=True, exist_ok=True)
+        c_path = scenario_dir / "main.c"
+        md_path = scenario_dir / "scenario.md"
         c_path.write_text(draft.c_source)
         md_path.write_text(draft.md_body)
 
         result = self._validate_inner(draft, c_path, md_path)
 
         if not result.ok:
+            # Remove fresh-created files. If the scenario dir is now empty,
+            # remove it too (safe: we created it above).
             c_path.unlink(missing_ok=True)
             md_path.unlink(missing_ok=True)
+            try:
+                scenario_dir.rmdir()
+            except OSError:
+                # Directory not empty (user had files there) — leave it.
+                pass
 
         return result
 
