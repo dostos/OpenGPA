@@ -1,0 +1,121 @@
+# R13_NAN_IN_PROJECTION_MATRIX_INFINITE_FAR: NaN in projection matrix from infinite far plane yields blank frame
+
+## Bug
+
+A perspective projection matrix is built from `near = 0.1`, `far = Infinity`.
+The standard `makePerspective` formulas place `far` in both the numerator and
+denominator of the z-scale and z-translate entries:
+
+- `m[10] = (far + near) / (near - far)`  →  `Inf / -Inf = NaN`
+- `m[14] = (2 * far * near) / (near - far)`  →  `Inf / -Inf = NaN`
+
+The resulting `mat4` is uploaded verbatim as the `uProjection` uniform. In
+the vertex shader, every `gl_Position = uProjection * vec4(aPos, 1.0)` then
+has NaN in `gl_Position.z`. GPU clipping compares `z` against `-w` and `+w`;
+NaN fails every ordered comparison, so every primitive is discarded. The
+frame contains only the clear color — zero fragments from the triangle.
+
+## Expected Correct Output
+
+A 400×300 frame on a dark-blue background (`0.1, 0.1, 0.3`) with a large
+orange (`1.0, 0.5, 0.2`) triangle centered in the viewport, covering roughly
+one third of the pixels.
+
+## Actual Broken Output
+
+A uniform dark-blue 400×300 frame. Not a single orange fragment is written.
+No GL error, no shader warning — `glGetError()` returns `GL_NO_ERROR`.
+
+## Ground Truth Diagnosis
+
+The upstream three.js issue describes exactly this bug in a WebXR context:
+WebXR depth sensing on Meta Quest 3 reports `depthFar = Infinity`, three.js
+propagates that value into `camera.far`, and `Matrix4.makePerspective`
+produces NaN entries in the projection matrix. After the immersive session
+ends and the user camera is used for normal rendering, the polluted matrix
+renders a blank canvas:
+
+> In the case of the Meta Quest 3, the `far` value becomes `Infinity`. As
+> a result, the left, right, XR _and_ user cameras all end up with `NaN`
+> values in their projection matrix as `Matrix4.makePerspective` does not
+> support an infinite far plane.
+
+> When exiting the immersive session, the scene is rendered with the
+> user-camera, which now has `NaN` values in its projection matrix,
+> resulting in the screen showing up empty.
+
+The fix (PR #29120) adds a dedicated infinite-far code path in
+`setProjectionFromUnion`, using the non-generalized infinite perspective
+formula (see the referenced StackExchange answer) instead of the standard
+formula that divides by `near - far`.
+
+## Difficulty Rating
+
+3/5
+
+A visually blank frame with no errors is a generic symptom — it could be a
+missing draw call, wrong viewport, depth test failure, cleared back-buffer,
+failed shader compile, culled geometry, or NaN. The root cause only becomes
+apparent when the projection matrix uniform is inspected and specific cells
+are recognized as NaN.
+
+## Adversarial Principles
+
+- **Silent numerical failure**: NaN is never an OpenGL error. Shader compile
+  and link succeed, `glGetError` stays clean, the draw call executes.
+- **Post-vertex clipping discard**: the vertex shader "runs to completion"
+  for every vertex — the failure is downstream in fixed-function clipping,
+  far from any user code to step through.
+- **Plausibility of `Infinity`**: `camera.far = Infinity` is a legitimate
+  request (glTF's infinite perspective), so the matrix construction looks
+  defensible until you trace the algebra.
+
+## How OpenGPA Helps
+
+`get_draw_call(draw_id=0)` returns the uniform block for the draw call,
+including `uProjection`. Cells `[2][2]` and `[3][2]` (column-major indices
+10 and 14) are NaN, immediately localizing the bug to projection-matrix
+construction. Without OpenGPA, the agent must add debug readbacks,
+recompile, or mentally re-derive the perspective formulas.
+
+## Source
+
+- **URL**: https://github.com/mrdoob/three.js/issues/29098
+- **Type**: issue
+- **Date**: 2024-08-16
+- **Commit SHA**: (n/a — see fix PR #29120)
+- **Attribution**: Reported by @cabanier; fix by @RemusMar via PR #29120
+
+## Tier
+
+core
+
+## API
+
+opengl
+
+## Framework
+
+none
+
+## Bug Signature
+
+```yaml
+type: nan_or_inf_in_uniform
+spec:
+  uniform_name: uProjection
+  component_indices: [10, 14]
+  expected_finite: true
+```
+
+## Predicted OpenGPA Helpfulness
+
+- **Verdict**: yes
+- **Reasoning**: The root cause lives entirely in a uniform value that is
+  invisible to the source code at the draw site. OpenGPA's captured uniform
+  values make the NaN entries trivially inspectable, collapsing what is
+  otherwise an open-ended blank-frame debugging hunt into a single query.
+
+## Observed OpenGPA Helpfulness
+- **Verdict**: ambiguous
+- **Evidence**: validation skipped (--no-validate)
