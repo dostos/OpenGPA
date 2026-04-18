@@ -319,4 +319,4 @@ hot-reload, continuous trace recording, GPU performance profiling.
 
 ## License
 
-TBD
+MIT License. See [LICENSE](LICENSE).
