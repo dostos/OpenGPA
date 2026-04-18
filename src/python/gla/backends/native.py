@@ -13,16 +13,14 @@ from .base import (
     FrameOverview,
     FrameProvider,
     PixelResult,
-    SceneInfo,
 )
 
 
 class NativeBackend(FrameProvider):
     """Live capture via LD_PRELOAD shim + C++ engine."""
 
-    def __init__(self, query_engine, scene_reconstructor=None, engine=None):
+    def __init__(self, query_engine, engine=None):
         self._qe = query_engine
-        self._scene = scene_reconstructor
         self._engine = engine
 
     # -- Capabilities -------------------------------------------------------
@@ -100,45 +98,6 @@ class NativeBackend(FrameProvider):
             textures=textures,
         )
 
-    @staticmethod
-    def _convert_camera(cam) -> Dict[str, Any]:
-        pos = list(cam.position)
-        fwd = list(cam.forward)
-        up = list(cam.up)
-        cam_type = "perspective" if cam.is_perspective else "orthographic"
-        summary = (
-            f"{cam_type.capitalize()} camera at "
-            f"({pos[0]:.1f}, {pos[1]:.1f}, {pos[2]:.1f}) looking toward "
-            f"({fwd[0]:.3f}, {fwd[1]:.3f}, {fwd[2]:.3f}), "
-            f"FOV {cam.fov_y_degrees:.1f} deg"
-        )
-        return {
-            "summary": summary,
-            "position": pos,
-            "forward": fwd,
-            "up": up,
-            "fov_y_degrees": cam.fov_y_degrees,
-            "aspect_ratio": cam.aspect,
-            "near": cam.near_plane,
-            "far": cam.far_plane,
-            "type": cam_type,
-            "confidence": cam.confidence,
-        }
-
-    @staticmethod
-    def _convert_object(obj) -> Dict[str, Any]:
-        return {
-            "id": obj.id,
-            "draw_call_ids": list(obj.draw_call_ids),
-            "world_transform": list(obj.world_transform),
-            "bounding_box": {
-                "min": list(obj.bbox_min),
-                "max": list(obj.bbox_max),
-            },
-            "visible": obj.visible,
-            "confidence": obj.confidence,
-        }
-
     # -- FrameProvider implementation ----------------------------------------
 
     def get_latest_overview(self) -> Optional[FrameOverview]:
@@ -173,26 +132,9 @@ class NativeBackend(FrameProvider):
         )
 
     def get_scene(self, frame_id: int) -> Optional[SceneInfo]:
-        if self._scene is None:
-            return None
-
-        overview = self._qe.frame_overview(frame_id)
-        if overview is None:
-            return None
-
-        frame = self._qe.get_normalized_frame(frame_id)
-        if frame is None:
-            return None
-
-        scene = self._scene.reconstruct(frame)
-        camera = self._convert_camera(scene.camera) if scene.camera else None
-        objects = [self._convert_object(o) for o in scene.objects]
-
-        return SceneInfo(
-            camera=camera,
-            objects=objects,
-            reconstruction_quality=scene.reconstruction_quality,
-        )
+        # Tier 1 is raw capture only — no heuristic reconstruction.
+        # Scene queries require Tier 3 framework metadata.
+        return None
 
     def compare_frames(self, frame_a: int, frame_b: int, depth: str = "summary") -> Optional[Any]:
         return self._qe.compare_frames(frame_a, frame_b, depth)

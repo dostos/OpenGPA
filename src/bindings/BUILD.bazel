@@ -5,7 +5,6 @@ pybind_extension(
     srcs = ["py_gla.cpp"],
     deps = [
         "//src/core:gla_core",
-        "//src/core:semantic",
     ],
     visibility = ["//visibility:public"],
 )

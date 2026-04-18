@@ -1,21 +1,38 @@
-"""Scene query endpoints: full scene, camera, and objects."""
+"""Scene query endpoints: full scene, camera, and objects.
+
+Scene-level data (camera, objects) requires Tier 3 framework metadata
+supplied via POST /frames/{id}/metadata or a framework plugin.
+Tier 1 raw capture (GL/Vulkan calls) is intentionally not interpreted
+as scene semantics.
+"""
 from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Request
 
 router = APIRouter(tags=["scene"])
 
+_NO_FRAMEWORK_METADATA = (
+    "No framework metadata available. "
+    "POST to /frames/{id}/metadata or use a framework plugin."
+)
+
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _get_scene_or_404(request: Request, frame_id: int):
-    """Run scene reconstruction via the provider and return SceneInfo, or raise 404."""
-    provider = request.app.state.provider
-    scene = provider.get_scene(frame_id)
+def _get_framework_query_engine(request: Request):
+    """Return the FrameworkQueryEngine if present on app state, else None."""
+    return getattr(request.app.state, "framework_query_engine", None)
+
+
+def _get_scene_from_tier3(fqe, frame_id: int):
+    """Ask the FrameworkQueryEngine for scene data; raise 404 when unavailable."""
+    if fqe is None:
+        raise HTTPException(status_code=404, detail=_NO_FRAMEWORK_METADATA)
+    scene = fqe.get_scene(frame_id) if hasattr(fqe, "get_scene") else None
     if scene is None:
-        raise HTTPException(status_code=404, detail=f"Frame {frame_id} not found")
+        raise HTTPException(status_code=404, detail=_NO_FRAMEWORK_METADATA)
     return scene
 
 
@@ -25,10 +42,10 @@ def _get_scene_or_404(request: Request, frame_id: int):
 
 @router.get("/frames/{frame_id}/scene")
 def get_scene(frame_id: int, request: Request) -> Dict[str, Any]:
-    """Full scene reconstruction: camera + objects + quality."""
-    scene = _get_scene_or_404(request, frame_id)
+    """Full scene data from Tier 3 framework metadata."""
+    fqe = _get_framework_query_engine(request)
+    scene = _get_scene_from_tier3(fqe, frame_id)
     return {
-        "reconstruction_quality": scene.reconstruction_quality,
         "camera": scene.camera,
         "objects": scene.objects,
     }
@@ -36,18 +53,17 @@ def get_scene(frame_id: int, request: Request) -> Dict[str, Any]:
 
 @router.get("/frames/{frame_id}/scene/camera")
 def get_camera(frame_id: int, request: Request) -> Dict[str, Any]:
-    """Camera parameters for a frame."""
-    scene = _get_scene_or_404(request, frame_id)
+    """Camera parameters from Tier 3 framework metadata."""
+    fqe = _get_framework_query_engine(request)
+    scene = _get_scene_from_tier3(fqe, frame_id)
     if scene.camera is None:
-        raise HTTPException(status_code=404, detail="Camera could not be extracted for this frame")
+        raise HTTPException(status_code=404, detail=_NO_FRAMEWORK_METADATA)
     return scene.camera
 
 
 @router.get("/frames/{frame_id}/scene/objects")
 def get_objects(frame_id: int, request: Request) -> Dict[str, Any]:
-    """List scene objects with transforms and bounding boxes."""
-    scene = _get_scene_or_404(request, frame_id)
-    return {
-        "objects": scene.objects,
-        "reconstruction_quality": scene.reconstruction_quality,
-    }
+    """Scene objects from Tier 3 framework metadata."""
+    fqe = _get_framework_query_engine(request)
+    scene = _get_scene_from_tier3(fqe, frame_id)
+    return {"objects": scene.objects}

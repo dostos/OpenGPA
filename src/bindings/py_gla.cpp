@@ -8,9 +8,6 @@
 #include "src/core/query/frame_diff.h"
 #include "src/core/query/query_engine.h"
 #include "src/core/store/frame_store.h"
-#include "src/core/semantic/camera_extractor.h"
-#include "src/core/semantic/object_grouper.h"
-#include "src/core/semantic/scene_reconstructor.h"
 
 namespace py = pybind11;
 
@@ -226,64 +223,7 @@ PYBIND11_MODULE(_gla_core, m) {
              py::return_value_policy::reference_internal);
 
     // -------------------------------------------------------------------------
-    // CameraInfo
-    // -------------------------------------------------------------------------
-    py::class_<gla::CameraInfo>(m, "CameraInfo")
-        .def_property_readonly("position", [](const gla::CameraInfo& c) {
-            return py::make_tuple(c.position[0], c.position[1], c.position[2]);
-        })
-        .def_property_readonly("forward", [](const gla::CameraInfo& c) {
-            return py::make_tuple(c.forward[0], c.forward[1], c.forward[2]);
-        })
-        .def_property_readonly("up", [](const gla::CameraInfo& c) {
-            return py::make_tuple(c.up[0], c.up[1], c.up[2]);
-        })
-        .def_readonly("fov_y_degrees", &gla::CameraInfo::fov_y_degrees)
-        .def_readonly("aspect",        &gla::CameraInfo::aspect)
-        .def_readonly("near_plane",    &gla::CameraInfo::near_plane)
-        .def_readonly("far_plane",     &gla::CameraInfo::far_plane)
-        .def_readonly("is_perspective",&gla::CameraInfo::is_perspective)
-        .def_readonly("confidence",    &gla::CameraInfo::confidence);
-
-    // -------------------------------------------------------------------------
-    // SceneObject
-    // -------------------------------------------------------------------------
-    py::class_<gla::SceneObject>(m, "SceneObject")
-        .def_readonly("id",            &gla::SceneObject::id)
-        .def_readonly("draw_call_ids", &gla::SceneObject::draw_call_ids)
-        .def_property_readonly("world_transform", [](const gla::SceneObject& o) {
-            py::list lst;
-            for (int i = 0; i < 16; ++i) lst.append(o.world_transform[i]);
-            return lst;
-        })
-        .def_property_readonly("bbox_min", [](const gla::SceneObject& o) {
-            return py::make_tuple(o.bbox_min[0], o.bbox_min[1], o.bbox_min[2]);
-        })
-        .def_property_readonly("bbox_max", [](const gla::SceneObject& o) {
-            return py::make_tuple(o.bbox_max[0], o.bbox_max[1], o.bbox_max[2]);
-        })
-        .def_readonly("visible",    &gla::SceneObject::visible)
-        .def_readonly("confidence", &gla::SceneObject::confidence);
-
-    // -------------------------------------------------------------------------
-    // SceneInfo
-    // -------------------------------------------------------------------------
-    py::class_<gla::SceneInfo>(m, "SceneInfo")
-        .def_readonly("camera",                &gla::SceneInfo::camera)
-        .def_readonly("objects",               &gla::SceneInfo::objects)
-        .def_readonly("reconstruction_quality",&gla::SceneInfo::reconstruction_quality);
-
-    // -------------------------------------------------------------------------
-    // NormalizedFrame  (opaque — only exposed so SceneReconstructor.reconstruct() works)
+    // NormalizedFrame  (opaque — exposed for QueryEngine.get_normalized_frame)
     // -------------------------------------------------------------------------
     py::class_<gla::NormalizedFrame>(m, "NormalizedFrame");
-
-    // -------------------------------------------------------------------------
-    // SceneReconstructor
-    // -------------------------------------------------------------------------
-    py::class_<gla::SceneReconstructor>(m, "SceneReconstructor")
-        .def(py::init<>())
-        .def("reconstruct",
-             &gla::SceneReconstructor::reconstruct,
-             py::arg("frame"));
 }

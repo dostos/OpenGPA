@@ -1,7 +1,10 @@
-"""Tests for /api/v1/frames/{frame_id}/scene/* endpoints."""
-from unittest.mock import MagicMock
+"""Tests for /api/v1/frames/{frame_id}/scene/* endpoints.
 
+Scene endpoints require Tier 3 framework metadata.  Without a
+FrameworkQueryEngine on app.state, all scene routes return 404.
+"""
 import pytest
+from unittest.mock import MagicMock
 from starlette.testclient import TestClient
 
 from gla.api.app import create_app
@@ -11,184 +14,111 @@ AUTH_TOKEN = "test-token"
 AUTH_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"}
 
 
-# ---------------------------------------------------------------------------
-# Mock helpers
-# ---------------------------------------------------------------------------
-
-def _make_camera() -> MagicMock:
-    cam = MagicMock()
-    cam.position = (5.0, 3.0, 2.0)
-    cam.forward = (-0.707, -0.408, -0.577)
-    cam.up = (0.0, 1.0, 0.0)
-    cam.fov_y_degrees = 60.0
-    cam.aspect = 1.778
-    cam.near_plane = 0.1
-    cam.far_plane = 100.0
-    cam.is_perspective = True
-    cam.confidence = 0.9
-    return cam
-
-
-def _make_object(obj_id: int = 0) -> MagicMock:
-    obj = MagicMock()
-    obj.id = obj_id
-    obj.draw_call_ids = [0, 1]
-    obj.world_transform = [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 5, 0, 3, 1]
-    obj.bbox_min = (-1.0, -1.0, -1.0)
-    obj.bbox_max = (1.0, 1.0, 1.0)
-    obj.visible = True
-    obj.confidence = 0.85
-    return obj
-
-
-def _make_scene_info(quality: str = "full", has_camera: bool = True) -> MagicMock:
-    scene = MagicMock()
-    scene.reconstruction_quality = quality
-    scene.camera = _make_camera() if has_camera else None
-    scene.objects = [_make_object(0)]
-    return scene
-
-
-def _make_overview(frame_id: int = 1) -> MagicMock:
-    ov = MagicMock()
-    ov.frame_id = frame_id
-    ov.draw_call_count = 2
-    ov.fb_width = 800
-    ov.fb_height = 600
-    ov.timestamp = 100.0
-    return ov
-
-
-def _make_normalized_frame() -> MagicMock:
-    return MagicMock()
-
-
-def _make_query_engine(frame_id: int = 1, has_frame: bool = True) -> MagicMock:
+def _make_client_no_fqe() -> TestClient:
+    """Client with no FrameworkQueryEngine — scene routes should return 404."""
     qe = MagicMock()
-    qe.frame_overview.side_effect = lambda fid: (
-        _make_overview(fid) if fid == frame_id else None
-    )
-    qe.get_normalized_frame.side_effect = lambda fid: (
-        _make_normalized_frame() if (fid == frame_id and has_frame) else None
-    )
-    return qe
-
-
-def _make_reconstructor(quality: str = "full", has_camera: bool = True) -> MagicMock:
-    rec = MagicMock()
-    rec.reconstruct.return_value = _make_scene_info(quality, has_camera)
-    return rec
-
-
-def _make_client(quality: str = "full", has_camera: bool = True,
-                 has_frame: bool = True) -> TestClient:
-    qe = _make_query_engine(has_frame=has_frame)
-    rec = _make_reconstructor(quality, has_camera)
-    provider = NativeBackend(qe, scene_reconstructor=rec)
-    app = create_app(
-        provider=provider,
-        auth_token=AUTH_TOKEN,
-    )
+    qe.frame_overview.return_value = MagicMock(frame_id=1)
+    provider = NativeBackend(qe)
+    app = create_app(provider=provider, auth_token=AUTH_TOKEN)
     return TestClient(app, raise_server_exceptions=True)
 
 
+def _make_client_with_fqe(scene_info=None) -> TestClient:
+    """Client with a mock FrameworkQueryEngine that returns scene_info."""
+    qe = MagicMock()
+    provider = NativeBackend(qe)
+    app = create_app(provider=provider, auth_token=AUTH_TOKEN)
+
+    fqe = MagicMock()
+    fqe.get_scene.return_value = scene_info
+    app.state.framework_query_engine = fqe
+
+    return TestClient(app, raise_server_exceptions=True)
+
+
+def _make_scene(camera=None, objects=None):
+    scene = MagicMock()
+    scene.camera = camera
+    scene.objects = objects or []
+    return scene
+
+
 # ---------------------------------------------------------------------------
-# Tests: GET /frames/{frame_id}/scene/camera
+# No framework metadata — all scene routes return 404
 # ---------------------------------------------------------------------------
 
-class TestGetCamera:
-    def test_200_with_camera_info(self):
-        client = _make_client()
+class TestSceneNoFrameworkMetadata:
+    def test_scene_returns_404(self):
+        client = _make_client_no_fqe()
+        resp = client.get("/api/v1/frames/1/scene", headers=AUTH_HEADERS)
+        assert resp.status_code == 404
+        assert "framework metadata" in resp.json()["detail"].lower()
+
+    def test_camera_returns_404(self):
+        client = _make_client_no_fqe()
         resp = client.get("/api/v1/frames/1/scene/camera", headers=AUTH_HEADERS)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["position"] == pytest.approx([5.0, 3.0, 2.0])
-        assert data["fov_y_degrees"] == pytest.approx(60.0)
-        assert data["type"] == "perspective"
-        assert data["confidence"] == pytest.approx(0.9)
-        assert "summary" in data
-        assert "Perspective" in data["summary"]
-
-    def test_404_when_frame_missing(self):
-        client = _make_client()
-        resp = client.get("/api/v1/frames/9999/scene/camera", headers=AUTH_HEADERS)
         assert resp.status_code == 404
 
-    def test_404_when_camera_not_extracted(self):
-        client = _make_client(has_camera=False)
-        resp = client.get("/api/v1/frames/1/scene/camera", headers=AUTH_HEADERS)
+    def test_objects_returns_404(self):
+        client = _make_client_no_fqe()
+        resp = client.get("/api/v1/frames/1/scene/objects", headers=AUTH_HEADERS)
         assert resp.status_code == 404
 
-    def test_401_without_auth(self):
-        client = _make_client()
+    def test_scene_requires_auth(self):
+        client = _make_client_no_fqe()
+        resp = client.get("/api/v1/frames/1/scene")
+        assert resp.status_code == 401
+
+    def test_camera_requires_auth(self):
+        client = _make_client_no_fqe()
         resp = client.get("/api/v1/frames/1/scene/camera")
         assert resp.status_code == 401
 
-
-# ---------------------------------------------------------------------------
-# Tests: GET /frames/{frame_id}/scene/objects
-# ---------------------------------------------------------------------------
-
-class TestGetObjects:
-    def test_200_with_object_list(self):
-        client = _make_client()
-        resp = client.get("/api/v1/frames/1/scene/objects", headers=AUTH_HEADERS)
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "objects" in data
-        assert len(data["objects"]) == 1
-        obj = data["objects"][0]
-        assert obj["id"] == 0
-        assert obj["draw_call_ids"] == [0, 1]
-        assert len(obj["world_transform"]) == 16
-        assert "bounding_box" in obj
-        assert obj["bounding_box"]["min"] == pytest.approx([-1.0, -1.0, -1.0])
-        assert obj["bounding_box"]["max"] == pytest.approx([1.0, 1.0, 1.0])
-        assert obj["visible"] is True
-        assert "reconstruction_quality" in data
-
-    def test_404_when_frame_missing(self):
-        client = _make_client()
-        resp = client.get("/api/v1/frames/9999/scene/objects", headers=AUTH_HEADERS)
-        assert resp.status_code == 404
-
-    def test_401_without_auth(self):
-        client = _make_client()
+    def test_objects_requires_auth(self):
+        client = _make_client_no_fqe()
         resp = client.get("/api/v1/frames/1/scene/objects")
         assert resp.status_code == 401
 
 
 # ---------------------------------------------------------------------------
-# Tests: GET /frames/{frame_id}/scene  (full)
+# With FrameworkQueryEngine — scene routes return data
 # ---------------------------------------------------------------------------
 
-class TestGetScene:
-    def test_200_full_scene(self):
-        client = _make_client(quality="full")
+class TestSceneWithFrameworkMetadata:
+    def test_scene_returns_camera_and_objects(self):
+        camera = {"position": [1.0, 2.0, 3.0], "type": "perspective"}
+        obj = {"id": 0, "name": "Cube"}
+        scene = _make_scene(camera=camera, objects=[obj])
+        client = _make_client_with_fqe(scene_info=scene)
         resp = client.get("/api/v1/frames/1/scene", headers=AUTH_HEADERS)
         assert resp.status_code == 200
         data = resp.json()
-        assert data["reconstruction_quality"] == "full"
-        assert "camera" in data
-        assert data["camera"] is not None
-        assert "objects" in data
+        assert data["camera"]["type"] == "perspective"
         assert len(data["objects"]) == 1
 
-    def test_200_raw_only_no_matrices(self):
-        """Frame with no matrices returns reconstruction_quality='raw_only'."""
-        client = _make_client(quality="raw_only", has_camera=False)
-        resp = client.get("/api/v1/frames/1/scene", headers=AUTH_HEADERS)
+    def test_camera_returns_camera_dict(self):
+        camera = {"position": [0.0, 0.0, 5.0], "type": "perspective"}
+        scene = _make_scene(camera=camera)
+        client = _make_client_with_fqe(scene_info=scene)
+        resp = client.get("/api/v1/frames/1/scene/camera", headers=AUTH_HEADERS)
         assert resp.status_code == 200
-        data = resp.json()
-        assert data["reconstruction_quality"] == "raw_only"
-        assert data["camera"] is None
+        assert resp.json()["type"] == "perspective"
 
-    def test_404_when_frame_missing(self):
-        client = _make_client()
-        resp = client.get("/api/v1/frames/9999/scene", headers=AUTH_HEADERS)
+    def test_camera_404_when_camera_is_none(self):
+        scene = _make_scene(camera=None)
+        client = _make_client_with_fqe(scene_info=scene)
+        resp = client.get("/api/v1/frames/1/scene/camera", headers=AUTH_HEADERS)
         assert resp.status_code == 404
 
-    def test_401_without_auth(self):
-        client = _make_client()
-        resp = client.get("/api/v1/frames/1/scene")
-        assert resp.status_code == 401
+    def test_objects_returns_object_list(self):
+        objects = [{"id": 0, "name": "Cube"}, {"id": 1, "name": "Sphere"}]
+        scene = _make_scene(objects=objects)
+        client = _make_client_with_fqe(scene_info=scene)
+        resp = client.get("/api/v1/frames/1/scene/objects", headers=AUTH_HEADERS)
+        assert resp.status_code == 200
+        assert len(resp.json()["objects"]) == 2
+
+    def test_scene_returns_404_when_fqe_returns_none(self):
+        client = _make_client_with_fqe(scene_info=None)
+        resp = client.get("/api/v1/frames/1/scene", headers=AUTH_HEADERS)
+        assert resp.status_code == 404
