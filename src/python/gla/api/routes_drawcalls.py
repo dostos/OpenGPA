@@ -22,10 +22,12 @@ def _drawcall_summary(dc) -> Dict[str, Any]:
 def _drawcall_detail(dc) -> Dict[str, Any]:
     """Full detail for a single draw call."""
     result = _drawcall_summary(dc)
+    pipeline_state = dict(dc.pipeline_state) if dc.pipeline_state else {}
+    pipeline_state["fbo_color_attachment_tex"] = getattr(dc, "fbo_color_attachment_tex", 0)
     result.update(
         {
             "index_count": dc.index_count,
-            "pipeline_state": dc.pipeline_state,
+            "pipeline_state": pipeline_state,
         }
     )
     return result

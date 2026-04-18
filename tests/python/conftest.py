@@ -76,7 +76,7 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     tex.height = 512
     tex.format = "RGBA8"
     dc.textures = [tex]
-    dc.fbo_color_attachment_tex = 0
+    dc.fbo_color_attachment_tex = 7  # simulates render-to-texture FBO
     return dc
 
 

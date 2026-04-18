@@ -38,6 +38,15 @@ class TestDrawCallDetail:
         ps = data["pipeline_state"]
         assert "depth_test_enabled" in ps
 
+    def test_get_drawcall_fbo_attachment(self, client, auth_headers):
+        """pipeline_state must include fbo_color_attachment_tex for feedback loop detection."""
+        resp = client.get("/api/v1/frames/1/drawcalls/0", headers=auth_headers)
+        assert resp.status_code == 200
+        ps = resp.json()["pipeline_state"]
+        assert "fbo_color_attachment_tex" in ps
+        # conftest mock sets fbo_color_attachment_tex = 7
+        assert ps["fbo_color_attachment_tex"] == 7
+
     def test_get_nonexistent_drawcall_404(self, client, auth_headers):
         resp = client.get("/api/v1/frames/1/drawcalls/9999", headers=auth_headers)
         assert resp.status_code == 404
