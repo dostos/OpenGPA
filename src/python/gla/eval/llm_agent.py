@@ -242,6 +242,46 @@ GLA_TOOLS = [
 # For code-only mode, only the source reader is available
 CODE_ONLY_TOOLS = [GLA_TOOLS[-1]]  # just read_source_file
 
+# Snapshot tool specs — added dynamically when scenario has snapshot refs
+SNAPSHOT_TOOLS = [
+    {
+        "name": "read_upstream",
+        "description": (
+            "Read a file from the upstream repository snapshot. "
+            "Use this to inspect the original upstream source code that the "
+            "scenario is based on. The path is relative to the repository root."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "path": {
+                    "type": "string",
+                    "description": "Path to the file, relative to the upstream repo root",
+                },
+            },
+            "required": ["path"],
+        },
+    },
+    {
+        "name": "list_upstream_files",
+        "description": (
+            "List files and directories under a subdirectory of the upstream "
+            "repository snapshot. Directories are shown with a trailing '/'. "
+            "Use an empty string for the repo root."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "subdir": {
+                    "type": "string",
+                    "description": "Subdirectory path relative to repo root, or empty string for root",
+                },
+            },
+            "required": [],
+        },
+    },
+]
+
 
 # ---------------------------------------------------------------------------
 # Agent
@@ -266,14 +306,27 @@ class EvalAgent:
         source_code: str,
         source_path: str,
         tool_executor: GlaToolExecutor,
+        extra_tools: dict | None = None,
     ) -> AgentResult:
-        """Run the agent WITH OpenGPA tools available."""
+        """Run the agent WITH OpenGPA tools available.
+
+        Args:
+            extra_tools: optional dict of name -> callable for supplementary
+                tools (e.g. snapshot tools). Each callable receives the
+                tool_input dict and returns a string result.
+        """
+        # Build the tool spec list: always include GLA_TOOLS, then append
+        # specs for any extra_tools that are present.
+        tool_specs = list(GLA_TOOLS)
+        if extra_tools:
+            tool_specs += [s for s in SNAPSHOT_TOOLS if s["name"] in extra_tools]
         return self._run(
             scenario_description=scenario_description,
             source_code=source_code,
             source_path=source_path,
-            tools=GLA_TOOLS,
+            tool_specs=tool_specs,
             tool_executor=tool_executor,
+            extra_tools=extra_tools or {},
             mode="with_gla",
         )
 
@@ -282,14 +335,25 @@ class EvalAgent:
         scenario_description: str,
         source_code: str,
         source_path: str,
+        extra_tools: dict | None = None,
     ) -> AgentResult:
-        """Run the agent with ONLY source code access."""
+        """Run the agent with ONLY source code access.
+
+        Args:
+            extra_tools: optional dict of name -> callable for supplementary
+                tools (e.g. snapshot tools). Each callable receives the
+                tool_input dict and returns a string result.
+        """
+        tool_specs = list(CODE_ONLY_TOOLS)
+        if extra_tools:
+            tool_specs += [s for s in SNAPSHOT_TOOLS if s["name"] in extra_tools]
         return self._run(
             scenario_description=scenario_description,
             source_code=source_code,
             source_path=source_path,
-            tools=CODE_ONLY_TOOLS,
+            tool_specs=tool_specs,
             tool_executor=None,
+            extra_tools=extra_tools or {},
             mode="code_only",
         )
 
@@ -298,13 +362,22 @@ class EvalAgent:
         scenario_description: str,
         source_code: str,
         source_path: str,
-        tools: list,
+        tool_specs: list,
         tool_executor,
+        extra_tools: dict,
         mode: str,
     ) -> AgentResult:
-        """Core agent loop with tool use."""
+        """Core agent loop with tool use.
 
-        system_prompt = self._build_system_prompt(mode)
+        Args:
+            tool_specs: Anthropic tool-use spec dicts sent to the API.
+            tool_executor: GlaToolExecutor for OpenGPA REST API tools (or None).
+            extra_tools: dict of tool_name -> callable(tool_input: dict) -> str,
+                for tools dispatched locally (e.g. snapshot tools). The callable
+                receives the raw tool_input dict.
+        """
+
+        system_prompt = self._build_system_prompt(mode, extra_tools=extra_tools)
         user_message = self._build_user_message(scenario_description, source_path)
 
         messages = [{"role": "user", "content": user_message}]
@@ -325,7 +398,7 @@ class EvalAgent:
                 model=self.model,
                 max_tokens=4096,
                 system=system_prompt,
-                tools=tools,
+                tools=tool_specs,
                 messages=messages,
             )
 
@@ -357,6 +430,12 @@ class EvalAgent:
 
                     if tool_name == "read_source_file":
                         result = source_code
+                    elif tool_name in extra_tools:
+                        # Dispatch locally via the callable
+                        try:
+                            result = extra_tools[tool_name](tool_input)
+                        except Exception as exc:
+                            result = f"ERROR: tool {tool_name!r} raised: {exc}"
                     elif tool_executor is not None:
                         result = tool_executor.execute(tool_name, tool_input)
                     else:
@@ -411,11 +490,17 @@ class EvalAgent:
             framebuffer_first=fb_first,
         )
 
-    def _build_system_prompt(self, mode: str) -> str:
+    def _build_system_prompt(self, mode: str, extra_tools: dict | None = None) -> str:
         base = (
             "You are debugging an OpenGL application that has a rendering bug. "
             "Your goal is to identify the root cause and suggest a fix.\n\n"
         )
+        snapshot_lines = ""
+        if extra_tools and "read_upstream" in extra_tools:
+            snapshot_lines = (
+                "- read_upstream: Read a file from the upstream repository snapshot\n"
+                "- list_upstream_files: List files in a directory of the upstream repo\n"
+            )
         if mode == "with_gla":
             return base + (
                 "You have access to these tools:\n"
@@ -425,8 +510,9 @@ class EvalAgent:
                 "textures, pipeline state, or vertex data\n"
                 "- query_pixel: Get color/depth at a pixel coordinate\n"
                 "- query_scene: Get scene info (requires framework metadata plugin)\n"
-                "- compare_frames: Diff two frames\n\n"
-                "These tools are provided by OpenGPA (Open Graphics Profiler for Agents).\n"
+                "- compare_frames: Diff two frames\n"
+                + snapshot_lines
+                + "\nThese tools are provided by OpenGPA (Open Graphics Profiler for Agents).\n"
                 "Use whatever approach you think is best.\n\n"
                 "End your response with:\n"
                 "DIAGNOSIS: <one-sentence root cause>\n"
@@ -435,8 +521,9 @@ class EvalAgent:
         else:
             return base + (
                 "You have access to these tools:\n"
-                "- read_source_file: Read the application source code\n\n"
-                "Use whatever approach you think is best.\n\n"
+                "- read_source_file: Read the application source code\n"
+                + snapshot_lines
+                + "\nUse whatever approach you think is best.\n\n"
                 "End your response with:\n"
                 "DIAGNOSIS: <one-sentence root cause>\n"
                 "FIX: <specific code change needed>"
@@ -485,6 +572,19 @@ def build_agent_fn(
         )
         source_path = getattr(scenario, "source_path", "")
 
+        # Build extra_tools dict for locally-dispatched tools (snapshot tools).
+        # The harness passes callables keyed by tool name; the agent dispatches
+        # them by calling callable(tool_input_dict). We adapt the harness
+        # callables (which take keyword args) to accept a dict.
+        _snapshot_tool_names = {"read_upstream", "list_upstream_files"}
+        extra_tools: dict = {}
+        if "read_upstream" in tools:
+            _ru = tools["read_upstream"]
+            extra_tools["read_upstream"] = lambda inp, _f=_ru: _f(inp.get("path", ""))
+        if "list_upstream_files" in tools:
+            _luf = tools["list_upstream_files"]
+            extra_tools["list_upstream_files"] = lambda inp, _f=_luf: _f(inp.get("subdir", ""))
+
         if mode == "with_gla":
             frame_id = tools["run_with_capture"]()
             executor = GlaToolExecutor(
@@ -497,12 +597,14 @@ def build_agent_fn(
                 source_code=source_code,
                 source_path=source_path,
                 tool_executor=executor,
+                extra_tools=extra_tools or None,
             )
         else:
             result = agent.run_code_only(
                 scenario_description=description,
                 source_code=source_code,
                 source_path=source_path,
+                extra_tools=extra_tools or None,
             )
 
         return (

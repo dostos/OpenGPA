@@ -4,11 +4,15 @@ from __future__ import annotations
 import json
 import time
 from datetime import datetime, timezone
-from typing import Callable, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Callable, Optional
 
 from gla.eval.metrics import DiagnosisScorer, EvalResult
 from gla.eval.runner import ScenarioRunner
 from gla.eval.scenario import ScenarioLoader, ScenarioMetadata
+
+if TYPE_CHECKING:
+    from gla.eval.snapshot_fetcher import SnapshotFetcher
 
 # Callable signature: (scenario, mode, tools) -> (diagnosis_text, input_tokens,
 #   output_tokens, tool_calls, num_turns, time_seconds)
@@ -19,11 +23,14 @@ AgentFn = Callable[
 
 _ALL_MODES = ["with_gla", "code_only"]
 
+_SNAPSHOT_MAX_BYTES = 200 * 1024  # 200 KB
+
 
 class EvalHarness:
     """Orchestrates eval runs across scenarios and modes."""
 
-    def __init__(self, config: Optional[dict] = None):
+    def __init__(self, config: Optional[dict] = None,
+                 snapshot_fetcher: Optional["SnapshotFetcher"] = None):
         cfg = config or {}
         eval_dir = cfg.get("eval_dir", "tests/eval")
         self.loader = ScenarioLoader(eval_dir=eval_dir)
@@ -40,6 +47,7 @@ class EvalHarness:
         )
         self._model = cfg.get("model", "unknown")
         self.results: list[EvalResult] = []
+        self._snapshot_fetcher = snapshot_fetcher
 
     # ------------------------------------------------------------------
     # Public API
@@ -153,10 +161,114 @@ class EvalHarness:
 
         In 'with_gla' mode the runner tools are included.
         In 'code_only' mode only the source reader is provided.
+        When the scenario has upstream snapshot refs, read_upstream and
+        list_upstream_files are added for both modes.
         """
         tools: dict = {
             "read_source": lambda: self.runner.read_source(scenario),
         }
         if mode == "with_gla":
             tools["run_with_capture"] = lambda: self.runner.run_with_capture(scenario)
+
+        # Add snapshot tools when the scenario references an upstream snapshot
+        if scenario.upstream_snapshot_repo and scenario.upstream_snapshot_sha:
+            tools["read_upstream"] = lambda path: self._read_snapshot_file(scenario, path)
+            tools["list_upstream_files"] = lambda subdir="": self._list_snapshot_files(scenario, subdir)
+
         return tools
+
+    # ------------------------------------------------------------------
+    # Snapshot helpers
+    # ------------------------------------------------------------------
+
+    def _ensure_snapshot(self, scenario: ScenarioMetadata) -> Path:
+        """Return the working-tree Path for the scenario's upstream snapshot."""
+        if self._snapshot_fetcher is None:
+            from gla.eval.snapshot_fetcher import SnapshotFetcher
+            self._snapshot_fetcher = SnapshotFetcher()
+        from gla.eval.snapshot_fetcher import SnapshotRef
+        ref = SnapshotRef(
+            repo_url=scenario.upstream_snapshot_repo,  # type: ignore[arg-type]
+            sha=scenario.upstream_snapshot_sha,  # type: ignore[arg-type]
+        )
+        return self._snapshot_fetcher.fetch(ref)
+
+    def _read_snapshot_file(self, scenario: ScenarioMetadata, path: str) -> str:
+        """Read a file from the upstream snapshot and return its contents.
+
+        Returns an "ERROR: ..." string on any failure — never raises.
+        Guards against path traversal, missing files, wrong type, fetch
+        failures, and files larger than 200 KB (truncated with a marker).
+        """
+        try:
+            root = self._ensure_snapshot(scenario)
+        except Exception as exc:
+            return f"ERROR: could not fetch upstream snapshot: {exc}"
+
+        try:
+            # Resolve the requested path relative to snapshot root;
+            # guard against traversal outside root.
+            target = (root / path).resolve()
+            if not str(target).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {path!r}"
+        except Exception as exc:
+            return f"ERROR: invalid path {path!r}: {exc}"
+
+        if not target.exists():
+            return f"ERROR: file not found in snapshot: {path!r}"
+        if target.is_dir():
+            return f"ERROR: {path!r} is a directory, not a file"
+
+        try:
+            raw = target.read_bytes()
+        except Exception as exc:
+            return f"ERROR: could not read {path!r}: {exc}"
+
+        truncated = len(raw) > _SNAPSHOT_MAX_BYTES
+        if truncated:
+            raw = raw[:_SNAPSHOT_MAX_BYTES]
+
+        try:
+            text = raw.decode("utf-8", errors="replace")
+        except Exception as exc:
+            return f"ERROR: could not decode {path!r} as UTF-8: {exc}"
+
+        if truncated:
+            text += f"\n\n[TRUNCATED: file exceeds {_SNAPSHOT_MAX_BYTES // 1024} KB limit]"
+
+        return text
+
+    def _list_snapshot_files(self, scenario: ScenarioMetadata, subdir: str = "") -> str:
+        """List entries under subdir in the upstream snapshot.
+
+        Returns a newline-separated list of names with '/' suffix on dirs.
+        Returns an "ERROR: ..." string on any failure.
+        """
+        try:
+            root = self._ensure_snapshot(scenario)
+        except Exception as exc:
+            return f"ERROR: could not fetch upstream snapshot: {exc}"
+
+        try:
+            target = (root / subdir).resolve() if subdir else root.resolve()
+            if not str(target).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {subdir!r}"
+        except Exception as exc:
+            return f"ERROR: invalid path {subdir!r}: {exc}"
+
+        if not target.exists():
+            return f"ERROR: directory not found in snapshot: {subdir!r}"
+        if not target.is_dir():
+            return f"ERROR: {subdir!r} is a file, not a directory"
+
+        try:
+            entries = sorted(target.iterdir(), key=lambda p: (p.is_file(), p.name))
+            names = [
+                (e.name + "/" if e.is_dir() else e.name)
+                for e in entries
+                if e.name != ".complete"
+            ]
+        except Exception as exc:
+            return f"ERROR: could not list {subdir!r}: {exc}"
+
+        return "\n".join(names)
