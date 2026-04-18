@@ -85,9 +85,8 @@ gla_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
     disp.EnumeratePhysicalDevices =
         (PFN_vkEnumeratePhysicalDevices)next_gipa(*pInstance,
                                                   "vkEnumeratePhysicalDevices");
-    gla_instance_dispatch_store(*pInstance, &disp);
-
-    /* Initialise subsystems once */
+    /* Initialise subsystems once — must happen BEFORE storing the dispatch
+     * table, because gla_dispatch_init() zeroes the table. */
     static int g_inited = 0;
     if (!g_inited) {
         gla_dispatch_init();
@@ -96,7 +95,26 @@ gla_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
         g_inited = 1;
     }
 
+    gla_instance_dispatch_store(*pInstance, &disp);
+
     return VK_SUCCESS;
+}
+
+/* --------------------------------------------------------------------------
+ * vkEnumeratePhysicalDevices — passthrough intercept (required so that
+ * the Vulkan loader and other layers can resolve this via our
+ * vkGetInstanceProcAddr without getting NULL back)
+ * -------------------------------------------------------------------------- */
+
+static VKAPI_ATTR VkResult VKAPI_CALL
+gla_EnumeratePhysicalDevices(VkInstance        instance,
+                              uint32_t         *pPhysicalDeviceCount,
+                              VkPhysicalDevice *pPhysicalDevices) {
+    GlaInstanceDispatch *disp = gla_instance_dispatch_get(instance);
+    if (!disp || !disp->EnumeratePhysicalDevices)
+        return VK_ERROR_INITIALIZATION_FAILED;
+    return disp->EnumeratePhysicalDevices(instance, pPhysicalDeviceCount,
+                                          pPhysicalDevices);
 }
 
 /* --------------------------------------------------------------------------
@@ -482,6 +500,7 @@ gla_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
     INTERCEPT(GetSwapchainImagesKHR);
 #undef INTERCEPT
 
+    if (device == VK_NULL_HANDLE) return NULL;
     GlaDeviceDispatch *disp = gla_device_dispatch_get(device);
     if (disp && disp->GetDeviceProcAddr)
         return disp->GetDeviceProcAddr(device, pName);
@@ -507,6 +526,7 @@ gla_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
     INTERCEPT(CreateInstance);
     INTERCEPT(DestroyInstance);
     INTERCEPT(CreateDevice);
+    INTERCEPT(EnumeratePhysicalDevices);
 #undef INTERCEPT
 
     /* Device-level functions also queryable via GetInstanceProcAddr */

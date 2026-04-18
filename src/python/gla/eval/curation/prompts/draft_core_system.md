@@ -107,6 +107,51 @@ spec:
 - **Reasoning**: <why>
 ```
 
+## When to include an Upstream Snapshot reference
+
+Some bugs only make sense with the entire upstream codebase in context — e.g.,
+a Godot shader bug where the diagnosis requires reading the engine's shader
+compilation pipeline across dozens of files. Minimal C repros can't capture
+this.
+
+In those cases, add an `## Upstream Snapshot` section to `scenario.md`:
+
+```markdown
+## Upstream Snapshot
+- **Repo**: <full GitHub URL, e.g. https://github.com/mrdoob/three.js>
+- **SHA**: (auto-resolve from PR #NNN)
+- **Relevant Files**:
+  - path/to/first.c
+  - path/to/second.h
+```
+
+Rules for the snapshot reference:
+
+- **Repo**: the full HTTPS URL of the upstream repo (no trailing slash, no `.git`)
+- **SHA**: use the literal token `(auto-resolve from PR #NNN)` where NNN is the fix
+  PR number, OR `(auto-resolve from commit <sha>)` for a fix commit. The
+  pipeline resolves these to the parent SHA post-draft. Do NOT guess the SHA
+  yourself — you don't have access to the fix commit's parent.
+- **Relevant Files**: 2-8 paths that an agent would most want to read first
+  (relative to repo root). These are HINTS, not restrictions — the agent can
+  read anywhere in the snapshot.
+
+## Scenario tiers
+
+The `## Tier` section takes one of three values:
+
+- `core`: Minimal C repro in `main.c` (+ optional helpers). Self-contained.
+  Upstream snapshot may be included as supplementary context.
+- `showcase`: Framework app (three.js/Babylon/etc) with WebGL backend.
+  (Out of scope for this drafting prompt — showcase drafting is a future task.)
+- `snapshot`: Primarily the upstream codebase at a specific SHA. `main.c` MAY
+  be a minimal stub (or omitted entirely) — the eval payload is the
+  upstream repo + the scenario description. Use this ONLY when you've
+  judged that no useful minimal C repro is possible — it's the last resort.
+
+If you emit `tier: snapshot`, you MUST include an `## Upstream Snapshot`
+section. If `tier: core` AND an upstream snapshot would help, include it.
+
 ## Rules
 - EVERY diagnostic claim in Ground Truth Diagnosis MUST be grounded in upstream evidence. Cite via ANY of:
   - `> verbatim quote` — a blockquote of a direct statement from the issue thread, a linked PR description, a commit message, or a comment. Strongest form.
