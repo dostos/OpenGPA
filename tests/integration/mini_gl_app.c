@@ -128,7 +128,7 @@ int main(void)
         InputOutput, vi->visual,
         CWColormap | CWEventMask, &swa);
     XMapWindow(dpy, win);
-    XStoreName(dpy, win, "GLA Mini Test App");
+    XStoreName(dpy, win, "GPA Mini Test App");
 
     /* --- Create and activate GL context --- */
     GLXContext glc = glXCreateContext(dpy, vi, NULL, GL_TRUE);

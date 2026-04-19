@@ -12,7 +12,7 @@
 #include <thread>
 #include <chrono>
 
-static const std::string kSockPath = "/tmp/gla_test_ctrl.sock";
+static const std::string kSockPath = "/tmp/gpa_test_ctrl.sock";
 
 // Helper: remove socket file before each test to keep tests hermetic.
 class ControlSocketTest : public ::testing::Test {
@@ -25,7 +25,7 @@ protected:
 // 1. ServerStartsListening
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, ServerStartsListening) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     EXPECT_GE(server.fd(), 0) << "Server fd should be valid";
 
     struct stat st{};
@@ -37,10 +37,10 @@ TEST_F(ControlSocketTest, ServerStartsListening) {
 // 2. ClientConnects
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, ClientConnects) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
-    gla::ipc::ControlSocketClient client;
+    gpa::ipc::ControlSocketClient client;
     EXPECT_TRUE(client.connect(kSockPath));
 
     // Give the server a moment then accept
@@ -54,13 +54,13 @@ TEST_F(ControlSocketTest, ClientConnects) {
 // 3. HandshakeSuccess — client sends v1 → server sends OK → client sees OK
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, HandshakeSuccess) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
     // Client runs in background thread
     bool client_ok = false;
     std::thread client_thread([&]() {
-        gla::ipc::ControlSocketClient client;
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return;
         if (!client.send_handshake(/*api_type=*/0, /*pid=*/1234)) return;
         client_ok = client.wait_handshake_response();
@@ -75,19 +75,19 @@ TEST_F(ControlSocketTest, HandshakeSuccess) {
     }
     ASSERT_GE(cfd, 0);
 
-    gla::ipc::MsgType type{};
+    gpa::ipc::MsgType type{};
     std::vector<uint8_t> payload;
     ASSERT_TRUE(server.read_message(cfd, type, payload));
-    EXPECT_EQ(type, gla::ipc::MsgType::MSG_HANDSHAKE);
-    ASSERT_EQ(payload.size(), sizeof(gla::ipc::HandshakePayload));
+    EXPECT_EQ(type, gpa::ipc::MsgType::MSG_HANDSHAKE);
+    ASSERT_EQ(payload.size(), sizeof(gpa::ipc::HandshakePayload));
 
-    gla::ipc::HandshakePayload hs{};
+    gpa::ipc::HandshakePayload hs{};
     std::memcpy(&hs, payload.data(), sizeof(hs));
     uint32_t version = ntohl(hs.protocol_version);
-    EXPECT_EQ(version, gla::ipc::PROTOCOL_VERSION);
+    EXPECT_EQ(version, gpa::ipc::PROTOCOL_VERSION);
 
     // Send OK
-    server.send_message(cfd, gla::ipc::MsgType::MSG_HANDSHAKE_OK, nullptr, 0);
+    server.send_message(cfd, gpa::ipc::MsgType::MSG_HANDSHAKE_OK, nullptr, 0);
     ::close(cfd);
 
     client_thread.join();
@@ -98,15 +98,15 @@ TEST_F(ControlSocketTest, HandshakeSuccess) {
 // 4. HandshakeVersionMismatch — client sends wrong version → server sends FAIL
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, HandshakeVersionMismatch) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
     bool client_rejected = false;
     std::thread client_thread([&]() {
-        gla::ipc::ControlSocketClient client;
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return;
         // Manually craft a bad-version handshake
-        gla::ipc::HandshakePayload p{};
+        gpa::ipc::HandshakePayload p{};
         p.protocol_version = htonl(99);  // wrong version
         p.api_type         = htonl(0);
         p.pid              = htonl(5678);
@@ -120,7 +120,7 @@ TEST_F(ControlSocketTest, HandshakeVersionMismatch) {
         // Build framed message manually
         uint32_t len_be = htonl(1 + static_cast<uint32_t>(sizeof(p)));
         ::write(fd, &len_be, 4);
-        uint8_t type_byte = static_cast<uint8_t>(gla::ipc::MsgType::MSG_HANDSHAKE);
+        uint8_t type_byte = static_cast<uint8_t>(gpa::ipc::MsgType::MSG_HANDSHAKE);
         ::write(fd, &type_byte, 1);
         ::write(fd, &p, sizeof(p));
 
@@ -129,7 +129,7 @@ TEST_F(ControlSocketTest, HandshakeVersionMismatch) {
         if (::read(fd, &rlen_be, 4) != 4) return;
         uint8_t rtype = 0;
         ::read(fd, &rtype, 1);
-        client_rejected = (rtype == static_cast<uint8_t>(gla::ipc::MsgType::MSG_HANDSHAKE_FAIL));
+        client_rejected = (rtype == static_cast<uint8_t>(gpa::ipc::MsgType::MSG_HANDSHAKE_FAIL));
     });
 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
@@ -140,18 +140,18 @@ TEST_F(ControlSocketTest, HandshakeVersionMismatch) {
     }
     ASSERT_GE(cfd, 0);
 
-    gla::ipc::MsgType type{};
+    gpa::ipc::MsgType type{};
     std::vector<uint8_t> payload;
     ASSERT_TRUE(server.read_message(cfd, type, payload));
-    EXPECT_EQ(type, gla::ipc::MsgType::MSG_HANDSHAKE);
-    ASSERT_EQ(payload.size(), sizeof(gla::ipc::HandshakePayload));
+    EXPECT_EQ(type, gpa::ipc::MsgType::MSG_HANDSHAKE);
+    ASSERT_EQ(payload.size(), sizeof(gpa::ipc::HandshakePayload));
 
-    gla::ipc::HandshakePayload hs{};
+    gpa::ipc::HandshakePayload hs{};
     std::memcpy(&hs, payload.data(), sizeof(hs));
     uint32_t version = ntohl(hs.protocol_version);
-    EXPECT_NE(version, gla::ipc::PROTOCOL_VERSION);
+    EXPECT_NE(version, gpa::ipc::PROTOCOL_VERSION);
 
-    server.send_message(cfd, gla::ipc::MsgType::MSG_HANDSHAKE_FAIL, nullptr, 0);
+    server.send_message(cfd, gpa::ipc::MsgType::MSG_HANDSHAKE_FAIL, nullptr, 0);
     ::close(cfd);
 
     client_thread.join();
@@ -162,11 +162,11 @@ TEST_F(ControlSocketTest, HandshakeVersionMismatch) {
 // 5. FrameReadyMessage — client sends frame_ready(42, 2) → server reads correctly
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, FrameReadyMessage) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
     std::thread client_thread([&]() {
-        gla::ipc::ControlSocketClient client;
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return;
         client.send_frame_ready(42, 2);
     });
@@ -179,14 +179,14 @@ TEST_F(ControlSocketTest, FrameReadyMessage) {
     }
     ASSERT_GE(cfd, 0);
 
-    gla::ipc::MsgType type{};
+    gpa::ipc::MsgType type{};
     std::vector<uint8_t> payload;
     ASSERT_TRUE(server.read_message(cfd, type, payload));
-    EXPECT_EQ(type, gla::ipc::MsgType::MSG_FRAME_READY);
-    ASSERT_EQ(payload.size(), sizeof(gla::ipc::FrameReadyPayload));
+    EXPECT_EQ(type, gpa::ipc::MsgType::MSG_FRAME_READY);
+    ASSERT_EQ(payload.size(), sizeof(gpa::ipc::FrameReadyPayload));
 
     // Decode payload (native endian — matches C shim and C++ client)
-    gla::ipc::FrameReadyPayload fr{};
+    gpa::ipc::FrameReadyPayload fr{};
     std::memcpy(&fr, payload.data(), sizeof(fr));
     EXPECT_EQ(fr.frame_id, 42u);
     EXPECT_EQ(fr.shm_slot_index, 2u);
@@ -199,14 +199,14 @@ TEST_F(ControlSocketTest, FrameReadyMessage) {
 // 6. ControlMessage — server sends pause command → client reads it
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, ControlMessage) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
-    gla::ipc::ControlPayload received{};
+    gpa::ipc::ControlPayload received{};
     bool client_got_control = false;
 
     std::thread client_thread([&]() {
-        gla::ipc::ControlSocketClient client;
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return;
         // Wait briefly then poll
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
@@ -228,11 +228,11 @@ TEST_F(ControlSocketTest, ControlMessage) {
     ASSERT_GE(cfd, 0);
 
     // Build control payload (network byte order for step_frames)
-    gla::ipc::ControlPayload ctrl{};
+    gpa::ipc::ControlPayload ctrl{};
     ctrl.pause       = 1;
     ctrl.resume      = 0;
     ctrl.step_frames = htonl(0);
-    server.send_message(cfd, gla::ipc::MsgType::MSG_CONTROL, &ctrl, sizeof(ctrl));
+    server.send_message(cfd, gpa::ipc::MsgType::MSG_CONTROL, &ctrl, sizeof(ctrl));
 
     client_thread.join();
     ::close(cfd);
@@ -247,12 +247,12 @@ TEST_F(ControlSocketTest, ControlMessage) {
 // 7. MultipleMessages — several frame_ready in sequence → all received
 // ---------------------------------------------------------------------------
 TEST_F(ControlSocketTest, MultipleMessages) {
-    gla::ipc::ControlSocketServer server(kSockPath);
+    gpa::ipc::ControlSocketServer server(kSockPath);
     ASSERT_GE(server.fd(), 0);
 
     static const int kN = 5;
     std::thread client_thread([&]() {
-        gla::ipc::ControlSocketClient client;
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return;
         for (int i = 0; i < kN; ++i) {
             client.send_frame_ready(static_cast<uint64_t>(i) * 10, static_cast<uint32_t>(i));
@@ -268,13 +268,13 @@ TEST_F(ControlSocketTest, MultipleMessages) {
     ASSERT_GE(cfd, 0);
 
     for (int i = 0; i < kN; ++i) {
-        gla::ipc::MsgType type{};
+        gpa::ipc::MsgType type{};
         std::vector<uint8_t> payload;
         ASSERT_TRUE(server.read_message(cfd, type, payload)) << "Message " << i;
-        EXPECT_EQ(type, gla::ipc::MsgType::MSG_FRAME_READY) << "Message " << i;
-        ASSERT_EQ(payload.size(), sizeof(gla::ipc::FrameReadyPayload));
+        EXPECT_EQ(type, gpa::ipc::MsgType::MSG_FRAME_READY) << "Message " << i;
+        ASSERT_EQ(payload.size(), sizeof(gpa::ipc::FrameReadyPayload));
 
-        gla::ipc::FrameReadyPayload fr{};
+        gpa::ipc::FrameReadyPayload fr{};
         std::memcpy(&fr, payload.data(), sizeof(fr));
         EXPECT_EQ(fr.frame_id, static_cast<uint64_t>(i) * 10) << "Message " << i;
         EXPECT_EQ(fr.shm_slot_index, static_cast<uint32_t>(i)) << "Message " << i;

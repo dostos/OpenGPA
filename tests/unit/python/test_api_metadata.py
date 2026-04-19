@@ -2,9 +2,9 @@
 import pytest
 from starlette.testclient import TestClient
 
-from gla.api.app import create_app
-from gla.backends.native import NativeBackend
-from gla.framework.metadata_store import MetadataStore
+from gpa.api.app import create_app
+from gpa.backends.native import NativeBackend
+from gpa.framework.metadata_store import MetadataStore
 
 
 AUTH_TOKEN = "test-token"

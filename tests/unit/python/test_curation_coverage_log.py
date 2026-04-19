@@ -1,5 +1,5 @@
 import json
-from gla.eval.curation.coverage_log import CoverageLog, CoverageEntry
+from gpa.eval.curation.coverage_log import CoverageLog, CoverageEntry
 
 def test_append_and_read(tmp_path):
     log_path = tmp_path / "coverage-log.jsonl"

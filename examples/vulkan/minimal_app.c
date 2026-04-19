@@ -9,7 +9,7 @@
  *   gcc -o minimal_app minimal_app.c -lvulkan -lm
  *
  * Run with OpenGPA layer:
- *   export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+ *   export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
  *   ./minimal_app
  */
 
@@ -177,7 +177,7 @@ int main(void) {
     record_simple_commands();
 
     printf("\n[OpenGPA] Application ran successfully.\n");
-    printf("If VK_LAYER_GLA_capture was active, the layer should have\n");
+    printf("If VK_LAYER_GPA_capture was active, the layer should have\n");
     printf("intercepted all Vulkan calls above.\n\n");
 
     cleanup();

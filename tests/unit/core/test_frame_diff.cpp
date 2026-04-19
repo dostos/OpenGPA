@@ -4,8 +4,8 @@
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-static gla::NormalizedDrawCall make_dc(uint32_t id, uint32_t shader_id = 1) {
-    gla::NormalizedDrawCall dc{};
+static gpa::NormalizedDrawCall make_dc(uint32_t id, uint32_t shader_id = 1) {
+    gpa::NormalizedDrawCall dc{};
     dc.id             = id;
     dc.primitive_type = 0;
     dc.vertex_count   = 3;
@@ -15,11 +15,11 @@ static gla::NormalizedDrawCall make_dc(uint32_t id, uint32_t shader_id = 1) {
     return dc;
 }
 
-static gla::NormalizedFrame make_frame(uint64_t id,
-                                       std::vector<gla::NormalizedDrawCall> dcs,
+static gpa::NormalizedFrame make_frame(uint64_t id,
+                                       std::vector<gpa::NormalizedDrawCall> dcs,
                                        uint32_t w = 2, uint32_t h = 2,
                                        std::vector<uint8_t> fb = {}) {
-    gla::NormalizedFrame f{};
+    gpa::NormalizedFrame f{};
     f.frame_id  = id;
     f.timestamp = 0.0;
     f.fb_width  = w;
@@ -30,7 +30,7 @@ static gla::NormalizedFrame make_frame(uint64_t id,
         f.fb_color.assign(w * h * 4, 0);
     }
 
-    gla::RenderPass rp{};
+    gpa::RenderPass rp{};
     rp.draw_calls = std::move(dcs);
     f.render_passes.push_back(std::move(rp));
     return f;
@@ -40,7 +40,7 @@ static gla::NormalizedFrame make_frame(uint64_t id,
 
 // Test 1: IdenticalFrames — same draw calls → 0 changes
 TEST(FrameDiffTest, IdenticalFrames) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     auto a = make_frame(1, {make_dc(0), make_dc(1), make_dc(2)});
     auto b = make_frame(2, {make_dc(0), make_dc(1), make_dc(2)});
@@ -57,7 +57,7 @@ TEST(FrameDiffTest, IdenticalFrames) {
 
 // Test 2: AddedDrawCall — frame B has one extra draw call → 1 added
 TEST(FrameDiffTest, AddedDrawCall) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     auto a = make_frame(1, {make_dc(0), make_dc(1)});
     auto b = make_frame(2, {make_dc(0), make_dc(1), make_dc(2)});
@@ -72,7 +72,7 @@ TEST(FrameDiffTest, AddedDrawCall) {
 
 // Test 3: RemovedDrawCall — frame A has one extra → 1 removed
 TEST(FrameDiffTest, RemovedDrawCall) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     auto a = make_frame(1, {make_dc(0), make_dc(1), make_dc(2)});
     auto b = make_frame(2, {make_dc(0), make_dc(1)});
@@ -87,12 +87,12 @@ TEST(FrameDiffTest, RemovedDrawCall) {
 
 // Test 4: ModifiedShader — same draw call ID but different shader_id
 TEST(FrameDiffTest, ModifiedShader) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     auto a = make_frame(1, {make_dc(0, /*shader=*/1)});
     auto b = make_frame(2, {make_dc(0, /*shader=*/99)});
 
-    auto d = differ.diff(a, b, gla::FrameDiffer::DiffDepth::DrawCalls);
+    auto d = differ.diff(a, b, gpa::FrameDiffer::DiffDepth::DrawCalls);
 
     EXPECT_EQ(d.draw_calls_modified, 1u);
     ASSERT_EQ(d.draw_call_diffs.size(), 1u);
@@ -105,17 +105,17 @@ TEST(FrameDiffTest, ModifiedShader) {
 
 // Test 5: ModifiedParams — same draw call, different uniform value
 TEST(FrameDiffTest, ModifiedParams) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
-    gla::NormalizedDrawCall dc_a = make_dc(0);
-    gla::ShaderParameter pa;
+    gpa::NormalizedDrawCall dc_a = make_dc(0);
+    gpa::ShaderParameter pa;
     pa.name = "uColor";
     pa.type = 1;
     pa.data = {0xFF, 0x00, 0x00, 0xFF};
     dc_a.params.push_back(pa);
 
-    gla::NormalizedDrawCall dc_b = make_dc(0);
-    gla::ShaderParameter pb;
+    gpa::NormalizedDrawCall dc_b = make_dc(0);
+    gpa::ShaderParameter pb;
     pb.name = "uColor";
     pb.type = 1;
     pb.data = {0x00, 0xFF, 0x00, 0xFF};  // different value
@@ -124,7 +124,7 @@ TEST(FrameDiffTest, ModifiedParams) {
     auto a = make_frame(1, {dc_a});
     auto b = make_frame(2, {dc_b});
 
-    auto d = differ.diff(a, b, gla::FrameDiffer::DiffDepth::DrawCalls);
+    auto d = differ.diff(a, b, gpa::FrameDiffer::DiffDepth::DrawCalls);
 
     EXPECT_EQ(d.draw_calls_modified, 1u);
     ASSERT_EQ(d.draw_call_diffs.size(), 1u);
@@ -137,7 +137,7 @@ TEST(FrameDiffTest, ModifiedParams) {
 
 // Test 6: PixelDiff — different framebuffer colors → pixels_changed > 0
 TEST(FrameDiffTest, PixelDiff) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     // 2x2 RGBA all-black
     std::vector<uint8_t> fb_a(2 * 2 * 4, 0);
@@ -147,7 +147,7 @@ TEST(FrameDiffTest, PixelDiff) {
     auto a = make_frame(1, {}, 2, 2, fb_a);
     auto b = make_frame(2, {}, 2, 2, fb_b);
 
-    auto d = differ.diff(a, b, gla::FrameDiffer::DiffDepth::Pixels);
+    auto d = differ.diff(a, b, gpa::FrameDiffer::DiffDepth::Pixels);
 
     EXPECT_EQ(d.pixels_changed, 4u);  // all 4 pixels differ
     EXPECT_FALSE(d.pixel_diffs.empty());
@@ -157,12 +157,12 @@ TEST(FrameDiffTest, PixelDiff) {
 
 // Test 7: DiffDepthSummary — draw_call_diffs is empty even when there are diffs
 TEST(FrameDiffTest, DiffDepthSummary) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     auto a = make_frame(1, {make_dc(0), make_dc(1)});
     auto b = make_frame(2, {make_dc(0), make_dc(2)});  // dc 1 removed, dc 2 added
 
-    auto d = differ.diff(a, b, gla::FrameDiffer::DiffDepth::Summary);
+    auto d = differ.diff(a, b, gpa::FrameDiffer::DiffDepth::Summary);
 
     EXPECT_EQ(d.draw_calls_added,   1u);
     EXPECT_EQ(d.draw_calls_removed, 1u);
@@ -173,7 +173,7 @@ TEST(FrameDiffTest, DiffDepthSummary) {
 
 // Test 8: DiffDepthPixels — pixel_diffs is populated
 TEST(FrameDiffTest, DiffDepthPixels) {
-    gla::FrameDiffer differ;
+    gpa::FrameDiffer differ;
 
     std::vector<uint8_t> fb_a(4 * 4 * 4, 0x00);
     std::vector<uint8_t> fb_b(4 * 4 * 4, 0x00);
@@ -183,7 +183,7 @@ TEST(FrameDiffTest, DiffDepthPixels) {
     auto a = make_frame(1, {}, 4, 4, fb_a);
     auto b = make_frame(2, {}, 4, 4, fb_b);
 
-    auto d = differ.diff(a, b, gla::FrameDiffer::DiffDepth::Pixels, 100);
+    auto d = differ.diff(a, b, gpa::FrameDiffer::DiffDepth::Pixels, 100);
 
     EXPECT_EQ(d.pixels_changed, 1u);
     ASSERT_EQ(d.pixel_diffs.size(), 1u);

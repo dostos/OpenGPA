@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
-from gla.eval.curation.run_eval import RunEval, RunEvalResult
-from gla.eval.metrics import EvalResult
+from gpa.eval.curation.run_eval import RunEval, RunEvalResult
+from gpa.eval.metrics import EvalResult
 
 def _mk(mode, correct, total_tokens):
     return EvalResult(scenario_id="r1", mode=mode, correct_diagnosis=correct,

@@ -1,8 +1,8 @@
 #include "src/core/query/query_engine.h"
 
-namespace gla {
+namespace gpa {
 
-QueryEngine::QueryEngine(gla::store::FrameStore& store, gla::Normalizer& normalizer)
+QueryEngine::QueryEngine(gpa::store::FrameStore& store, gpa::Normalizer& normalizer)
     : store_(store), normalizer_(normalizer) {}
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ const NormalizedFrame* QueryEngine::get_normalized(uint64_t frame_id) const {
     }
 
     // 2. Look up raw frame
-    const gla::store::RawFrame* raw = store_.get(frame_id);
+    const gpa::store::RawFrame* raw = store_.get(frame_id);
     if (!raw) {
         return nullptr;
     }
@@ -65,7 +65,7 @@ std::optional<QueryEngine::FrameOverview> QueryEngine::frame_overview(uint64_t f
 }
 
 std::optional<QueryEngine::FrameOverview> QueryEngine::latest_frame_overview() const {
-    const gla::store::RawFrame* raw = store_.latest();
+    const gpa::store::RawFrame* raw = store_.latest();
     if (!raw) return std::nullopt;
     return frame_overview(raw->frame_id);
 }
@@ -165,4 +165,4 @@ const NormalizedFrame* QueryEngine::get_normalized_frame(uint64_t frame_id) cons
     return get_normalized(frame_id);
 }
 
-}  // namespace gla
+}  // namespace gpa

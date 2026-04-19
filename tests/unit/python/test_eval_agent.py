@@ -1,15 +1,15 @@
-"""Tests for gla.eval.llm_agent."""
+"""Tests for gpa.eval.llm_agent."""
 
 import json
 import unittest
 from unittest.mock import MagicMock, patch
 
-from gla.eval.llm_agent import (
+from gpa.eval.llm_agent import (
     AgentResult,
     CODE_ONLY_TOOLS,
     EvalAgent,
-    GLA_TOOLS,
-    GlaToolExecutor,
+    GPA_TOOLS,
+    GpaToolExecutor,
 )
 
 
@@ -17,15 +17,15 @@ from gla.eval.llm_agent import (
 # Tool definition structure
 # ---------------------------------------------------------------------------
 
-class TestGlaToolsStructure(unittest.TestCase):
+class TestGpaToolsStructure(unittest.TestCase):
     def test_all_tools_have_required_keys(self):
-        for tool in GLA_TOOLS:
+        for tool in GPA_TOOLS:
             self.assertIn("name", tool, f"Tool missing 'name': {tool}")
             self.assertIn("description", tool, f"Tool {tool['name']} missing 'description'")
             self.assertIn("input_schema", tool, f"Tool {tool['name']} missing 'input_schema'")
 
     def test_tool_names(self):
-        names = {t["name"] for t in GLA_TOOLS}
+        names = {t["name"] for t in GPA_TOOLS}
         expected = {
             "query_frame",
             "inspect_drawcall",
@@ -37,13 +37,13 @@ class TestGlaToolsStructure(unittest.TestCase):
         self.assertEqual(names, expected)
 
     def test_input_schemas_are_objects(self):
-        for tool in GLA_TOOLS:
+        for tool in GPA_TOOLS:
             schema = tool["input_schema"]
             self.assertEqual(schema["type"], "object")
             self.assertIn("properties", schema)
 
     def test_required_fields_present_in_schemas(self):
-        for tool in GLA_TOOLS:
+        for tool in GPA_TOOLS:
             self.assertIn("required", tool["input_schema"],
                           f"Tool {tool['name']} schema missing 'required'")
 
@@ -55,23 +55,23 @@ class TestCodeOnlyTools(unittest.TestCase):
     def test_code_only_tools_is_read_source_file(self):
         self.assertEqual(CODE_ONLY_TOOLS[0]["name"], "read_source_file")
 
-    def test_code_only_tools_is_last_gla_tool(self):
-        self.assertIs(CODE_ONLY_TOOLS[0], GLA_TOOLS[-1])
+    def test_code_only_tools_is_last_gpa_tool(self):
+        self.assertIs(CODE_ONLY_TOOLS[0], GPA_TOOLS[-1])
 
 
 # ---------------------------------------------------------------------------
-# GlaToolExecutor HTTP routing
+# GpaToolExecutor HTTP routing
 # ---------------------------------------------------------------------------
 
-class TestGlaToolExecutorQueryFrame(unittest.TestCase):
+class TestGpaToolExecutorQueryFrame(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="test-token",
             frame_id=42,
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_frame_overview_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{"frame_id": 42}')
         self.executor._query_frame({"query_type": "overview"})
@@ -80,7 +80,7 @@ class TestGlaToolExecutorQueryFrame(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_frame_drawcalls_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{"items": []}')
         self.executor._query_frame({"query_type": "drawcalls", "limit": 10, "offset": 5})
@@ -90,14 +90,14 @@ class TestGlaToolExecutorQueryFrame(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_frame_unknown_type_returns_error(self, mock_get):
         result = self.executor._query_frame({"query_type": "unknown"})
         mock_get.assert_not_called()
         data = json.loads(result)
         self.assertIn("error", data)
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_frame_drawcalls_default_pagination(self, mock_get):
         mock_get.return_value = MagicMock(text='{"items": []}')
         self.executor._query_frame({"query_type": "drawcalls"})
@@ -106,15 +106,15 @@ class TestGlaToolExecutorQueryFrame(unittest.TestCase):
         self.assertEqual(kwargs["params"]["offset"], 0)
 
 
-class TestGlaToolExecutorInspectDrawcall(unittest.TestCase):
+class TestGpaToolExecutorInspectDrawcall(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_inspect_drawcall_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._inspect_drawcall({"drawcall_id": 7})
@@ -124,15 +124,15 @@ class TestGlaToolExecutorInspectDrawcall(unittest.TestCase):
         )
 
 
-class TestGlaToolExecutorQueryPixel(unittest.TestCase):
+class TestGpaToolExecutorQueryPixel(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=3,
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_pixel_uses_path_params(self, mock_get):
         mock_get.return_value = MagicMock(text='{"r":255}')
         self.executor._query_pixel({"x": 100, "y": 200})
@@ -142,15 +142,15 @@ class TestGlaToolExecutorQueryPixel(unittest.TestCase):
         )
 
 
-class TestGlaToolExecutorQueryScene(unittest.TestCase):
+class TestGpaToolExecutorQueryScene(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=5,
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_scene_camera(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "camera"})
@@ -159,7 +159,7 @@ class TestGlaToolExecutorQueryScene(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_scene_objects(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "objects"})
@@ -168,7 +168,7 @@ class TestGlaToolExecutorQueryScene(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_query_scene_full_falls_through_to_scene(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "full"})
@@ -178,15 +178,15 @@ class TestGlaToolExecutorQueryScene(unittest.TestCase):
         )
 
 
-class TestGlaToolExecutorCompareFrames(unittest.TestCase):
+class TestGpaToolExecutorCompareFrames(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_compare_frames_url_and_params(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._compare_frames({"frame_id_a": 10, "frame_id_b": 20, "depth": "drawcalls"})
@@ -196,7 +196,7 @@ class TestGlaToolExecutorCompareFrames(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gla.eval.llm_agent.requests.get")
+    @patch("gpa.eval.llm_agent.requests.get")
     def test_compare_frames_default_depth(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._compare_frames({"frame_id_a": 1, "frame_id_b": 2})
@@ -204,9 +204,9 @@ class TestGlaToolExecutorCompareFrames(unittest.TestCase):
         self.assertEqual(kwargs["params"]["depth"], "summary")
 
 
-class TestGlaToolExecutorExecuteDispatch(unittest.TestCase):
+class TestGpaToolExecutorExecuteDispatch(unittest.TestCase):
     def setUp(self):
-        self.executor = GlaToolExecutor(
+        self.executor = GpaToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
@@ -225,25 +225,25 @@ class TestGlaToolExecutorExecuteDispatch(unittest.TestCase):
 
 class TestEvalAgentSystemPrompt(unittest.TestCase):
     def setUp(self):
-        with patch("gla.eval.llm_agent.Anthropic"):
+        with patch("gpa.eval.llm_agent.Anthropic"):
             self.agent = EvalAgent(api_key="fake-key")
 
-    def test_with_gla_prompt_mentions_tools(self):
+    def test_with_gpa_prompt_mentions_tools(self):
         prompt = self.agent._build_system_prompt("with_gla")
         for tool in ["query_frame", "inspect_drawcall", "query_pixel",
                      "query_scene", "compare_frames", "read_source_file"]:
             self.assertIn(tool, prompt, f"'{tool}' not mentioned in with_gla prompt")
 
-    def test_with_gla_prompt_ends_with_diagnosis_fix(self):
+    def test_with_gpa_prompt_ends_with_diagnosis_fix(self):
         prompt = self.agent._build_system_prompt("with_gla")
         self.assertIn("DIAGNOSIS:", prompt)
         self.assertIn("FIX:", prompt)
 
-    def test_code_only_prompt_does_not_mention_gla_tools(self):
+    def test_code_only_prompt_does_not_mention_gpa_tools(self):
         prompt = self.agent._build_system_prompt("code_only")
         for tool in ["query_frame", "inspect_drawcall", "query_pixel",
                      "query_scene", "compare_frames"]:
-            self.assertNotIn(tool, prompt, f"GLA tool '{tool}' should not appear in code_only prompt")
+            self.assertNotIn(tool, prompt, f"GPA tool '{tool}' should not appear in code_only prompt")
 
     def test_code_only_prompt_mentions_read_source_file(self):
         prompt = self.agent._build_system_prompt("code_only")
@@ -262,7 +262,7 @@ class TestEvalAgentSystemPrompt(unittest.TestCase):
 
 class TestEvalAgentUserMessage(unittest.TestCase):
     def setUp(self):
-        with patch("gla.eval.llm_agent.Anthropic"):
+        with patch("gpa.eval.llm_agent.Anthropic"):
             self.agent = EvalAgent(api_key="fake-key")
 
     def test_user_message_contains_scenario_description(self):
@@ -320,7 +320,7 @@ def _make_response(content, stop_reason="end_turn", input_tokens=10, output_toke
 
 class TestEvalAgentRunCodeOnly(unittest.TestCase):
     def setUp(self):
-        with patch("gla.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
             self.mock_client = MagicMock()
             MockAnthropic.return_value = self.mock_client
             self.agent = EvalAgent(api_key="fake-key", max_turns=5)
@@ -386,18 +386,18 @@ class TestEvalAgentRunCodeOnly(unittest.TestCase):
 
 class TestEvalAgentRunWithGla(unittest.TestCase):
     def setUp(self):
-        with patch("gla.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
             self.mock_client = MagicMock()
             MockAnthropic.return_value = self.mock_client
             self.agent = EvalAgent(api_key="fake-key", max_turns=5)
 
-    def test_with_gla_uses_gla_tools_list(self):
+    def test_with_gpa_uses_gpa_tools_list(self):
         text_block = _make_text_block("DIAGNOSIS: Bad depth test.\nFIX: Enable depth test.")
         self.mock_client.messages.create.return_value = _make_response(
             [text_block], stop_reason="end_turn"
         )
 
-        executor = MagicMock(spec=GlaToolExecutor)
+        executor = MagicMock(spec=GpaToolExecutor)
         self.agent.run_with_gla(
             scenario_description="Depth issue.",
             source_code="",
@@ -411,7 +411,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
         self.assertIn("inspect_drawcall", tool_names)
         self.assertIn("query_pixel", tool_names)
 
-    def test_with_gla_delegates_tool_calls_to_executor(self):
+    def test_with_gpa_delegates_tool_calls_to_executor(self):
         tool_block = _make_tool_use_block("tu2", "query_frame", {"query_type": "overview"})
         text_block = _make_text_block("DIAGNOSIS: OK.\nFIX: Nothing.")
 
@@ -420,7 +420,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
             _make_response([text_block], stop_reason="end_turn"),
         ]
 
-        executor = MagicMock(spec=GlaToolExecutor)
+        executor = MagicMock(spec=GpaToolExecutor)
         executor.execute.return_value = '{"frame_id": 1}'
 
         self.agent.run_with_gla(
@@ -436,7 +436,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
 
 class TestEvalAgentTokenAccumulation(unittest.TestCase):
     def test_tokens_accumulate_across_turns(self):
-        with patch("gla.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
             mock_client = MagicMock()
             MockAnthropic.return_value = mock_client
             agent = EvalAgent(api_key="fake-key", max_turns=10)
@@ -458,7 +458,7 @@ class TestEvalAgentTokenAccumulation(unittest.TestCase):
 
 class TestEvalAgentMaxTurns(unittest.TestCase):
     def test_stops_at_max_turns(self):
-        with patch("gla.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
             mock_client = MagicMock()
             MockAnthropic.return_value = mock_client
             agent = EvalAgent(api_key="fake-key", max_turns=3)

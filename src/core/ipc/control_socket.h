@@ -5,7 +5,7 @@
 #include <vector>
 #include <cstdint>
 
-namespace gla::ipc {
+namespace gpa::ipc {
 
 // ---------------------------------------------------------------------------
 // ControlSocketServer — engine side
@@ -73,4 +73,4 @@ private:
     int client_fd_{-1};
 };
 
-} // namespace gla::ipc
+} // namespace gpa::ipc

@@ -1,5 +1,5 @@
 from unittest.mock import patch, MagicMock
-from gla.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, LLMResponse
+from gpa.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, LLMResponse
 
 def test_llm_client_calls_anthropic_with_cache_control():
     fake_sdk = MagicMock()

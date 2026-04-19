@@ -4,7 +4,7 @@ from pathlib import Path
 from unittest.mock import patch, MagicMock
 import pytest
 
-from gla.eval.snapshot_fetcher import (
+from gpa.eval.snapshot_fetcher import (
     SnapshotFetcher, SnapshotRef, SnapshotError, DEFAULT_CACHE_ROOT,
 )
 

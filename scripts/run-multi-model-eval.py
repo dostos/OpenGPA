@@ -3,7 +3,7 @@
 Multi-model eval runner for OpenGPA.
 
 Tests each scenario across model tiers (haiku/sonnet/opus) in both modes
-(code-only / with-gla). Measures accuracy, tokens, and tool usage patterns.
+(code-only / with-gpa). Measures accuracy, tokens, and tool usage patterns.
 
 Usage:
     # With Anthropic API key:
@@ -116,7 +116,7 @@ def print_summary(results: list[EvalRun]):
 
     print(f"{'':45} ", end="")
     for model in models:
-        print(f"| {'code':>8} {'gla':>8}   ", end="")
+        print(f"| {'code':>8} {'gpa':>8}   ", end="")
     print()
 
     print("-" * (45 + 23 * len(models)))
@@ -157,11 +157,11 @@ def print_summary(results: list[EvalRun]):
         print()
 
     # Framebuffer trap analysis
-    gla_runs = [r for r in results if r.mode == "with_gla"]
-    if gla_runs:
-        fb_first_count = sum(1 for r in gla_runs if r.framebuffer_first)
-        total_gla = len(gla_runs)
-        print(f"\nFramebuffer trap: {fb_first_count}/{total_gla} GLA runs queried pixels before state inspection")
+    gpa_runs = [r for r in results if r.mode == "with_gla"]
+    if gpa_runs:
+        fb_first_count = sum(1 for r in gpa_runs if r.framebuffer_first)
+        total_gla = len(gpa_runs)
+        print(f"\nFramebuffer trap: {fb_first_count}/{total_gla} GPA runs queried pixels before state inspection")
 
     # Failure analysis
     failures = [r for r in results if r.correct is False]
@@ -201,7 +201,7 @@ def main():
 
     # Import eval agent
     sys.path.insert(0, str(REPO / "src" / "python"))
-    from gla.eval.llm_agent import EvalAgent, GlaToolExecutor
+    from gpa.eval.llm_agent import EvalAgent, GpaToolExecutor
 
     results = []
 
@@ -237,9 +237,9 @@ def main():
                     if mode == "with_gla":
                         # Need frame_id — check if captured
                         # For now, use frame_id=0 as placeholder
-                        executor = GlaToolExecutor(
+                        executor = GpaToolExecutor(
                             base_url="http://127.0.0.1:18080",
-                            token=os.environ.get("GLA_TOKEN", "eval-test"),
+                            token=os.environ.get("GPA_TOKEN", "eval-test"),
                             frame_id=0,
                         )
                         result = agent.run_with_gla(

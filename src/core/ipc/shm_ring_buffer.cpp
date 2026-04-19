@@ -12,7 +12,7 @@
 #include <new>
 #include <stdexcept>
 
-namespace gla {
+namespace gpa {
 
 namespace {
 
@@ -95,7 +95,7 @@ std::unique_ptr<ShmRingBuffer> ShmRingBuffer::create(
 
     // Write ring header.
     auto* hdr = new (base) RingHeader{};
-    hdr->magic      = GLA_SHM_MAGIC;
+    hdr->magic      = GPA_SHM_MAGIC;
     hdr->num_slots  = num_slots;
     hdr->slot_size  = static_cast<uint64_t>(slot_size);
     hdr->total_size = static_cast<uint64_t>(sz);
@@ -142,7 +142,7 @@ std::unique_ptr<ShmRingBuffer> ShmRingBuffer::open(const std::string& name)
     }
 
     const auto* hdr = static_cast<const RingHeader*>(hdr_base);
-    if (hdr->magic != GLA_SHM_MAGIC) {
+    if (hdr->magic != GPA_SHM_MAGIC) {
         ::munmap(hdr_base, hdr_map);
         ::close(fd);
         throw std::runtime_error("ShmRingBuffer::open: bad magic (not an OpenGPA shm segment)");
@@ -244,4 +244,4 @@ void ShmRingBuffer::release_read(uint32_t index) {
 uint32_t ShmRingBuffer::num_slots() const { return num_slots_; }
 size_t   ShmRingBuffer::slot_size()  const { return static_cast<size_t>(slot_size_); }
 
-} // namespace gla
+} // namespace gpa

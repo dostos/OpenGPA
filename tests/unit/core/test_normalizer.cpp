@@ -3,8 +3,8 @@
 #include "src/core/store/raw_frame.h"
 
 // Helpers to build a minimal RawDrawCall
-static gla::store::RawDrawCall make_draw_call(uint32_t id) {
-    gla::store::RawDrawCall dc{};
+static gpa::store::RawDrawCall make_draw_call(uint32_t id) {
+    gpa::store::RawDrawCall dc{};
     dc.id             = id;
     dc.primitive_type = 4;   // GL_TRIANGLES
     dc.vertex_count   = 3;
@@ -18,13 +18,13 @@ static gla::store::RawDrawCall make_draw_call(uint32_t id) {
 
 // ─── Test 1: Empty frame ────────────────────────────────────────────────────
 TEST(NormalizerTest, EmptyFrame) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id  = 7;
     raw.timestamp = 1.23;
     raw.api_type  = 0;
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
 
     EXPECT_EQ(f.frame_id, 7u);
     EXPECT_DOUBLE_EQ(f.timestamp, 1.23);
@@ -36,19 +36,19 @@ TEST(NormalizerTest, EmptyFrame) {
 
 // ─── Test 2: Single draw call ────────────────────────────────────────────────
 TEST(NormalizerTest, SingleDrawCall) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id  = 1;
     raw.timestamp = 0.0;
     raw.api_type  = 0;
     raw.draw_calls.push_back(make_draw_call(99));
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
 
     ASSERT_EQ(f.render_passes.size(), 1u);
     ASSERT_EQ(f.render_passes[0].draw_calls.size(), 1u);
 
-    const gla::NormalizedDrawCall& dc = f.render_passes[0].draw_calls[0];
+    const gpa::NormalizedDrawCall& dc = f.render_passes[0].draw_calls[0];
     EXPECT_EQ(dc.id,             99u);
     EXPECT_EQ(dc.primitive_type, 4u);
     EXPECT_EQ(dc.vertex_count,   3u);
@@ -59,14 +59,14 @@ TEST(NormalizerTest, SingleDrawCall) {
 
 // ─── Test 3: Multiple draw calls ─────────────────────────────────────────────
 TEST(NormalizerTest, MultipleDrawCalls) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id = 2;
     for (uint32_t i = 0; i < 3; ++i) {
         raw.draw_calls.push_back(make_draw_call(i));
     }
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
 
     ASSERT_EQ(f.render_passes.size(), 1u);
     EXPECT_EQ(f.render_passes[0].draw_calls.size(), 3u);
@@ -75,8 +75,8 @@ TEST(NormalizerTest, MultipleDrawCalls) {
 
 // ─── Test 4: Framebuffer copy ─────────────────────────────────────────────────
 TEST(NormalizerTest, FramebufferCopy) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id  = 3;
     raw.fb_width  = 4;
     raw.fb_height = 3;
@@ -87,7 +87,7 @@ TEST(NormalizerTest, FramebufferCopy) {
     // 4*3 = 12 bytes stencil
     raw.fb_stencil.assign(12, 0x01);
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
 
     EXPECT_EQ(f.fb_width,  4u);
     EXPECT_EQ(f.fb_height, 3u);
@@ -101,19 +101,19 @@ TEST(NormalizerTest, FramebufferCopy) {
 
 // ─── Test 5: Shader params preserved ─────────────────────────────────────────
 TEST(NormalizerTest, ShaderParamsPreserved) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id = 4;
 
-    gla::store::RawDrawCall dc = make_draw_call(1);
+    gpa::store::RawDrawCall dc = make_draw_call(1);
     {
-        gla::store::RawDrawCall::Param p1;
+        gpa::store::RawDrawCall::Param p1;
         p1.name = "uTime";
         p1.type = 1;
         p1.data = {0x00, 0x00, 0x80, 0x3F};  // 1.0f
         dc.params.push_back(p1);
 
-        gla::store::RawDrawCall::Param p2;
+        gpa::store::RawDrawCall::Param p2;
         p2.name = "uColor";
         p2.type = 2;
         p2.data = {0xFF, 0x00, 0x00, 0xFF};
@@ -121,7 +121,7 @@ TEST(NormalizerTest, ShaderParamsPreserved) {
     }
     raw.draw_calls.push_back(std::move(dc));
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
     const auto& ndc = f.render_passes[0].draw_calls[0];
 
     ASSERT_EQ(ndc.params.size(), 2u);
@@ -134,11 +134,11 @@ TEST(NormalizerTest, ShaderParamsPreserved) {
 
 // ─── Test 6: Pipeline state preserved ────────────────────────────────────────
 TEST(NormalizerTest, PipelineStatePreserved) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id = 5;
 
-    gla::store::RawDrawCall dc = make_draw_call(1);
+    gpa::store::RawDrawCall dc = make_draw_call(1);
     dc.pipeline.viewport[0]    = 0;
     dc.pipeline.viewport[1]    = 0;
     dc.pipeline.viewport[2]    = 1920;
@@ -154,8 +154,8 @@ TEST(NormalizerTest, PipelineStatePreserved) {
     dc.pipeline.front_face     = 0x0901;  // GL_CCW
     raw.draw_calls.push_back(std::move(dc));
 
-    gla::NormalizedFrame f = n.normalize(raw);
-    const gla::NormalizedPipelineState& ps =
+    gpa::NormalizedFrame f = n.normalize(raw);
+    const gpa::NormalizedPipelineState& ps =
         f.render_passes[0].draw_calls[0].pipeline;
 
     EXPECT_EQ(ps.viewport[2],    1920);
@@ -173,14 +173,14 @@ TEST(NormalizerTest, PipelineStatePreserved) {
 
 // ─── Test 7: all_draw_calls() convenience accessor ────────────────────────────
 TEST(NormalizerTest, AllDrawCallsConvenience) {
-    gla::Normalizer n;
-    gla::store::RawFrame raw{};
+    gpa::Normalizer n;
+    gpa::store::RawFrame raw{};
     raw.frame_id = 6;
     for (uint32_t i = 0; i < 5; ++i) {
         raw.draw_calls.push_back(make_draw_call(i));
     }
 
-    gla::NormalizedFrame f = n.normalize(raw);
+    gpa::NormalizedFrame f = n.normalize(raw);
 
     // V1 has a single render pass — all_draw_calls() should return 5 entries
     auto all = f.all_draw_calls();

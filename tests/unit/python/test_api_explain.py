@@ -6,9 +6,9 @@ from unittest.mock import MagicMock
 import pytest
 from starlette.testclient import TestClient
 
-from gla.api.app import create_app
-from gla.backends.native import NativeBackend
-from gla.framework.types import PixelExplanation
+from gpa.api.app import create_app
+from gpa.backends.native import NativeBackend
+from gpa.framework.types import PixelExplanation
 
 AUTH_TOKEN = "test-token"
 AUTH_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"}

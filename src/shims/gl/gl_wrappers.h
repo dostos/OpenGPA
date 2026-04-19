@@ -1,5 +1,5 @@
-#ifndef GLA_GL_WRAPPERS_H
-#define GLA_GL_WRAPPERS_H
+#ifndef GPA_GL_WRAPPERS_H
+#define GPA_GL_WRAPPERS_H
 
 #include <stdint.h>
 
@@ -74,12 +74,12 @@ typedef struct {
     // GLX
     void (*glXSwapBuffers)(Display* dpy, GLXDrawable drawable);
     __GLXextFuncPtr (*glXGetProcAddressARB)(const unsigned char* procName);
-} GlaRealGlFuncs;
+} GpaRealGlFuncs;
 
 // Global dispatch table (defined in gl_shim.c)
-extern GlaRealGlFuncs gla_real_gl;
+extern GpaRealGlFuncs gpa_real_gl;
 
 // Initialize dispatch table (called from constructor)
-void gla_wrappers_init(void);
+void gpa_wrappers_init(void);
 
-#endif // GLA_GL_WRAPPERS_H
+#endif // GPA_GL_WRAPPERS_H

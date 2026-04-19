@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 from pathlib import Path
-from gla.eval.curation.validate import Validator, ValidationResult
-from gla.eval.curation.draft import DraftResult
-from gla.eval.curation.llm_client import LLMResponse
+from gpa.eval.curation.validate import Validator, ValidationResult
+from gpa.eval.curation.draft import DraftResult
+from gpa.eval.curation.llm_client import LLMResponse
 
 def test_validator_builds_runs_and_signature_matches(tmp_path):
     scenario_id = "r_test_ok"
@@ -17,7 +17,7 @@ def test_validator_builds_runs_and_signature_matches(tmp_path):
             "## Ground Truth Diagnosis\n> quote\ndiag\n"
             "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n"
-            "## How GLA Helps\nh\n"
+            "## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n"
             "## Tier\ncore\n"
             "## API\nopengl\n"
@@ -26,7 +26,7 @@ def test_validator_builds_runs_and_signature_matches(tmp_path):
             "type: framebuffer_dominant_color\n"
             "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
             "```\n"
-            "## Predicted GLA Helpfulness\n- **Verdict**: yes\n"
+            "## Predicted GPA Helpfulness\n- **Verdict**: yes\n"
             "- **Reasoning**: x\n"
         ),
     )
@@ -59,14 +59,14 @@ def test_validator_fails_on_signature_mismatch(tmp_path):
             "# R_TEST_MISMATCH\n"
             "## Bug\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
             "## Ground Truth Diagnosis\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
-            "## Adversarial Principles\n- p\n## How GLA Helps\nh\n"
+            "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
             "## Bug Signature\n```yaml\n"
             "type: framebuffer_dominant_color\n"
             "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
             "```\n"
-            "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+            "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
         ),
     )
 
@@ -95,14 +95,14 @@ def test_validator_cleans_up_on_mismatch(tmp_path):
             "# R_TEST_CLEANUP\n"
             "## Bug\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
             "## Ground Truth Diagnosis\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
-            "## Adversarial Principles\n- p\n## How GLA Helps\nh\n"
+            "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
             "## Bug Signature\n```yaml\n"
             "type: framebuffer_dominant_color\n"
             "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
             "```\n"
-            "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+            "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
         ),
     )
     fake_runner = MagicMock()
@@ -130,14 +130,14 @@ def test_validator_cleans_up_when_build_fails(tmp_path):
             "# R_TEST_BUILD_FAIL\n"
             "## Bug\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
             "## Ground Truth Diagnosis\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
-            "## Adversarial Principles\n- p\n## How GLA Helps\nh\n"
+            "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
             "## Bug Signature\n```yaml\n"
             "type: framebuffer_dominant_color\n"
             "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
             "```\n"
-            "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+            "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
         ),
     )
     fake_runner = MagicMock()
@@ -160,14 +160,14 @@ def test_validator_keeps_files_on_success(tmp_path):
             "# R_TEST_OK_KEEP\n"
             "## Bug\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
             "## Ground Truth Diagnosis\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
-            "## Adversarial Principles\n- p\n## How GLA Helps\nh\n"
+            "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
             "## Bug Signature\n```yaml\n"
             "type: framebuffer_dominant_color\n"
             "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
             "```\n"
-            "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+            "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
         ),
     )
     red_png = Path(__file__).parent.joinpath(
@@ -199,13 +199,13 @@ def test_validator_writes_multiple_files_to_scenario_dir(tmp_path):
                 "## Ground Truth Diagnosis\n> quote\ndiag\n"
                 "## Difficulty Rating\n3/5\n"
                 "## Adversarial Principles\n- p\n"
-                "## How GLA Helps\nh\n## Source\n- **URL**: https://x/1\n"
+                "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
                 "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
                 "## Bug Signature\n```yaml\n"
                 "type: framebuffer_dominant_color\n"
                 "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n"
                 "```\n"
-                "## Predicted GLA Helpfulness\n- **Verdict**: yes\n"
+                "## Predicted GPA Helpfulness\n- **Verdict**: yes\n"
                 "- **Reasoning**: x\n"
             ),
         },
@@ -240,11 +240,11 @@ def test_validator_cleans_up_whole_dir_on_failure(tmp_path):
                 "# R_FAIL\n## Bug\nb\n## Expected Correct Output\ne\n"
                 "## Actual Broken Output\na\n## Ground Truth Diagnosis\n> q\nd\n"
                 "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
-                "## How GLA Helps\nh\n## Source\n- **URL**: https://x/1\n"
+                "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
                 "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
                 "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
                 "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n"
-                "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
+                "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"
             ),
         },
     )
@@ -300,10 +300,10 @@ def test_validator_uses_llm_fallback_on_ambiguous(tmp_path):
         "# R_X\n## Bug\nb\n## Expected Correct Output\ne\n"
         "## Actual Broken Output\na\n## Ground Truth Diagnosis\n> q\nd\n"
         "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
-        "## How GLA Helps\nh\n## Source\n- **URL**: https://x/1\n"
+        "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
         "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
         "## Bug Signature\n```yaml\ntype: unknown_custom\nspec: {}\n```\n"
-        "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: r\n"
+        "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: r\n"
     )
     draft = DraftResult(scenario_id="r_x",
                          c_source="// SOURCE: https://x/1\nint main(){}",
@@ -315,7 +315,7 @@ def test_validator_uses_llm_fallback_on_ambiguous(tmp_path):
         "framebuffer_png": red_png,
         "metadata": {},
     }
-    from gla.eval.curation.validate import Validator
+    from gpa.eval.curation.validate import Validator
     v = Validator(eval_dir=tmp_path, runner=fake_runner, llm_fallback=llm)
     result = v.validate(draft)
     assert result.ok is True

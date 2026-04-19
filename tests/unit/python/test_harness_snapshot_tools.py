@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gla.eval.harness import EvalHarness, _SNAPSHOT_MAX_BYTES
-from gla.eval.scenario import ScenarioMetadata
+from gpa.eval.harness import EvalHarness, _SNAPSHOT_MAX_BYTES
+from gpa.eval.scenario import ScenarioMetadata
 
 
 # ---------------------------------------------------------------------------
@@ -30,7 +30,7 @@ def _make_scenario(**overrides) -> ScenarioMetadata:
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gla_advantage="",
+        gpa_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
     )

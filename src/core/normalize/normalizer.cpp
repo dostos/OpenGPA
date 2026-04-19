@@ -1,8 +1,8 @@
 #include "src/core/normalize/normalizer.h"
 
-namespace gla {
+namespace gpa {
 
-NormalizedFrame Normalizer::normalize(const gla::store::RawFrame& raw) const {
+NormalizedFrame Normalizer::normalize(const gpa::store::RawFrame& raw) const {
     NormalizedFrame frame;
     frame.frame_id = raw.frame_id;
     frame.timestamp = raw.timestamp;
@@ -107,4 +107,4 @@ NormalizedFrame Normalizer::normalize(const gla::store::RawFrame& raw) const {
     return frame;
 }
 
-}  // namespace gla
+}  // namespace gpa

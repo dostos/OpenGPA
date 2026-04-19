@@ -1,7 +1,7 @@
 #include "src/core/store/frame_store.h"
 #include <algorithm>
 
-namespace gla::store {
+namespace gpa::store {
 
 FrameStore::FrameStore(size_t capacity)
     : capacity_(capacity) {
@@ -57,4 +57,4 @@ uint64_t FrameStore::total_stored() const {
     return total_stored_;
 }
 
-}  // namespace gla::store
+}  // namespace gpa::store

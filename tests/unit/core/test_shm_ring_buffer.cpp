@@ -21,7 +21,7 @@ static bool shm_exists(const std::string& name) {
 
 // Use a unique name per test to avoid cross-test pollution.
 static std::string unique_shm_name(const char* suffix) {
-    return std::string("/gla_test_") + suffix;
+    return std::string("/gpa_test_") + suffix;
 }
 
 // ── 1. CreateAndDestroy ───────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ TEST(ShmRingBufferTest, CreateAndDestroy) {
     ::shm_unlink(name.c_str()); // pre-clean
 
     {
-        auto rb = gla::ShmRingBuffer::create(name, 4, 512);
+        auto rb = gpa::ShmRingBuffer::create(name, 4, 512);
         ASSERT_NE(rb, nullptr);
         EXPECT_TRUE(shm_exists(name)) << "shm segment should exist after create()";
     } // destructor runs here
@@ -45,10 +45,10 @@ TEST(ShmRingBufferTest, OpenExisting) {
     const std::string name = unique_shm_name("open_existing");
     ::shm_unlink(name.c_str());
 
-    auto owner = gla::ShmRingBuffer::create(name, 4, 64);
+    auto owner = gpa::ShmRingBuffer::create(name, 4, 64);
     ASSERT_NE(owner, nullptr);
 
-    auto client = gla::ShmRingBuffer::open(name);
+    auto client = gpa::ShmRingBuffer::open(name);
     ASSERT_NE(client, nullptr);
 
     EXPECT_EQ(client->num_slots(), owner->num_slots());
@@ -61,7 +61,7 @@ TEST(ShmRingBufferTest, WriteAndRead) {
     const std::string name = unique_shm_name("write_read");
     ::shm_unlink(name.c_str());
 
-    auto rb = gla::ShmRingBuffer::create(name, 4, 64);
+    auto rb = gpa::ShmRingBuffer::create(name, 4, 64);
     ASSERT_NE(rb, nullptr);
 
     // Writer: claim → fill → commit
@@ -86,7 +86,7 @@ TEST(ShmRingBufferTest, FullRingReturnsNull) {
     ::shm_unlink(name.c_str());
 
     constexpr uint32_t N = 3;
-    auto rb = gla::ShmRingBuffer::create(name, N, 64);
+    auto rb = gpa::ShmRingBuffer::create(name, N, 64);
     ASSERT_NE(rb, nullptr);
 
     // Fill all slots.
@@ -107,7 +107,7 @@ TEST(ShmRingBufferTest, MultipleWriteReadCycles) {
     const std::string name = unique_shm_name("multi_cycle");
     ::shm_unlink(name.c_str());
 
-    auto rb = gla::ShmRingBuffer::create(name, 4, 64);
+    auto rb = gpa::ShmRingBuffer::create(name, 4, 64);
     ASSERT_NE(rb, nullptr);
 
     for (int round = 0; round < 20; ++round) {
@@ -137,7 +137,7 @@ TEST(ShmRingBufferTest, ConcurrentAccess) {
     constexpr uint32_t NUM_SLOTS   = 8;
     constexpr size_t   SLOT_SIZE   = 64;
 
-    auto rb = gla::ShmRingBuffer::create(name, NUM_SLOTS, SLOT_SIZE);
+    auto rb = gpa::ShmRingBuffer::create(name, NUM_SLOTS, SLOT_SIZE);
     ASSERT_NE(rb, nullptr);
 
     std::atomic<int> written{0};
@@ -188,8 +188,8 @@ TEST(ShmRingBufferTest, ClientCanWriteAndRead) {
     const std::string name = unique_shm_name("cross_process");
     ::shm_unlink(name.c_str());
 
-    auto owner  = gla::ShmRingBuffer::create(name, 4, 64);
-    auto client = gla::ShmRingBuffer::open(name);
+    auto owner  = gpa::ShmRingBuffer::create(name, 4, 64);
+    auto client = gpa::ShmRingBuffer::open(name);
     ASSERT_NE(owner,  nullptr);
     ASSERT_NE(client, nullptr);
 
@@ -222,7 +222,7 @@ TEST(ShmRingBufferTest, StaleShmHandledGracefully) {
 
     // create() should silently unlink the stale segment and succeed.
     EXPECT_NO_THROW({
-        auto rb = gla::ShmRingBuffer::create(name, 2, 64);
+        auto rb = gpa::ShmRingBuffer::create(name, 2, 64);
         EXPECT_NE(rb, nullptr);
     });
 }

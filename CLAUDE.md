@@ -25,7 +25,7 @@ See `docs/framework-tiers.md` for full capability matrix.
 ## Key Design Principles
 
 - **No heuristics in Tier 1.** Never guess which uniform is "the view matrix." Expose raw data, let the querying agent interpret.
-- **FrameProvider ABC** (`src/python/gla/backends/base.py`) is the interface between capture backends and the query layer. All REST routes use this interface.
+- **FrameProvider ABC** (`src/python/gpa/backends/base.py`) is the interface between capture backends and the query layer. All REST routes use this interface.
 - **safe_json_response()** — all routes must return this (not raw dicts) to handle bytes from pybind11.
 - **Lazy IPC init** — the shim connects to the engine at the first `glXSwapBuffers`, not at constructor time. This avoids fork issues from X11/DRI.
 
@@ -41,12 +41,12 @@ bazel build //...
 
 # 3. Start engine (use Python 3.11)
 PY311="path/to/bazel/python3.11"
-PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m gla.launcher \
-    --socket /tmp/gla.sock --shm /gla --port 18080 --token TOKEN
+PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m gpa.launcher \
+    --socket /tmp/gpa.sock --shm /gpa --port 18080 --token TOKEN
 
 # 4. Capture a scenario
-LD_PRELOAD=bazel-bin/src/shims/gl/libgla_gl.so \
-    GLA_SOCKET_PATH=/tmp/gla.sock GLA_SHM_NAME=/gla \
+LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
+    GPA_SOCKET_PATH=/tmp/gpa.sock GPA_SHM_NAME=/gpa \
     bazel-bin/tests/eval/SCENARIO_NAME
 
 # 5. Query
@@ -63,17 +63,17 @@ Eval scenarios live in `tests/eval/`. Each has a `.c` file (GL app) and `.md` fi
 
 ## Adding a New GL Function to Intercept
 
-1. `src/shims/gl/gl_wrappers.h` — add function pointer to `GlaRealGlFuncs`
-2. `src/shims/gl/gl_wrappers.c` — add dlsym in `gla_wrappers_init()`, add wrapper function, add to `gla_resolve_wrapper()`
+1. `src/shims/gl/gl_wrappers.h` — add function pointer to `GpaRealGlFuncs`
+2. `src/shims/gl/gl_wrappers.c` — add dlsym in `gpa_wrappers_init()`, add wrapper function, add to `gpa_resolve_wrapper()`
 3. `src/shims/gl/shadow_state.h/c` — add state tracking if needed
-4. `src/shims/gl/frame_capture.c` — add to `GlaDrawCallSnapshot` if serialized per draw call
+4. `src/shims/gl/frame_capture.c` — add to `GpaDrawCallSnapshot` if serialized per draw call
 5. `src/core/engine.cpp` — add deserialization in `ingest_frame()`
 6. `src/core/normalize/normalized_types.h` — add to `NormalizedDrawCall`
-7. `src/bindings/py_gla.cpp` — expose to Python
+7. `src/bindings/py_gpa.cpp` — expose to Python
 
 ## Adding a New Capture Backend
 
-Implement `FrameProvider` from `src/python/gla/backends/base.py`:
+Implement `FrameProvider` from `src/python/gpa/backends/base.py`:
 - `get_frame_overview()`, `get_latest_overview()`
 - `list_draw_calls()`, `get_draw_call()`
 - `get_pixel()`
@@ -84,9 +84,9 @@ See `native.py` and `renderdoc.py` for examples.
 
 ## Adding a New REST Endpoint
 
-1. Create `src/python/gla/api/routes_NAME.py`
+1. Create `src/python/gpa/api/routes_NAME.py`
 2. Use `safe_json_response()` for ALL returns (prevents pydantic bytes crash)
-3. Register in `src/python/gla/api/app.py`
+3. Register in `src/python/gpa/api/app.py`
 4. Add tests in `tests/unit/python/test_api_NAME.py`
 
 ## Known Issues
@@ -103,12 +103,12 @@ See `native.py` and `renderdoc.py` for examples.
 | Vulkan layer (C) | `src/shims/vk/` |
 | WebGL extension (JS) | `src/shims/webgl/` |
 | Core engine (C++) | `src/core/` |
-| Python bindings | `src/bindings/py_gla.cpp` |
-| REST API | `src/python/gla/api/` |
-| MCP server | `src/python/gla/mcp/` |
-| Framework integration | `src/python/gla/framework/` |
-| Capture backends | `src/python/gla/backends/` |
-| Eval harness | `src/python/gla/eval/` |
+| Python bindings | `src/bindings/py_gpa.cpp` |
+| REST API | `src/python/gpa/api/` |
+| MCP server | `src/python/gpa/mcp/` |
+| Framework integration | `src/python/gpa/framework/` |
+| Capture backends | `src/python/gpa/backends/` |
+| Eval harness | `src/python/gpa/eval/` |
 | C++ unit tests | `tests/unit/core/` |
 | Shim unit tests | `tests/unit/shims/` |
 | Python unit tests | `tests/unit/python/` |

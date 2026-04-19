@@ -11,8 +11,8 @@ if [ -z "$SCENARIO" ]; then
 fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SOCKET_PATH="${GLA_SOCKET_PATH:-/tmp/gla_eval.sock}"
-SHM_NAME="${GLA_SHM_NAME:-/gla_eval}"
+SOCKET_PATH="${GPA_SOCKET_PATH:-/tmp/gpa_eval.sock}"
+SHM_NAME="${GPA_SHM_NAME:-/gpa_eval}"
 BINARY="${REPO_ROOT}/bazel-bin/tests/eval/${SCENARIO}"
 
 if [ ! -f "$BINARY" ]; then
@@ -21,9 +21,9 @@ if [ ! -f "$BINARY" ]; then
 fi
 
 echo "Running ${SCENARIO} under OpenGPA capture..."
-LD_PRELOAD="${REPO_ROOT}/bazel-bin/src/shims/gl/libgla_gl.so" \
-    GLA_SOCKET_PATH="${SOCKET_PATH}" \
-    GLA_SHM_NAME="${SHM_NAME}" \
+LD_PRELOAD="${REPO_ROOT}/bazel-bin/src/shims/gl/libgpa_gl.so" \
+    GPA_SOCKET_PATH="${SOCKET_PATH}" \
+    GPA_SHM_NAME="${SHM_NAME}" \
     "${BINARY}"
 
 echo "Done. Frame captured. Query via REST API or MCP tools."

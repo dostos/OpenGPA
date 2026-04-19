@@ -19,12 +19,12 @@ extern "C" {
 #endif
 
 /* Maximum draw calls recorded per frame (matches GL shim ceiling). */
-#define GLA_VK_MAX_DRAW_CALLS 1024
+#define GPA_VK_MAX_DRAW_CALLS 1024
 
 /* -------------------------------------------------------------------------
  * Draw call snapshot stored during command buffer recording.
  * ---------------------------------------------------------------------- */
-typedef struct GlaVkDrawCall {
+typedef struct GpaVkDrawCall {
     uint32_t id;
     uint32_t vertex_count;
     uint32_t index_count;
@@ -39,14 +39,14 @@ typedef struct GlaVkDrawCall {
 
     /* Render pass info */
     uint32_t subpass;
-} GlaVkDrawCall;
+} GpaVkDrawCall;
 
 /* -------------------------------------------------------------------------
  * Per-command-buffer recording state.
  * ---------------------------------------------------------------------- */
-typedef struct GlaVkCmdBufState {
+typedef struct GpaVkCmdBufState {
     VkCommandBuffer cmd_buf;
-    GlaVkDrawCall   draws[GLA_VK_MAX_DRAW_CALLS];
+    GpaVkDrawCall   draws[GPA_VK_MAX_DRAW_CALLS];
     uint32_t        draw_count;
 
     /* Tracked pipeline */
@@ -55,35 +55,35 @@ typedef struct GlaVkCmdBufState {
 
     /* Current render pass subpass index */
     uint32_t        current_subpass;
-} GlaVkCmdBufState;
+} GpaVkCmdBufState;
 
 /* -------------------------------------------------------------------------
  * Public API
  * ---------------------------------------------------------------------- */
 
 /* Called once on layer init to set up the capture module. */
-void gla_capture_init(void);
+void gpa_capture_init(void);
 
 /* Called on layer teardown. */
-void gla_capture_shutdown(void);
+void gpa_capture_shutdown(void);
 
 /* Allocate (or recycle) per-command-buffer state. */
-GlaVkCmdBufState *gla_capture_cmd_buf_begin(VkCommandBuffer cmd_buf);
+GpaVkCmdBufState *gpa_capture_cmd_buf_begin(VkCommandBuffer cmd_buf);
 
 /* Free per-command-buffer state. */
-void gla_capture_cmd_buf_end(VkCommandBuffer cmd_buf);
+void gpa_capture_cmd_buf_end(VkCommandBuffer cmd_buf);
 
 /* Retrieve existing state (may return NULL if not tracked). */
-GlaVkCmdBufState *gla_capture_cmd_buf_get(VkCommandBuffer cmd_buf);
+GpaVkCmdBufState *gpa_capture_cmd_buf_get(VkCommandBuffer cmd_buf);
 
 /* Record a draw call into the per-command-buffer state. */
-void gla_capture_record_draw(VkCommandBuffer cmd_buf,
+void gpa_capture_record_draw(VkCommandBuffer cmd_buf,
                               uint32_t vertex_count,
                               uint32_t instance_count,
                               uint32_t first_vertex,
                               uint32_t first_instance);
 
-void gla_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
+void gpa_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
                                       uint32_t index_count,
                                       uint32_t instance_count,
                                       uint32_t first_index,
@@ -91,16 +91,16 @@ void gla_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
                                       uint32_t first_instance);
 
 /* Track pipeline bind. */
-void gla_capture_bind_pipeline(VkCommandBuffer cmd_buf,
+void gpa_capture_bind_pipeline(VkCommandBuffer cmd_buf,
                                 VkPipelineBindPoint bind_point,
                                 VkPipeline pipeline);
 
 /* Track render pass boundaries. */
-void gla_capture_begin_render_pass(VkCommandBuffer cmd_buf);
-void gla_capture_end_render_pass(VkCommandBuffer cmd_buf);
+void gpa_capture_begin_render_pass(VkCommandBuffer cmd_buf);
+void gpa_capture_end_render_pass(VkCommandBuffer cmd_buf);
 
 /* Called on vkQueuePresentKHR — perform readback and IPC send. */
-void gla_capture_on_present(VkQueue           queue,
+void gpa_capture_on_present(VkQueue           queue,
                              VkDevice          device,
                              VkSwapchainKHR    swapchain,
                              uint32_t          image_index,
@@ -110,7 +110,7 @@ void gla_capture_on_present(VkQueue           queue,
 
 /* Accumulate draw calls from submitted command buffers into the frame buffer.
  * Called from vkQueueSubmit so we can harvest metadata even before present. */
-void gla_capture_queue_submit(uint32_t cmd_buf_count,
+void gpa_capture_queue_submit(uint32_t cmd_buf_count,
                                const VkCommandBuffer *cmd_bufs);
 
 #ifdef __cplusplus

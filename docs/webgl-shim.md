@@ -12,7 +12,7 @@ Browser (page context)
        v
   Node.js bridge  (bridge.js)
        |
-       | Unix domain socket  /tmp/gla.sock
+       | Unix domain socket  /tmp/gpa.sock
        v
   OpenGPA engine
 ```
@@ -58,7 +58,7 @@ npm start
 You should see output like:
 ```
 Bridge listening on ws://127.0.0.1:18081
-Bridge connected to IPC socket at /tmp/gla.sock
+Bridge connected to IPC socket at /tmp/gpa.sock
 ```
 
 **Important**: The bridge must be running **before** the OpenGPA engine (or at least before the first
@@ -68,8 +68,8 @@ WebGL frame is rendered in the browser).
 
 | Variable          | Default          | Description                              |
 |-------------------|------------------|------------------------------------------|
-| `GLA_SOCKET_PATH` | `/tmp/gla.sock`  | Unix socket path to the OpenGPA engine   |
-| `GLA_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
+| `GPA_SOCKET_PATH` | `/tmp/gpa.sock`  | Unix socket path to the OpenGPA engine   |
+| `GPA_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
 
 ## Validation Status (as of 2026-04-16)
 
@@ -81,7 +81,7 @@ The following was verified with Node.js v20.19.5 / npm 10.8.2 on Linux:
 | `interceptor.js` | Node syntax check | PASS |
 | `content.js` | Node syntax check | PASS |
 | `background.js` | Node syntax check | PASS |
-| `gla-threejs-plugin.js` | Node syntax check | PASS |
+| `gpa-threejs-plugin.js` | Node syntax check | PASS |
 | `bridge/package.json` | `npm install` (`ws` dep) | PASS — 0 vulnerabilities |
 | Bridge startup | `node bridge.js` | PASS — WebSocket server binds on `ws://127.0.0.1:18081` |
 | Bridge engine connection | Unix socket connect | EXPECTED FAIL — engine not running; bridge retries every 3 s cleanly |
@@ -106,7 +106,7 @@ The following was verified with Node.js v20.19.5 / npm 10.8.2 on Linux:
    - Use Playwright with `--channel chromium` and `launchPersistentContext`
      (supports loading extensions).
 2. **Running OpenGPA engine** — the bridge forwards frame metadata to the engine
-   over a Unix socket (`/tmp/gla.sock` by default).  Without the engine the
+   over a Unix socket (`/tmp/gpa.sock` by default).  Without the engine the
    bridge operates in passthrough (log-only) mode.
 3. **Shared-memory (SHM) native addon** — full pixel readback requires a native
    Node.js addon (`node-addon-api` + `shm_open`/`mmap`) or an inline

@@ -1,22 +1,22 @@
 """Tests for ScenarioRunner.build_and_capture."""
 from unittest.mock import MagicMock, patch
 
-from gla.eval.runner import ScenarioRunner
+from gpa.eval.runner import ScenarioRunner
 
 
 def test_build_and_capture_returns_framebuffer_and_metadata(tmp_path):
     # Arrange — stub subprocess.run (bazel build) and the capture function.
     with patch("subprocess.run") as mock_run, \
-         patch("gla.eval.runner._capture_via_rest") as mock_capture:
+         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"PNGDATA",
             "metadata": {"draw_call_count": 2, "draw_calls": []},
         }
         r = ScenarioRunner(
-            gla_base_url="http://127.0.0.1:18080",
-            gla_token="t",
-            shim_path="/path/libgla_gl.so",
+            gpa_base_url="http://127.0.0.1:18080",
+            gpa_token="t",
+            shim_path="/path/libgpa_gl.so",
             bazel_bin="bazel",
             repo_root=str(tmp_path),
         )
@@ -34,15 +34,15 @@ def test_build_and_capture_returns_framebuffer_and_metadata(tmp_path):
 def test_build_and_capture_passes_correct_args(tmp_path):
     """Verify bazel build target and Popen command are constructed correctly."""
     with patch("subprocess.run") as mock_run, \
-         patch("gla.eval.runner._capture_via_rest") as mock_capture:
+         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"",
             "metadata": {"draw_call_count": 0, "draw_calls": []},
         }
         r = ScenarioRunner(
-            gla_base_url="http://127.0.0.1:18080",
-            gla_token="tok",
+            gpa_base_url="http://127.0.0.1:18080",
+            gpa_token="tok",
             shim_path="/shim.so",
             bazel_bin="bazel",
             repo_root=str(tmp_path),
@@ -72,7 +72,7 @@ def test_build_and_capture_passes_correct_args(tmp_path):
 def test_build_and_capture_terminates_proc_on_success(tmp_path):
     """Verify the child process is always terminated (finally block)."""
     with patch("subprocess.run") as mock_run, \
-         patch("gla.eval.runner._capture_via_rest") as mock_capture:
+         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"X",

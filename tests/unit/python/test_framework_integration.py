@@ -2,9 +2,9 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from gla.api.app import create_app
-from gla.backends.base import FrameProvider, FrameOverview, DrawCallInfo, PixelResult
-from gla.framework.metadata_store import MetadataStore
+from gpa.api.app import create_app
+from gpa.backends.base import FrameProvider, FrameOverview, DrawCallInfo, PixelResult
+from gpa.framework.metadata_store import MetadataStore
 
 
 # ---------------------------------------------------------------------------

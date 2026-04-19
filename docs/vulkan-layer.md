@@ -1,6 +1,6 @@
 # OpenGPA Vulkan Layer — Setup and Usage
 
-The OpenGPA Vulkan layer (`VK_LAYER_GLA_capture`) intercepts Vulkan API calls to capture graphics frame data, driver state, and resource operations for debugging and analysis.
+The OpenGPA Vulkan layer (`VK_LAYER_GPA_capture`) intercepts Vulkan API calls to capture graphics frame data, driver state, and resource operations for debugging and analysis.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ The OpenGPA Vulkan layer (`VK_LAYER_GLA_capture`) intercepts Vulkan API calls to
 Vulkan Application
        |
        v
-VK_LAYER_GLA_capture (dispatch table chaining)
+VK_LAYER_GPA_capture (dispatch table chaining)
        |
        | IPC (Unix socket or shared memory)
        v
@@ -25,12 +25,12 @@ The layer uses the standard Vulkan loader layer mechanism. It exports the requir
 The layer is built with Bazel:
 
 ```bash
-bazel build //src/shims/vk:VkLayer_gla_capture
+bazel build //src/shims/vk:VkLayer_gpa_capture
 ```
 
 This produces:
 ```
-bazel-bin/src/shims/vk/libVkLayer_gla_capture.so
+bazel-bin/src/shims/vk/libVkLayer_gpa_capture.so
 ```
 
 ## Installation
@@ -48,25 +48,25 @@ Typically:
 
 ```bash
 # Build the layer
-bazel build //src/shims/vk:VkLayer_gla_capture
+bazel build //src/shims/vk:VkLayer_gpa_capture
 
 # Copy .so and manifest (example for user layer directory)
 mkdir -p ~/.config/vulkan/implicit_layer.d
-cp bazel-bin/src/shims/vk/libVkLayer_gla_capture.so ~/.config/vulkan/implicit_layer.d/
-cp src/shims/vk/gla_layer.json ~/.config/vulkan/implicit_layer.d/
+cp bazel-bin/src/shims/vk/libVkLayer_gpa_capture.so ~/.config/vulkan/implicit_layer.d/
+cp src/shims/vk/gpa_layer.json ~/.config/vulkan/implicit_layer.d/
 ```
 
 ### Step 3: Update Manifest Path (if needed)
 
-The manifest (`gla_layer.json`) references `library_path: "./libVkLayer_gla_capture.so"` as a relative path. Ensure it can be resolved:
+The manifest (`gpa_layer.json`) references `library_path: "./libVkLayer_gpa_capture.so"` as a relative path. Ensure it can be resolved:
 
 ```json
 {
     "file_format_version": "1.0.0",
     "layer": {
-        "name": "VK_LAYER_GLA_capture",
+        "name": "VK_LAYER_GPA_capture",
         "type": "GLOBAL",
-        "library_path": "/full/path/to/libVkLayer_gla_capture.so",
+        "library_path": "/full/path/to/libVkLayer_gpa_capture.so",
         "api_version": "1.0.0",
         "implementation_version": "1",
         "description": "OpenGPA frame capture layer for graphics debugging"
@@ -81,7 +81,7 @@ Or ensure both `.so` and `.json` are in the same directory.
 Set the `VK_INSTANCE_LAYERS` environment variable before running a Vulkan application:
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
 ./my_vulkan_app
 ```
 
@@ -90,10 +90,10 @@ export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
 If the layer fails to load, check debug output:
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
 export VK_LAYER_PATH=~/.config/vulkan/implicit_layer.d
 # On Linux, may produce loader debug output
-VK_LOADER_DEBUG=all ./my_vulkan_app 2>&1 | grep -i gla
+VK_LOADER_DEBUG=all ./my_vulkan_app 2>&1 | grep -i gpa
 ```
 
 ## Current Limitations
@@ -120,7 +120,7 @@ The layer communicates with the OpenGPA engine via:
 - **Capture state**: `vk_capture.c` — buffers and serializes frame data
 - **Dispatch table**: `vk_dispatch.c` — intercepts and routes API calls
 
-To integrate, ensure the engine is listening on the configured IPC endpoint (default: `/tmp/gla.sock`) before the layer is loaded.
+To integrate, ensure the engine is listening on the configured IPC endpoint (default: `/tmp/gpa.sock`) before the layer is loaded.
 
 ## Testing
 
@@ -139,21 +139,21 @@ See the [Vulkan test app guide](./vulkan-test-app.md) for how to build and run a
 
 ```bash
 # Build layer
-bazel build //src/shims/vk:VkLayer_gla_capture
+bazel build //src/shims/vk:VkLayer_gpa_capture
 
 # Symlink .so into the layer path directory (for manifest-relative resolution)
-ln -sf $(pwd)/bazel-bin/src/shims/vk/libVkLayer_gla_capture.so \
-       src/shims/vk/libVkLayer_gla_capture.so
+ln -sf $(pwd)/bazel-bin/src/shims/vk/libVkLayer_gpa_capture.so \
+       src/shims/vk/libVkLayer_gpa_capture.so
 
 # Passthrough mode (no engine)
 export VK_LAYER_PATH=$(pwd)/src/shims/vk
-export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
 ./examples/vulkan/minimal_app
 
 # With engine
-./bazel-bin/src/core/gla_engine /tmp/gla_eval.sock /gla_eval &
-export GLA_SOCKET_PATH=/tmp/gla_eval.sock
-export GLA_SHM_NAME=/gla_eval
+./bazel-bin/src/core/gpa_engine /tmp/gpa_eval.sock /gpa_eval &
+export GPA_SOCKET_PATH=/tmp/gpa_eval.sock
+export GPA_SHM_NAME=/gpa_eval
 ./examples/vulkan/minimal_app
 ```
 
@@ -161,10 +161,10 @@ export GLA_SHM_NAME=/gla_eval
 
 | Test | Result |
 |------|--------|
-| Layer builds (`bazel build //src/shims/vk:VkLayer_gla_capture`) | PASS |
+| Layer builds (`bazel build //src/shims/vk:VkLayer_gpa_capture`) | PASS |
 | Layer loads (VK_LOADER_DEBUG shows it in callstack) | PASS |
 | Instance + device intercepts active | PASS |
-| Passthrough mode (no engine, GLA_SOCKET_PATH unset) | PASS |
+| Passthrough mode (no engine, GPA_SOCKET_PATH unset) | PASS |
 | IPC connect to engine (handshake MSG_HANDSHAKE_OK) | PASS |
 | App runs cleanly with layer active | PASS |
 | Frame capture via `vkQueuePresentKHR` | N/A (minimal_app has no swapchain/present) |
@@ -173,29 +173,29 @@ export GLA_SHM_NAME=/gla_eval
 
 Three bugs were found and fixed during E2E validation:
 
-1. **NULL deref in `gla_vkGetDeviceProcAddr`** (`gla_layer.c`):
-   The function was passed `VK_NULL_HANDLE` by `gla_vkGetInstanceProcAddr`
-   during instance setup. `gla_dispatch_key()` dereferenced it unconditionally.
+1. **NULL deref in `gpa_vkGetDeviceProcAddr`** (`gpa_layer.c`):
+   The function was passed `VK_NULL_HANDLE` by `gpa_vkGetInstanceProcAddr`
+   during instance setup. `gpa_dispatch_key()` dereferenced it unconditionally.
    Fix: guard against `device == VK_NULL_HANDLE` before the hash table lookup.
 
-2. **`gla_dispatch_init()` called after `gla_instance_dispatch_store()`** (`gla_layer.c`):
-   `gla_dispatch_init()` zeroes the instance dispatch hash table. It was called
+2. **`gpa_dispatch_init()` called after `gpa_instance_dispatch_store()`** (`gpa_layer.c`):
+   `gpa_dispatch_init()` zeroes the instance dispatch hash table. It was called
    *after* storing the newly-created instance entry, destroying the entry
    immediately. Subsequent lookups returned NULL, causing
    `vkEnumeratePhysicalDevices` to fail with `VK_ERROR_INITIALIZATION_FAILED`.
-   Fix: move the `g_inited` block before `gla_instance_dispatch_store()`.
+   Fix: move the `g_inited` block before `gpa_instance_dispatch_store()`.
 
-3. **Missing `vkEnumeratePhysicalDevices` passthrough in `gla_vkGetInstanceProcAddr`**:
+3. **Missing `vkEnumeratePhysicalDevices` passthrough in `gpa_vkGetInstanceProcAddr`**:
    The MESA device_select implicit layer queries our `GetInstanceProcAddr` for
    `vkEnumeratePhysicalDevices`. Without an explicit passthrough intercept, the
    function fell through to a chain lookup that could return NULL (before the
-   dispatch table was populated). Fix: add a `gla_EnumeratePhysicalDevices`
-   passthrough function and register it in `gla_vkGetInstanceProcAddr`.
+   dispatch table was populated). Fix: add a `gpa_EnumeratePhysicalDevices`
+   passthrough function and register it in `gpa_vkGetInstanceProcAddr`.
 
 ### Limitations Observed
 
 - The `minimal_app` does not create a swapchain or call `vkQueuePresentKHR`,
-  so the capture path (`gla_capture_on_present`) is never exercised end-to-end.
+  so the capture path (`gpa_capture_on_present`) is never exercised end-to-end.
   A window-system integration test (XCB/Wayland surface + swapchain) is needed
   to fully validate frame readback and IPC frame delivery.
 - Engine reports `frames stored: 0` for headless apps — this is correct behavior.

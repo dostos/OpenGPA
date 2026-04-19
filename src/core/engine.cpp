@@ -14,7 +14,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace gla {
+namespace gpa {
 
 // ---------------------------------------------------------------------------
 // Construction / destruction
@@ -510,7 +510,7 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
             if (dc_ptr + 4 <= dc_end) {
                 uint32_t clear_count = 0;
                 if (read_u32(clear_count)) {
-                    if (clear_count > 16) clear_count = 16; // sanity cap = GLA_MAX_CLEARS_PER_FRAME
+                    if (clear_count > 16) clear_count = 16; // sanity cap = GPA_MAX_CLEARS_PER_FRAME
                     frame.clear_records.reserve(clear_count);
                     for (uint32_t c = 0; c < clear_count; ++c) {
                         store::RawClearRecord cr{};
@@ -554,4 +554,4 @@ void Engine::send_control_to_clients() {
     }
 }
 
-} // namespace gla
+} // namespace gpa

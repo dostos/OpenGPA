@@ -8,7 +8,7 @@ cc_library(
 )
 
 cc_library(
-    name = "gla_gl_impl",
+    name = "gpa_gl_impl",
     srcs = [
         "frame_capture.c",
         "gl_shim.c",
@@ -25,7 +25,7 @@ cc_library(
 )
 
 cc_shared_library(
-    name = "gla_gl",
-    deps = [":gla_gl_impl"],
+    name = "gpa_gl",
+    deps = [":gpa_gl_impl"],
     visibility = ["//visibility:public"],
 )

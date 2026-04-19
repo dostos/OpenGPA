@@ -2,11 +2,11 @@
 # Starts Xvfb, OpenGPA engine, and captures frames from eval scenarios
 set -e
 
-DISPLAY_NUM=${GLA_DISPLAY:-99}
-PORT=${GLA_PORT:-18080}
-TOKEN=${GLA_TOKEN:-$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")}
-SOCKET_PATH="/tmp/gla_eval.sock"
-SHM_NAME="/gla_eval"
+DISPLAY_NUM=${GPA_DISPLAY:-99}
+PORT=${GPA_PORT:-18080}
+TOKEN=${GPA_TOKEN:-$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")}
+SOCKET_PATH="/tmp/gpa_eval.sock"
+SHM_NAME="/gpa_eval"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Start Xvfb if not running
@@ -20,12 +20,12 @@ export DISPLAY=:${DISPLAY_NUM}
 # Start OpenGPA engine + API
 echo "Starting OpenGPA engine..."
 PYTHONPATH="${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings" \
-    python3 -m gla.launcher \
+    python3 -m gpa.launcher \
     --socket "${SOCKET_PATH}" \
     --shm "${SHM_NAME}" \
     --port "${PORT}" \
     --token "${TOKEN}" &
-GLA_PID=$!
+GPA_PID=$!
 sleep 2
 
 echo ""
@@ -48,13 +48,13 @@ echo "========================================="
 cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
 {
   "mcpServers": {
-    "gla": {
+    "gpa": {
       "command": "python3",
-      "args": ["-m", "gla.mcp.server"],
+      "args": ["-m", "gpa.mcp.server"],
       "env": {
         "PYTHONPATH": "${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings",
-        "GLA_BASE_URL": "http://127.0.0.1:${PORT}",
-        "GLA_TOKEN": "${TOKEN}"
+        "GPA_BASE_URL": "http://127.0.0.1:${PORT}",
+        "GPA_TOKEN": "${TOKEN}"
       }
     }
   }
@@ -62,4 +62,4 @@ cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
 MCPEOF
 
 # Wait for OpenGPA engine
-wait $GLA_PID
+wait $GPA_PID

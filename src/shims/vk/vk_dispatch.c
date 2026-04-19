@@ -21,14 +21,14 @@
 
 typedef struct {
     void               *key;
-    GlaInstanceDispatch disp;
+    GpaInstanceDispatch disp;
 } InstanceEntry;
 
 static InstanceEntry g_inst_table[DISPATCH_TABLE_CAPACITY];
 static pthread_mutex_t g_inst_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void gla_instance_dispatch_store(VkInstance instance, GlaInstanceDispatch *disp) {
-    void *key = gla_dispatch_key(instance);
+void gpa_instance_dispatch_store(VkInstance instance, GpaInstanceDispatch *disp) {
+    void *key = gpa_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     /* Linear probe insertion */
@@ -46,8 +46,8 @@ void gla_instance_dispatch_store(VkInstance instance, GlaInstanceDispatch *disp)
     pthread_mutex_unlock(&g_inst_mutex);
 }
 
-GlaInstanceDispatch *gla_instance_dispatch_get(VkInstance instance) {
-    void *key = gla_dispatch_key(instance);
+GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance) {
+    void *key = gpa_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -55,7 +55,7 @@ GlaInstanceDispatch *gla_instance_dispatch_get(VkInstance instance) {
         size_t idx = (slot + i) & DISPATCH_TABLE_MASK;
         if (g_inst_table[idx].key == NULL) break;
         if (g_inst_table[idx].key == key) {
-            GlaInstanceDispatch *ret = &g_inst_table[idx].disp;
+            GpaInstanceDispatch *ret = &g_inst_table[idx].disp;
             pthread_mutex_unlock(&g_inst_mutex);
             return ret;
         }
@@ -64,8 +64,8 @@ GlaInstanceDispatch *gla_instance_dispatch_get(VkInstance instance) {
     return NULL;
 }
 
-void gla_instance_dispatch_remove(VkInstance instance) {
-    void *key = gla_dispatch_key(instance);
+void gpa_instance_dispatch_remove(VkInstance instance) {
+    void *key = gpa_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -86,14 +86,14 @@ void gla_instance_dispatch_remove(VkInstance instance) {
 
 typedef struct {
     void             *key;
-    GlaDeviceDispatch disp;
+    GpaDeviceDispatch disp;
 } DeviceEntry;
 
 static DeviceEntry     g_dev_table[DISPATCH_TABLE_CAPACITY];
 static pthread_mutex_t g_dev_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void gla_device_dispatch_store(VkDevice device, GlaDeviceDispatch *disp) {
-    void *key = gla_dispatch_key(device);
+void gpa_device_dispatch_store(VkDevice device, GpaDeviceDispatch *disp) {
+    void *key = gpa_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -110,8 +110,8 @@ void gla_device_dispatch_store(VkDevice device, GlaDeviceDispatch *disp) {
     pthread_mutex_unlock(&g_dev_mutex);
 }
 
-GlaDeviceDispatch *gla_device_dispatch_get(VkDevice device) {
-    void *key = gla_dispatch_key(device);
+GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device) {
+    void *key = gpa_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -119,7 +119,7 @@ GlaDeviceDispatch *gla_device_dispatch_get(VkDevice device) {
         size_t idx = (slot + i) & DISPATCH_TABLE_MASK;
         if (g_dev_table[idx].key == NULL) break;
         if (g_dev_table[idx].key == key) {
-            GlaDeviceDispatch *ret = &g_dev_table[idx].disp;
+            GpaDeviceDispatch *ret = &g_dev_table[idx].disp;
             pthread_mutex_unlock(&g_dev_mutex);
             return ret;
         }
@@ -128,8 +128,8 @@ GlaDeviceDispatch *gla_device_dispatch_get(VkDevice device) {
     return NULL;
 }
 
-void gla_device_dispatch_remove(VkDevice device) {
-    void *key = gla_dispatch_key(device);
+void gpa_device_dispatch_remove(VkDevice device) {
+    void *key = gpa_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -144,12 +144,12 @@ void gla_device_dispatch_remove(VkDevice device) {
     pthread_mutex_unlock(&g_dev_mutex);
 }
 
-void gla_dispatch_init(void) {
+void gpa_dispatch_init(void) {
     memset(g_inst_table, 0, sizeof(g_inst_table));
     memset(g_dev_table,  0, sizeof(g_dev_table));
 }
 
-void gla_dispatch_cleanup(void) {
+void gpa_dispatch_cleanup(void) {
     memset(g_inst_table, 0, sizeof(g_inst_table));
     memset(g_dev_table,  0, sizeof(g_dev_table));
 }

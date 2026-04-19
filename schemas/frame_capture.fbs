@@ -1,5 +1,5 @@
-// GLA frame capture schema — IPC metadata between GL shim and core engine.
-namespace gla.schema;
+// GPA frame capture schema — IPC metadata between GL shim and core engine.
+namespace gpa.schema;
 
 enum ApiType : byte { OpenGL = 0, Vulkan = 1, WebGL = 2 }
 enum PrimitiveType : byte { Triangles = 0, Lines = 1, Points = 2, TriangleStrip = 3, TriangleFan = 4, LineStrip = 5 }

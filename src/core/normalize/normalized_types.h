@@ -4,7 +4,7 @@
 #include <string>
 #include <functional>
 
-namespace gla {
+namespace gpa {
 
 struct NormalizedPipelineState {
     int32_t viewport[4];    // x, y, w, h
@@ -97,4 +97,4 @@ struct NormalizedFrame {
     }
 };
 
-}  // namespace gla
+}  // namespace gpa

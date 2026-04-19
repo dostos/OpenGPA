@@ -1,10 +1,10 @@
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
 pybind_extension(
-    name = "_gla_core",
-    srcs = ["py_gla.cpp"],
+    name = "_gpa_core",
+    srcs = ["py_gpa.cpp"],
     deps = [
-        "//src/core:gla_core",
+        "//src/core:gpa_core",
     ],
     visibility = ["//visibility:public"],
 )

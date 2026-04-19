@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from unittest.mock import MagicMock, patch
 
-from gla.eval.curation.context_enrichment import (
+from gpa.eval.curation.context_enrichment import (
     UpstreamFile,
     enrich_context,
     extract_refs,
@@ -75,7 +75,7 @@ def test_fetch_pr_files_uses_parent_sha():
         "content": "Zm9vKCk7Cg==",  # base64 of "foo();\n"
     })
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.side_effect = [
             MagicMock(stdout=pr_json, returncode=0),
             MagicMock(stdout=files_json, returncode=0),
@@ -102,7 +102,7 @@ def test_fetch_pr_files_filters_by_extension():
     ])
     c_json = json.dumps({"encoding": "base64", "content": "aGVsbG8="})  # "hello"
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.side_effect = [
             MagicMock(stdout=pr_json, returncode=0),
             MagicMock(stdout=files_json, returncode=0),
@@ -119,7 +119,7 @@ def test_fetch_pr_files_filters_by_extension():
 
 
 def test_fetch_pr_files_returns_empty_on_pr_fetch_failure():
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(stdout="", returncode=1)
         files = fetch_pr_files_at_parent("o", "r", "42")
     assert files == []
@@ -127,7 +127,7 @@ def test_fetch_pr_files_returns_empty_on_pr_fetch_failure():
 
 def test_fetch_pr_files_returns_empty_on_missing_base_sha():
     pr_json = json.dumps({"number": 1})  # no base
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(stdout=pr_json, returncode=0)
         files = fetch_pr_files_at_parent("o", "r", "1")
     assert files == []
@@ -137,7 +137,7 @@ def test_fetch_pr_files_skips_non_base64_contents():
     pr_json = json.dumps({"base": {"sha": "p"}, "number": 1})
     files_json = json.dumps([{"filename": "a.c"}])
     bad_json = json.dumps({"encoding": "utf-8", "content": "hi"})
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.side_effect = [
             MagicMock(stdout=pr_json, returncode=0),
             MagicMock(stdout=files_json, returncode=0),
@@ -151,7 +151,7 @@ def test_fetch_pr_files_truncates_large_content():
     """Files over _MAX_FILE_SIZE are truncated with a marker."""
     import base64
 
-    from gla.eval.curation.context_enrichment import _MAX_FILE_SIZE
+    from gpa.eval.curation.context_enrichment import _MAX_FILE_SIZE
 
     big = ("A" * (_MAX_FILE_SIZE + 500)).encode()
     big_b64 = base64.b64encode(big).decode()
@@ -159,7 +159,7 @@ def test_fetch_pr_files_truncates_large_content():
     files_json = json.dumps([{"filename": "big.c"}])
     big_json = json.dumps({"encoding": "base64", "content": big_b64})
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.side_effect = [
             MagicMock(stdout=pr_json, returncode=0),
             MagicMock(stdout=files_json, returncode=0),
@@ -185,7 +185,7 @@ def test_fetch_commit_files_uses_parent_sha():
     })
     c_json = json.dumps({"encoding": "base64", "content": "aGVsbG8="})
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.side_effect = [
             MagicMock(stdout=commit_json, returncode=0),
             MagicMock(stdout=c_json, returncode=0),
@@ -205,7 +205,7 @@ def test_fetch_commit_files_returns_empty_with_no_parents():
         "parents": [],
         "files": [{"filename": "src/foo.c"}],
     })
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         mock_run.return_value = MagicMock(stdout=commit_json, returncode=0)
         files = fetch_commit_files_at_parent("o", "r", "abc123")
     assert files == []
@@ -231,7 +231,7 @@ def test_enrich_context_combines_pr_and_commit_refs():
     })
     c_json = json.dumps({"encoding": "base64", "content": "aGVsbG8="})
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         # Order: commit refs extracted first, then PR refs. enrich_context
         # iterates the (commit, pull) tuples in that order:
         #   1. commits/abc1234def56   (commit_json)
@@ -259,7 +259,7 @@ def test_enrich_context_respects_max_total_files():
     files_1 = json.dumps([{"filename": "a.c"}, {"filename": "b.c"}])
     c_json = json.dumps({"encoding": "base64", "content": "aGVsbG8="})
 
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         # With max_total_files=2, the first PR's two files fill the budget and
         # the second PR is never fetched. That means exactly 4 gh calls total:
         # PR metadata, files list, and two contents fetches.
@@ -277,7 +277,7 @@ def test_enrich_context_respects_max_total_files():
 
 
 def test_enrich_context_empty_when_no_refs():
-    with patch("gla.eval.curation.context_enrichment.subprocess.run") as mock_run:
+    with patch("gpa.eval.curation.context_enrichment.subprocess.run") as mock_run:
         result = enrich_context(
             "just some prose, no refs", default_owner="o", default_repo="r",
         )

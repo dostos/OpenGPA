@@ -1,6 +1,6 @@
 """Tests for debug_groups.build_debug_group_tree."""
 import pytest
-from gla.framework.debug_groups import build_debug_group_tree, DebugGroupNode
+from gpa.framework.debug_groups import build_debug_group_tree, DebugGroupNode
 
 
 def _dc(dc_id, path=""):

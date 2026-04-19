@@ -9,7 +9,7 @@
 #include <cerrno>
 #include <cstring>
 
-namespace gla::ipc {
+namespace gpa::ipc {
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -329,4 +329,4 @@ bool ControlSocketClient::read_message_nonblocking(MsgType& type,
     return true;
 }
 
-} // namespace gla::ipc
+} // namespace gpa::ipc

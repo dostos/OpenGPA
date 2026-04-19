@@ -1,8 +1,8 @@
 import re
 from unittest.mock import MagicMock
-from gla.eval.curation.draft import Draft, DraftResult
-from gla.eval.curation.llm_client import LLMResponse
-from gla.eval.curation.triage import IssueThread, TriageResult
+from gpa.eval.curation.draft import Draft, DraftResult
+from gpa.eval.curation.llm_client import LLMResponse
+from gpa.eval.curation.triage import IssueThread, TriageResult
 
 def _fake_response(text: str) -> LLMResponse:
     return LLMResponse(text=text, input_tokens=100, output_tokens=50,
@@ -36,7 +36,7 @@ The issue is ...
 ## Adversarial Principles
 - Stale state
 
-## How GLA Helps
+## How GPA Helps
 inspect_drawcall exposes the wrong binding.
 
 ## Source
@@ -64,7 +64,7 @@ spec:
   tolerance: 0.1
 ```
 
-## Predicted GLA Helpfulness
+## Predicted GPA Helpfulness
 - **Verdict**: yes
 - **Reasoning**: inspect_drawcall exposes it.
 """
@@ -244,7 +244,7 @@ def test_draft_preserves_nested_yaml_fence_in_md():
         scenario_id="r1_test",
     )
     # These assertions are for sections that appear AFTER the yaml block
-    assert "## Predicted GLA Helpfulness" in result.md_body
+    assert "## Predicted GPA Helpfulness" in result.md_body
     assert "inspect_drawcall exposes it" in result.md_body
 
 

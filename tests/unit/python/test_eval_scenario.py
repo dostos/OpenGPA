@@ -1,4 +1,4 @@
-"""Tests for the GLA eval harness: ScenarioLoader, DiagnosisScorer, ReportGenerator."""
+"""Tests for the GPA eval harness: ScenarioLoader, DiagnosisScorer, ReportGenerator."""
 from __future__ import annotations
 
 import textwrap
@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from gla.eval.metrics import DiagnosisScorer, EvalResult, ReportGenerator
-from gla.eval.scenario import ScenarioLoader, ScenarioMetadata
+from gpa.eval.metrics import DiagnosisScorer, EvalResult, ReportGenerator
+from gpa.eval.scenario import ScenarioLoader, ScenarioMetadata
 
 
 # ---------------------------------------------------------------------------
@@ -72,8 +72,8 @@ class TestScenarioLoader:
                "texture" in scenario.ground_truth_diagnosis.lower()
         # At least one adversarial principle
         assert len(scenario.adversarial_principles) > 0
-        # GLA advantage text present
-        assert len(scenario.gla_advantage) > 0
+        # GPA advantage text present
+        assert len(scenario.gpa_advantage) > 0
         # Source path now points to the scenario dir's main.c
         assert scenario.source_path.endswith("e1_state_leak/main.c")
         assert scenario.binary_name == "e1_state_leak"
@@ -86,7 +86,7 @@ class TestScenarioLoader:
         assert s.source_path.endswith("main.c")
 
     def test_load_e9_scissor(self):
-        """ScenarioLoader handles alternative section names (Difficulty, GLA Advantage)."""
+        """ScenarioLoader handles alternative section names (Difficulty, GPA Advantage)."""
         loader = ScenarioLoader(eval_dir=str(EVAL_DIR))
         scenario = loader.load("e9_scissor_not_reset")
 
@@ -96,7 +96,7 @@ class TestScenarioLoader:
         assert scenario.difficulty == 3  # Medium maps to 3
         assert "scissor" in scenario.ground_truth_diagnosis.lower()
         assert len(scenario.adversarial_principles) >= 2
-        assert len(scenario.gla_advantage) > 0
+        assert len(scenario.gpa_advantage) > 0
 
     def test_load_all_returns_synthetic_scenarios(self):
         """load_all() returns the original 10 synthetic (e1-e10) scenarios

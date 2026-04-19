@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 
-namespace gla::store {
+namespace gpa::store {
 
 // Represents raw data for a single draw call as captured by the shim
 struct RawDrawCall {
@@ -83,4 +83,4 @@ struct RawFrame {
     std::vector<uint8_t> fb_stencil;  // size = w*h
 };
 
-}  // namespace gla::store
+}  // namespace gpa::store

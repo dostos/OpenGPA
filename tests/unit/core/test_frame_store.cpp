@@ -1,9 +1,9 @@
 #include <gtest/gtest.h>
 #include "src/core/store/frame_store.h"
 
-using gla::store::FrameStore;
-using gla::store::RawFrame;
-using gla::store::RawDrawCall;
+using gpa::store::FrameStore;
+using gpa::store::RawFrame;
+using gpa::store::RawDrawCall;
 
 // Helper: make a minimal RawFrame with the given frame_id
 static RawFrame make_frame(uint64_t id) {

@@ -4,7 +4,7 @@
 #include <optional>
 #include <vector>
 
-namespace gla::store {
+namespace gpa::store {
 
 class FrameStore {
 public:
@@ -33,4 +33,4 @@ private:
     mutable std::mutex mutex_;
 };
 
-}  // namespace gla::store
+}  // namespace gpa::store

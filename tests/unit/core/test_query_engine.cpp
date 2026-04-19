@@ -6,8 +6,8 @@
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-static gla::store::RawDrawCall make_dc(uint32_t id) {
-    gla::store::RawDrawCall dc{};
+static gpa::store::RawDrawCall make_dc(uint32_t id) {
+    gpa::store::RawDrawCall dc{};
     dc.id               = id;
     dc.primitive_type   = 4;   // GL_TRIANGLES
     dc.vertex_count     = 3;
@@ -18,10 +18,10 @@ static gla::store::RawDrawCall make_dc(uint32_t id) {
     return dc;
 }
 
-static gla::store::RawFrame make_frame(uint64_t id, uint32_t num_dc,
+static gpa::store::RawFrame make_frame(uint64_t id, uint32_t num_dc,
                                        uint32_t w = 800, uint32_t h = 600,
                                        double ts = 1.0) {
-    gla::store::RawFrame f{};
+    gpa::store::RawFrame f{};
     f.frame_id  = id;
     f.timestamp = ts;
     f.api_type  = 0;
@@ -37,9 +37,9 @@ static gla::store::RawFrame make_frame(uint64_t id, uint32_t num_dc,
 
 // Test 1: FrameOverview
 TEST(QueryEngineTest, FrameOverview) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     store.store(make_frame(1, 3, 800, 600, 2.5));
 
@@ -54,9 +54,9 @@ TEST(QueryEngineTest, FrameOverview) {
 
 // Test 2: LatestFrameOverview
 TEST(QueryEngineTest, LatestFrameOverview) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     store.store(make_frame(10, 1, 640, 480, 0.1));
     store.store(make_frame(11, 2, 1920, 1080, 0.2));
@@ -71,9 +71,9 @@ TEST(QueryEngineTest, LatestFrameOverview) {
 
 // Test 3: FrameNotFound
 TEST(QueryEngineTest, FrameNotFound) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     EXPECT_FALSE(qe.frame_overview(999).has_value());
     EXPECT_FALSE(qe.latest_frame_overview().has_value());
@@ -81,9 +81,9 @@ TEST(QueryEngineTest, FrameNotFound) {
 
 // Test 4: ListDrawCallsPaginated
 TEST(QueryEngineTest, ListDrawCallsPaginated) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     // 5 draw calls with IDs 0..4
     store.store(make_frame(1, 5));
@@ -97,9 +97,9 @@ TEST(QueryEngineTest, ListDrawCallsPaginated) {
 
 // Test 5: GetDrawCallById
 TEST(QueryEngineTest, GetDrawCallById) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     store.store(make_frame(1, 5));
 
@@ -111,9 +111,9 @@ TEST(QueryEngineTest, GetDrawCallById) {
 
 // Test 6: GetDrawCallNotFound
 TEST(QueryEngineTest, GetDrawCallNotFound) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
     store.store(make_frame(1, 3));
 
@@ -123,11 +123,11 @@ TEST(QueryEngineTest, GetDrawCallNotFound) {
 
 // Test 7: GetPixel
 TEST(QueryEngineTest, GetPixel) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
-    gla::store::RawFrame f = make_frame(1, 0, 4, 3, 0.0);
+    gpa::store::RawFrame f = make_frame(1, 0, 4, 3, 0.0);
     // 4*3=12 pixels, RGBA
     f.fb_color.resize(4 * 3 * 4, 0);
     f.fb_depth.resize(4 * 3, 0.0f);
@@ -156,11 +156,11 @@ TEST(QueryEngineTest, GetPixel) {
 
 // Test 8: GetPixelOutOfBounds
 TEST(QueryEngineTest, GetPixelOutOfBounds) {
-    gla::store::FrameStore store;
-    gla::Normalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::store::FrameStore store;
+    gpa::Normalizer norm;
+    gpa::QueryEngine qe(store, norm);
 
-    gla::store::RawFrame f = make_frame(1, 0, 4, 3, 0.0);
+    gpa::store::RawFrame f = make_frame(1, 0, 4, 3, 0.0);
     f.fb_color.resize(4 * 3 * 4, 0xFF);
     f.fb_depth.resize(4 * 3, 1.0f);
     store.store(std::move(f));
@@ -173,21 +173,21 @@ TEST(QueryEngineTest, GetPixelOutOfBounds) {
 // Test 9: CacheWorks — query same frame twice, normalization happens once.
 // We verify this by wrapping Normalizer calls via a counting subclass.
 namespace {
-class CountingNormalizer : public gla::Normalizer {
+class CountingNormalizer : public gpa::Normalizer {
 public:
     mutable int call_count = 0;
 
-    gla::NormalizedFrame normalize(const gla::store::RawFrame& raw) const {
+    gpa::NormalizedFrame normalize(const gpa::store::RawFrame& raw) const {
         ++call_count;
-        return gla::Normalizer::normalize(raw);
+        return gpa::Normalizer::normalize(raw);
     }
 };
 }  // namespace
 
 TEST(QueryEngineTest, CacheWorks) {
-    gla::store::FrameStore store;
+    gpa::store::FrameStore store;
     CountingNormalizer norm;
-    gla::QueryEngine qe(store, norm);
+    gpa::QueryEngine qe(store, norm);
 
     store.store(make_frame(1, 2));
 

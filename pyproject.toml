@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.backends.legacy:build"
 
 [project]
-name = "gla"
+name = "gpa"
 version = "0.0.1"
 description = "Open Graphics Profiler for Agents - live graphics debugger"
 requires-python = ">=3.11"
@@ -22,4 +22,4 @@ dev = [
 ]
 
 [project.scripts]
-gla-curate = "gla.eval.curation.pipeline:main"
+gpa-curate = "gpa.eval.curation.pipeline:main"

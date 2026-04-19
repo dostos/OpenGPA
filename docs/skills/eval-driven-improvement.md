@@ -59,11 +59,11 @@ Sources: GitHub issues (three.js, godot, bevy, wgpu, p5.js), Stack Overflow, eng
 
 ```bash
 # Start engine
-python -m gla.launcher --socket /tmp/gla.sock --shm /gla --port 18080 --token TOKEN
+python -m gpa.launcher --socket /tmp/gpa.sock --shm /gpa --port 18080 --token TOKEN
 
 # Capture scenario
-LD_PRELOAD=bazel-bin/src/shims/gl/libgla_gl.so \
-    GLA_SOCKET_PATH=/tmp/gla.sock GLA_SHM_NAME=/gla \
+LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
+    GPA_SOCKET_PATH=/tmp/gpa.sock GPA_SHM_NAME=/gpa \
     bazel-bin/tests/eval/SCENARIO_NAME
 
 # Verify data captured
@@ -74,12 +74,12 @@ Check that captured data is DIFFERENTIATED — different scenarios should produc
 
 ## Step 3: Run Multi-Model Eval
 
-Test across model tiers to find where GLA makes a difference:
+Test across model tiers to find where GPA makes a difference:
 
-| Model | Expected Code-Only | Expected With GLA |
+| Model | Expected Code-Only | Expected With GPA |
 |-------|-------------------|-------------------|
-| Haiku (weak) | May fail on hard state bugs | Should recover with GLA data |
-| Sonnet (medium) | Succeeds on most, slower on hard | Faster diagnosis with GLA |
+| Haiku (weak) | May fail on hard state bugs | Should recover with GPA data |
+| Sonnet (medium) | Succeeds on most, slower on hard | Faster diagnosis with GPA |
 | Opus (strong) | Succeeds everywhere | Confirms diagnosis with evidence |
 
 **The key metric is not accuracy alone — it's accuracy x token cost.**
@@ -88,14 +88,14 @@ If all models get 100% in both modes, the scenarios are too easy. Go back to Ste
 
 Dispatch eval agents with non-directive prompts:
 - "Use whatever approach you think is best"
-- Do NOT say "read the code first" or "query GLA first"
+- Do NOT say "read the code first" or "query GPA first"
 - Track tool_sequence to see what strategy the agent chooses
 
 ## Step 4: Analyze Gaps
 
 After the eval, ask:
 1. Did any model FAIL in code-only mode? If not, scenarios are too easy.
-2. Did GLA data provide a UNIQUE signal? (Something code analysis can't determine)
+2. Did GPA data provide a UNIQUE signal? (Something code analysis can't determine)
 3. Did agents fall into the framebuffer trap? (querying pixels before structured state)
 4. What capture data was MISSING that would have helped?
 
@@ -116,7 +116,7 @@ Implement the highest-priority fix, then re-run the eval to verify it helps. Eac
 | Flag | What It Means |
 |------|---------------|
 | All models 100% code-only | Scenarios too easy — mine harder ones |
-| GLA agent doesn't use GLA tools | Scenarios solvable from code alone |
+| GPA agent doesn't use GPA tools | Scenarios solvable from code alone |
 | Same capture data for all scenarios | Capture pipeline bug — fix before evaluating |
 | Hints in source code | Eval is unfair — strip comments |
 | Only testing one model | Can't measure capability-dependent benefit |

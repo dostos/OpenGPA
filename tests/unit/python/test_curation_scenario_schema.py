@@ -1,7 +1,7 @@
 """Tests for extended ScenarioMetadata fields (real-world curation pipeline)."""
 import textwrap
 from pathlib import Path
-from gla.eval.scenario import ScenarioMetadata, ScenarioLoader, _parse_upstream_snapshot
+from gpa.eval.scenario import ScenarioMetadata, ScenarioLoader, _parse_upstream_snapshot
 
 
 def test_parser_extracts_new_sections(tmp_path):
@@ -26,7 +26,7 @@ def test_parser_extracts_new_sections(tmp_path):
         ## Adversarial Principles
         - Stale state
 
-        ## How GLA Helps
+        ## How GPA Helps
         inspect_drawcall exposes the binding.
 
         ## Source
@@ -54,7 +54,7 @@ def test_parser_extracts_new_sections(tmp_path):
           tolerance: 0.1
         ```
 
-        ## Predicted GLA Helpfulness
+        ## Predicted GPA Helpfulness
         - **Verdict**: yes
         - **Reasoning**: The binding is visible via inspect_drawcall.
     ''').strip()
@@ -115,7 +115,7 @@ def test_scenario_metadata_has_new_fields():
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gla_advantage="",
+        gpa_advantage="",
         source_path="/tmp/x.c",
         binary_name="r1_test",
         # New fields — all optional
@@ -152,7 +152,7 @@ def test_scenario_metadata_upstream_snapshot_fields_default():
     s = ScenarioMetadata(
         id="x", title="x", bug_description="x", expected_output="x",
         actual_output="x", ground_truth_diagnosis="x", ground_truth_fix="x",
-        difficulty=1, adversarial_principles=[], gla_advantage="",
+        difficulty=1, adversarial_principles=[], gpa_advantage="",
         source_path="", binary_name="x",
     )
     assert s.upstream_snapshot_repo is None

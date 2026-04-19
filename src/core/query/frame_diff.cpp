@@ -3,7 +3,7 @@
 #include <cstring>
 #include <unordered_map>
 
-namespace gla {
+namespace gpa {
 
 // ─── Private helpers ──────────────────────────────────────────────────────────
 
@@ -199,4 +199,4 @@ FrameDiff FrameDiffer::diff(const NormalizedFrame& a, const NormalizedFrame& b,
     return result;
 }
 
-}  // namespace gla
+}  // namespace gpa

@@ -1,8 +1,8 @@
-"""Tests for gla.framework.metadata_store.MetadataStore."""
+"""Tests for gpa.framework.metadata_store.MetadataStore."""
 import pytest
 
-from gla.framework.metadata_store import MetadataStore
-from gla.framework.types import FrameMetadata, FrameworkMaterial, FrameworkObject, FrameworkRenderPass
+from gpa.framework.metadata_store import MetadataStore
+from gpa.framework.types import FrameMetadata, FrameworkMaterial, FrameworkObject, FrameworkRenderPass
 
 
 # ---------------------------------------------------------------------------

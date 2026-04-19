@@ -1,7 +1,7 @@
 """Tests for the pipeline's `(auto-resolve from PR #NNN)` sentinel resolver."""
 from unittest.mock import patch, MagicMock
 import json
-from gla.eval.curation.pipeline import _resolve_snapshot_sha
+from gpa.eval.curation.pipeline import _resolve_snapshot_sha
 
 
 def test_resolves_pr_reference_to_parent_sha():

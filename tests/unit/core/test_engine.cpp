@@ -13,8 +13,8 @@
 #include <string>
 #include <thread>
 
-static const std::string kSockPath = "/tmp/gla_test_engine.sock";
-static const std::string kShmName  = "/gla_test_engine_shm";
+static const std::string kSockPath = "/tmp/gpa_test_engine.sock";
+static const std::string kShmName  = "/gpa_test_engine_shm";
 
 // ---------------------------------------------------------------------------
 // Fixture — owns Engine running in a background thread
@@ -24,7 +24,7 @@ protected:
     void SetUp() override {
         ::unlink(kSockPath.c_str());
 
-        engine_ = std::make_unique<gla::Engine>(
+        engine_ = std::make_unique<gpa::Engine>(
             kSockPath, kShmName, /*shm_slots=*/4, /*slot_size=*/1024 * 1024);
 
         engine_thread_ = std::thread([this]() { engine_->run(); });
@@ -40,15 +40,15 @@ protected:
     }
 
     // Helper: connect a client and complete the handshake.  Returns client.
-    gla::ipc::ControlSocketClient connect_and_handshake() {
-        gla::ipc::ControlSocketClient client;
+    gpa::ipc::ControlSocketClient connect_and_handshake() {
+        gpa::ipc::ControlSocketClient client;
         if (!client.connect(kSockPath)) return client;
         client.send_handshake(/*api_type=*/0, /*pid=*/static_cast<uint32_t>(::getpid()));
         client.wait_handshake_response();
         return client;
     }
 
-    std::unique_ptr<gla::Engine> engine_;
+    std::unique_ptr<gpa::Engine> engine_;
     std::thread engine_thread_;
 };
 
@@ -56,7 +56,7 @@ protected:
 // 1. Handshake — client connects, sends valid handshake → receives OK
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, HandshakeSuccess) {
-    gla::ipc::ControlSocketClient client;
+    gpa::ipc::ControlSocketClient client;
     ASSERT_TRUE(client.connect(kSockPath));
     ASSERT_TRUE(client.send_handshake(0, static_cast<uint32_t>(::getpid())));
     EXPECT_TRUE(client.wait_handshake_response())
@@ -67,21 +67,21 @@ TEST_F(EngineTest, HandshakeSuccess) {
 // 2. BadVersion — engine rejects an incompatible protocol version
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, HandshakeBadVersion) {
-    gla::ipc::ControlSocketClient client;
+    gpa::ipc::ControlSocketClient client;
     ASSERT_TRUE(client.connect(kSockPath));
 
     // Manually craft a handshake with wrong version via raw fd
     int fd = client.fd();
     ASSERT_GE(fd, 0);
 
-    gla::ipc::HandshakePayload p{};
+    gpa::ipc::HandshakePayload p{};
     p.protocol_version = htonl(99); // wrong
     p.api_type         = htonl(0);
     p.pid              = htonl(1);
 
     uint32_t len_be = htonl(1 + static_cast<uint32_t>(sizeof(p)));
     ::write(fd, &len_be, 4);
-    uint8_t type_byte = static_cast<uint8_t>(gla::ipc::MsgType::MSG_HANDSHAKE);
+    uint8_t type_byte = static_cast<uint8_t>(gpa::ipc::MsgType::MSG_HANDSHAKE);
     ::write(fd, &type_byte, 1);
     ::write(fd, &p, sizeof(p));
 
@@ -90,7 +90,7 @@ TEST_F(EngineTest, HandshakeBadVersion) {
     ASSERT_EQ(::read(fd, &rlen_be, 4), 4);
     uint8_t rtype = 0;
     ASSERT_EQ(::read(fd, &rtype, 1), 1);
-    EXPECT_EQ(rtype, static_cast<uint8_t>(gla::ipc::MsgType::MSG_HANDSHAKE_FAIL));
+    EXPECT_EQ(rtype, static_cast<uint8_t>(gpa::ipc::MsgType::MSG_HANDSHAKE_FAIL));
 }
 
 // ---------------------------------------------------------------------------
@@ -98,11 +98,11 @@ TEST_F(EngineTest, HandshakeBadVersion) {
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, FrameIngestionViaShm) {
     // Open the same SHM segment the engine created
-    auto shm_client = gla::ShmRingBuffer::open(kShmName);
+    auto shm_client = gpa::ShmRingBuffer::open(kShmName);
     ASSERT_NE(shm_client, nullptr) << "Could not open shm segment";
 
     // Connect and handshake
-    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    gpa::ipc::ControlSocketClient client = connect_and_handshake();
     ASSERT_GE(client.fd(), 0);
 
     // Write data into a SHM slot
@@ -122,7 +122,7 @@ TEST_F(EngineTest, FrameIngestionViaShm) {
     }
 
     EXPECT_GT(engine_->frame_store().count(), 0u);
-    const gla::store::RawFrame* frame = engine_->frame_store().get(42);
+    const gpa::store::RawFrame* frame = engine_->frame_store().get(42);
     if (frame) {
         EXPECT_EQ(frame->frame_id, 42u);
     }
@@ -271,10 +271,10 @@ TEST_F(EngineTest, DrawCallRoundTrip) {
     const uint32_t W = 4, H = 4;
     const uint32_t GL_TRIANGLES = 0x0004;
 
-    auto shm_client = gla::ShmRingBuffer::open(kShmName);
+    auto shm_client = gpa::ShmRingBuffer::open(kShmName);
     ASSERT_NE(shm_client, nullptr);
 
-    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    gpa::ipc::ControlSocketClient client = connect_and_handshake();
     ASSERT_GE(client.fd(), 0);
 
     std::vector<uint8_t> payload =
@@ -291,12 +291,12 @@ TEST_F(EngineTest, DrawCallRoundTrip) {
 
     // Wait for the engine to process the frame (engine assigns its own ID)
     for (int i = 0; i < 200; ++i) {
-        const gla::store::RawFrame* f = engine_->frame_store().latest();
+        const gpa::store::RawFrame* f = engine_->frame_store().latest();
         if (f && !f->draw_calls.empty()) break;
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
-    const gla::store::RawFrame* frame = engine_->frame_store().latest();
+    const gpa::store::RawFrame* frame = engine_->frame_store().latest();
     ASSERT_NE(frame, nullptr) << "No frame found in store";
 
     // Pixel buffers
@@ -340,7 +340,7 @@ TEST_F(EngineTest, PauseResume) {
 // 5. PauseControlToClients — after pause, connected client receives MSG_CONTROL
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, PauseControlToClients) {
-    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    gpa::ipc::ControlSocketClient client = connect_and_handshake();
     ASSERT_GE(client.fd(), 0);
 
     // Give engine a tick to register the client before we ask for pause
@@ -348,7 +348,7 @@ TEST_F(EngineTest, PauseControlToClients) {
 
     engine_->request_pause();
 
-    gla::ipc::ControlPayload ctrl{};
+    gpa::ipc::ControlPayload ctrl{};
     bool got_control = false;
     for (int i = 0; i < 100 && !got_control; ++i) {
         if (client.read_control(ctrl)) got_control = true;
@@ -363,16 +363,16 @@ TEST_F(EngineTest, PauseControlToClients) {
 // 6. MultipleFrames — send 5 frames; all should be stored
 // ---------------------------------------------------------------------------
 TEST_F(EngineTest, MultipleFrames) {
-    auto shm_client = gla::ShmRingBuffer::open(kShmName);
+    auto shm_client = gpa::ShmRingBuffer::open(kShmName);
     ASSERT_NE(shm_client, nullptr);
 
-    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    gpa::ipc::ControlSocketClient client = connect_and_handshake();
     ASSERT_GE(client.fd(), 0);
 
     static const int kFrames = 3; // limited by ring-buffer slots
     for (int i = 0; i < kFrames; ++i) {
         // Wait until a slot is free
-        gla::ShmRingBuffer::WriteSlot wslot{nullptr, 0};
+        gpa::ShmRingBuffer::WriteSlot wslot{nullptr, 0};
         for (int retry = 0; retry < 200 && wslot.data == nullptr; ++retry) {
             wslot = shm_client->claim_write_slot();
             if (!wslot.data)
@@ -409,10 +409,10 @@ TEST_F(EngineTest, Vec4ParamRoundTrip) {
     const float R = 1.0f, G = 0.0f, B = 0.0f, A = 1.0f;
     const uint32_t LOCATION = 7;
 
-    auto shm_client = gla::ShmRingBuffer::open(kShmName);
+    auto shm_client = gpa::ShmRingBuffer::open(kShmName);
     ASSERT_NE(shm_client, nullptr);
 
-    gla::ipc::ControlSocketClient client = connect_and_handshake();
+    gpa::ipc::ControlSocketClient client = connect_and_handshake();
     ASSERT_GE(client.fd(), 0);
 
     std::vector<uint8_t> payload =
@@ -427,12 +427,12 @@ TEST_F(EngineTest, Vec4ParamRoundTrip) {
 
     // Wait for engine to ingest the frame
     for (int i = 0; i < 200; ++i) {
-        const gla::store::RawFrame* f = engine_->frame_store().latest();
+        const gpa::store::RawFrame* f = engine_->frame_store().latest();
         if (f && !f->draw_calls.empty() && !f->draw_calls[0].params.empty()) break;
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
 
-    const gla::store::RawFrame* frame = engine_->frame_store().latest();
+    const gpa::store::RawFrame* frame = engine_->frame_store().latest();
     ASSERT_NE(frame, nullptr);
     ASSERT_EQ(frame->draw_calls.size(), 1u);
     const auto& dc = frame->draw_calls[0];

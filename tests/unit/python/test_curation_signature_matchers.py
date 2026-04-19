@@ -1,5 +1,5 @@
 from pathlib import Path
-from gla.eval.curation.signature_matchers import match_signature, SignatureMatchResult
+from gpa.eval.curation.signature_matchers import match_signature, SignatureMatchResult
 
 FIX = Path(__file__).parent / "fixtures" / "curation" / "framebuffers"
 

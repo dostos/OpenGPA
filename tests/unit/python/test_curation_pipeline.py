@@ -2,17 +2,17 @@ from pathlib import Path
 from unittest.mock import MagicMock
 from datetime import datetime, timezone
 
-from gla.eval.curation.pipeline import CurationPipeline, parse_args
-from gla.eval.curation.discover import DiscoveryCandidate
-from gla.eval.curation.triage import IssueThread, TriageResult
-from gla.eval.curation.draft import DraftResult
-from gla.eval.curation.validate import ValidationResult
-from gla.eval.curation.run_eval import RunEvalResult
-from gla.eval.metrics import EvalResult
+from gpa.eval.curation.pipeline import CurationPipeline, parse_args
+from gpa.eval.curation.discover import DiscoveryCandidate
+from gpa.eval.curation.triage import IssueThread, TriageResult
+from gpa.eval.curation.draft import DraftResult
+from gpa.eval.curation.validate import ValidationResult
+from gpa.eval.curation.run_eval import RunEvalResult
+from gpa.eval.metrics import EvalResult
 
 
 def test_load_config_overrides_default_queries(tmp_path):
-    from gla.eval.curation.pipeline import load_config
+    from gpa.eval.curation.pipeline import load_config
     cfg_path = tmp_path / "cfg.yaml"
     cfg_path.write_text(
         "batch_quota: 5\n"
@@ -74,12 +74,12 @@ def _draft_md() -> str:
         "## Ground Truth Diagnosis\n> q\nd\n"
         "## Difficulty Rating\n3/5\n"
         "## Adversarial Principles\n- p\n"
-        "## How GLA Helps\nh\n"
+        "## How GPA Helps\nh\n"
         "## Source\n- **URL**: https://github.com/x/y/issues/1\n"
         "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
         "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
         "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n"
-        "## Predicted GLA Helpfulness\n- **Verdict**: yes\n"
+        "## Predicted GPA Helpfulness\n- **Verdict**: yes\n"
         "- **Reasoning**: x\n"
     )
 
@@ -194,9 +194,9 @@ def test_pipeline_ambiguous_reaches_drafter(tmp_path):
     """triage=ambiguous no longer early-rejects; the drafter is invoked and
     decides via its own validation whether the candidate can become a scenario."""
     from unittest.mock import MagicMock
-    from gla.eval.curation.pipeline import CurationPipeline
-    from gla.eval.curation.discover import DiscoveryCandidate
-    from gla.eval.curation.triage import IssueThread, TriageResult
+    from gpa.eval.curation.pipeline import CurationPipeline
+    from gpa.eval.curation.discover import DiscoveryCandidate
+    from gpa.eval.curation.triage import IssueThread, TriageResult
 
     candidate = DiscoveryCandidate(url="https://x/1", source_type="issue", title="t")
     triage = TriageResult(verdict="ambiguous", fingerprint="other:unknown",
@@ -228,7 +228,7 @@ def test_pipeline_ambiguous_reaches_drafter(tmp_path):
     validator.validate.assert_not_called()
     run_eval.run.assert_not_called()
     # Coverage log has a rejection entry with reason not_reproducible (drafter failed)
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.coverage_log import CoverageLog
     log = CoverageLog(tmp_path / "log.jsonl")
     entries = log.read_all()
     assert len(entries) == 1
@@ -241,13 +241,13 @@ def test_pipeline_ambiguous_drafter_succeeds(tmp_path):
     """When drafter can handle the ambiguous case (e.g., via linked PR context),
     the scenario is committed normally."""
     from unittest.mock import MagicMock
-    from gla.eval.curation.pipeline import CurationPipeline
-    from gla.eval.curation.discover import DiscoveryCandidate
-    from gla.eval.curation.triage import IssueThread, TriageResult
-    from gla.eval.curation.draft import DraftResult
-    from gla.eval.curation.validate import ValidationResult
-    from gla.eval.curation.run_eval import RunEvalResult
-    from gla.eval.metrics import EvalResult
+    from gpa.eval.curation.pipeline import CurationPipeline
+    from gpa.eval.curation.discover import DiscoveryCandidate
+    from gpa.eval.curation.triage import IssueThread, TriageResult
+    from gpa.eval.curation.draft import DraftResult
+    from gpa.eval.curation.validate import ValidationResult
+    from gpa.eval.curation.run_eval import RunEvalResult
+    from gpa.eval.metrics import EvalResult
     from datetime import datetime, timezone
 
     candidate = DiscoveryCandidate(url="https://github.com/x/y/issues/1",
@@ -260,11 +260,11 @@ def test_pipeline_ambiguous_drafter_succeeds(tmp_path):
         md_body=("# R1_FAKE\n## Bug\nb\n## Expected Correct Output\ne\n"
                  "## Actual Broken Output\na\n## Ground Truth Diagnosis\n> q\nd\n"
                  "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
-                 "## How GLA Helps\nh\n## Source\n- **URL**: https://github.com/x/y/issues/1\n"
+                 "## How GPA Helps\nh\n## Source\n- **URL**: https://github.com/x/y/issues/1\n"
                  "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
                  "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
                  "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n"
-                 "## Predicted GLA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"))
+                 "## Predicted GPA Helpfulness\n- **Verdict**: yes\n- **Reasoning**: x\n"))
 
     discoverer = MagicMock(); discoverer.run.return_value = [candidate]
     fetch = MagicMock(); fetch.return_value = IssueThread(url=candidate.url, title="t", body="b")
@@ -300,7 +300,7 @@ def test_pipeline_ambiguous_drafter_succeeds(tmp_path):
     # Scenario was committed
     assert (tmp_path / "eval" / "r1_fake" / "main.c").exists()
     # Coverage log shows scenario_committed despite ambiguous triage
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.coverage_log import CoverageLog
     log = CoverageLog(tmp_path / "log.jsonl")
     entries = log.read_all()
     assert len(entries) == 1
@@ -389,7 +389,7 @@ def test_pipeline_caches_triage_across_runs(tmp_path):
 
 
 def test_pipeline_duplicate_fingerprint_skips_drafting(tmp_path):
-    from gla.eval.curation.coverage_log import CoverageLog, CoverageEntry
+    from gpa.eval.curation.coverage_log import CoverageLog, CoverageEntry
 
     log_path = tmp_path / "log.jsonl"
     log = CoverageLog(log_path)
@@ -456,13 +456,13 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
     real framebuffer fixture.
     """
     import json
-    from gla.eval.curation.pipeline import CurationPipeline
-    from gla.eval.curation.discover import DiscoveryCandidate
-    from gla.eval.curation.triage import IssueThread, Triage
-    from gla.eval.curation.draft import Draft
-    from gla.eval.curation.validate import Validator
-    from gla.eval.curation.run_eval import RunEvalResult
-    from gla.eval.metrics import EvalResult
+    from gpa.eval.curation.pipeline import CurationPipeline
+    from gpa.eval.curation.discover import DiscoveryCandidate
+    from gpa.eval.curation.triage import IssueThread, Triage
+    from gpa.eval.curation.draft import Draft
+    from gpa.eval.curation.validate import Validator
+    from gpa.eval.curation.run_eval import RunEvalResult
+    from gpa.eval.metrics import EvalResult
     from datetime import datetime, timezone
 
     # Canned LLM responses: one for triage, one for draft, no failure-mode needed
@@ -471,7 +471,7 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
         "fixtures/curation/issue_threads/threejs_simple_state_leak.json").read_text())
 
     from unittest.mock import MagicMock
-    from gla.eval.curation.llm_client import LLMResponse
+    from gpa.eval.curation.llm_client import LLMResponse
 
     triage_resp = (
         '```json\n{"triage_verdict":"in_scope",'
@@ -491,7 +491,7 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
         '(from upstream maintainer)\n\n'
         "## Difficulty Rating\n3/5\n\n"
         "## Adversarial Principles\n- Stale state\n\n"
-        "## How GLA Helps\ninspect_drawcall exposes the stale binding.\n\n"
+        "## How GPA Helps\ninspect_drawcall exposes the stale binding.\n\n"
         "## Source\n"
         f"- **URL**: {fixture['url']}\n"
         "- **Type**: issue\n"
@@ -501,7 +501,7 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
         "## Tier\ncore\n\n## API\nopengl\n\n## Framework\nnone\n\n"
         "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
         "spec:\n  color: [1.0, 0.0, 0.0, 1.0]\n  tolerance: 0.1\n```\n\n"
-        "## Predicted GLA Helpfulness\n- **Verdict**: yes\n"
+        "## Predicted GPA Helpfulness\n- **Verdict**: yes\n"
         "- **Reasoning**: inspect_drawcall exposes the stale binding.\n"
     )
     draft_resp = (
@@ -582,10 +582,10 @@ def test_pipeline_skip_validate_commits_without_running_validator(tmp_path):
     """With skip_validate=True, the pipeline writes scenario files and logs
     the commit, without invoking the validator or run_eval."""
     from unittest.mock import MagicMock
-    from gla.eval.curation.pipeline import CurationPipeline
-    from gla.eval.curation.discover import DiscoveryCandidate
-    from gla.eval.curation.triage import IssueThread, TriageResult
-    from gla.eval.curation.draft import DraftResult
+    from gpa.eval.curation.pipeline import CurationPipeline
+    from gpa.eval.curation.discover import DiscoveryCandidate
+    from gpa.eval.curation.triage import IssueThread, TriageResult
+    from gpa.eval.curation.draft import DraftResult
 
     candidate = DiscoveryCandidate(url="https://github.com/x/y/issues/1",
                                     source_type="issue", title="t")
@@ -593,7 +593,7 @@ def test_pipeline_skip_validate_commits_without_running_validator(tmp_path):
                            rejection_reason=None, summary="s")
     draft = DraftResult(scenario_id="r1_test",
                          c_source="// SOURCE: https://github.com/x/y/issues/1\nint main(){}",
-                         md_body="# R1_TEST\n## Predicted GLA Helpfulness\n- **Verdict**: yes\n")
+                         md_body="# R1_TEST\n## Predicted GPA Helpfulness\n- **Verdict**: yes\n")
 
     discoverer = MagicMock(); discoverer.run.return_value = [candidate]
     fetch = MagicMock(); fetch.return_value = IssueThread(url=candidate.url, title="t", body="b")
@@ -620,7 +620,7 @@ def test_pipeline_skip_validate_commits_without_running_validator(tmp_path):
 
 
 def test_parse_args_no_validate_flag():
-    from gla.eval.curation.pipeline import parse_args
+    from gpa.eval.curation.pipeline import parse_args
     args = parse_args(["--no-validate"])
     assert args.no_validate is True
     args_default = parse_args([])
@@ -631,13 +631,13 @@ def test_pipeline_resolves_snapshot_sha_from_pr_ref(tmp_path):
     """When draft includes (auto-resolve from PR #NNN), pipeline resolves it
     to the parent SHA from gh api before committing."""
     from unittest.mock import MagicMock, patch
-    from gla.eval.curation.pipeline import CurationPipeline
-    from gla.eval.curation.discover import DiscoveryCandidate
-    from gla.eval.curation.triage import IssueThread, TriageResult
-    from gla.eval.curation.draft import DraftResult
-    from gla.eval.curation.validate import ValidationResult
-    from gla.eval.curation.run_eval import RunEvalResult
-    from gla.eval.metrics import EvalResult
+    from gpa.eval.curation.pipeline import CurationPipeline
+    from gpa.eval.curation.discover import DiscoveryCandidate
+    from gpa.eval.curation.triage import IssueThread, TriageResult
+    from gpa.eval.curation.draft import DraftResult
+    from gpa.eval.curation.validate import ValidationResult
+    from gpa.eval.curation.run_eval import RunEvalResult
+    from gpa.eval.metrics import EvalResult
     from datetime import datetime, timezone
     import json as _json
 
@@ -708,7 +708,7 @@ def test_pipeline_resolves_snapshot_sha_from_pr_ref(tmp_path):
 
     # Mock subprocess.run for the SHA-resolution call. Don't intercept gh calls
     # inside the fetch helpers — fetch is a MagicMock so they never fire.
-    with patch("gla.eval.curation.pipeline.subprocess.run") as mock_sp:
+    with patch("gpa.eval.curation.pipeline.subprocess.run") as mock_sp:
         mock_sp.return_value = MagicMock(stdout=pr_response, returncode=0)
         p.run_batch()
 
@@ -784,7 +784,7 @@ def test_pipeline_retries_draft_on_value_error(tmp_path):
 
 def test_pipeline_gives_up_after_second_draft_failure(tmp_path):
     """After TWO ValueError failures, pipeline logs not_reproducible."""
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.coverage_log import CoverageLog
 
     candidate = DiscoveryCandidate(
         url="https://github.com/x/y/issues/1", source_type="issue", title="t",
@@ -827,7 +827,7 @@ def test_pipeline_gives_up_after_second_draft_failure(tmp_path):
 
 
 def test_check_c_compiles_returns_none_for_valid_c():
-    from gla.eval.curation.pipeline import _check_c_compiles
+    from gpa.eval.curation.pipeline import _check_c_compiles
     files = {
         "main.c": "int main() { return 0; }",
         "scenario.md": "# x",
@@ -836,7 +836,7 @@ def test_check_c_compiles_returns_none_for_valid_c():
 
 
 def test_check_c_compiles_returns_error_for_invalid_c():
-    from gla.eval.curation.pipeline import _check_c_compiles
+    from gpa.eval.curation.pipeline import _check_c_compiles
     files = {
         # `#error` directive always fails compilation with that message on stderr
         "main.c": "#error forced compile error\nint main(){return 0;}",
@@ -848,7 +848,7 @@ def test_check_c_compiles_returns_error_for_invalid_c():
 
 
 def test_check_c_compiles_skips_when_no_c_files():
-    from gla.eval.curation.pipeline import _check_c_compiles
+    from gpa.eval.curation.pipeline import _check_c_compiles
     files = {"scenario.md": "# snapshot-only scenario"}
     assert _check_c_compiles(files, "test") is None
 
@@ -922,7 +922,7 @@ def test_pipeline_retries_draft_on_compile_error(tmp_path):
 
 def test_pipeline_gives_up_after_second_c_compile_failure(tmp_path):
     """If both draft attempts produce broken C, pipeline logs not_reproducible."""
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.coverage_log import CoverageLog
 
     candidate = DiscoveryCandidate(
         url="https://github.com/x/y/issues/1", source_type="issue", title="t",

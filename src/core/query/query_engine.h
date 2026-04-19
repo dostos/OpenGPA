@@ -8,11 +8,11 @@
 #include <unordered_map>
 #include <vector>
 
-namespace gla {
+namespace gpa {
 
 class QueryEngine {
 public:
-    QueryEngine(gla::store::FrameStore& store, gla::Normalizer& normalizer);
+    QueryEngine(gpa::store::FrameStore& store, gpa::Normalizer& normalizer);
 
     struct FrameOverview {
         uint64_t frame_id;
@@ -51,8 +51,8 @@ public:
     const NormalizedFrame* get_normalized_frame(uint64_t frame_id) const;
 
 private:
-    gla::store::FrameStore& store_;
-    gla::Normalizer& normalizer_;
+    gpa::store::FrameStore& store_;
+    gpa::Normalizer& normalizer_;
     FrameDiffer differ_;
 
     // Deferred normalization cache: frame_id -> NormalizedFrame
@@ -66,4 +66,4 @@ private:
     void evict_stale_cache() const;
 };
 
-}  // namespace gla
+}  // namespace gpa

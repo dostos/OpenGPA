@@ -3,13 +3,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gla.backends.base import (
+from gpa.backends.base import (
     DrawCallInfo,
     FrameOverview,
     FrameProvider,
     PixelResult,
 )
-from gla.backends.native import NativeBackend
+from gpa.backends.native import NativeBackend
 
 
 # ---------------------------------------------------------------------------
@@ -326,7 +326,7 @@ class TestRenderDocBackend:
 
     def test_import_error_gives_clear_message(self):
         """When renderdoc is not installed, init raises RuntimeError."""
-        from gla.backends.renderdoc import RenderDocBackend
+        from gpa.backends.renderdoc import RenderDocBackend
         with pytest.raises(RuntimeError, match="RenderDoc Python module not available"):
             RenderDocBackend("/nonexistent/capture.rdc")
 
@@ -343,7 +343,7 @@ class TestRenderDocBackend:
 
         with patch.dict(sys.modules, {"renderdoc": rd}):
             from importlib import reload
-            import gla.backends.renderdoc as rmod
+            import gpa.backends.renderdoc as rmod
             reload(rmod)
             with pytest.raises(RuntimeError, match="Failed to open"):
                 rmod.RenderDocBackend("/fake/path.rdc")
@@ -361,7 +361,7 @@ class TestRenderDocBackend:
 
         with patch.dict(sys.modules, {"renderdoc": rd}):
             from importlib import reload
-            import gla.backends.renderdoc as rmod
+            import gpa.backends.renderdoc as rmod
             reload(rmod)
             with pytest.raises(RuntimeError, match="Local replay not supported"):
                 rmod.RenderDocBackend("/fake/path.rdc")
@@ -386,7 +386,7 @@ class TestRenderDocBackend:
         rd.OpenCaptureFile = MagicMock(return_value=cap)
 
         with patch.dict(sys.modules, {"renderdoc": rd}):
-            import gla.backends.renderdoc as rmod
+            import gpa.backends.renderdoc as rmod
             reload(rmod)
             backend = rmod.RenderDocBackend.__new__(rmod.RenderDocBackend)
             backend._rd = rd
@@ -627,7 +627,7 @@ class TestRenderDocBackend:
     # ------------------------------------------------------------------ #
 
     def test_shader_var_scalar(self):
-        from gla.backends.renderdoc import RenderDocBackend
+        from gpa.backends.renderdoc import RenderDocBackend
         var = MagicMock()
         var.rows = 1
         var.columns = 1
@@ -636,7 +636,7 @@ class TestRenderDocBackend:
         assert result == pytest.approx(3.14)
 
     def test_shader_var_vec3(self):
-        from gla.backends.renderdoc import RenderDocBackend
+        from gpa.backends.renderdoc import RenderDocBackend
         var = MagicMock()
         var.rows = 1
         var.columns = 3
@@ -645,7 +645,7 @@ class TestRenderDocBackend:
         assert result == pytest.approx([1.0, 2.0, 3.0])
 
     def test_shader_var_mat4(self):
-        from gla.backends.renderdoc import RenderDocBackend
+        from gpa.backends.renderdoc import RenderDocBackend
         var = MagicMock()
         var.rows = 4
         var.columns = 4

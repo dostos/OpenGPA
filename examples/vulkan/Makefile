@@ -16,12 +16,12 @@ $(TARGET): $(OBJECTS)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 run: $(TARGET)
-	export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture; \
+	export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture; \
 	export LD_LIBRARY_PATH=$(HOME)/.config/vulkan/implicit_layer.d:$$LD_LIBRARY_PATH; \
 	./$(TARGET)
 
 debug: $(TARGET)
-	export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture; \
+	export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture; \
 	export VK_LAYER_PATH=$(HOME)/.config/vulkan/implicit_layer.d; \
 	export VK_LOADER_DEBUG=all; \
 	./$(TARGET) 2>&1 | grep -i opengpa || echo "No OpenGPA output (layer may not be installed)"

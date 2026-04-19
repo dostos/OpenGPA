@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace gla {
+namespace gpa {
 
 class Engine {
 public:
@@ -59,4 +59,4 @@ private:
     std::atomic<uint64_t> next_frame_id_{1};  // monotonic engine-assigned frame ID
 };
 
-} // namespace gla
+} // namespace gpa

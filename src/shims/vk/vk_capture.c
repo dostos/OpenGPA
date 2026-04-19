@@ -13,7 +13,7 @@
  * Per-frame accumulated draw calls (from all submitted command buffers)
  * -------------------------------------------------------------------------- */
 
-static GlaVkDrawCall  g_frame_draws[GLA_VK_MAX_DRAW_CALLS];
+static GpaVkDrawCall  g_frame_draws[GPA_VK_MAX_DRAW_CALLS];
 static uint32_t       g_frame_draw_count = 0;
 static uint64_t       g_frame_id         = 0;
 static pthread_mutex_t g_frame_mutex     = PTHREAD_MUTEX_INITIALIZER;
@@ -27,13 +27,13 @@ static pthread_mutex_t g_frame_mutex     = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct {
     VkCommandBuffer    key;
-    GlaVkCmdBufState   state;
+    GpaVkCmdBufState   state;
 } CmdBufEntry;
 
 static CmdBufEntry     g_cmd_table[CMD_TABLE_CAPACITY];
 static pthread_mutex_t g_cmd_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static GlaVkCmdBufState *cmd_table_get_locked(VkCommandBuffer cmd_buf) {
+static GpaVkCmdBufState *cmd_table_get_locked(VkCommandBuffer cmd_buf) {
     size_t slot = ((uintptr_t)cmd_buf >> 3) & CMD_TABLE_MASK;
     for (size_t i = 0; i < CMD_TABLE_CAPACITY; i++) {
         size_t idx = (slot + i) & CMD_TABLE_MASK;
@@ -47,20 +47,20 @@ static GlaVkCmdBufState *cmd_table_get_locked(VkCommandBuffer cmd_buf) {
  * Public API
  * -------------------------------------------------------------------------- */
 
-void gla_capture_init(void) {
+void gpa_capture_init(void) {
     memset(g_cmd_table,   0, sizeof(g_cmd_table));
     memset(g_frame_draws, 0, sizeof(g_frame_draws));
     g_frame_draw_count = 0;
     g_frame_id         = 0;
 }
 
-void gla_capture_shutdown(void) {
+void gpa_capture_shutdown(void) {
     /* Nothing heap-allocated; just zero the tables. */
     memset(g_cmd_table,   0, sizeof(g_cmd_table));
     memset(g_frame_draws, 0, sizeof(g_frame_draws));
 }
 
-GlaVkCmdBufState *gla_capture_cmd_buf_begin(VkCommandBuffer cmd_buf) {
+GpaVkCmdBufState *gpa_capture_cmd_buf_begin(VkCommandBuffer cmd_buf) {
     pthread_mutex_lock(&g_cmd_mutex);
 
     size_t slot = ((uintptr_t)cmd_buf >> 3) & CMD_TABLE_MASK;
@@ -69,7 +69,7 @@ GlaVkCmdBufState *gla_capture_cmd_buf_begin(VkCommandBuffer cmd_buf) {
         if (g_cmd_table[idx].key == VK_NULL_HANDLE ||
             g_cmd_table[idx].key == cmd_buf) {
             g_cmd_table[idx].key = cmd_buf;
-            GlaVkCmdBufState *s  = &g_cmd_table[idx].state;
+            GpaVkCmdBufState *s  = &g_cmd_table[idx].state;
             memset(s, 0, sizeof(*s));
             s->cmd_buf    = cmd_buf;
             pthread_mutex_unlock(&g_cmd_mutex);
@@ -81,7 +81,7 @@ GlaVkCmdBufState *gla_capture_cmd_buf_begin(VkCommandBuffer cmd_buf) {
     return NULL;
 }
 
-void gla_capture_cmd_buf_end(VkCommandBuffer cmd_buf) {
+void gpa_capture_cmd_buf_end(VkCommandBuffer cmd_buf) {
     pthread_mutex_lock(&g_cmd_mutex);
     size_t slot = ((uintptr_t)cmd_buf >> 3) & CMD_TABLE_MASK;
     for (size_t i = 0; i < CMD_TABLE_CAPACITY; i++) {
@@ -95,22 +95,22 @@ void gla_capture_cmd_buf_end(VkCommandBuffer cmd_buf) {
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
-GlaVkCmdBufState *gla_capture_cmd_buf_get(VkCommandBuffer cmd_buf) {
+GpaVkCmdBufState *gpa_capture_cmd_buf_get(VkCommandBuffer cmd_buf) {
     pthread_mutex_lock(&g_cmd_mutex);
-    GlaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
+    GpaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
     pthread_mutex_unlock(&g_cmd_mutex);
     return s;
 }
 
-void gla_capture_record_draw(VkCommandBuffer cmd_buf,
+void gpa_capture_record_draw(VkCommandBuffer cmd_buf,
                               uint32_t vertex_count,
                               uint32_t instance_count,
                               uint32_t first_vertex,
                               uint32_t first_instance) {
     pthread_mutex_lock(&g_cmd_mutex);
-    GlaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
-    if (s && s->draw_count < GLA_VK_MAX_DRAW_CALLS) {
-        GlaVkDrawCall *d   = &s->draws[s->draw_count];
+    GpaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
+    if (s && s->draw_count < GPA_VK_MAX_DRAW_CALLS) {
+        GpaVkDrawCall *d   = &s->draws[s->draw_count];
         d->id              = s->draw_count;
         d->vertex_count    = vertex_count;
         d->index_count     = 0;
@@ -126,7 +126,7 @@ void gla_capture_record_draw(VkCommandBuffer cmd_buf,
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
-void gla_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
+void gpa_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
                                       uint32_t index_count,
                                       uint32_t instance_count,
                                       uint32_t first_index,
@@ -134,9 +134,9 @@ void gla_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
                                       uint32_t first_instance) {
     (void)vertex_offset; /* not recorded in MVP metadata */
     pthread_mutex_lock(&g_cmd_mutex);
-    GlaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
-    if (s && s->draw_count < GLA_VK_MAX_DRAW_CALLS) {
-        GlaVkDrawCall *d   = &s->draws[s->draw_count];
+    GpaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
+    if (s && s->draw_count < GPA_VK_MAX_DRAW_CALLS) {
+        GpaVkDrawCall *d   = &s->draws[s->draw_count];
         d->id              = s->draw_count;
         d->vertex_count    = 0;
         d->index_count     = index_count;
@@ -152,11 +152,11 @@ void gla_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
-void gla_capture_bind_pipeline(VkCommandBuffer     cmd_buf,
+void gpa_capture_bind_pipeline(VkCommandBuffer     cmd_buf,
                                 VkPipelineBindPoint bind_point,
                                 VkPipeline          pipeline) {
     pthread_mutex_lock(&g_cmd_mutex);
-    GlaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
+    GpaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
     if (s) {
         s->current_pipeline   = pipeline;
         s->current_bind_point = bind_point;
@@ -164,31 +164,31 @@ void gla_capture_bind_pipeline(VkCommandBuffer     cmd_buf,
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
-void gla_capture_begin_render_pass(VkCommandBuffer cmd_buf) {
+void gpa_capture_begin_render_pass(VkCommandBuffer cmd_buf) {
     /* Subpass index resets at render pass begin; already 0 from memset. */
     (void)cmd_buf;
 }
 
-void gla_capture_end_render_pass(VkCommandBuffer cmd_buf) {
+void gpa_capture_end_render_pass(VkCommandBuffer cmd_buf) {
     pthread_mutex_lock(&g_cmd_mutex);
-    GlaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
+    GpaVkCmdBufState *s = cmd_table_get_locked(cmd_buf);
     if (s) s->current_subpass = 0;
     pthread_mutex_unlock(&g_cmd_mutex);
 }
 
-void gla_capture_queue_submit(uint32_t               cmd_buf_count,
+void gpa_capture_queue_submit(uint32_t               cmd_buf_count,
                                const VkCommandBuffer *cmd_bufs) {
-    if (!gla_vk_ipc_is_connected()) return;
+    if (!gpa_vk_ipc_is_connected()) return;
 
     pthread_mutex_lock(&g_cmd_mutex);
     pthread_mutex_lock(&g_frame_mutex);
 
     for (uint32_t b = 0; b < cmd_buf_count; b++) {
-        GlaVkCmdBufState *s = cmd_table_get_locked(cmd_bufs[b]);
+        GpaVkCmdBufState *s = cmd_table_get_locked(cmd_bufs[b]);
         if (!s) continue;
 
         for (uint32_t d = 0; d < s->draw_count; d++) {
-            if (g_frame_draw_count >= GLA_VK_MAX_DRAW_CALLS) break;
+            if (g_frame_draw_count >= GPA_VK_MAX_DRAW_CALLS) break;
             g_frame_draws[g_frame_draw_count]     = s->draws[d];
             g_frame_draws[g_frame_draw_count].id  = g_frame_draw_count;
             g_frame_draw_count++;
@@ -218,7 +218,7 @@ void gla_capture_queue_submit(uint32_t               cmd_buf_count,
  * -------------------------------------------------------------------------- */
 
 static size_t serialise_vk_draw_calls(uint8_t *buf, size_t buf_max,
-                                       const GlaVkDrawCall *draws,
+                                       const GpaVkDrawCall *draws,
                                        uint32_t count) {
     uint8_t *p   = buf;
     uint8_t *end = buf + buf_max;
@@ -229,7 +229,7 @@ static size_t serialise_vk_draw_calls(uint8_t *buf, size_t buf_max,
 
     for (uint32_t i = 0; i < count; i++) {
         if (p + 44 > end) break; /* 9*uint32 + 1*uint64 = 44 bytes */
-        const GlaVkDrawCall *d = &draws[i];
+        const GpaVkDrawCall *d = &draws[i];
 
         memcpy(p, &d->id,             4); p += 4;
         memcpy(p, &d->vertex_count,   4); p += 4;
@@ -250,10 +250,10 @@ static size_t serialise_vk_draw_calls(uint8_t *buf, size_t buf_max,
 }
 
 /* --------------------------------------------------------------------------
- * gla_capture_on_present — main capture path called from vkQueuePresentKHR
+ * gpa_capture_on_present — main capture path called from vkQueuePresentKHR
  * -------------------------------------------------------------------------- */
 
-void gla_capture_on_present(VkQueue        queue,
+void gpa_capture_on_present(VkQueue        queue,
                              VkDevice       device,
                              VkSwapchainKHR swapchain,
                              uint32_t       image_index,
@@ -264,14 +264,14 @@ void gla_capture_on_present(VkQueue        queue,
     (void)image_index;
     (void)image_format;
 
-    if (!gla_vk_ipc_is_connected()) goto reset_frame;
+    if (!gpa_vk_ipc_is_connected()) goto reset_frame;
 
-    GlaDeviceDispatch *dev_disp = gla_device_dispatch_get(device);
+    GpaDeviceDispatch *dev_disp = gpa_device_dispatch_get(device);
     if (!dev_disp) goto reset_frame;
 
     /* Claim a SHM slot */
     uint32_t slot_index;
-    void    *slot = gla_vk_ipc_claim_slot(&slot_index);
+    void    *slot = gpa_vk_ipc_claim_slot(&slot_index);
     if (!slot) {
         fprintf(stderr, "[OpenGPA-VK] SHM ring buffer full, skipping frame %llu\n",
                 (unsigned long long)g_frame_id);
@@ -552,12 +552,12 @@ write_metadata_only:
     }
 
     uint64_t total_size = (uint64_t)((uintptr_t)ptr - (uintptr_t)slot);
-    gla_vk_ipc_commit_slot(slot_index, total_size);
-    gla_vk_ipc_send_frame_ready(g_frame_id, slot_index);
+    gpa_vk_ipc_commit_slot(slot_index, total_size);
+    gpa_vk_ipc_send_frame_ready(g_frame_id, slot_index);
 
     /* Check for engine pause request */
-    if (gla_vk_ipc_should_pause()) {
-        gla_vk_ipc_wait_resume();
+    if (gpa_vk_ipc_should_pause()) {
+        gpa_vk_ipc_wait_resume();
     }
 
 reset_frame:

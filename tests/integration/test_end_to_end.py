@@ -1,10 +1,10 @@
 """
-End-to-end integration test for GLA.
+End-to-end integration test for GPA.
 
 Pipeline: mini_gl_app → LD_PRELOAD shim → engine → REST API → queries
 
 Requirements:
-- Built artifacts: libgla_gl.so, _gla_core.so, mini_gl_app
+- Built artifacts: libgpa_gl.so, _gpa_core.so, mini_gl_app
 - X11 display (or Xvfb for headless)
 - Python deps: requests, pytest
 
@@ -19,18 +19,18 @@ import pytest
 
 # Paths to built artifacts (relative to repo root)
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SHIM_LIB = os.path.join(REPO_ROOT, "bazel-bin/src/shims/gl/libgla_gl.so")
+SHIM_LIB = os.path.join(REPO_ROOT, "bazel-bin/src/shims/gl/libgpa_gl.so")
 GL_APP = os.path.join(REPO_ROOT, "bazel-bin/tests/integration/mini_gl_app")
-SOCKET_PATH = f"/tmp/gla_test_{os.getpid()}.sock"
-SHM_NAME = f"/gla_test_{os.getpid()}"
+SOCKET_PATH = f"/tmp/gpa_test_{os.getpid()}.sock"
+SHM_NAME = f"/gpa_test_{os.getpid()}"
 API_PORT = 18090 + (os.getpid() % 1000)  # avoid port conflicts
 TOKEN = "e2e-test-token"
 BASE_URL = f"http://127.0.0.1:{API_PORT}/api/v1"
 
 
 @pytest.fixture(scope="module")
-def gla_server():
-    """Start GLA engine + API server."""
+def gpa_server():
+    """Start GPA engine + API server."""
     import requests  # import here to fail fast if missing
 
     # Ensure artifacts exist
@@ -42,7 +42,7 @@ def gla_server():
     env["PYTHONPATH"] = f"{REPO_ROOT}/src/python:{REPO_ROOT}/bazel-bin/src/bindings"
 
     launcher = subprocess.Popen(
-        [sys.executable, "-m", "gla.launcher",
+        [sys.executable, "-m", "gpa.launcher",
          "--socket", SOCKET_PATH,
          "--shm", SHM_NAME,
          "--port", str(API_PORT),
@@ -84,12 +84,12 @@ def gla_server():
 
 
 @pytest.fixture(scope="module")
-def captured_frames(gla_server):
+def captured_frames(gpa_server):
     """Run mini_gl_app with the shim and wait for capture."""
     env = os.environ.copy()
     env["LD_PRELOAD"] = SHIM_LIB
-    env["GLA_SOCKET_PATH"] = SOCKET_PATH
-    env["GLA_SHM_NAME"] = SHM_NAME
+    env["GPA_SOCKET_PATH"] = SOCKET_PATH
+    env["GPA_SHM_NAME"] = SHM_NAME
 
     # Need DISPLAY for GLX
     if "DISPLAY" not in env:
@@ -194,12 +194,12 @@ class TestFrameCapture:
 class TestAuth:
     """Verify auth middleware works."""
 
-    def test_no_auth_returns_401(self, gla_server):
+    def test_no_auth_returns_401(self, gpa_server):
         import requests
         r = requests.get(f"{BASE_URL}/frames/current/overview")
         assert r.status_code == 401
 
-    def test_wrong_token_returns_401(self, gla_server):
+    def test_wrong_token_returns_401(self, gpa_server):
         import requests
         r = requests.get(
             f"{BASE_URL}/frames/current/overview",

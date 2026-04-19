@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 /* Declared in gl_shim.c — lazy IPC init on first swap */
-void gla_ensure_ipc(void);
+void gpa_ensure_ipc(void);
 
 /* GL constants not pulled from GL headers */
 #define GL_RGBA            0x1908
@@ -20,8 +20,8 @@ void gla_ensure_ipc(void);
 #define GL_VIEWPORT        0x0BA2
 
 /* Globals defined in gl_shim.c */
-extern GlaShadowState   gla_shadow;
-extern GlaRealGlFuncs   gla_real_gl;
+extern GpaShadowState   gpa_shadow;
+extern GpaRealGlFuncs   gpa_real_gl;
 
 /* -------------------------------------------------------------------------
  * Per-frame draw call recording buffer
@@ -31,7 +31,7 @@ extern GlaRealGlFuncs   gla_real_gl;
  * stops recording once the cap is hit.
  * ---------------------------------------------------------------------- */
 
-#define GLA_MAX_DRAW_CALLS_PER_FRAME 1024
+#define GPA_MAX_DRAW_CALLS_PER_FRAME 1024
 
 /* Snapshot of a single draw call taken at the moment the draw is issued. */
 typedef struct {
@@ -60,46 +60,46 @@ typedef struct {
     uint32_t texture_count;
     struct { uint32_t slot; uint32_t texture_id;
              uint32_t width; uint32_t height; uint32_t format; }
-        textures[GLA_MAX_TEXTURE_UNITS];
+        textures[GPA_MAX_TEXTURE_UNITS];
 
     /* Uniform / shader params */
     uint32_t param_count;
-    GlaShadowUniform params[GLA_MAX_UNIFORMS];
+    GpaShadowUniform params[GPA_MAX_UNIFORMS];
 
     /* Debug group path (GL_KHR_debug push/pop group stack) */
     char debug_group_path[512];
 
     /* FBO color attachment texture (for feedback loop detection) */
     uint32_t fbo_color_attachment_tex;
-} GlaDrawCallSnapshot;
+} GpaDrawCallSnapshot;
 
-static GlaDrawCallSnapshot gla_draw_call_buf[GLA_MAX_DRAW_CALLS_PER_FRAME];
-static uint32_t            gla_draw_call_count = 0;
+static GpaDrawCallSnapshot gpa_draw_call_buf[GPA_MAX_DRAW_CALLS_PER_FRAME];
+static uint32_t            gpa_draw_call_count = 0;
 
 
 /* -------------------------------------------------------------------------
  * Public: reset draw call buffer at frame start
  * ---------------------------------------------------------------------- */
 
-void gla_frame_reset_draw_calls(void) {
-    gla_draw_call_count = 0;
+void gpa_frame_reset_draw_calls(void) {
+    gpa_draw_call_count = 0;
 }
 
 /* -------------------------------------------------------------------------
  * Public: snapshot draw call state
  * ---------------------------------------------------------------------- */
 
-void gla_frame_record_draw_call(const GlaShadowState* shadow,
+void gpa_frame_record_draw_call(const GpaShadowState* shadow,
                                  uint32_t primitive,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
                                  uint32_t instance_count) {
-    if (gla_draw_call_count >= GLA_MAX_DRAW_CALLS_PER_FRAME) return;
+    if (gpa_draw_call_count >= GPA_MAX_DRAW_CALLS_PER_FRAME) return;
 
-    GlaDrawCallSnapshot* s = &gla_draw_call_buf[gla_draw_call_count];
+    GpaDrawCallSnapshot* s = &gpa_draw_call_buf[gpa_draw_call_count];
     memset(s, 0, sizeof(*s));
 
-    s->id               = gla_draw_call_count;
+    s->id               = gpa_draw_call_count;
     s->primitive_type   = primitive;
     s->vertex_count     = vertex_count;
     s->index_count      = index_count;
@@ -122,12 +122,12 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
 
     /* Texture bindings — collect non-zero slots, with dimensions */
     s->texture_count = 0;
-    for (uint32_t i = 0; i < GLA_MAX_TEXTURE_UNITS; i++) {
+    for (uint32_t i = 0; i < GPA_MAX_TEXTURE_UNITS; i++) {
         uint32_t tid = shadow->bound_textures_2d[i];
         if (tid != 0) {
             s->textures[s->texture_count].slot       = i;
             s->textures[s->texture_count].texture_id = tid;
-            const GlaTextureInfo* info = gla_shadow_get_texture_info(shadow, tid);
+            const GpaTextureInfo* info = gpa_shadow_get_texture_info(shadow, tid);
             if (info) {
                 s->textures[s->texture_count].width  = info->width;
                 s->textures[s->texture_count].height = info->height;
@@ -142,21 +142,21 @@ void gla_frame_record_draw_call(const GlaShadowState* shadow,
     }
 
     /* Uniform params */
-    s->param_count = shadow->uniform_count < GLA_MAX_UNIFORMS
+    s->param_count = shadow->uniform_count < GPA_MAX_UNIFORMS
                    ? shadow->uniform_count
-                   : GLA_MAX_UNIFORMS;
+                   : GPA_MAX_UNIFORMS;
     memcpy(s->params, shadow->uniforms,
-           s->param_count * sizeof(GlaShadowUniform));
+           s->param_count * sizeof(GpaShadowUniform));
 
-    gla_shadow_get_debug_group_path(shadow, s->debug_group_path, sizeof(s->debug_group_path));
+    gpa_shadow_get_debug_group_path(shadow, s->debug_group_path, sizeof(s->debug_group_path));
 
     /* FBO color attachment texture — look up the current bound FBO's attachment */
     {
-        const GlaFboInfo* fbo = gla_shadow_get_fbo_info(shadow, shadow->bound_fbo);
+        const GpaFboInfo* fbo = gpa_shadow_get_fbo_info(shadow, shadow->bound_fbo);
         s->fbo_color_attachment_tex = fbo ? fbo->color_attachment_tex : 0;
     }
 
-    gla_draw_call_count++;
+    gpa_draw_call_count++;
 }
 
 /* -------------------------------------------------------------------------
@@ -204,11 +204,11 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
 
     /* draw_call_count field */
     if (p + 4 > end) return 0;
-    uint32_t n = gla_draw_call_count;
+    uint32_t n = gpa_draw_call_count;
     memcpy(p, &n, 4); p += 4;
 
     for (uint32_t i = 0; i < n; i++) {
-        const GlaDrawCallSnapshot* s = &gla_draw_call_buf[i];
+        const GpaDrawCallSnapshot* s = &gpa_draw_call_buf[i];
 
         /* Fixed-size header: 6*uint32 + 4*int32 + 4*int32 + 4 bytes + 1*uint32
          *                   + 4 bytes + 2*uint32 + 4 bytes + 2*uint32
@@ -266,7 +266,7 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         if (p + 4 + (uint64_t)pc * 76 > end) break;
         memcpy(p, &pc, 4); p += 4;
         for (uint32_t j = 0; j < pc; j++) {
-            const GlaShadowUniform* u = &s->params[j];
+            const GpaShadowUniform* u = &s->params[j];
             memcpy(p, &u->location,  4); p += 4;
             memcpy(p, &u->type,      4); p += 4;
             memcpy(p, &u->data_size, 4); p += 4;
@@ -300,13 +300,13 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
  * Returns bytes written.
  * ---------------------------------------------------------------------- */
 
-static size_t serialise_clear_records(const GlaShadowState* shadow,
+static size_t serialise_clear_records(const GpaShadowState* shadow,
                                        uint8_t* buf, size_t buf_max) {
     uint8_t* p   = buf;
     uint8_t* end = buf + buf_max;
 
     uint32_t n = shadow->clear_count;
-    if (n > GLA_MAX_CLEARS_PER_FRAME) n = GLA_MAX_CLEARS_PER_FRAME;
+    if (n > GPA_MAX_CLEARS_PER_FRAME) n = GPA_MAX_CLEARS_PER_FRAME;
 
     /* Need 4 (count) + n * 8 bytes */
     if (p + 4 + (uint64_t)n * 8 > end) {
@@ -317,7 +317,7 @@ static size_t serialise_clear_records(const GlaShadowState* shadow,
 
     memcpy(p, &n, 4); p += 4;
     for (uint32_t i = 0; i < n; i++) {
-        const GlaClearRecord* r = &shadow->clear_records[i];
+        const GpaClearRecord* r = &shadow->clear_records[i];
         memcpy(p, &r->mask,             4); p += 4;
         memcpy(p, &r->draw_call_before, 4); p += 4;
     }
@@ -328,25 +328,25 @@ static size_t serialise_clear_records(const GlaShadowState* shadow,
  * Public: on swap — capture framebuffer + draw calls into SHM slot
  * ---------------------------------------------------------------------- */
 
-void gla_frame_on_swap(void) {
+void gpa_frame_on_swap(void) {
     /* Lazy IPC init — only the process that actually renders will connect */
-    gla_ensure_ipc();
-    if (!gla_ipc_is_connected()) return;
+    gpa_ensure_ipc();
+    if (!gpa_ipc_is_connected()) return;
 
     uint32_t slot_index;
-    void* slot = gla_ipc_claim_slot(&slot_index);
+    void* slot = gpa_ipc_claim_slot(&slot_index);
     if (!slot) return;   /* ring buffer full — skip this frame */
 
     /* Query current viewport dimensions */
     GLint viewport[4];
-    gla_real_gl.glGetIntegerv(GL_VIEWPORT, viewport);
+    gpa_real_gl.glGetIntegerv(GL_VIEWPORT, viewport);
     int width  = (int)viewport[2];
     int height = (int)viewport[3];
 
     /* Guard against degenerate viewports */
     if (width <= 0 || height <= 0) {
-        gla_ipc_commit_slot(slot_index, 0);
-        gla_ipc_send_frame_ready(gla_shadow.frame_number, slot_index);
+        gpa_ipc_commit_slot(slot_index, 0);
+        gpa_ipc_send_frame_ready(gpa_shadow.frame_number, slot_index);
         return;
     }
 
@@ -365,11 +365,11 @@ void gla_frame_on_swap(void) {
     ptr += 8;
 
     /* Color buffer */
-    gla_real_gl.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    gpa_real_gl.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
     ptr += (size_t)width * (size_t)height * 4u;
 
     /* Depth buffer */
-    gla_real_gl.glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, ptr);
+    gpa_real_gl.glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, ptr);
     ptr += (size_t)width * (size_t)height * 4u;
 
     /* Draw call metadata — serialise into remaining slot space */
@@ -389,21 +389,21 @@ void gla_frame_on_swap(void) {
         ptr += written;
 
         /* Clear records — append immediately after draw calls */
-        const size_t kClearBudget = 4u + (size_t)GLA_MAX_CLEARS_PER_FRAME * 8u;
+        const size_t kClearBudget = 4u + (size_t)GPA_MAX_CLEARS_PER_FRAME * 8u;
         size_t remaining = (kDrawCallBudget > written) ? (kDrawCallBudget - written) : 0;
         if (remaining >= kClearBudget) {
-            size_t cwritten = serialise_clear_records(&gla_shadow, ptr, remaining);
+            size_t cwritten = serialise_clear_records(&gpa_shadow, ptr, remaining);
             ptr += cwritten;
         }
     }
 
     uint64_t total_size = (uint64_t)((uintptr_t)ptr - (uintptr_t)slot);
 
-    gla_ipc_commit_slot(slot_index, total_size);
-    gla_ipc_send_frame_ready(gla_shadow.frame_number, slot_index);
+    gpa_ipc_commit_slot(slot_index, total_size);
+    gpa_ipc_send_frame_ready(gpa_shadow.frame_number, slot_index);
 
     /* Check for pause request from engine (non-blocking) */
-    if (gla_ipc_should_pause()) {
-        gla_ipc_wait_resume();
+    if (gpa_ipc_should_pause()) {
+        gpa_ipc_wait_resume();
     }
 }

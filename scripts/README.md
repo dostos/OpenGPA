@@ -11,5 +11,5 @@ Helper scripts for OpenGPA development, CI, and eval workflows.
 - `run-eval-claude-code.sh` — runs the eval using Claude Code as the agent
 
 ## See Also
-- `src/python/gla/eval/README.md` — eval harness invoked by these scripts
+- `src/python/gpa/eval/README.md` — eval harness invoked by these scripts
 - `tests/eval/README.md` — scenarios captured and evaluated

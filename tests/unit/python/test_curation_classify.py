@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
-from gla.eval.curation.classify import classify_observed_helps, ObservedClassification, attribute_failure_mode, FailureModeResult
-from gla.eval.curation.llm_client import LLMResponse
-from gla.eval.metrics import EvalResult
+from gpa.eval.curation.classify import classify_observed_helps, ObservedClassification, attribute_failure_mode, FailureModeResult
+from gpa.eval.curation.llm_client import LLMResponse
+from gpa.eval.metrics import EvalResult
 
 def _mk(mode, correct, total_tokens):
     return EvalResult(scenario_id="r1", mode=mode, correct_diagnosis=correct,
@@ -11,11 +11,11 @@ def _mk(mode, correct, total_tokens):
                       tool_calls=0, num_turns=0, time_seconds=0.0,
                       model="x", timestamp=datetime.now(timezone.utc).isoformat())
 
-def test_rule_1_gla_correct_code_wrong():
+def test_rule_1_gpa_correct_code_wrong():
     r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", False, 1000))
     assert r.verdict == "yes"
 
-def test_rule_2_gla_wrong_code_correct():
+def test_rule_2_gpa_wrong_code_correct():
     r = classify_observed_helps(_mk("with_gla", False, 1000), _mk("code_only", True, 1000))
     assert r.verdict == "no"
 
@@ -55,12 +55,12 @@ def test_attribute_failure_mode_parses_json():
     llm.complete.return_value = _fake_response(
         '```json\n{"category":"shader_compile_not_exposed",'
         '"suggested_new_category":null,'
-        '"details":"GLA does not expose compile logs per draw call."}\n```'
+        '"details":"GPA does not expose compile logs per draw call."}\n```'
     )
     r = attribute_failure_mode(
         llm_client=llm,
         scenario_md="# scenario md body...",
-        with_gla_diagnosis="wrong",
+        with_gpa_diagnosis="wrong",
         code_only_diagnosis="right",
         ground_truth="actual root cause...",
     )

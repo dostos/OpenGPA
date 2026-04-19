@@ -1,10 +1,10 @@
 # Vulkan Example
 
-Minimal Vulkan test application for OpenGPA. Used to validate that `VK_LAYER_GLA_capture` intercepts correctly and that frame data reaches the core engine without loss.
+Minimal Vulkan test application for OpenGPA. Used to validate that `VK_LAYER_GPA_capture` intercepts correctly and that frame data reaches the core engine without loss.
 
 ## Usage
 ```sh
-VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture ./vk_triangle
+VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture ./vk_triangle
 ```
 
 ## What It Tests

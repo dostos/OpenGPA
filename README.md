@@ -16,17 +16,17 @@ bazel build //...
 pip install -e ".[dev]"
 
 # Start OpenGPA engine (native capture mode)
-python -m gla.launcher --port 18080
+python -m gpa.launcher --port 18080
 # Prints:
-#   GLA_SOCKET_PATH=/tmp/gla.sock
-#   GLA_SHM_NAME=/gla_capture
-#   GLA_AUTH_TOKEN=<token>
+#   GPA_SOCKET_PATH=/tmp/gpa.sock
+#   GPA_SHM_NAME=/gpa_capture
+#   GPA_AUTH_TOKEN=<token>
 
 # Run your OpenGL app with capture
-LD_PRELOAD=bazel-bin/src/shims/gl/libgla_gl.so \
-    GLA_SOCKET_PATH=/tmp/gla.sock \
-    GLA_SHM_NAME=/gla_capture \
-    GLA_AUTH_TOKEN=<token> \
+LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
+    GPA_SOCKET_PATH=/tmp/gpa.sock \
+    GPA_SHM_NAME=/gpa_capture \
+    GPA_AUTH_TOKEN=<token> \
     ./your_gl_app
 
 # Query via REST
@@ -38,7 +38,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 To load a RenderDoc capture file instead of live capture:
 
 ```bash
-python -m gla.launcher --backend renderdoc --capture-file trace.rdc --port 18080
+python -m gpa.launcher --backend renderdoc --capture-file trace.rdc --port 18080
 ```
 
 ---
@@ -94,8 +94,8 @@ pybind11 bindings to the C++ query engine.
 | **RenderDoc** | Offline analysis of `.rdc` capture files | `--backend renderdoc --capture-file trace.rdc` |
 
 The native backend supports:
-- **OpenGL 3.3+** via `LD_PRELOAD` shim (`libgla_gl.so`)
-- **Vulkan 1.0+** via implicit layer (`VK_LAYER_GLA_capture`)
+- **OpenGL 3.3+** via `LD_PRELOAD` shim (`libgpa_gl.so`)
+- **Vulkan 1.0+** via implicit layer (`VK_LAYER_GPA_capture`)
 - **WebGL 1.0/2.0** via Chromium browser extension + Node.js bridge
 
 The RenderDoc backend provides full-fidelity offline analysis when live capture
@@ -146,7 +146,7 @@ POST /api/v1/control/step?count=N
 GET  /api/v1/control/status
 ```
 
-Full response schema and examples: [`docs/superpowers/specs/2026-04-16-gla-design.md`](docs/superpowers/specs/2026-04-16-gla-design.md), Section 3.6.
+Full response schema and examples: [`docs/superpowers/specs/2026-04-16-gpa-design.md`](docs/superpowers/specs/2026-04-16-gpa-design.md), Section 3.6.
 
 ### MCP Tools
 
@@ -166,17 +166,17 @@ Six tools optimized for LLM interaction:
 ## MCP Integration (Claude Code)
 
 Add to your project's `.mcp.json` to use OpenGPA tools directly from Claude Code.
-Start OpenGPA first, then note the printed `GLA_AUTH_TOKEN`.
+Start OpenGPA first, then note the printed `GPA_AUTH_TOKEN`.
 
 ```json
 {
   "mcpServers": {
-    "gla": {
+    "gpa": {
       "command": "python",
-      "args": ["-m", "gla.mcp.server"],
+      "args": ["-m", "gpa.mcp.server"],
       "env": {
-        "GLA_BASE_URL": "http://127.0.0.1:18080/api/v1",
-        "GLA_TOKEN": "<paste GLA_AUTH_TOKEN here>"
+        "GPA_BASE_URL": "http://127.0.0.1:18080/api/v1",
+        "GPA_TOKEN": "<paste GPA_AUTH_TOKEN here>"
       }
     }
   }
@@ -215,17 +215,17 @@ with the bug, expected output, ground-truth diagnosis, and a difficulty rating.
 
 ```bash
 # Run all Category E scenarios
-python -m gla.eval.cli run --category E
+python -m gpa.eval.cli run --category E
 
 # Run a single scenario
-python -m gla.eval.cli run --scenario e1_state_leak
+python -m gpa.eval.cli run --scenario e1_state_leak
 
 # Print metrics (token cost, tool calls, accuracy — with vs. without OpenGPA)
-python -m gla.eval.cli report
+python -m gpa.eval.cli report
 ```
 
 See the full scenario descriptions and token-efficiency analysis in
-[`docs/superpowers/specs/2026-04-16-gla-design.md`](docs/superpowers/specs/2026-04-16-gla-design.md), Section 9.
+[`docs/superpowers/specs/2026-04-16-gpa-design.md`](docs/superpowers/specs/2026-04-16-gpa-design.md), Section 9.
 
 ---
 
@@ -239,13 +239,13 @@ See the full scenario descriptions and token-efficiency analysis in
 bazel build //...
 
 # Build only the OpenGL shim
-bazel build //src/shims/gl:libgla_gl
+bazel build //src/shims/gl:libgpa_gl
 
 # Build only the C++ core
-bazel build //src/core:gla_engine
+bazel build //src/core:gpa_engine
 
 # Build Python bindings
-bazel build //src/bindings:_gla_core
+bazel build //src/bindings:_gpa_core
 ```
 
 **C++ dependencies** (fetched by Bazel via bzlmod):
@@ -310,7 +310,7 @@ bazel test //tests/integration/...
 | M2 | Query engine + REST API (normalizer, 22+ endpoints, pybind11, FastAPI) | Done |
 | M3 | Semantic reconstruction | Removed (replaced by Tier 3 metadata — no heuristics) |
 | M4 | MCP server (10 tools over stdio JSON-RPC) | Done |
-| M5 | Vulkan implicit layer (dispatch table chaining, VK_LAYER_GLA_capture) | Done (scaffolded, not E2E tested) |
+| M5 | Vulkan implicit layer (dispatch table chaining, VK_LAYER_GPA_capture) | Done (scaffolded, not E2E tested) |
 | M6 | WebGL browser extension + Node.js bridge | Done (scaffolded, not E2E tested) |
 | M7 | Frame comparison (draw call + pixel diff at 3 depth levels) | Done |
 

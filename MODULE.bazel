@@ -1,5 +1,5 @@
 module(
-    name = "gla",
+    name = "gpa",
     version = "0.0.1",
 )
 

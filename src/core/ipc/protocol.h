@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace gla::ipc {
+namespace gpa::ipc {
 
 // Current protocol version
 static constexpr uint32_t PROTOCOL_VERSION = 1;
@@ -37,4 +37,4 @@ struct ControlPayload {
     uint32_t step_frames;  // 0 = none
 } __attribute__((packed));
 
-} // namespace gla::ipc
+} // namespace gpa::ipc

@@ -25,14 +25,14 @@
 
 /* RingHeader — placed at byte 0 of the shm segment */
 typedef struct {
-    uint64_t magic;       /* GLA_SHM_MAGIC = 0x474C415F53484D00 */
+    uint64_t magic;       /* GPA_SHM_MAGIC = 0x474C415F53484D00 */
     uint32_t num_slots;
     uint32_t _pad;
     uint64_t slot_size;   /* usable data bytes per slot */
     uint64_t total_size;  /* total mmap size (informational) */
 } RingHeader;
 
-#define GLA_SHM_MAGIC 0x474C415F53484D00ULL
+#define GPA_SHM_MAGIC 0x474C415F53484D00ULL
 
 /* SlotHeader — 64 bytes, cache-line aligned, placed before each data region.
  * Layout (matches C++ definition):
@@ -195,9 +195,9 @@ static int recv_msg(void* buf, size_t buf_size, int flags) {
  * Public API
  * -------------------------------------------------------------------------- */
 
-int gla_ipc_connect(void) {
-    const char* socket_path = getenv("GLA_SOCKET_PATH");
-    const char* shm_name    = getenv("GLA_SHM_NAME");
+int gpa_ipc_connect(void) {
+    const char* socket_path = getenv("GPA_SOCKET_PATH");
+    const char* shm_name    = getenv("GPA_SHM_NAME");
 
     if (!socket_path || !shm_name) {
         /* Passthrough mode — engine not configured */
@@ -223,7 +223,7 @@ int gla_ipc_connect(void) {
     memcpy(&hdr, hdr_map, sizeof(hdr));
     munmap(hdr_map, sizeof(RingHeader));
 
-    if (hdr.magic != GLA_SHM_MAGIC) {
+    if (hdr.magic != GPA_SHM_MAGIC) {
         fprintf(stderr, "[OpenGPA] shm magic mismatch (got 0x%llx)\n",
                 (unsigned long long)hdr.magic);
         close(shm_fd);
@@ -298,12 +298,12 @@ int gla_ipc_connect(void) {
     return 0;
 }
 
-int gla_ipc_is_connected(void) {
+int gpa_ipc_is_connected(void) {
     return g_sock_fd >= 0 && g_shm_base != NULL;
 }
 
-void* gla_ipc_claim_slot(uint32_t* slot_index) {
-    if (!gla_ipc_is_connected()) return NULL;
+void* gpa_ipc_claim_slot(uint32_t* slot_index) {
+    if (!gpa_ipc_is_connected()) return NULL;
 
     /* Round-robin scan for a FREE slot; CAS it to WRITING */
     for (uint32_t i = 0; i < g_num_slots; i++) {
@@ -320,15 +320,15 @@ void* gla_ipc_claim_slot(uint32_t* slot_index) {
     return NULL;   /* ring buffer full */
 }
 
-void gla_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
-    if (!gla_ipc_is_connected()) return;
+void gpa_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
+    if (!gpa_ipc_is_connected()) return;
     SlotHeader* hdr = slot_header(slot_index);
     hdr->data_size = size;
     atomic_store(&hdr->state, SLOT_READY);
 }
 
-void gla_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
-    if (!gla_ipc_is_connected()) return;
+void gpa_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
+    if (!gpa_ipc_is_connected()) return;
 
     FrameReadyPayload fr;
     /* FrameReadyPayload fields are sent as native endian to match the C++
@@ -338,12 +338,12 @@ void gla_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
 
     if (send_msg(MSG_FRAME_READY, &fr, sizeof(fr)) != 0) {
         fprintf(stderr, "[OpenGPA] send FRAME_READY failed, disconnecting\n");
-        gla_ipc_disconnect();
+        gpa_ipc_disconnect();
     }
 }
 
-int gla_ipc_should_pause(void) {
-    if (!gla_ipc_is_connected()) return 0;
+int gpa_ipc_should_pause(void) {
+    if (!gpa_ipc_is_connected()) return 0;
 
     ControlPayload ctrl;
     int rtype = recv_msg(&ctrl, sizeof(ctrl), MSG_DONTWAIT);
@@ -353,8 +353,8 @@ int gla_ipc_should_pause(void) {
     return 0;
 }
 
-void gla_ipc_wait_resume(void) {
-    if (!gla_ipc_is_connected()) return;
+void gpa_ipc_wait_resume(void) {
+    if (!gpa_ipc_is_connected()) return;
 
     ControlPayload ctrl;
     for (;;) {
@@ -369,7 +369,7 @@ void gla_ipc_wait_resume(void) {
     }
 }
 
-void gla_ipc_disconnect(void) {
+void gpa_ipc_disconnect(void) {
     if (g_sock_fd >= 0) {
         close(g_sock_fd);
         g_sock_fd = -1;

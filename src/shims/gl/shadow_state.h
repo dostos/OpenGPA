@@ -1,28 +1,28 @@
-#ifndef GLA_SHADOW_STATE_H
-#define GLA_SHADOW_STATE_H
+#ifndef GPA_SHADOW_STATE_H
+#define GPA_SHADOW_STATE_H
 
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
 
-#define GLA_MAX_TEXTURE_UNITS 32
-#define GLA_MAX_UNIFORMS 256
-#define GLA_MAX_VERTEX_ATTRIBS 16
-#define GLA_MAX_TEXTURES 4096
-#define GLA_MAX_DEBUG_GROUP_DEPTH 32
-#define GLA_MAX_DEBUG_GROUP_NAME 128
-#define GLA_MAX_CLEARS_PER_FRAME 16
-#define GLA_MAX_FBOS 64
+#define GPA_MAX_TEXTURE_UNITS 32
+#define GPA_MAX_UNIFORMS 256
+#define GPA_MAX_VERTEX_ATTRIBS 16
+#define GPA_MAX_TEXTURES 4096
+#define GPA_MAX_DEBUG_GROUP_DEPTH 32
+#define GPA_MAX_DEBUG_GROUP_NAME 128
+#define GPA_MAX_CLEARS_PER_FRAME 16
+#define GPA_MAX_FBOS 64
 
 typedef struct {
-    char name[GLA_MAX_DEBUG_GROUP_NAME];
+    char name[GPA_MAX_DEBUG_GROUP_NAME];
     uint32_t id;
-} GlaDebugGroupEntry;
+} GpaDebugGroupEntry;
 
 typedef struct {
     uint32_t mask;             /* GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT */
     uint32_t draw_call_before; /* how many draw calls happened before this clear */
-} GlaClearRecord;
+} GpaClearRecord;
 
 /* GL enum constants (no GL headers needed) */
 #define GL_TEXTURE0             0x84C0
@@ -55,33 +55,33 @@ typedef struct {
     uint32_t data_size;  /* actual size used */
     char     name[64];   /* uniform name (if known) */
     bool     active;
-} GlaShadowUniform;
+} GpaShadowUniform;
 
 /* Per-texture dimension/format info, populated by glTexImage2D intercept */
 typedef struct {
     uint32_t width;
     uint32_t height;
     uint32_t internal_format;
-} GlaTextureInfo;
+} GpaTextureInfo;
 
 /* Per-FBO attachment tracking */
 typedef struct {
     uint32_t fbo_id;
     uint32_t color_attachment_tex;   /* texture ID attached as COLOR_ATTACHMENT0 */
     uint32_t depth_attachment_tex;   /* texture ID attached as DEPTH_ATTACHMENT */
-} GlaFboInfo;
+} GpaFboInfo;
 
 typedef struct {
     /* Texture bindings */
     uint32_t active_texture_unit;                       /* 0-based index */
-    uint32_t bound_textures_2d[GLA_MAX_TEXTURE_UNITS];
+    uint32_t bound_textures_2d[GPA_MAX_TEXTURE_UNITS];
 
     /* Per-texture metadata (indexed by texture name/id) */
-    GlaTextureInfo texture_info[GLA_MAX_TEXTURES];
+    GpaTextureInfo texture_info[GPA_MAX_TEXTURES];
 
     /* Shader program */
     uint32_t        current_program;
-    GlaShadowUniform uniforms[GLA_MAX_UNIFORMS];
+    GpaShadowUniform uniforms[GPA_MAX_UNIFORMS];
     uint32_t        uniform_count;
 
     /* Pipeline state */
@@ -105,7 +105,7 @@ typedef struct {
     uint32_t bound_fbo;             /* GL_FRAMEBUFFER */
 
     /* FBO attachment tracking */
-    GlaFboInfo fbo_info[GLA_MAX_FBOS];
+    GpaFboInfo fbo_info[GPA_MAX_FBOS];
     uint32_t fbo_count;
 
     /* Frame tracking */
@@ -113,68 +113,68 @@ typedef struct {
     uint32_t draw_call_count;       /* resets each frame */
 
     /* Per-frame clear records */
-    GlaClearRecord clear_records[GLA_MAX_CLEARS_PER_FRAME];
+    GpaClearRecord clear_records[GPA_MAX_CLEARS_PER_FRAME];
     uint32_t clear_count;           /* resets each frame */
 
     /* Debug group stack (GL_KHR_debug) */
-    GlaDebugGroupEntry debug_group_stack[GLA_MAX_DEBUG_GROUP_DEPTH];
+    GpaDebugGroupEntry debug_group_stack[GPA_MAX_DEBUG_GROUP_DEPTH];
     uint32_t debug_group_depth;
-} GlaShadowState;
+} GpaShadowState;
 
 /* Initialize to GL defaults */
-void gla_shadow_init(GlaShadowState *state);
+void gpa_shadow_init(GpaShadowState *state);
 
 /* Texture */
-void gla_shadow_active_texture(GlaShadowState *state, uint32_t texture_unit); /* GL_TEXTURE0+n */
-void gla_shadow_bind_texture_2d(GlaShadowState *state, uint32_t texture_id);
-void gla_shadow_tex_image_2d(GlaShadowState *state, uint32_t texture_id,
+void gpa_shadow_active_texture(GpaShadowState *state, uint32_t texture_unit); /* GL_TEXTURE0+n */
+void gpa_shadow_bind_texture_2d(GpaShadowState *state, uint32_t texture_id);
+void gpa_shadow_tex_image_2d(GpaShadowState *state, uint32_t texture_id,
                              uint32_t width, uint32_t height, uint32_t internal_format);
-const GlaTextureInfo* gla_shadow_get_texture_info(const GlaShadowState *state, uint32_t texture_id);
+const GpaTextureInfo* gpa_shadow_get_texture_info(const GpaShadowState *state, uint32_t texture_id);
 
 /* Shader */
-void gla_shadow_use_program(GlaShadowState *state, uint32_t program_id);
+void gpa_shadow_use_program(GpaShadowState *state, uint32_t program_id);
 
 /* Uniforms */
-void gla_shadow_set_uniform_1f(GlaShadowState *state, int32_t location, float v);
-void gla_shadow_set_uniform_3f(GlaShadowState *state, int32_t location, float x, float y, float z);
-void gla_shadow_set_uniform_4f(GlaShadowState *state, int32_t location, float x, float y, float z, float w);
-void gla_shadow_set_uniform_1i(GlaShadowState *state, int32_t location, int32_t v);
-void gla_shadow_set_uniform_mat4(GlaShadowState *state, int32_t location, const float *data);
-void gla_shadow_set_uniform_mat3(GlaShadowState *state, int32_t location, const float *data);
+void gpa_shadow_set_uniform_1f(GpaShadowState *state, int32_t location, float v);
+void gpa_shadow_set_uniform_3f(GpaShadowState *state, int32_t location, float x, float y, float z);
+void gpa_shadow_set_uniform_4f(GpaShadowState *state, int32_t location, float x, float y, float z, float w);
+void gpa_shadow_set_uniform_1i(GpaShadowState *state, int32_t location, int32_t v);
+void gpa_shadow_set_uniform_mat4(GpaShadowState *state, int32_t location, const float *data);
+void gpa_shadow_set_uniform_mat3(GpaShadowState *state, int32_t location, const float *data);
 
 /* Pipeline state */
-void gla_shadow_enable(GlaShadowState *state, uint32_t cap);
-void gla_shadow_disable(GlaShadowState *state, uint32_t cap);
-void gla_shadow_depth_func(GlaShadowState *state, uint32_t func);
-void gla_shadow_depth_mask(GlaShadowState *state, bool flag);
-void gla_shadow_blend_func(GlaShadowState *state, uint32_t src, uint32_t dst);
-void gla_shadow_cull_face(GlaShadowState *state, uint32_t mode);
-void gla_shadow_front_face(GlaShadowState *state, uint32_t mode);
-void gla_shadow_viewport(GlaShadowState *state, int32_t x, int32_t y, int32_t w, int32_t h);
-void gla_shadow_scissor(GlaShadowState *state, int32_t x, int32_t y, int32_t w, int32_t h);
+void gpa_shadow_enable(GpaShadowState *state, uint32_t cap);
+void gpa_shadow_disable(GpaShadowState *state, uint32_t cap);
+void gpa_shadow_depth_func(GpaShadowState *state, uint32_t func);
+void gpa_shadow_depth_mask(GpaShadowState *state, bool flag);
+void gpa_shadow_blend_func(GpaShadowState *state, uint32_t src, uint32_t dst);
+void gpa_shadow_cull_face(GpaShadowState *state, uint32_t mode);
+void gpa_shadow_front_face(GpaShadowState *state, uint32_t mode);
+void gpa_shadow_viewport(GpaShadowState *state, int32_t x, int32_t y, int32_t w, int32_t h);
+void gpa_shadow_scissor(GpaShadowState *state, int32_t x, int32_t y, int32_t w, int32_t h);
 
 /* Buffer bindings */
-void gla_shadow_bind_vao(GlaShadowState *state, uint32_t vao);
-void gla_shadow_bind_buffer(GlaShadowState *state, uint32_t target, uint32_t buffer);
-void gla_shadow_bind_framebuffer(GlaShadowState *state, uint32_t target, uint32_t fbo);
+void gpa_shadow_bind_vao(GpaShadowState *state, uint32_t vao);
+void gpa_shadow_bind_buffer(GpaShadowState *state, uint32_t target, uint32_t buffer);
+void gpa_shadow_bind_framebuffer(GpaShadowState *state, uint32_t target, uint32_t fbo);
 
 /* FBO attachment tracking */
-void gla_shadow_framebuffer_texture_2d(GlaShadowState *state, uint32_t target,
+void gpa_shadow_framebuffer_texture_2d(GpaShadowState *state, uint32_t target,
                                         uint32_t attachment, uint32_t texture);
-const GlaFboInfo* gla_shadow_get_fbo_info(const GlaShadowState *state, uint32_t fbo_id);
+const GpaFboInfo* gpa_shadow_get_fbo_info(const GpaShadowState *state, uint32_t fbo_id);
 
 /* Draw call tracking */
-void gla_shadow_record_draw(GlaShadowState *state);
+void gpa_shadow_record_draw(GpaShadowState *state);
 
 /* Clear tracking */
-void gla_shadow_record_clear(GlaShadowState *state, uint32_t mask);
+void gpa_shadow_record_clear(GpaShadowState *state, uint32_t mask);
 
 /* Frame boundary */
-void gla_shadow_new_frame(GlaShadowState *state);
+void gpa_shadow_new_frame(GpaShadowState *state);
 
 /* Debug groups (GL_KHR_debug) */
-void gla_shadow_push_debug_group(GlaShadowState *state, uint32_t id, const char *name);
-void gla_shadow_pop_debug_group(GlaShadowState *state);
-int  gla_shadow_get_debug_group_path(const GlaShadowState *state, char *buf, size_t buf_size);
+void gpa_shadow_push_debug_group(GpaShadowState *state, uint32_t id, const char *name);
+void gpa_shadow_pop_debug_group(GpaShadowState *state);
+int  gpa_shadow_get_debug_group_path(const GpaShadowState *state, char *buf, size_t buf_size);
 
-#endif /* GLA_SHADOW_STATE_H */
+#endif /* GPA_SHADOW_STATE_H */

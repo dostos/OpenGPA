@@ -7,56 +7,56 @@
 #include "frame_capture.h"
 
 /* Declared in gl_shim.c */
-extern GlaShadowState gla_shadow;
-void gla_init(void);
+extern GpaShadowState gpa_shadow;
+void gpa_init(void);
 
 /* --------------------------------------------------------------------------
  * Dispatch table initialization
  * -------------------------------------------------------------------------- */
 
-void gla_wrappers_init(void) {
-    gla_real_gl.glDrawArrays            = dlsym(RTLD_NEXT, "glDrawArrays");
-    gla_real_gl.glDrawElements          = dlsym(RTLD_NEXT, "glDrawElements");
-    gla_real_gl.glDrawArraysInstanced   = dlsym(RTLD_NEXT, "glDrawArraysInstanced");
-    gla_real_gl.glDrawElementsInstanced = dlsym(RTLD_NEXT, "glDrawElementsInstanced");
+void gpa_wrappers_init(void) {
+    gpa_real_gl.glDrawArrays            = dlsym(RTLD_NEXT, "glDrawArrays");
+    gpa_real_gl.glDrawElements          = dlsym(RTLD_NEXT, "glDrawElements");
+    gpa_real_gl.glDrawArraysInstanced   = dlsym(RTLD_NEXT, "glDrawArraysInstanced");
+    gpa_real_gl.glDrawElementsInstanced = dlsym(RTLD_NEXT, "glDrawElementsInstanced");
 
-    gla_real_gl.glUseProgram        = dlsym(RTLD_NEXT, "glUseProgram");
-    gla_real_gl.glUniform1f         = dlsym(RTLD_NEXT, "glUniform1f");
-    gla_real_gl.glUniform3f         = dlsym(RTLD_NEXT, "glUniform3f");
-    gla_real_gl.glUniform4f         = dlsym(RTLD_NEXT, "glUniform4f");
-    gla_real_gl.glUniform1i         = dlsym(RTLD_NEXT, "glUniform1i");
-    gla_real_gl.glUniformMatrix4fv  = dlsym(RTLD_NEXT, "glUniformMatrix4fv");
-    gla_real_gl.glUniformMatrix3fv  = dlsym(RTLD_NEXT, "glUniformMatrix3fv");
+    gpa_real_gl.glUseProgram        = dlsym(RTLD_NEXT, "glUseProgram");
+    gpa_real_gl.glUniform1f         = dlsym(RTLD_NEXT, "glUniform1f");
+    gpa_real_gl.glUniform3f         = dlsym(RTLD_NEXT, "glUniform3f");
+    gpa_real_gl.glUniform4f         = dlsym(RTLD_NEXT, "glUniform4f");
+    gpa_real_gl.glUniform1i         = dlsym(RTLD_NEXT, "glUniform1i");
+    gpa_real_gl.glUniformMatrix4fv  = dlsym(RTLD_NEXT, "glUniformMatrix4fv");
+    gpa_real_gl.glUniformMatrix3fv  = dlsym(RTLD_NEXT, "glUniformMatrix3fv");
 
-    gla_real_gl.glActiveTexture = dlsym(RTLD_NEXT, "glActiveTexture");
-    gla_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
-    gla_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
+    gpa_real_gl.glActiveTexture = dlsym(RTLD_NEXT, "glActiveTexture");
+    gpa_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
+    gpa_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
 
-    gla_real_gl.glClear       = dlsym(RTLD_NEXT, "glClear");
+    gpa_real_gl.glClear       = dlsym(RTLD_NEXT, "glClear");
 
-    gla_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
-    gla_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
-    gla_real_gl.glDepthFunc   = dlsym(RTLD_NEXT, "glDepthFunc");
-    gla_real_gl.glDepthMask   = dlsym(RTLD_NEXT, "glDepthMask");
-    gla_real_gl.glBlendFunc   = dlsym(RTLD_NEXT, "glBlendFunc");
-    gla_real_gl.glCullFace    = dlsym(RTLD_NEXT, "glCullFace");
-    gla_real_gl.glFrontFace   = dlsym(RTLD_NEXT, "glFrontFace");
-    gla_real_gl.glViewport    = dlsym(RTLD_NEXT, "glViewport");
-    gla_real_gl.glScissor     = dlsym(RTLD_NEXT, "glScissor");
+    gpa_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
+    gpa_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
+    gpa_real_gl.glDepthFunc   = dlsym(RTLD_NEXT, "glDepthFunc");
+    gpa_real_gl.glDepthMask   = dlsym(RTLD_NEXT, "glDepthMask");
+    gpa_real_gl.glBlendFunc   = dlsym(RTLD_NEXT, "glBlendFunc");
+    gpa_real_gl.glCullFace    = dlsym(RTLD_NEXT, "glCullFace");
+    gpa_real_gl.glFrontFace   = dlsym(RTLD_NEXT, "glFrontFace");
+    gpa_real_gl.glViewport    = dlsym(RTLD_NEXT, "glViewport");
+    gpa_real_gl.glScissor     = dlsym(RTLD_NEXT, "glScissor");
 
-    gla_real_gl.glBindVertexArray      = dlsym(RTLD_NEXT, "glBindVertexArray");
-    gla_real_gl.glBindBuffer           = dlsym(RTLD_NEXT, "glBindBuffer");
-    gla_real_gl.glBindFramebuffer      = dlsym(RTLD_NEXT, "glBindFramebuffer");
-    gla_real_gl.glFramebufferTexture2D = dlsym(RTLD_NEXT, "glFramebufferTexture2D");
+    gpa_real_gl.glBindVertexArray      = dlsym(RTLD_NEXT, "glBindVertexArray");
+    gpa_real_gl.glBindBuffer           = dlsym(RTLD_NEXT, "glBindBuffer");
+    gpa_real_gl.glBindFramebuffer      = dlsym(RTLD_NEXT, "glBindFramebuffer");
+    gpa_real_gl.glFramebufferTexture2D = dlsym(RTLD_NEXT, "glFramebufferTexture2D");
 
-    gla_real_gl.glReadPixels   = dlsym(RTLD_NEXT, "glReadPixels");
-    gla_real_gl.glGetIntegerv  = dlsym(RTLD_NEXT, "glGetIntegerv");
+    gpa_real_gl.glReadPixels   = dlsym(RTLD_NEXT, "glReadPixels");
+    gpa_real_gl.glGetIntegerv  = dlsym(RTLD_NEXT, "glGetIntegerv");
 
-    gla_real_gl.glPushDebugGroup = dlsym(RTLD_NEXT, "glPushDebugGroup");
-    gla_real_gl.glPopDebugGroup  = dlsym(RTLD_NEXT, "glPopDebugGroup");
+    gpa_real_gl.glPushDebugGroup = dlsym(RTLD_NEXT, "glPushDebugGroup");
+    gpa_real_gl.glPopDebugGroup  = dlsym(RTLD_NEXT, "glPopDebugGroup");
 
-    gla_real_gl.glXSwapBuffers        = dlsym(RTLD_NEXT, "glXSwapBuffers");
-    gla_real_gl.glXGetProcAddressARB  = dlsym(RTLD_NEXT, "glXGetProcAddressARB");
+    gpa_real_gl.glXSwapBuffers        = dlsym(RTLD_NEXT, "glXSwapBuffers");
+    gpa_real_gl.glXGetProcAddressARB  = dlsym(RTLD_NEXT, "glXGetProcAddressARB");
 }
 
 /* --------------------------------------------------------------------------
@@ -64,20 +64,20 @@ void gla_wrappers_init(void) {
  * -------------------------------------------------------------------------- */
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
-    gla_init();
-    gla_real_gl.glDrawArrays(mode, first, count);
-    gla_shadow_record_draw(&gla_shadow);
-    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+    gpa_init();
+    gpa_real_gl.glDrawArrays(mode, first, count);
+    gpa_shadow_record_draw(&gpa_shadow);
+    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
                                /*instance_count=*/1);
     (void)first;
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
-    gla_init();
-    gla_real_gl.glDrawElements(mode, count, type, indices);
-    gla_shadow_record_draw(&gla_shadow);
-    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+    gpa_init();
+    gpa_real_gl.glDrawElements(mode, count, type, indices);
+    gpa_shadow_record_draw(&gpa_shadow);
+    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
                                /*instance_count=*/1);
@@ -85,10 +85,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices
 }
 
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei instancecount) {
-    gla_init();
-    gla_real_gl.glDrawArraysInstanced(mode, first, count, instancecount);
-    gla_shadow_record_draw(&gla_shadow);
-    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+    gpa_init();
+    gpa_real_gl.glDrawArraysInstanced(mode, first, count, instancecount);
+    gpa_shadow_record_draw(&gpa_shadow);
+    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
                                (uint32_t)instancecount);
     (void)first;
@@ -96,10 +96,10 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei inst
 
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
                               const void* indices, GLsizei instancecount) {
-    gla_init();
-    gla_real_gl.glDrawElementsInstanced(mode, count, type, indices, instancecount);
-    gla_shadow_record_draw(&gla_shadow);
-    gla_frame_record_draw_call(&gla_shadow, (uint32_t)mode,
+    gpa_init();
+    gpa_real_gl.glDrawElementsInstanced(mode, count, type, indices, instancecount);
+    gpa_shadow_record_draw(&gpa_shadow);
+    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
                                (uint32_t)instancecount);
@@ -111,47 +111,47 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
  * -------------------------------------------------------------------------- */
 
 void glUseProgram(GLuint program) {
-    gla_init();
-    gla_real_gl.glUseProgram(program);
-    gla_shadow_use_program(&gla_shadow, program);
+    gpa_init();
+    gpa_real_gl.glUseProgram(program);
+    gpa_shadow_use_program(&gpa_shadow, program);
 }
 
 void glUniform1f(GLint location, GLfloat v0) {
-    gla_init();
-    gla_real_gl.glUniform1f(location, v0);
-    gla_shadow_set_uniform_1f(&gla_shadow, location, v0);
+    gpa_init();
+    gpa_real_gl.glUniform1f(location, v0);
+    gpa_shadow_set_uniform_1f(&gpa_shadow, location, v0);
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
-    gla_init();
-    gla_real_gl.glUniform3f(location, v0, v1, v2);
-    gla_shadow_set_uniform_3f(&gla_shadow, location, v0, v1, v2);
+    gpa_init();
+    gpa_real_gl.glUniform3f(location, v0, v1, v2);
+    gpa_shadow_set_uniform_3f(&gpa_shadow, location, v0, v1, v2);
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
-    gla_init();
-    gla_real_gl.glUniform4f(location, v0, v1, v2, v3);
-    gla_shadow_set_uniform_4f(&gla_shadow, location, v0, v1, v2, v3);
+    gpa_init();
+    gpa_real_gl.glUniform4f(location, v0, v1, v2, v3);
+    gpa_shadow_set_uniform_4f(&gpa_shadow, location, v0, v1, v2, v3);
 }
 
 void glUniform1i(GLint location, GLint v0) {
-    gla_init();
-    gla_real_gl.glUniform1i(location, v0);
-    gla_shadow_set_uniform_1i(&gla_shadow, location, v0);
+    gpa_init();
+    gpa_real_gl.glUniform1i(location, v0);
+    gpa_shadow_set_uniform_1i(&gpa_shadow, location, v0);
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
                          const GLfloat* value) {
-    gla_init();
-    gla_real_gl.glUniformMatrix4fv(location, count, transpose, value);
-    gla_shadow_set_uniform_mat4(&gla_shadow, location, value);
+    gpa_init();
+    gpa_real_gl.glUniformMatrix4fv(location, count, transpose, value);
+    gpa_shadow_set_uniform_mat4(&gpa_shadow, location, value);
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
                          const GLfloat* value) {
-    gla_init();
-    gla_real_gl.glUniformMatrix3fv(location, count, transpose, value);
-    gla_shadow_set_uniform_mat3(&gla_shadow, location, value);
+    gpa_init();
+    gpa_real_gl.glUniformMatrix3fv(location, count, transpose, value);
+    gpa_shadow_set_uniform_mat3(&gpa_shadow, location, value);
 }
 
 /* --------------------------------------------------------------------------
@@ -159,30 +159,30 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
  * -------------------------------------------------------------------------- */
 
 void glActiveTexture(GLenum texture) {
-    gla_init();
-    gla_real_gl.glActiveTexture(texture);
-    gla_shadow_active_texture(&gla_shadow, texture);
+    gpa_init();
+    gpa_real_gl.glActiveTexture(texture);
+    gpa_shadow_active_texture(&gpa_shadow, texture);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
-    gla_init();
-    gla_real_gl.glBindTexture(target, texture);
+    gpa_init();
+    gpa_real_gl.glBindTexture(target, texture);
     if (target == GL_TEXTURE_2D) {
-        gla_shadow_bind_texture_2d(&gla_shadow, texture);
+        gpa_shadow_bind_texture_2d(&gpa_shadow, texture);
     }
 }
 
 void glTexImage2D(GLenum target, GLint level, GLint internalformat,
                   GLsizei width, GLsizei height, GLint border,
                   GLenum format, GLenum type, const void* pixels) {
-    gla_init();
-    gla_real_gl.glTexImage2D(target, level, internalformat, width, height,
+    gpa_init();
+    gpa_real_gl.glTexImage2D(target, level, internalformat, width, height,
                              border, format, type, pixels);
     /* Track texture dimensions for level 0 of GL_TEXTURE_2D */
     if (target == GL_TEXTURE_2D && level == 0) {
-        uint32_t tex_id = gla_shadow.bound_textures_2d[gla_shadow.active_texture_unit];
+        uint32_t tex_id = gpa_shadow.bound_textures_2d[gpa_shadow.active_texture_unit];
         if (tex_id > 0) {
-            gla_shadow_tex_image_2d(&gla_shadow, tex_id,
+            gpa_shadow_tex_image_2d(&gpa_shadow, tex_id,
                                     (uint32_t)width, (uint32_t)height,
                                     (uint32_t)internalformat);
         }
@@ -194,9 +194,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat,
  * -------------------------------------------------------------------------- */
 
 void glClear(GLbitfield mask) {
-    gla_init();
-    gla_real_gl.glClear(mask);
-    gla_shadow_record_clear(&gla_shadow, (uint32_t)mask);
+    gpa_init();
+    gpa_real_gl.glClear(mask);
+    gpa_shadow_record_clear(&gpa_shadow, (uint32_t)mask);
 }
 
 /* --------------------------------------------------------------------------
@@ -204,57 +204,57 @@ void glClear(GLbitfield mask) {
  * -------------------------------------------------------------------------- */
 
 void glEnable(GLenum cap) {
-    gla_init();
-    gla_real_gl.glEnable(cap);
-    gla_shadow_enable(&gla_shadow, cap);
+    gpa_init();
+    gpa_real_gl.glEnable(cap);
+    gpa_shadow_enable(&gpa_shadow, cap);
 }
 
 void glDisable(GLenum cap) {
-    gla_init();
-    gla_real_gl.glDisable(cap);
-    gla_shadow_disable(&gla_shadow, cap);
+    gpa_init();
+    gpa_real_gl.glDisable(cap);
+    gpa_shadow_disable(&gpa_shadow, cap);
 }
 
 void glDepthFunc(GLenum func) {
-    gla_init();
-    gla_real_gl.glDepthFunc(func);
-    gla_shadow_depth_func(&gla_shadow, func);
+    gpa_init();
+    gpa_real_gl.glDepthFunc(func);
+    gpa_shadow_depth_func(&gpa_shadow, func);
 }
 
 void glDepthMask(GLboolean flag) {
-    gla_init();
-    gla_real_gl.glDepthMask(flag);
-    gla_shadow_depth_mask(&gla_shadow, (bool)flag);
+    gpa_init();
+    gpa_real_gl.glDepthMask(flag);
+    gpa_shadow_depth_mask(&gpa_shadow, (bool)flag);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
-    gla_init();
-    gla_real_gl.glBlendFunc(sfactor, dfactor);
-    gla_shadow_blend_func(&gla_shadow, sfactor, dfactor);
+    gpa_init();
+    gpa_real_gl.glBlendFunc(sfactor, dfactor);
+    gpa_shadow_blend_func(&gpa_shadow, sfactor, dfactor);
 }
 
 void glCullFace(GLenum mode) {
-    gla_init();
-    gla_real_gl.glCullFace(mode);
-    gla_shadow_cull_face(&gla_shadow, mode);
+    gpa_init();
+    gpa_real_gl.glCullFace(mode);
+    gpa_shadow_cull_face(&gpa_shadow, mode);
 }
 
 void glFrontFace(GLenum mode) {
-    gla_init();
-    gla_real_gl.glFrontFace(mode);
-    gla_shadow_front_face(&gla_shadow, mode);
+    gpa_init();
+    gpa_real_gl.glFrontFace(mode);
+    gpa_shadow_front_face(&gpa_shadow, mode);
 }
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
-    gla_init();
-    gla_real_gl.glViewport(x, y, width, height);
-    gla_shadow_viewport(&gla_shadow, x, y, width, height);
+    gpa_init();
+    gpa_real_gl.glViewport(x, y, width, height);
+    gpa_shadow_viewport(&gpa_shadow, x, y, width, height);
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
-    gla_init();
-    gla_real_gl.glScissor(x, y, width, height);
-    gla_shadow_scissor(&gla_shadow, x, y, width, height);
+    gpa_init();
+    gpa_real_gl.glScissor(x, y, width, height);
+    gpa_shadow_scissor(&gpa_shadow, x, y, width, height);
 }
 
 /* --------------------------------------------------------------------------
@@ -262,29 +262,29 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
  * -------------------------------------------------------------------------- */
 
 void glBindVertexArray(GLuint array) {
-    gla_init();
-    gla_real_gl.glBindVertexArray(array);
-    gla_shadow_bind_vao(&gla_shadow, array);
+    gpa_init();
+    gpa_real_gl.glBindVertexArray(array);
+    gpa_shadow_bind_vao(&gpa_shadow, array);
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
-    gla_init();
-    gla_real_gl.glBindBuffer(target, buffer);
-    gla_shadow_bind_buffer(&gla_shadow, target, buffer);
+    gpa_init();
+    gpa_real_gl.glBindBuffer(target, buffer);
+    gpa_shadow_bind_buffer(&gpa_shadow, target, buffer);
 }
 
 void glBindFramebuffer(GLenum target, GLuint framebuffer) {
-    gla_init();
-    gla_real_gl.glBindFramebuffer(target, framebuffer);
-    gla_shadow_bind_framebuffer(&gla_shadow, target, framebuffer);
+    gpa_init();
+    gpa_real_gl.glBindFramebuffer(target, framebuffer);
+    gpa_shadow_bind_framebuffer(&gpa_shadow, target, framebuffer);
 }
 
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget,
                              GLuint texture, GLint level) {
-    gla_init();
-    if (gla_real_gl.glFramebufferTexture2D)
-        gla_real_gl.glFramebufferTexture2D(target, attachment, textarget, texture, level);
-    gla_shadow_framebuffer_texture_2d(&gla_shadow, target, attachment, texture);
+    gpa_init();
+    if (gpa_real_gl.glFramebufferTexture2D)
+        gpa_real_gl.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    gpa_shadow_framebuffer_texture_2d(&gpa_shadow, target, attachment, texture);
 }
 
 /* --------------------------------------------------------------------------
@@ -293,13 +293,13 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget,
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
                    GLenum format, GLenum type, void* pixels) {
-    gla_init();
-    gla_real_gl.glReadPixels(x, y, width, height, format, type, pixels);
+    gpa_init();
+    gpa_real_gl.glReadPixels(x, y, width, height, format, type, pixels);
 }
 
 void glGetIntegerv(GLenum pname, GLint* data) {
-    gla_init();
-    gla_real_gl.glGetIntegerv(pname, data);
+    gpa_init();
+    gpa_real_gl.glGetIntegerv(pname, data);
 }
 
 /* --------------------------------------------------------------------------
@@ -307,17 +307,17 @@ void glGetIntegerv(GLenum pname, GLint* data) {
  * -------------------------------------------------------------------------- */
 
 void glPushDebugGroup(GLenum source, GLuint id, GLsizei length, const char* message) {
-    gla_init();
-    if (gla_real_gl.glPushDebugGroup)
-        gla_real_gl.glPushDebugGroup(source, id, length, message);
-    gla_shadow_push_debug_group(&gla_shadow, id, message);
+    gpa_init();
+    if (gpa_real_gl.glPushDebugGroup)
+        gpa_real_gl.glPushDebugGroup(source, id, length, message);
+    gpa_shadow_push_debug_group(&gpa_shadow, id, message);
 }
 
 void glPopDebugGroup(void) {
-    gla_init();
-    if (gla_real_gl.glPopDebugGroup)
-        gla_real_gl.glPopDebugGroup();
-    gla_shadow_pop_debug_group(&gla_shadow);
+    gpa_init();
+    if (gpa_real_gl.glPopDebugGroup)
+        gpa_real_gl.glPopDebugGroup();
+    gpa_shadow_pop_debug_group(&gpa_shadow);
 }
 
 /* --------------------------------------------------------------------------
@@ -325,16 +325,16 @@ void glPopDebugGroup(void) {
  * -------------------------------------------------------------------------- */
 
 void glXSwapBuffers(Display* dpy, GLXDrawable drawable) {
-    gla_init();
-    gla_frame_on_swap();             /* capture before swap (includes draw call data) */
-    gla_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
-    gla_shadow_new_frame(&gla_shadow);
-    gla_real_gl.glXSwapBuffers(dpy, drawable);
+    gpa_init();
+    gpa_frame_on_swap();             /* capture before swap (includes draw call data) */
+    gpa_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
+    gpa_shadow_new_frame(&gpa_shadow);
+    gpa_real_gl.glXSwapBuffers(dpy, drawable);
 }
 
 /* Map function names to our wrapper addresses so that apps using
  * glXGetProcAddress get our interceptors, not the real GL functions. */
-static __GLXextFuncPtr gla_resolve_wrapper(const char* name) {
+static __GLXextFuncPtr gpa_resolve_wrapper(const char* name) {
     if (!name) return (void*)0;
     /* Draw calls */
     if (strcmp(name, "glDrawArrays") == 0)            return (__GLXextFuncPtr)glDrawArrays;
@@ -380,16 +380,16 @@ static __GLXextFuncPtr gla_resolve_wrapper(const char* name) {
 }
 
 __GLXextFuncPtr glXGetProcAddressARB(const unsigned char* procName) {
-    gla_init();
-    __GLXextFuncPtr wrapper = gla_resolve_wrapper((const char*)procName);
+    gpa_init();
+    __GLXextFuncPtr wrapper = gpa_resolve_wrapper((const char*)procName);
     if (wrapper) return wrapper;
-    return gla_real_gl.glXGetProcAddressARB(procName);
+    return gpa_real_gl.glXGetProcAddressARB(procName);
 }
 
 /* Also intercept glXGetProcAddress (non-ARB variant) */
 __GLXextFuncPtr glXGetProcAddress(const unsigned char* procName) {
-    gla_init();
-    __GLXextFuncPtr wrapper = gla_resolve_wrapper((const char*)procName);
+    gpa_init();
+    __GLXextFuncPtr wrapper = gpa_resolve_wrapper((const char*)procName);
     if (wrapper) return wrapper;
-    return gla_real_gl.glXGetProcAddressARB(procName);
+    return gpa_real_gl.glXGetProcAddressARB(procName);
 }

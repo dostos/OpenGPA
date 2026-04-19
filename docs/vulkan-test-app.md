@@ -83,7 +83,7 @@ This app tests basic Vulkan layer interception.
 [OpenGPA] Ended recording command buffer
 
 [OpenGPA] Application ran successfully.
-If VK_LAYER_GLA_capture was active, the layer should have
+If VK_LAYER_GPA_capture was active, the layer should have
 intercepted all Vulkan calls above.
 
 [OpenGPA] Cleanup complete
@@ -100,12 +100,12 @@ cd examples/vulkan
 make run
 ```
 
-This sets `VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture` and runs the app.
+This sets `VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture` and runs the app.
 
 ### Manual Execution
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
 ./minimal_app
 ```
 
@@ -121,10 +121,10 @@ make debug
 Or manually:
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GLA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
 export VK_LAYER_PATH=~/.config/vulkan/implicit_layer.d
 export VK_LOADER_DEBUG=all
-./minimal_app 2>&1 | grep -i gla
+./minimal_app 2>&1 | grep -i gpa
 ```
 
 This enables Vulkan loader debug output and filters for OpenGPA-related messages.
@@ -145,7 +145,7 @@ ls -la ~/.config/vulkan/implicit_layer.d/
 
 **Symbol not found**: Ensure the `.so` was built correctly:
 ```bash
-ldd ~/.config/vulkan/implicit_layer.d/libVkLayer_gla_capture.so
+ldd ~/.config/vulkan/implicit_layer.d/libVkLayer_gpa_capture.so
 ```
 
 **Device not found**: Your system must have a Vulkan-capable GPU. Check:
@@ -187,7 +187,7 @@ See the [Vulkan specification](https://registry.khronos.org/vulkan/) and [Khrono
 
 To validate full integration:
 
-1. Start the OpenGPA engine listening on `/tmp/gla.sock`
+1. Start the OpenGPA engine listening on `/tmp/gpa.sock`
 2. Ensure OpenGPA core services are running
 3. Run the test app with the layer enabled
 4. Check engine logs for captured frame data

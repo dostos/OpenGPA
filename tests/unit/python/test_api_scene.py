@@ -7,8 +7,8 @@ import pytest
 from unittest.mock import MagicMock
 from starlette.testclient import TestClient
 
-from gla.api.app import create_app
-from gla.backends.native import NativeBackend
+from gpa.api.app import create_app
+from gpa.backends.native import NativeBackend
 
 AUTH_TOKEN = "test-token"
 AUTH_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"}

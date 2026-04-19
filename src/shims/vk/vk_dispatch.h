@@ -23,7 +23,7 @@ extern "C" {
  * Instance dispatch table
  * Subset of instance-level functions we intercept or need to call down.
  * ---------------------------------------------------------------------- */
-typedef struct GlaInstanceDispatch {
+typedef struct GpaInstanceDispatch {
     /* Dispatch key — must be first: pointer to the loader's dispatch table */
     void *dispatch_key;
 
@@ -34,13 +34,13 @@ typedef struct GlaInstanceDispatch {
 
     /* Used internally to enumerate physical devices (for completeness) */
     PFN_vkEnumeratePhysicalDevices EnumeratePhysicalDevices;
-} GlaInstanceDispatch;
+} GpaInstanceDispatch;
 
 /* -------------------------------------------------------------------------
  * Device dispatch table
  * Subset of device-level functions we intercept or need to call down.
  * ---------------------------------------------------------------------- */
-typedef struct GlaDeviceDispatch {
+typedef struct GpaDeviceDispatch {
     /* Dispatch key */
     void *dispatch_key;
 
@@ -86,7 +86,7 @@ typedef struct GlaDeviceDispatch {
 
     /* Physical device handle needed for memory type queries */
     VkPhysicalDevice              physical_device;
-} GlaDeviceDispatch;
+} GpaDeviceDispatch;
 
 /* -------------------------------------------------------------------------
  * Registry: store/retrieve dispatch tables keyed by the dispatch pointer.
@@ -94,22 +94,22 @@ typedef struct GlaDeviceDispatch {
  * ---------------------------------------------------------------------- */
 
 /* Extract the dispatch key from any dispatchable Vulkan handle */
-static inline void *gla_dispatch_key(const void *dispatchable_handle) {
+static inline void *gpa_dispatch_key(const void *dispatchable_handle) {
     /* The loader places a pointer to its internal dispatch table as the first
      * word of every dispatchable object. */
     return *(void *const *)dispatchable_handle;
 }
 
-void gla_instance_dispatch_store(VkInstance instance, GlaInstanceDispatch *disp);
-GlaInstanceDispatch *gla_instance_dispatch_get(VkInstance instance);
-void gla_instance_dispatch_remove(VkInstance instance);
+void gpa_instance_dispatch_store(VkInstance instance, GpaInstanceDispatch *disp);
+GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance);
+void gpa_instance_dispatch_remove(VkInstance instance);
 
-void gla_device_dispatch_store(VkDevice device, GlaDeviceDispatch *disp);
-GlaDeviceDispatch *gla_device_dispatch_get(VkDevice device);
-void gla_device_dispatch_remove(VkDevice device);
+void gpa_device_dispatch_store(VkDevice device, GpaDeviceDispatch *disp);
+GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device);
+void gpa_device_dispatch_remove(VkDevice device);
 
-void gla_dispatch_init(void);
-void gla_dispatch_cleanup(void);
+void gpa_dispatch_init(void);
+void gpa_dispatch_cleanup(void);
 
 #ifdef __cplusplus
 }

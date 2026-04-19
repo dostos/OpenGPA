@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace gla {
+namespace gpa {
 
 struct DrawCallDiff {
     uint32_t dc_id;
@@ -59,4 +59,4 @@ private:
                         const std::vector<TextureBinding>& b) const;
 };
 
-}  // namespace gla
+}  // namespace gpa

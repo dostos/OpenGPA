@@ -1,7 +1,7 @@
 from pathlib import Path
 from datetime import datetime, timezone
-from gla.eval.curation.commit import commit_scenario, log_rejection
-from gla.eval.curation.coverage_log import CoverageLog
+from gpa.eval.curation.commit import commit_scenario, log_rejection
+from gpa.eval.curation.coverage_log import CoverageLog
 
 
 def test_commit_appends_log_and_writes_summary(tmp_path):

@@ -1,12 +1,12 @@
-"""Tests for gla.framework.correlation helpers."""
+"""Tests for gpa.framework.correlation helpers."""
 import pytest
-from gla.framework.types import (
+from gpa.framework.types import (
     FrameMetadata,
     FrameworkMaterial,
     FrameworkObject,
     FrameworkRenderPass,
 )
-from gla.framework import correlation
+from gpa.framework import correlation
 
 
 # ---------------------------------------------------------------------------

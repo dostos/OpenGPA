@@ -1,6 +1,6 @@
-"""Shared pytest fixtures for GLA REST API tests.
+"""Shared pytest fixtures for GPA REST API tests.
 
-All C++ (_gla_core) types are mocked — no native extension needed at test time.
+All C++ (_gpa_core) types are mocked — no native extension needed at test time.
 The test fixtures now construct a NativeBackend around mock objects, so the
 routes exercise the full provider-based code path.
 """
@@ -9,8 +9,8 @@ from unittest.mock import MagicMock
 import pytest
 from starlette.testclient import TestClient
 
-from gla.api.app import create_app
-from gla.backends.native import NativeBackend
+from gpa.api.app import create_app
+from gpa.backends.native import NativeBackend
 
 AUTH_TOKEN = "test-token"
 AUTH_HEADERS = {"Authorization": f"Bearer {AUTH_TOKEN}"}

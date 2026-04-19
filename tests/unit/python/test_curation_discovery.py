@@ -1,8 +1,8 @@
 import json
 import subprocess
 from unittest.mock import patch, MagicMock
-from gla.eval.curation.discover import GitHubSearch, DiscoveryCandidate, Discoverer, DEFAULT_QUERIES
-from gla.eval.curation.coverage_log import CoverageLog, CoverageEntry
+from gpa.eval.curation.discover import GitHubSearch, DiscoveryCandidate, Discoverer, DEFAULT_QUERIES
+from gpa.eval.curation.coverage_log import CoverageLog, CoverageEntry
 
 def _fake_gh_result():
     return json.dumps({
@@ -82,7 +82,7 @@ def test_discoverer_respects_batch_quota(tmp_path):
     assert len(candidates) == 5
 
 def test_is_obviously_non_rendering_by_title():
-    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+    from gpa.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
 
     non_rendering_titles = [
         "TypeScript: Camera.rotationQuaternion should allow null type",
@@ -99,14 +99,14 @@ def test_is_obviously_non_rendering_by_title():
             f"expected reject: {title}"
 
 def test_is_obviously_non_rendering_by_labels():
-    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+    from gpa.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
     cand = DiscoveryCandidate(url="https://x/1", source_type="issue",
                                title="Plausible rendering-looking title",
                                labels=["documentation"])
     assert _is_obviously_non_rendering(cand) is True
 
 def test_is_obviously_non_rendering_lets_real_rendering_through():
-    from gla.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
+    from gpa.eval.curation.discover import _is_obviously_non_rendering, DiscoveryCandidate
 
     rendering_titles = [
         "Z-fighting on large outdoor scenes with far clip",
@@ -125,9 +125,9 @@ def test_is_obviously_non_rendering_lets_real_rendering_through():
 def test_discoverer_processes_stackoverflow_queries(tmp_path):
     """Discoverer wires the so_search provider end-to-end, yielding
     candidates with source_type='stackoverflow' and carrying accepted_answer_id."""
-    from gla.eval.curation.discover import Discoverer
-    from gla.eval.curation.stackoverflow import SOQuestion
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.discover import Discoverer
+    from gpa.eval.curation.stackoverflow import SOQuestion
+    from gpa.eval.curation.coverage_log import CoverageLog
 
     class FakeGitHub:
         def search_issues(self, q, per_page=30):
@@ -191,8 +191,8 @@ def test_discoverer_processes_stackoverflow_queries(tmp_path):
 def test_discoverer_skips_so_when_no_so_search_provider(tmp_path):
     """Without an so_search provider, SO queries are silently skipped
     (backward compat)."""
-    from gla.eval.curation.discover import Discoverer
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.discover import Discoverer
+    from gpa.eval.curation.coverage_log import CoverageLog
 
     class FakeGitHub:
         def search_issues(self, q, per_page=30):
@@ -212,8 +212,8 @@ def test_discoverer_skips_so_when_no_so_search_provider(tmp_path):
 
 
 def test_discoverer_skips_obviously_non_rendering(tmp_path):
-    from gla.eval.curation.discover import Discoverer, DiscoveryCandidate
-    from gla.eval.curation.coverage_log import CoverageLog
+    from gpa.eval.curation.discover import Discoverer, DiscoveryCandidate
+    from gpa.eval.curation.coverage_log import CoverageLog
 
     class FakeSearch:
         def search_issues(self, q, per_page=30):
