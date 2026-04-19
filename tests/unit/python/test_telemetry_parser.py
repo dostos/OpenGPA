@@ -200,7 +200,9 @@ def test_fixture_parses(tmp_path):
     assert out["num_turns"] == 4
     assert out["total_cost_usd"] == pytest.approx(0.0123)
     assert out["session_id"] == "sess-abc"
-    # tokens: 10+20+5 = 35 in, 15+40+8 = 63 out
+    # Fixture's result-event usage block is authoritative (overrides the
+    # per-turn accumulators). Values chosen to equal the per-turn sums so
+    # the fixture remains consistent.
     assert out["total_tokens_in"] == 35
     assert out["total_tokens_out"] == 63
     assert out["cache_read"] == 500

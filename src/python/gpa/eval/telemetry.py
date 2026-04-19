@@ -40,6 +40,19 @@ _GPA_SUBCOMMANDS = (
 _GPA_RE = re.compile(r"\bgpa\s+(" + "|".join(_GPA_SUBCOMMANDS) + r")\b")
 _CURL_GPA_RE = re.compile(r"^\s*curl\b[^\n]*(?::18080|/api/v1|\$GPA_PORT)", re.MULTILINE)
 
+# Some runs route file access through MCP servers (serena) even when Read is
+# allowed. Map those to the equivalent first-class tool so per-mode aggregate
+# counts stay comparable.
+_MCP_ALIAS = {
+    "mcp__plugin_serena_serena__read_file": "Read",
+    "mcp__plugin_serena_serena__list_dir": "Glob",
+    "mcp__plugin_serena_serena__find_file": "Glob",
+    "mcp__plugin_serena_serena__search_for_pattern": "Grep",
+    "mcp__plugin_serena_serena__find_symbol": "Grep",
+    "mcp__plugin_serena_serena__get_symbols_overview": "Read",
+    "mcp__plugin_serena_serena__execute_shell_command": "Bash",
+}
+
 
 def _classify_bash(command: str) -> str:
     """Classify a Bash tool-use command into gpa / curl / Bash."""
@@ -138,6 +151,8 @@ def parse_stream_json(path: str) -> dict[str, Any]:
                                 name = _classify_bash(
                                     (tin or {}).get("command", "") if isinstance(tin, dict) else ""
                                 )
+                            elif name in _MCP_ALIAS:
+                                name = _MCP_ALIAS[name]
                             tool_counts[name] = tool_counts.get(name, 0) + 1
                             tool_calls.append({
                                 "tool": name,
@@ -161,12 +176,15 @@ def parse_stream_json(path: str) -> dict[str, Any]:
                 r = obj.get("result")
                 if isinstance(r, str):
                     result_text = r
-                # If result also carries a usage block prefer its cache numbers
+                # The `result` event carries authoritative session totals in its
+                # usage block. Prefer those over per-assistant-event accumulation
+                # (which only captures the *delta* per turn, not the running sum).
                 usage = obj.get("usage") or {}
-                if usage:
-                    # keep the running totals — result totals can be equivalent
-                    # but we don't overwrite assistant-side accumulators.
-                    pass
+                if isinstance(usage, dict):
+                    total_tokens_in = int(usage.get("input_tokens", total_tokens_in) or total_tokens_in)
+                    total_tokens_out = int(usage.get("output_tokens", total_tokens_out) or total_tokens_out)
+                    cache_read = int(usage.get("cache_read_input_tokens", cache_read) or cache_read)
+                    cache_creation = int(usage.get("cache_creation_input_tokens", cache_creation) or cache_creation)
                 continue
 
     return {
