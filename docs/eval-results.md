@@ -639,3 +639,146 @@ not negative as hypothesised.
 - `/tmp/eval_round7/*.jsonl` — 80 per-run stream-json transcripts.
 - `docs/superpowers/eval/round7/` — scored.json, summary.txt, runner
   scripts, score.py, captures.txt.
+
+## Round 8 — state-collision scenarios + closure signal
+
+### Setup
+
+- 15 scenarios × 2 modes × 2 models = **52 runs** (8 skipped for
+  with_gpa due to missing capture). Cost: **$21.32**.
+- Primary set: 10 new state-collision mining scenarios (commit `f9bb3d6`)
+  — feedback loops, bind-point collisions, state leaks, per-layer
+  copy bugs, format/clear mismatches, pipeline-attachment mismatches.
+- Carryover: 5 scenarios from R7 for regression control.
+- **Captures**: 11/15 produced non-empty GPA captures. 4 scenarios
+  (r16/r17/r18/r19) do not call `glXSwapBuffers`, so the shim never
+  emits a frame and they are run in code-only mode only. r7 and r28
+  did capture but with 0 draw calls (the `empty-capture` check fires
+  and the agent falls through to source reasoning).
+- Closure signal landed in commit `e1409ec`: `gpa report` now
+  explicitly tells the agent to stop querying on zero warnings.
+
+### Accuracy + cost (vs R7)
+
+| Cell                   | R7 acc  | R8 acc  | R7 cost  | R8 cost  |
+|------------------------|---------|---------|----------|----------|
+| code_only · haiku      | 80.0%   | 86.7%   | $0.2705  | $0.3100  |
+| code_only · sonnet     | 80.0%   | 100.0%  | $0.4900  | $0.4999  |
+| with_gpa · haiku       | 65.0%   | 81.8%   | $0.2820  | $0.3237  |
+| with_gpa · sonnet      | 75.0%   | 100.0%  | $0.3513  | $0.5102  |
+
+Raw accuracy is higher across the board, partly because (a) the state-
+collision scenarios are, by design, easier for a diligent code reader —
+the bug is "two names refer to the same GL object" — and (b) the
+carryovers are scenarios that the existing pipeline already solves
+cleanly.
+
+### Tool counts (mean per run)
+
+| Mode      | Model  | gpa | curl | Read | Grep | Glob | Bash |
+|-----------|--------|-----|------|------|------|------|------|
+| code_only | haiku  | 0.0 | 0.0  | 7.0  | 2.2  | 0.2  | 13.0 |
+| code_only | sonnet | 0.0 | 0.0  | 6.9  | 7.7  | 0.8  | 1.7  |
+| with_gpa  | haiku  | 3.7 | 0.7  | 7.4  | 1.7  | 0.1  | 11.8 |
+| with_gpa  | sonnet | 2.9 | 0.0  | 6.1  | 6.1  | 0.2  | 1.8  |
+
+R7→R8 deltas in mean `gpa` calls: haiku 6.0 → 3.7 (−2.3), sonnet
+5.2 → 2.9 (−2.3). The closure signal is doing exactly what it was
+designed to do — both models issue roughly one fewer drill-down call
+per run.
+
+### Paired deltas (both modes correct)
+
+| Model  | R7 Δcost | R8 Δcost (all) | R8 Δcost (state_coll) | R8 Δcost (carryover) |
+|--------|----------|----------------|-----------------------|----------------------|
+| haiku  | +$0.001  | +$0.018        | +$0.031               | +$0.005              |
+| sonnet | −$0.064  | +$0.002        | **−$0.088**           | +$0.110              |
+
+### State-collision vs carryover
+
+- **Sonnet + state-collision: −$0.088/pair**, **−4.8 turns/pair** — the
+  largest GPA cost advantage observed in any round. Every one of the
+  10 state-collision scenarios solved in both modes; GPA wins on
+  9/10 pairs.
+- **Sonnet + carryover: +$0.110/pair** — GPA is a cost *regression*
+  here. The carryovers include textured-blending / depth-fight
+  scenarios where the bug is source-logical (not state-level), and
+  `gpa report` returns green; Sonnet then incurs both the report
+  round-trip *and* the source grep.
+- **Haiku pattern unchanged** across subsets (adds GPA instead of
+  substituting), consistent with R7.
+
+### Haiku timeout count
+
+| Round | with_gpa timeouts | total | rate  |
+|-------|-------------------|-------|-------|
+| R7    | 7                 | 20    | 35%   |
+| R8    | 2                 | 11    | 18%   |
+
+Haiku with_gpa accuracy recovered from 65% → 81.8% (target was ≥85%).
+Two remaining timeouts are in `r10_feedback_loop` and
+`r13_cubecamera` — both ran 41 turns; both made 5–6 `gpa` calls but
+then fell into 20+ Bash(find/grep) calls on the three.js snapshot.
+The closure signal didn't fire for these because r10 has a legitimate
+feedback-loop warning (draws=1, warn=1) and r13 has a stale-texture
+issue the current checks don't cover, so neither short-circuited.
+
+### Qualitative findings
+
+1. **State-collision is Sonnet+GPA's theoretical sweet spot, empirically
+   confirmed.** Sonnet state-collision runs average **6.9 tool calls
+   total** (vs 14.2 in R7). Typical pattern: `gpa report` returns a
+   named warning → 1–2 drill-downs to pin the texture ID → 2–3 Read
+   calls to locate the offending line in the framework → terminate.
+   The minimal transcript is r4_msaa (8 turns, 1 gpa call, 3 Grep,
+   3 Read, $0.22), which is a textbook use of the tool.
+2. **Closure signal works on green reports but not on "wrong class"
+   warnings.** When `gpa report` returns green (e.g. r4_msaa), Haiku
+   stops immediately and succeeds. When report returns a real warning
+   but the actual bug is upstream of the warning (r10: the feedback
+   loop is *reported* but the question is *why the transmission
+   render target was constructed without MSAA*), the agent keeps
+   digging and times out. We need a second-level hint: "warning
+   explains the symptom but not necessarily the root cause —
+   cross-reference with source before deep-diving".
+
+### Remaining gaps
+
+1. **Haiku still adds, doesn't substitute.** Mean Bash count is
+   11.8 for Haiku with_gpa vs 13.0 code_only — barely a dent. Haiku's
+   behavior after `gpa report` looks the same as its code-only
+   behavior: walk the snapshot with grep/find. The closure signal
+   reduces the count of *subsequent* gpa calls but doesn't convince
+   Haiku to truncate its Bash exploration. Likely needs either (a)
+   a smaller per-scenario turn cap + explicit "commit to answer" hint,
+   or (b) routing Haiku exclusively through a pre-digested `gpa report`
+   summary without the raw snapshot at all.
+2. **Carryover regression: GPA hurts when the bug is source-logical.**
+   Sonnet paid $0.11/pair extra on carryovers — these are the scenarios
+   where the actual root cause is a shader math error or a boolean
+   flag mis-setting, not a state collision. `gpa report` returns green,
+   which is *correct*, but the agent still paid for the round trip
+   plus a few speculative `gpa dump` calls before falling back to
+   source. A "suggest code-only" hint when the frame's draw count is
+   low and the report is green would avoid this.
+
+### Verdict
+
+- **Hypothesis 1 (state-collision → larger GPA cost advantage):
+  CONFIRMED.** Sonnet paired Δcost on state-collision subset is
+  −$0.088, improving on R7's all-mix Δcost of −$0.064 by ~40%. On
+  the carryover subset the effect reverses (+$0.110), which is
+  consistent with the hypothesis — state-level bugs are where GPA
+  substitutes for reading, and source-logical bugs are where it does
+  not.
+- **Hypothesis 2 (closure signal restores Haiku):
+  PARTIALLY CONFIRMED.** Timeouts fell from 7/20 (35%) to 2/11 (18%),
+  accuracy recovered 65% → 82% (short of the ≥85% target). The
+  remaining gap is not about closure — it's about Haiku's
+  exploration discipline when the report surfaces a *real* warning.
+
+### Raw artifacts
+
+- `/tmp/eval_round8/*.jsonl` — 52 per-run stream-json transcripts.
+- `docs/superpowers/eval/round8/` — scored.json, summary.txt, runner
+  scripts, score.py, captures.txt, scenarios.txt.

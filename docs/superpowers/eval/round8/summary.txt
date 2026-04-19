@@ -1,0 +1,70 @@
+Total runs: 52  Total cost: $21.32
+
+## Mode x Model Accuracy
+Mode         Model      N  Correct     Acc    AvgCost  AvgTurns  Timeout
+code_only    haiku     15       13   86.7% $   0.3100      25.7        2
+code_only    sonnet    15       15  100.0% $   0.4999      19.3        0
+with_gpa     haiku     11        9   81.8% $   0.3237      28.1        2
+with_gpa     sonnet    11       11  100.0% $   0.5102      19.0        0
+
+## Per-Scenario
+scenario                                            co_h  co_s  gp_h  gp_s
+r10_feedback_loop_error_with_transmission_an           Y     Y     N     Y
+r13_cubecamera_render_target_displaying_rand           Y     Y     N     Y
+r16_lightprobegenerator_does_not_work_with_e           Y     Y     -     -
+r17_viewport_rendering_with_postprocessing_r           N     Y     -     -
+r18_webglrenderer_reversed_depth_not_working           Y     Y     -     -
+r19_depthtexture_share_source_after_renderta           Y     Y     -     -
+r22_point_sprite_rendering_issues_with_three           Y     Y     Y     Y
+r25_filters_with_backbuffers_seem_not_to_wor           Y     Y     Y     Y
+r28_crash_if_using_scene_background_hdr_volu           N     Y     Y     Y
+r30_incomplete_lines_problem_with_mixing_lay           Y     Y     Y     Y
+r33_latest_build_6_38_1_got_glitchy_opacity_           Y     Y     Y     Y
+r4_3d_map_black_screen                                 Y     Y     Y     Y
+r4_msaa_does_not_always_work_when_doing_rtt            Y     Y     Y     Y
+r7_webglbackend_copytexturetotexture_doesn_            Y     Y     Y     Y
+r9_transparent_objects_brighten_when_using_            Y     Y     Y     Y
+
+## Mean Tool Calls per Run (mode x model)
+Mode         Model      gpa  curl  Read  Grep  Glob  Bash
+code_only    haiku      0.0   0.0   7.0   2.2   0.2  13.0
+code_only    sonnet     0.0   0.0   6.9   7.7   0.8   1.7
+with_gpa     haiku      3.7   0.7   7.4   1.7   0.1  11.8
+with_gpa     sonnet     2.9   0.0   6.1   6.1   0.2   1.8
+
+## Paired Deltas (both modes correct) per model
+
+  model=haiku  N=8 paired scenarios
+    mean dcost  (gp - co): $+0.0176
+    mean dcache (gp - co): +87023
+    mean dout   (gp - co): -700
+    mean dturns (gp - co): +1.8
+
+  model=sonnet  N=11 paired scenarios
+    mean dcost  (gp - co): $+0.0019
+    mean dcache (gp - co): -38816
+    mean dout   (gp - co): +991
+    mean dturns (gp - co): -1.9
+
+## Subset: State-Collision vs Carryover Paired Deltas
+
+### state_collision
+  model=haiku  N=4  mean dcost $+0.0307  mean dturns +3.2
+  model=sonnet  N=6  mean dcost $-0.0881  mean dturns -4.8
+
+### carryover
+  model=haiku  N=4  mean dcost $+0.0045  mean dturns +0.2
+  model=sonnet  N=5  mean dcost $+0.1100  mean dturns +1.6
+
+## Accuracy by Category x Mode x Model
+Cat              Mode         Model      N  Correct     Acc
+carryover        code_only    haiku      5        5  100.0%
+carryover        code_only    sonnet     5        5  100.0%
+carryover        with_gpa     haiku      5        4   80.0%
+carryover        with_gpa     sonnet     5        5  100.0%
+state_collision  code_only    haiku     10        8   80.0%
+state_collision  code_only    sonnet    10       10  100.0%
+state_collision  with_gpa     haiku      6        5   83.3%
+state_collision  with_gpa     sonnet     6        6  100.0%
+
+## Haiku with_gpa timeout count: 2 / 11
