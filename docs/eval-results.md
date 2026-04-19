@@ -476,3 +476,166 @@ See `docs/superpowers/eval/round6-findings.md` for the discussion.
 
 - `/tmp/eval_round6/*.json` — 80 per-run Claude Code outputs.
 - `docs/superpowers/eval/round6/` — summary, analysis, drivers, scored data.
+
+## Round 7: Per-Turn Telemetry + Drill-Hint Validation (2026-04-19)
+
+### Setup
+
+- **Same 20 scenarios** as Rounds 5/6 (`/tmp/round5_scenarios.txt`), 2 modes x
+  2 models = 80 runs, 40-turn budget, dispatched in parallel.
+- **New this round**: `claude -p --output-format stream-json --verbose` gives
+  us ordered per-turn tool-call records. Self-reported `gpa_queries_made` /
+  `framework_files_opened` from Rounds 5/6 are retired. Numbers below come
+  from the new parser in `src/python/gpa/eval/telemetry.py` (commits 2ccff06
+  and 6549c53).
+- **Drill-down hints** shipped in commit eb5357c — `gpa report` now prints
+  "drill:" lines pointing to the next natural `gpa check` call. Hypothesis:
+  this should help Haiku close the R6 gap.
+- Captures reused from R6's in-memory session (all 20 frames still live in
+  the engine, draw-call counts verified against `captures.txt`).
+
+### Mode x Model Summary
+
+| Mode | Model | N | Correct | Acc | AvgCost | AvgTurns | AvgCacheRead | AvgOutTok |
+|------|-------|--:|--------:|----:|--------:|---------:|-------------:|----------:|
+| code_only | haiku  | 20 | 16 | 80.0 % | $0.2705 | 23.4 | 1,537,059 | 12,007 |
+| code_only | sonnet | 20 | 16 | 80.0 % | $0.4900 | 19.6 |   662,426 |  9,594 |
+| with_gpa  | haiku  | 20 | 13 | 65.0 % | $0.2820 | 27.6 | 1,759,116 |  9,772 |
+| with_gpa  | sonnet | 20 | 15 | 75.0 % | $0.3513 | 16.1 |   457,852 |  6,779 |
+
+Total cost: **$27.88** (R6 was $34.03, a −18 % drop driven almost entirely
+by Sonnet with_gpa — $0.5552 → $0.3513).
+
+### R5 / R6 / R7 Accuracy Comparison
+
+| Cell           | R5 Acc | R6 Acc | R7 Acc |
+|----------------|-------:|-------:|-------:|
+| code_only haiku  | 75 % | 80 % | 80 % |
+| code_only sonnet | 85 % | 85 % | 80 % |
+| with_gpa  haiku  | 80 % | 85 % | **65 %** |
+| with_gpa  sonnet | 80 % | 75 % | 75 % |
+
+### Cost / cache_read deltas vs R6
+
+| Cell | R6 cost | R7 cost | Δ | R7 cache_read (avg) |
+|------|--------:|--------:|--:|--------------------:|
+| code_only haiku  | 0.2751 | 0.2705 | −0.005 | 1.54 M |
+| code_only sonnet | 0.5772 | 0.4900 | −0.087 | 0.66 M |
+| with_gpa  haiku  | 0.2941 | 0.2820 | −0.012 | 1.76 M |
+| with_gpa  sonnet | 0.5552 | 0.3513 | **−0.204** | 0.46 M |
+
+**Haiku drill-hint hypothesis: not confirmed.** The average-cost Δ did
+shrink slightly, but paired-scenario Δ (both correct) went from
+−$0.022 in R6's sonnet cell to **+$0.001** in R7's haiku cell — Haiku
+still costs more with gpa than without it, at matched accuracy.
+
+Even worse, `with_gpa` Haiku accuracy **dropped from 85 % to 65 %**. Root
+cause (see below): 7/20 runs hit the 40-turn cap and returned empty
+diagnoses. In R6 the equivalent number was much lower (estimated from
+cost-per-turn). More `gpa` calls + more `Read` calls pushed Haiku over
+budget.
+
+### Mean Tool Calls per Run (the new data)
+
+| Mode | Model | gpa | curl | Read | Grep | Glob | Bash |
+|------|-------|----:|-----:|-----:|-----:|-----:|-----:|
+| code_only | haiku  | 0.0 | 0.0 |  7.5 | 2.4 | 0.8 |  9.8 |
+| code_only | sonnet | 0.0 | 0.0 |  5.7 | 8.9 | 0.7 |  2.4 |
+| with_gpa  | haiku  | **6.0** | 0.0 |  7.3 | 0.0 | 0.1 | **11.8** |
+| with_gpa  | sonnet | **5.2** | 0.1 |  4.0 | 3.7 | 0.3 |  1.1 |
+
+**`gpa report` did NOT replace Read / Grep for Haiku.** It's additive.
+Haiku with_gpa makes *as many* Read calls (7.3) as code_only Haiku
+(7.5), and *more* Bash calls (11.8 vs 9.8 — the extras are `find`/`grep`
+shell pipelines against the upstream snapshot). Every `gpa` call is net
+new. Sonnet behaves more like we hoped: Read drops from 5.7 → 4.0, Grep
+drops 8.9 → 3.7, Bash drops 2.4 → 1.1. The curl counter is **effectively
+zero** (1 call across 80 runs) — so the CLI did fully supplant the
+raw-REST fallback path.
+
+### Paired Deltas (both modes correct, same scenario)
+
+|             | N | mean Δcost | mean Δcache_read | mean Δout_tok | mean Δturns |
+|-------------|--:|-----------:|-----------------:|--------------:|------------:|
+| Haiku  (R7) | 12 | +$0.0010 | +101,938 | −1,965 | +3.0 |
+| Sonnet (R7) | 14 | −$0.0644 |  −9,171 | −2,354 | +0.1 |
+
+Sonnet's paired-Δ cost went from −$0.022 (R6) to −$0.064 (R7) — 3× bigger
+win. Haiku's went from +$0.019 (R6) to +$0.001 — effectively broke even,
+not negative as hypothesised.
+
+### Per-Scenario Matrix
+
+| Scenario | co_h | co_s | gp_h | gp_s |
+|----------|:----:|:----:|:----:|:----:|
+| r11_three_js_effectcomposer_browser_window_r | Y | Y | Y | Y |
+| r12_omniscale_cleanedge_scaling_issues | Y | Y | Y | Y |
+| r15_post_effects_and_transparent_background_ | Y | Y | Y | Y |
+| r15_unrealbloompass_produces_no_visible_outp | Y | **N** | **N** | Y |
+| r20_three_js_meshdepthmaterial_depth_map_not | Y | Y | Y | Y |
+| r22_point_sprite_rendering_issues_with_three | Y | Y | Y | Y |
+| r23_using_multiple_alphamask_s_with_renderma | Y | Y | Y | Y |
+| r24_artifacts_when_rendering_both_sides_of_a | Y | Y | Y | Y |
+| r24_enabling_autogeneratemipmaps_breaks_filt | N | Y | **N** | Y |
+| r25_filters_with_backbuffers_seem_not_to_wor | Y | Y | **N** | Y |
+| r25_three_js_transparency_disparition | Y | Y | Y | Y |
+| r26_incorrect_behavior_in_colormatrixfilter_ | Y | Y | Y | Y |
+| r27_bug_black_squares_appear_when_rendering_ | Y | Y | Y | **N** |
+| r28_bug_in_rendering_glb_models | N | N | N | N |
+| r29_add_an_animated_icon_to_the_map_not_work | N | N | N | N |
+| r30_incomplete_lines_problem_with_mixing_lay | Y | Y | **N** | Y |
+| r32_v7_issue_with_custom_points_shader_three | N | N | **Y** | N |
+| r33_latest_build_6_38_1_got_glitchy_opacity_ | Y | Y | **N** | Y |
+| r34_depth_buffer_issue_when_using_depthoffie | Y | Y | Y | **N** |
+| r3_material_shines_through_when_zooming_out | Y | Y | Y | Y |
+
+### Qualitative findings
+
+1. **Haiku with `gpa` hits the turn cap.** 7/20 with_gpa Haiku runs hit
+   turns=41 (one over 40; claude counts the initial user turn separately)
+   and emit an empty result — auto-scored as incorrect. The same 4
+   scenarios regressed from correct-in-code-only to empty-in-with-gpa
+   (r15_unrealbloompass, r25_filters, r30_incomplete_lines, r33_opacity).
+   In each, Haiku ran `gpa report`, then spent the remaining budget in
+   `Bash(find/grep)` pipelines against the snapshot. Adding `gpa` doesn't
+   replace the source-reading phase for Haiku; it just adds upstream work.
+2. **Sonnet "replaces" upstream search with `gpa` more aggressively.**
+   Sonnet with_gpa cuts Grep (8.9 → 3.7), Read (5.7 → 4.0), Bash (2.4 → 1.1)
+   while adding 5.2 gpa calls — net tool-use is lower. This explains the
+   $0.204 cost drop vs R6: less cache churn, fewer tokens per turn. Drill
+   hints land well for Sonnet because Sonnet actually *follows* them
+   instead of continuing to grep.
+
+### Remaining gaps
+
+1. **Haiku needs a tighter exit criterion.** The agent doesn't know when
+   to stop after `gpa report` returns a clean green. A sensible fix:
+   make the drill-down hints conditional on a severity flag, or surface
+   a "NO_ISSUES_FOUND — likely explains symptom only with framework
+   context" signal so Haiku terminates on it. Alternatively raise
+   --max-turns for Haiku (or, more radically, route Haiku to `gpa report`
+   and Sonnet for the final synthesis).
+2. **r27 / r28 / r29 remain unsolved across the board** (0/4 cells correct
+   in all three rounds). These are cases where the bug lives in an upstream
+   interaction (mapbox symbol-layer collisions, three.js MRT, GLB
+   16-bit-index overflow) that neither the minimal C repro nor the current
+   gpa checks surface. They want a **framework-metadata tier** capture
+   (Tier 3 in the architecture) — e.g. a three.js plug-in that POSTs scene
+   graph + feature ids — not more GL-level checks.
+
+### Verdict
+
+- **Hypothesis 1 (drill hints close Haiku gap):** refuted. Paired Δcost
+  did drop from +$0.019 → +$0.001, but raw accuracy fell by 20 points
+  because runs timed out. Drill hints incentivise more exploration, which
+  doesn't fit Haiku's step budget.
+- **Hypothesis 2 (exact tool counts):** confirmed, strong signal. For
+  Sonnet, `gpa` *replaces* curl / Read / Grep. For Haiku it is *additive*.
+  The "just pipe to gpa, it's a single call" framing under-delivers for
+  the weaker model.
+
+### Raw artifacts
+
+- `/tmp/eval_round7/*.jsonl` — 80 per-run stream-json transcripts.
+- `docs/superpowers/eval/round7/` — scored.json, summary.txt, runner
+  scripts, score.py, captures.txt.
