@@ -227,6 +227,63 @@ TOOLS: List[Dict[str, Any]] = [
             "required": ["frame_id", "object_name"],
         },
     },
+    {
+        "name": "gpa_report",
+        "description": (
+            "Run every diagnostic check on a captured frame. Returns a structured "
+            "JSON report listing any findings (feedback loops, NaN uniforms, "
+            "missing clears, empty capture, etc.). Prefer this ONE call over "
+            "multiple inspect_drawcall queries — it covers 80% of diagnostic "
+            "classes in a single query."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "frame_id": {
+                    "type": ["integer", "string"],
+                    "description": "Frame ID or 'latest'",
+                    "default": "latest",
+                },
+                "only": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Run only these checks (by name).",
+                },
+                "skip": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Skip these checks (by name).",
+                },
+            },
+        },
+    },
+    {
+        "name": "gpa_check",
+        "description": (
+            "Drill down into a single diagnostic check with full detail. Use "
+            "after `gpa_report` flags something. Available check names: "
+            "empty-capture, feedback-loops, nan-uniforms, missing-clear."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "check_name": {
+                    "type": "string",
+                    "description": "Name of the check to drill into.",
+                },
+                "frame_id": {
+                    "type": ["integer", "string"],
+                    "description": "Frame ID or 'latest'",
+                    "default": "latest",
+                },
+                "dc_id": {
+                    "type": "integer",
+                    "description": "Restrict to a single draw call (optional).",
+                },
+            },
+            "required": ["check_name"],
+        },
+    },
 ]
 
 
@@ -406,6 +463,151 @@ def _tool_query_annotations(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
+class _CheckClientAdapter:
+    """Adapt :class:`APIClient` to the ``get_json(path)`` shape the
+    ``gpa.cli.checks`` modules expect.
+
+    The CLI checks use full REST paths like ``/api/v1/frames/1/overview``
+    (and embed query strings inline). :class:`APIClient` expects paths
+    relative to ``/api/v1`` and takes params as a dict. This adapter
+    strips the ``/api/v1`` prefix and splits any trailing query string
+    so the existing check code works unchanged.
+    """
+
+    def __init__(self, client: APIClient):
+        self._client = client
+
+    def get_json(self, path: str) -> Any:
+        # Strip /api/v1 prefix if present (APIClient already roots at /api/v1).
+        stripped = path
+        if stripped.startswith("/api/v1"):
+            stripped = stripped[len("/api/v1"):]
+        # Split off any query string and rebuild as params dict for APIClient.
+        query_params: Optional[Dict[str, Any]] = None
+        if "?" in stripped:
+            stripped, qs = stripped.split("?", 1)
+            query_params = {}
+            for part in qs.split("&"):
+                if not part:
+                    continue
+                if "=" in part:
+                    k, v = part.split("=", 1)
+                else:
+                    k, v = part, ""
+                query_params[k] = v
+        data = self._client.get(stripped, query_params)
+        if isinstance(data, dict) and "error" in data and "detail" in data:
+            # Match RestError surface so callers can distinguish HTTP failures.
+            from gpa.cli.rest_client import RestError
+
+            raise RestError(
+                f"GET {path} → HTTP {data.get('error')}: {data.get('detail')!r}",
+                status=int(data.get("error", 0) or 0),
+            )
+        return data
+
+
+def _resolve_frame_id_for_checks(client: APIClient, frame_id: Any) -> Optional[int]:
+    """Resolve 'latest'/None/str/int to an integer frame id, or None."""
+    if frame_id is None or (isinstance(frame_id, str) and frame_id.lower() == "latest"):
+        ov = client.get("/frames/current/overview")
+        if not isinstance(ov, dict) or "error" in ov:
+            return None
+        try:
+            return int(ov.get("frame_id", 0) or 0)
+        except (TypeError, ValueError):
+            return None
+    try:
+        return int(frame_id)
+    except (TypeError, ValueError):
+        return None
+
+
+def _tool_gpa_report(client: APIClient, args: Dict[str, Any]) -> str:
+    from gpa.cli import checks as checks_mod
+    from gpa.cli.checks import CheckResult
+    from gpa.cli.rest_client import RestError
+
+    frame_id = _resolve_frame_id_for_checks(client, args.get("frame_id", "latest"))
+    if frame_id is None:
+        return json.dumps({"error": "no frames captured yet"}, indent=2)
+
+    only = {s for s in (args.get("only") or []) if isinstance(s, str) and s.strip()}
+    skip = {s for s in (args.get("skip") or []) if isinstance(s, str) and s.strip()}
+
+    adapter = _CheckClientAdapter(client)
+    results: List[CheckResult] = []
+    for c in checks_mod.all_checks():
+        if only and c.name not in only:
+            continue
+        if c.name in skip:
+            continue
+        try:
+            results.append(c.run(adapter, frame_id=frame_id))
+        except RestError as exc:
+            results.append(CheckResult(name=c.name, status="error", error=str(exc)))
+        except Exception as exc:  # noqa: BLE001
+            results.append(CheckResult(name=c.name, status="error", error=str(exc)))
+
+    warning_count = sum(1 for r in results if r.status != "ok")
+    payload = {
+        "frame": frame_id,
+        "checks": [r.to_dict() for r in results],
+        "warning_count": warning_count,
+    }
+    return json.dumps(payload, indent=2)
+
+
+def _tool_gpa_check(client: APIClient, args: Dict[str, Any]) -> str:
+    from gpa.cli import checks as checks_mod
+    from gpa.cli.rest_client import RestError
+
+    name = args.get("check_name")
+    if not isinstance(name, str) or not name:
+        return json.dumps(
+            {"error": "check_name is required", "known": checks_mod.known_names()},
+            indent=2,
+        )
+
+    check = checks_mod.get_check(name)
+    if check is None:
+        return json.dumps(
+            {
+                "error": f"unknown check: {name!r}",
+                "known": checks_mod.known_names(),
+            },
+            indent=2,
+        )
+
+    frame_id = _resolve_frame_id_for_checks(client, args.get("frame_id", "latest"))
+    if frame_id is None:
+        return json.dumps({"error": "no frames captured yet"}, indent=2)
+
+    dc_id = args.get("dc_id")
+    if dc_id is not None:
+        try:
+            dc_id = int(dc_id)
+        except (TypeError, ValueError):
+            return json.dumps({"error": f"invalid dc_id: {dc_id!r}"}, indent=2)
+
+    adapter = _CheckClientAdapter(client)
+    try:
+        result = check.run(adapter, frame_id=frame_id, dc_id=dc_id)
+    except RestError as exc:
+        return json.dumps(
+            {"frame": frame_id, "check": name, "status": "error", "error": str(exc)},
+            indent=2,
+        )
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps(
+            {"frame": frame_id, "check": name, "status": "error", "error": str(exc)},
+            indent=2,
+        )
+
+    payload = {"frame": frame_id, "check": name, **result.to_dict()}
+    return json.dumps(payload, indent=2)
+
+
 def _tool_query_material(client: APIClient, args: Dict[str, Any]) -> str:
     frame_id = int(args["frame_id"])
     object_name = str(args["object_name"])
@@ -431,6 +633,8 @@ _DISPATCH = {
     "list_render_passes": _tool_list_render_passes,
     "query_material": _tool_query_material,
     "query_annotations": _tool_query_annotations,
+    "gpa_report": _tool_gpa_report,
+    "gpa_check": _tool_gpa_check,
 }
 
 
