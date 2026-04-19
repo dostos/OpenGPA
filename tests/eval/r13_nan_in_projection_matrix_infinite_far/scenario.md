@@ -1,6 +1,26 @@
-# R13_NAN_IN_PROJECTION_MATRIX_INFINITE_FAR: NaN in projection matrix from infinite far plane yields blank frame
+# R13: WebXRDepthSensing can result in invalid projectionMatrix (`NaN` values)
 
-## Bug
+## User Report
+
+When using WebXR depth sensing, Three.js adjusts the `far` and `near` properties of the camera to match the `depthFar` and `depthNear` coming from the depth-sensing module. In the case of the Meta Quest 3, the `far` value becomes `Infinity`.
+
+Steps to reproduce:
+1. Open the [`webxr_xr_dragging`](https://threejs.org/examples/#webxr_xr_dragging) example on a Quest 3 with depth sensing enabled:
+   ```js
+   document.body.appendChild( XRButton.createButton( renderer, {
+       'optionalFeatures': [ 'depth-sensing' ],
+       'depthSensing': { 'usagePreference': [ 'gpu-optimized' ], 'dataFormatPreference': [] }
+   } ) );
+   ```
+2. Click on 'Start XR'
+3. Click on 'Stop XR' to exit
+4. Notice the canvas being blank after exiting
+
+Rendering during the immersive session looks fine. But when exiting, the scene shows up empty (blank canvas). The issue started in r167.
+
+Version: r167 — Meta Quest 3, Chrome, Android
+
+## Ground Truth
 
 A perspective projection matrix is built from `near = 0.1`, `far = Infinity`.
 The standard `makePerspective` formulas place `far` in both the numerator and
@@ -15,6 +35,16 @@ has NaN in `gl_Position.z`. GPU clipping compares `z` against `-w` and `+w`;
 NaN fails every ordered comparison, so every primitive is discarded. The
 frame contains only the clear color — zero fragments from the triangle.
 
+WebXR depth sensing on Meta Quest 3 reports `depthFar = Infinity`, three.js
+propagates that value into `camera.far`, and `Matrix4.makePerspective`
+produces NaN entries in the projection matrix. After the immersive session
+ends and the user camera is used for normal rendering, the polluted matrix
+renders a blank canvas.
+
+The fix (PR #29120) adds a dedicated infinite-far code path in
+`setProjectionFromUnion`, using the non-generalized infinite perspective
+formula instead of the standard formula that divides by `near - far`.
+
 ## Expected Correct Output
 
 A 400×300 frame on a dark-blue background (`0.1, 0.1, 0.3`) with a large
@@ -25,29 +55,6 @@ one third of the pixels.
 
 A uniform dark-blue 400×300 frame. Not a single orange fragment is written.
 No GL error, no shader warning — `glGetError()` returns `GL_NO_ERROR`.
-
-## Ground Truth Diagnosis
-
-The upstream three.js issue describes exactly this bug in a WebXR context:
-WebXR depth sensing on Meta Quest 3 reports `depthFar = Infinity`, three.js
-propagates that value into `camera.far`, and `Matrix4.makePerspective`
-produces NaN entries in the projection matrix. After the immersive session
-ends and the user camera is used for normal rendering, the polluted matrix
-renders a blank canvas:
-
-> In the case of the Meta Quest 3, the `far` value becomes `Infinity`. As
-> a result, the left, right, XR _and_ user cameras all end up with `NaN`
-> values in their projection matrix as `Matrix4.makePerspective` does not
-> support an infinite far plane.
-
-> When exiting the immersive session, the scene is rendered with the
-> user-camera, which now has `NaN` values in its projection matrix,
-> resulting in the screen showing up empty.
-
-The fix (PR #29120) adds a dedicated infinite-far code path in
-`setProjectionFromUnion`, using the non-generalized infinite perspective
-formula (see the referenced StackExchange answer) instead of the standard
-formula that divides by `near - far`.
 
 ## Difficulty Rating
 

@@ -1,6 +1,15 @@
 # R3: 3D model with transparent material rendered incorrectly
 
-## Bug
+## User Report
+
+Some parts of the model have z-fighting/stitching artifacts, for example on the legs. Is this a bug?
+
+See attached wasp GLTF demo. The legs and some other areas show visible stitching/z-fighting where the geometry overlaps.
+
+Version: r155
+
+## Ground Truth
+
 Opaque overlapping geometry is rendered with `glDepthMask(GL_FALSE)` while
 depth testing is still enabled. Because no depth values are written, the
 depth buffer stays at its cleared value during the sequence, and later
@@ -8,6 +17,19 @@ draws' fragments always pass the depth test — regardless of whether they
 are actually behind earlier-drawn surfaces. The result is incorrect
 occlusion: whichever primitive was submitted last wins in every overlap
 region.
+
+The upstream diagnosis:
+
+> This is a modeling issue. For some reasons, `depthWrite` is disabled
+> for the legs materials. Enabling it solves the rendering issues.
+
+In three.js, `material.depthWrite` maps to `gl.depthMask()`. When a
+material has `depthWrite: false` but is treated as opaque (drawn during
+the opaque pass, without back-to-front sorting), overlapping primitives
+lose correct occlusion: whichever draw runs last writes color, because
+no prior draw wrote depth for the depth test to reject against. The fix
+in three.js is to enable `depthWrite` on those materials so `glDepthMask`
+stays `GL_TRUE` during the draw.
 
 ## Expected Correct Output
 Two overlapping triangles. The green triangle (T1, front, z=-0.4) was
@@ -21,20 +43,6 @@ the green one — i.e., the later-submitted but farther-away primitive
 wins. On real meshes with many interleaved overlapping primitives this
 manifests as the z-fighting / stitching pattern seen on the wasp model's
 legs and hair.
-
-## Ground Truth Diagnosis
-The upstream diagnosis is stated directly in the issue thread:
-
-> This is a modeling issue. For some reasons, `depthWrite` is disabled
-> for the legs materials. Enabling it solves the rendering issues.
-
-In three.js, `material.depthWrite` maps to `gl.depthMask()`. When a
-material has `depthWrite: false` but is treated as opaque (drawn during
-the opaque pass, without back-to-front sorting), overlapping primitives
-lose correct occlusion: whichever draw runs last writes color, because
-no prior draw wrote depth for the depth test to reject against. The fix
-in three.js is to enable `depthWrite` on those materials so `glDepthMask`
-stays `GL_TRUE` during the draw.
 
 ## Difficulty Rating
 3/5

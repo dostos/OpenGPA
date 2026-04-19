@@ -1,25 +1,47 @@
-# R10_FEEDBACK_LOOP_TRANSMISSION_DOUBLESIDE: Texture sampled while still attached as COLOR_ATTACHMENT0
+# R10: Feedback loop error with transmission + `antialias: false` + `DoubleSide` since r182
 
-## Bug
-A single `GL_TEXTURE_2D` object is the bound framebuffer's
-`COLOR_ATTACHMENT0` and is simultaneously bound to texture unit 0 with the
-active fragment program sampling from it. The draw call therefore reads
-from the same texture object it is writing to — a framebuffer/texture
-feedback loop.
+## User Report
 
-## Expected Correct Output
-The fullscreen quad blends a known input color sampled from
-`transmissionSamplerMap` with a base tint, producing a deterministic
-greenish-blue frame written into `transmissionTex`.
+`GL_INVALID_OPERATION: Feedback loop formed between Framebuffer and active Texture` occurs every frame when all of the following conditions are met:
 
-## Actual Broken Output
-The draw call is dropped (or produces undefined results). The
-`COLOR_ATTACHMENT0` retains the prior clear contents (yellow). On
-WebGL/ANGLE the driver emits
-`GL_INVALID_OPERATION: Feedback loop formed between Framebuffer and active Texture`
-on every draw.
+1. `WebGLRenderer` created with `antialias: false`
+2. A `MeshPhysicalMaterial` with `transmission > 0` and `side: DoubleSide`
+3. `WEBGL_multisampled_render_to_texture` extension is unavailable
 
-## Ground Truth Diagnosis
+The error floods the console (256+ per frame), degrades performance, and breaks antialiasing. Rendering still produces partial output but draw calls involving the transmission texture are silently dropped by the browser.
+
+**Introduced in:** r182 by PR #32444. **Works in:** r181 and earlier.
+
+```
+[.WebGL-0x...] GL_INVALID_OPERATION: glDrawElements: Feedback loop formed between Framebuffer and active Texture.
+[Violation] 'requestAnimationFrame' handler took <N>ms
+WebGL: too many errors, no more errors will be reported to the console for this context.
+```
+
+Reproduction:
+```js
+const renderer = new WebGLRenderer({ antialias: false });
+// antialias: false is the standard configuration when using EffectComposer
+
+const glass = new MeshPhysicalMaterial({
+  transmission: 1.0,
+  roughness: 0.05,
+  ior: 1.45,
+  thickness: 0.5,
+  side: DoubleSide,
+});
+scene.add(new Mesh(new SphereGeometry(1, 32, 32), glass));
+
+const composer = new EffectComposer(renderer);
+// ... render loop with composer
+```
+
+**Platform note:** On macOS Chrome (ANGLE/Metal backend), the `WEBGL_multisampled_render_to_texture` extension is available, hiding the bug. Reproduces on platforms where the extension is unavailable (many mobile devices, some Linux/Windows GPU drivers).
+
+Version: r182 — Desktop Chrome, macOS
+
+## Ground Truth
+
 The transmission render target was constructed with `samples = 0` because
 `antialias:false` causes `capabilities.samples` (which is sourced from
 `gl.getParameter(gl.SAMPLES)` on the default framebuffer) to be `0`. With
@@ -45,6 +67,24 @@ PR #32444 then changed the hardcoded `samples: 4` to
 `samples: capabilities.samples`, so the multisampling guarantee was lost
 whenever the canvas had `antialias:false`, re-introducing the feedback
 loop documented in #26177.
+
+A single `GL_TEXTURE_2D` object is the bound framebuffer's
+`COLOR_ATTACHMENT0` and is simultaneously bound to texture unit 0 with the
+active fragment program sampling from it. The draw call therefore reads
+from the same texture object it is writing to — a framebuffer/texture
+feedback loop.
+
+## Expected Correct Output
+The fullscreen quad blends a known input color sampled from
+`transmissionSamplerMap` with a base tint, producing a deterministic
+greenish-blue frame written into `transmissionTex`.
+
+## Actual Broken Output
+The draw call is dropped (or produces undefined results). The
+`COLOR_ATTACHMENT0` retains the prior clear contents (yellow). On
+WebGL/ANGLE the driver emits
+`GL_INVALID_OPERATION: Feedback loop formed between Framebuffer and active Texture`
+on every draw.
 
 ## Difficulty Rating
 4/5

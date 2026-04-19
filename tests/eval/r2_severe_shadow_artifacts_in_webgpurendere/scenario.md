@@ -1,30 +1,45 @@
-# R2_SEVERE_SHADOW_ARTIFACTS_IN_WEBGPURENDERE: Shadow pass does not invert face side, producing acne
+# R2: Severe shadow artifacts in WebGPURenderer compared to WebGLRenderer
 
-## Bug
+## User Report
+
+For the same scene `WebGPURenderer` shows severe shadow acne artifacts compared to `WebGLRenderer`.
+
+Both have identical settings regarding:
+- Shadow map resolution (1024)
+- Shadow map camera near / far
+- Render camera near / far
+- Shadow bias (0)
+- Normal bias (0)
+
+WebGPURenderer shows severe stippled shadow artifacts on lit surfaces. WebGLRenderer renders the same scene correctly with clean shadows.
+
+Live examples:
+- [WebGPURenderer (bugged)](https://jsfiddle.net/TobiasNoell/jprxayeb/23/)
+- [WebGLRenderer (correct)](https://jsfiddle.net/TobiasNoell/6hj3ear9/)
+
+Version: r182 — Desktop Chrome, Windows
+
+## Ground Truth
+
 The shadow-map depth pass runs with the same face-culling configuration as the main lit pass (`glCullFace(GL_BACK)`), so the depth target is populated with **front-face** depths of the caster. In the subsequent lit pass, the shadow comparison for those same front-facing fragments reduces to "my depth vs. a depth recorded from me" — the two values are numerically near-identical, and the sign of their difference becomes dominated by rasterization and projection noise. The result is pervasive shadow acne on surfaces that are geometrically lit.
+
+The reporter, after a day of investigation, identified the exact root cause:
+
+> It took me all day but I have eventually found the root cause for the severe shadow acne: `WebGPURenderer` did not configured the `side` property of the shadow materials correctly. All shadow map types were wrong except for VSM. This fix makes a huge difference in shadow precision.
+
+And the linked fix PR #32705:
+
+> In `WebGPURenderer`, the shadow side wasn't configured correctly which was the main reasons for the extreme shadow acne.
+
+The fix inverts the material `side` for the shadow pass so that the depth target captures the **back** faces relative to the light, not the front faces. Once the shadow map stores back-face depths, front-face fragments in the lit pass have strictly smaller light-space depth than the stored value and are correctly lit.
+
+Additionally, shadow bias was masking the symptom in most existing examples, which is why the bug went undiagnosed for so long.
 
 ## Expected Correct Output
 A rotated cube lit by a single directional light, where faces oriented toward the light appear as smooth, uniformly bright regions. The probe patch on the lit top face is overwhelmingly bright pixels.
 
 ## Actual Broken Output
 The lit faces of the cube are speckled with stippled dark pixels — classic shadow acne. The probe patch contains a bimodal mix of bright (correctly lit) and dark (incorrectly self-shadowed) pixels, even though no bias, no VSM, and no PCF softening are involved.
-
-## Ground Truth Diagnosis
-The reporter, after a day of investigation, identified the exact root cause in comment 4:
-
-> It took me all day but I have eventually found the root cause for the severe shadow acne: `WebGPURenderer` did not configured the `side` property of the shadow materials correctly. All shadow map types were wrong except for VSM. This fix makes a huge difference in shadow precision.
-
-And the linked fix PR #32705 states the same in its description:
-
-> In `WebGPURenderer`, the shadow side wasn't configured correctly which was the main reasons for the extreme shadow acne.
-
-The fix commit is https://github.com/mrdoob/three.js/pull/32705/commits/5e01df88482b754e607750eb981e9501bc5bfbc7 — it inverts the material `side` for the shadow pass so that the depth target captures the **back** faces relative to the light, not the front faces. Once the shadow map stores back-face depths, front-face fragments in the lit pass have strictly smaller light-space depth than the stored value and are correctly lit.
-
-Comment 7 explains why this had gone undiagnosed in examples: shadow bias was masking the symptom:
-
-> Almost all of them used a shadow bias to "hide" the artifacts. I think this issue hasn't been really understood until today^^.
-
-The minimal program in `main.c` reproduces this by rendering a cube's depth with `glCullFace(GL_BACK)` into a shadow FBO and then performing the standard shadow compare in the lit pass; the lit top face exhibits acne in the probe patch.
 
 ## Difficulty Rating
 4/5

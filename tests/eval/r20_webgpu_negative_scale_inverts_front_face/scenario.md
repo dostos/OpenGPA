@@ -1,32 +1,38 @@
-# R20_WEBGPU_NEGATIVE_SCALE_INVERTS_FRONT_FACE: Negative-scale mesh vanishes under back-face culling
+# R20: WebGPU: Negative scale inverts front-face direction
 
-## Bug
+## User Report
+
+On webGPU only (not the webGL2 fallback) the following results in the front-face direction inverting:
+
+```js
+tubeTop.scale.set(newXY.y, rawXY.x * 2, newXY.y)
+tubeBottom.scale.set(newXY.y, -rawXY.x * 2, newXY.y)
+```
+
+(WebGPU) - Bugged? The tube with negative Y scale appears incorrect.
+(WebGL2 Fallback) - Normal
+
+I'm keen to get a PR in here if possible, appreciated if someone wants to point me generally where to hunt for webGPU mesh-scale / face-direction logic.
+
+Live example: https://jsfiddle.net/vjgan6xh/1/
+
+Version: ^0.179.1 — Desktop Chrome, macOS/Linux
+
+## Ground Truth
+
 A model matrix with negative scale on one axis has a negative determinant, which flips triangle winding in clip space from CCW to CW (or vice versa). If the renderer fixes `frontFace = CCW` + `cullMode = BACK` unconditionally, the mirrored mesh's now-CW surface is classified as a back face and culled before rasterization. The mesh disappears on the first frame instead of rendering mirrored. Before the upstream fix, the WebGPU backend exhibited this while the WebGL backend did not, because the two backends disagreed on `frontFace`/`cullMode` conventions relative to their clip-space orientation.
+
+The linked PR that fixes the bug identifies the precise mismatch:
+
+> The PR makes sure the WebGPU backend implements the render pipeline values for `frontFace` and `cullMode` like in WebGL backend.
+
+Root cause: the WebGPU backend's chosen convention for `frontFace`/`cullMode` did not mirror what WebGL uses relative to clip-space handedness. Negative-determinant transforms (such as `scale.y = -1`) flip the clip-space winding of each triangle; without an aligned convention — or a per-object compensation that swaps `frontFace` when `det(model) < 0` — the backend culls the visible side of mirrored meshes.
 
 ## Expected Correct Output
 Both triangles render: the left one at its normal orientation, the right one mirrored along Y — but both visible and red. The right-half center pixel is red (>128).
 
 ## Actual Broken Output
 Only the left triangle renders. The negative-Y-scaled right triangle is culled because its effective winding flipped from CCW to CW and the `GL_BACK` cull mode drops it. The right-half center pixel is black (clear color).
-
-## Ground Truth Diagnosis
-The reporter isolates the symptom to the WebGPU backend specifically, with the WebGL fallback rendering correctly:
-
-> On webGPU only (not the webGL2 fallback) the following results in the front-face direction inverting:
-> ```js
-> tubeTop.scale.set(newXY.y, rawXY.x * 2, newXY.y)
-> tubeBottom.scale.set(newXY.y, -rawXY.x * 2, newXY.y)
-> ```
-
-A follow-up comment confirms the intended behavior — a negative-scale mesh should still render, just mirrored:
-
-> A mesh with negative scale will render correctly (mirrored) when this issue is resolved in WebGPURenderer.
-
-The linked PR that fixes the bug identifies the precise mismatch:
-
-> The PR makes sure the WebGPU backend implements the render pipeline values for `frontFace` and `cullMode` like in WebGL backend.
-
-Root cause: the WebGPU backend's chosen convention for `frontFace`/`cullMode` did not mirror what WebGL uses relative to clip-space handedness. Negative-determinant transforms (such as `scale.y = -1`) flip the clip-space winding of each triangle; without an aligned convention — or a per-object compensation that swaps `frontFace` when `det(model) < 0` — the backend culls the visible side of mirrored meshes. The minimal OpenGL program reproduces this with `glFrontFace(GL_CCW) + glCullFace(GL_BACK)` and a model matrix whose Y-scale is −1: the negatively-scaled triangle is dropped entirely while its identity-scaled twin renders.
 
 ## Difficulty Rating
 3/5
