@@ -73,7 +73,7 @@ def test_fetch_clones_when_absent(tmp_path):
 
 def test_fetch_falls_back_when_sha_fetch_fails(tmp_path):
     """If `git fetch --depth 1 origin <sha>` fails, fall back to fetching
-    the default branch at depth 50."""
+    the default branch at a deeper depth that covers typical PR histories."""
     cache = tmp_path / "cache"
     ref = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123")
     fetcher = SnapshotFetcher(cache_root=cache)
@@ -89,11 +89,11 @@ def test_fetch_falls_back_when_sha_fetch_fails(tmp_path):
 
     # Should succeed via fallback
     assert (result / ".complete").exists()
-    # There must be an additional fetch call (depth 50, no SHA arg)
+    # There must be an additional fetch call (deeper fallback, no SHA arg)
     fetch_calls = [c.args[0] for c in mock_run.call_args_list if c.args[0][1] == "fetch"]
     assert len(fetch_calls) >= 2
-    # The fallback fetch uses --depth 50
-    assert any("50" in argv for argv in fetch_calls)
+    # The fallback fetch uses --depth 500 (deep enough to include merge commits)
+    assert any("500" in argv for argv in fetch_calls)
 
 def test_fetch_removes_stale_dir_without_sentinel(tmp_path):
     """If target dir exists but has no .complete, treat as stale (crashed
