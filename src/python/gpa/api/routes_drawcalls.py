@@ -1,5 +1,6 @@
 """Draw call list and detail endpoints."""
-from typing import Any, Dict
+import math
+from typing import Any, Dict, List
 
 from fastapi import APIRouter, HTTPException, Query, Request
 
@@ -19,16 +20,87 @@ def _drawcall_summary(dc) -> Dict[str, Any]:
     }
 
 
+def _flatten_components(value: Any) -> List[Any]:
+    """Flatten a decoded uniform value into a flat list of components.
+
+    Handles scalars, flat lists (vec*), and nested lists (row-wise matrices).
+    Returns ``[value]`` for scalars.
+    """
+    if isinstance(value, (list, tuple)):
+        out: List[Any] = []
+        for v in value:
+            if isinstance(v, (list, tuple)):
+                out.extend(_flatten_components(v))
+            else:
+                out.append(v)
+        return out
+    return [value]
+
+
+def _find_nan_uniforms(params: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Scan decoded uniform params for NaN / Inf components.
+
+    Returns ``[{name, type, bad_components}, ...]``. Empty list means all
+    decoded uniforms are finite. Params without a decoded ``value`` (raw
+    bytes only) are skipped.
+    """
+    offenders: List[Dict[str, Any]] = []
+    for p in params or []:
+        if "value" not in p:
+            continue
+        components = _flatten_components(p["value"])
+        bad: List[int] = []
+        for idx, comp in enumerate(components):
+            if not isinstance(comp, (int, float)):
+                continue
+            try:
+                if math.isnan(comp) or math.isinf(comp):
+                    bad.append(idx)
+            except (TypeError, ValueError):
+                continue
+        if bad:
+            offenders.append({
+                "name": p.get("name"),
+                "type": p.get("type"),
+                "bad_components": bad,
+            })
+    return offenders
+
+
+def _sanitize_json_floats(obj):
+    """Replace NaN / Inf floats with string sentinels so strict JSON
+    encoders (Starlette) accept the payload. NaN / Inf in decoded uniforms
+    is legitimate signal — preserve it as ``"NaN"`` / ``"Infinity"`` /
+    ``"-Infinity"``.
+    """
+    if isinstance(obj, float):
+        if math.isnan(obj):
+            return "NaN"
+        if math.isinf(obj):
+            return "Infinity" if obj > 0 else "-Infinity"
+        return obj
+    if isinstance(obj, list):
+        return [_sanitize_json_floats(v) for v in obj]
+    if isinstance(obj, tuple):
+        return tuple(_sanitize_json_floats(v) for v in obj)
+    if isinstance(obj, dict):
+        return {k: _sanitize_json_floats(v) for k, v in obj.items()}
+    return obj
+
+
 def _drawcall_detail(dc) -> Dict[str, Any]:
     """Full detail for a single draw call."""
     result = _drawcall_summary(dc)
     pipeline_state = dict(dc.pipeline_state) if dc.pipeline_state else {}
     pipeline_state["fbo_color_attachment_tex"] = getattr(dc, "fbo_color_attachment_tex", 0)
+    nan_uniforms = _find_nan_uniforms(getattr(dc, "params", []) or [])
     result.update(
         {
             "index_count": dc.index_count,
             "index_type": getattr(dc, "index_type", 0) or 0,
             "pipeline_state": pipeline_state,
+            "has_nan_uniforms": bool(nan_uniforms),
+            "nan_uniforms": nan_uniforms,
         }
     )
     return result
@@ -103,7 +175,31 @@ def get_drawcall_shader(
         "frame_id": frame_id,
         "dc_id": dc_id,
         "shader_id": dc.shader_id,
-        "parameters": dc.params,
+        "parameters": _sanitize_json_floats(dc.params),
+    })
+
+
+@router.get("/frames/{frame_id}/drawcalls/{dc_id}/nan-uniforms")
+def get_drawcall_nan_uniforms(
+    frame_id: int, dc_id: int, request: Request
+):
+    """Return the uniforms whose decoded value contains NaN or Inf.
+
+    One-shot query for "is any input uniform NaN-tainted?" — agents
+    should hit this before hypothesizing local shader math bugs.
+    """
+    provider = request.app.state.provider
+    dc = provider.get_draw_call(frame_id, dc_id)
+    if dc is None:
+        raise HTTPException(
+            status_code=404, detail=f"Draw call {dc_id} in frame {frame_id} not found"
+        )
+    nan_uniforms = _find_nan_uniforms(getattr(dc, "params", []) or [])
+    return safe_json_response({
+        "frame_id": frame_id,
+        "dc_id": dc_id,
+        "has_nan_uniforms": bool(nan_uniforms),
+        "nan_uniforms": nan_uniforms,
     })
 
 

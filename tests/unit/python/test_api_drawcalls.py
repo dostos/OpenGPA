@@ -56,6 +56,43 @@ class TestDrawCallDetail:
         # conftest mock sets index_type = 0x1403 (GL_UNSIGNED_SHORT)
         assert data["index_type"] == 0x1403
 
+    def test_detail_flags_nan_uniforms(self, client, auth_headers):
+        """Detail exposes has_nan_uniforms + nan_uniforms list when any
+        decoded uniform has NaN/Inf components (conftest's `uBad` vec3)."""
+        resp = client.get("/api/v1/frames/1/drawcalls/0", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_nan_uniforms"] is True
+        by_name = {u["name"]: u for u in data["nan_uniforms"]}
+        assert "uBad" in by_name
+        assert by_name["uBad"]["bad_components"] == [1]
+        assert "uColor" not in by_name  # finite — not an offender
+
+    def test_nan_uniforms_endpoint_returns_subset(self, client, auth_headers):
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/0/nan-uniforms", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_nan_uniforms"] is True
+        assert len(data["nan_uniforms"]) == 1
+        assert data["nan_uniforms"][0]["name"] == "uBad"
+
+    def test_nan_uniforms_endpoint_404(self, client, auth_headers):
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/9999/nan-uniforms", headers=auth_headers
+        )
+        assert resp.status_code == 404
+
+    def test_empty_when_all_finite(self, client, auth_headers, mock_query_engine):
+        """Remove the NaN uniform and the flag drops to False."""
+        dc = mock_query_engine.get_draw_call(1, 0)
+        dc.params = dc.params[:1]  # drop uBad
+        resp = client.get("/api/v1/frames/1/drawcalls/0", headers=auth_headers)
+        assert resp.status_code == 200
+        assert resp.json()["has_nan_uniforms"] is False
+        assert resp.json()["nan_uniforms"] == []
+
     def test_get_drawcall_index_type_non_indexed(
         self, client, auth_headers, mock_query_engine
     ):

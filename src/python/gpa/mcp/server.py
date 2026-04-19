@@ -77,8 +77,8 @@ TOOLS: List[Dict[str, Any]] = [
                 "dc_id": {"type": "integer", "description": "Draw call ID"},
                 "aspect": {
                     "type": "string",
-                    "enum": ["detail", "shader", "textures", "vertices", "feedback-loops"],
-                    "description": "Which aspect to retrieve. 'feedback-loops' returns bound textures that are also the current FBO's color attachment (one-shot diagnosis for sample-from-render-target bugs).",
+                    "enum": ["detail", "shader", "textures", "vertices", "feedback-loops", "nan-uniforms"],
+                    "description": "Which aspect to retrieve. 'feedback-loops' returns bound textures that are also the current FBO's color attachment (one-shot diagnosis for sample-from-render-target bugs). 'nan-uniforms' returns decoded uniforms with NaN/Inf components (one-shot diagnosis for NaN-in-output bugs).",
                     "default": "detail",
                 },
             },
@@ -319,6 +319,8 @@ def _tool_inspect_drawcall(client: APIClient, args: Dict[str, Any]) -> str:
         data = client.get(f"/frames/{frame_id}/drawcalls/{dc_id}/vertices")
     elif aspect == "feedback-loops":
         data = client.get(f"/frames/{frame_id}/drawcalls/{dc_id}/feedback-loops")
+    elif aspect == "nan-uniforms":
+        data = client.get(f"/frames/{frame_id}/drawcalls/{dc_id}/nan-uniforms")
     else:
         data = {"error": f"Unknown aspect '{aspect}'"}
 

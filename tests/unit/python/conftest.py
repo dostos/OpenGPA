@@ -60,14 +60,21 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     ps.cull_mode = "BACK"
     ps.front_face = "CCW"
     dc.pipeline = ps
-    # Shader params attached directly to the draw call
+    # Shader params attached directly to the draw call.
+    # `uColor` is finite; `uBad` is a vec3 with a NaN in component 1 to
+    # exercise the NaN-uniform detection path.
+    import struct as _struct
+    import math as _math
     param = MagicMock()
     param.name = "uColor"
-    # GL_FLOAT_VEC4 = 0x8B52; encode vec4(1.0, 0.0, 0.0, 1.0) as 16 raw bytes
-    import struct as _struct
     param.type = 0x8B52  # GL_FLOAT_VEC4
     param.data = _struct.pack("<4f", 1.0, 0.0, 0.0, 1.0)
-    dc.params = [param]
+    bad = MagicMock()
+    bad.name = "uBad"
+    bad.type = 0x8B51  # GL_FLOAT_VEC3
+    bad.data = _struct.pack("<3f", 1.0, float("nan"), 3.0)
+    _ = _math  # silence unused-import
+    dc.params = [param, bad]
     # Texture bindings attached directly to the draw call.
     # Two entries so tests can exercise the feedback-loop derivation:
     # slot 0 is innocuous (id 3), slot 1 collides with the FBO attachment (id 7).
