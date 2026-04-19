@@ -68,14 +68,22 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     param.type = 0x8B52  # GL_FLOAT_VEC4
     param.data = _struct.pack("<4f", 1.0, 0.0, 0.0, 1.0)
     dc.params = [param]
-    # Texture bindings attached directly to the draw call
-    tex = MagicMock()
-    tex.slot = 0
-    tex.texture_id = 3
-    tex.width = 512
-    tex.height = 512
-    tex.format = "RGBA8"
-    dc.textures = [tex]
+    # Texture bindings attached directly to the draw call.
+    # Two entries so tests can exercise the feedback-loop derivation:
+    # slot 0 is innocuous (id 3), slot 1 collides with the FBO attachment (id 7).
+    tex0 = MagicMock()
+    tex0.slot = 0
+    tex0.texture_id = 3
+    tex0.width = 512
+    tex0.height = 512
+    tex0.format = "RGBA8"
+    tex1 = MagicMock()
+    tex1.slot = 1
+    tex1.texture_id = 7
+    tex1.width = 800
+    tex1.height = 600
+    tex1.format = "RGBA8"
+    dc.textures = [tex0, tex1]
     dc.fbo_color_attachment_tex = 7  # simulates render-to-texture FBO
     return dc
 

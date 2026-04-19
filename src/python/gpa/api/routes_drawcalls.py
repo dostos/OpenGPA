@@ -33,6 +33,25 @@ def _drawcall_detail(dc) -> Dict[str, Any]:
     return result
 
 
+def _enrich_textures(dc) -> list:
+    """Add a derived `collides_with_fbo_attachment` flag to each bound texture.
+
+    A collision means the same texture object is simultaneously the current
+    FBO's color attachment and a bound sampler — the classic feedback-loop
+    signature. Surfacing it inline saves the agent from manually
+    cross-referencing two fields.
+    """
+    fbo_tex = getattr(dc, "fbo_color_attachment_tex", 0) or 0
+    enriched = []
+    for t in dc.textures or []:
+        entry = dict(t)
+        entry["collides_with_fbo_attachment"] = bool(
+            fbo_tex and entry.get("texture_id") == fbo_tex
+        )
+        enriched.append(entry)
+    return enriched
+
+
 @router.get("/frames/{frame_id}/drawcalls")
 def list_drawcalls(
     frame_id: int,
@@ -101,7 +120,37 @@ def get_drawcall_textures(
     return safe_json_response({
         "frame_id": frame_id,
         "dc_id": dc_id,
-        "textures": dc.textures,
+        "textures": _enrich_textures(dc),
+    })
+
+
+@router.get("/frames/{frame_id}/drawcalls/{dc_id}/feedback-loops")
+def get_drawcall_feedback_loops(
+    frame_id: int, dc_id: int, request: Request
+):
+    """Return any bound textures that are also the current FBO's color attachment.
+
+    Empty `textures` list = no feedback loop. Non-empty = classic
+    "sample-from-render-target" bug (e.g. transmission/refraction passes
+    in three.js). One-shot query so agents don't have to cross-reference
+    two fields on the detail endpoint.
+    """
+    provider = request.app.state.provider
+    dc = provider.get_draw_call(frame_id, dc_id)
+    if dc is None:
+        raise HTTPException(
+            status_code=404, detail=f"Draw call {dc_id} in frame {frame_id} not found"
+        )
+    fbo_tex = getattr(dc, "fbo_color_attachment_tex", 0) or 0
+    offenders = [
+        dict(t) for t in (dc.textures or [])
+        if fbo_tex and t.get("texture_id") == fbo_tex
+    ]
+    return safe_json_response({
+        "frame_id": frame_id,
+        "dc_id": dc_id,
+        "fbo_color_attachment_tex": fbo_tex,
+        "textures": offenders,
     })
 
 

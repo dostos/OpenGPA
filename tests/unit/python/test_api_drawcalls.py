@@ -96,9 +96,55 @@ class TestDrawCallTextures:
         assert tex["slot"] == 0
         assert tex["texture_id"] == 3
 
+    def test_textures_carry_fbo_collision_flag(self, client, auth_headers):
+        """Every bound texture is tagged with collides_with_fbo_attachment."""
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/0/textures", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        textures = resp.json()["textures"]
+        by_slot = {t["slot"]: t for t in textures}
+        # Conftest: slot 0 tex_id=3 (no collide), slot 1 tex_id=7 (== FBO attachment)
+        assert by_slot[0]["collides_with_fbo_attachment"] is False
+        assert by_slot[1]["collides_with_fbo_attachment"] is True
+
     def test_get_textures_nonexistent_404(self, client, auth_headers):
         resp = client.get(
             "/api/v1/frames/1/drawcalls/9999/textures", headers=auth_headers
+        )
+        assert resp.status_code == 404
+
+
+class TestDrawCallFeedbackLoops:
+    def test_returns_only_colliding_textures(self, client, auth_headers):
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/0/feedback-loops", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["fbo_color_attachment_tex"] == 7
+        # Only the slot-1 texture (id 7) matches the FBO attachment
+        assert len(data["textures"]) == 1
+        assert data["textures"][0]["slot"] == 1
+        assert data["textures"][0]["texture_id"] == 7
+
+    def test_empty_when_no_collision(self, client, auth_headers, mock_query_engine):
+        """If no bound texture matches the FBO attachment, textures is empty."""
+        # Mutate the mock so neither texture collides
+        dc = mock_query_engine.get_draw_call(1, 0)
+        dc.fbo_color_attachment_tex = 999  # doesn't match id 3 or 7
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/0/feedback-loops", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["fbo_color_attachment_tex"] == 999
+        assert data["textures"] == []
+
+    def test_nonexistent_drawcall_404(self, client, auth_headers):
+        resp = client.get(
+            "/api/v1/frames/1/drawcalls/9999/feedback-loops",
+            headers=auth_headers,
         )
         assert resp.status_code == 404
 
