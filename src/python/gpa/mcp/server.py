@@ -198,6 +198,22 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
+        "name": "query_annotations",
+        "description": (
+            "Return free-form framework annotations for a frame (POSTed by a "
+            "plugin as a JSON dict). Empty dict if nothing was posted. Useful "
+            "for JS-layer state upstream of GL calls (e.g. mapbox tile cache, "
+            "current zoom level)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "frame_id": {"type": "integer", "description": "Frame ID"},
+            },
+            "required": ["frame_id"],
+        },
+    },
+    {
         "name": "query_material",
         "description": (
             "Get material properties for a named object — shader, textures, PBR parameters"
@@ -380,6 +396,12 @@ def _tool_list_render_passes(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
+def _tool_query_annotations(client: APIClient, args: Dict[str, Any]) -> str:
+    frame_id = int(args["frame_id"])
+    data = client.get(f"/frames/{frame_id}/annotations")
+    return json.dumps(data, indent=2)
+
+
 def _tool_query_material(client: APIClient, args: Dict[str, Any]) -> str:
     frame_id = int(args["frame_id"])
     object_name = str(args["object_name"])
@@ -404,6 +426,7 @@ _DISPATCH = {
     "explain_pixel": _tool_explain_pixel,
     "list_render_passes": _tool_list_render_passes,
     "query_material": _tool_query_material,
+    "query_annotations": _tool_query_annotations,
 }
 
 

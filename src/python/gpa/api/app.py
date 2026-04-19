@@ -26,6 +26,7 @@ def safe_json_response(data, status_code=200):
 def create_app(provider=None, auth_token: str = "",
                metadata_store=None,
                framework_query_engine=None,
+               annotations_store=None,
                # Legacy kwargs for backward compatibility
                query_engine=None, engine=None) -> FastAPI:
     """Create and configure the OpenGPA REST API application.
@@ -72,6 +73,12 @@ def create_app(provider=None, auth_token: str = "",
         framework_query_engine = FrameworkQueryEngine(provider, metadata_store)
     app.state.framework_query_engine = framework_query_engine
 
+    # Free-form per-frame annotations (minimal Tier-3 precursor)
+    if annotations_store is None:
+        from gpa.api.annotations_store import AnnotationsStore
+        annotations_store = AnnotationsStore()
+    app.state.annotations = annotations_store
+
     # Legacy attributes — kept so old code that accesses these directly
     # (e.g. tests that haven't been updated) continues to work.
     app.state.query_engine = getattr(provider, "_qe", None)
@@ -98,6 +105,7 @@ def create_app(provider=None, auth_token: str = "",
     from .routes_objects import router as objects_router
     from .routes_passes import router as passes_router
     from .routes_explain import router as explain_router
+    from .routes_annotations import router as annotations_router
 
     app.include_router(frames_router, prefix="/api/v1")
     app.include_router(drawcalls_router, prefix="/api/v1")
@@ -109,5 +117,6 @@ def create_app(provider=None, auth_token: str = "",
     app.include_router(objects_router, prefix="/api/v1")
     app.include_router(passes_router, prefix="/api/v1")
     app.include_router(explain_router, prefix="/api/v1")
+    app.include_router(annotations_router, prefix="/api/v1")
 
     return app
