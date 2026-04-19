@@ -47,6 +47,28 @@ class TestDrawCallDetail:
         # conftest mock sets fbo_color_attachment_tex = 7
         assert ps["fbo_color_attachment_tex"] == 7
 
+    def test_get_drawcall_index_type(self, client, auth_headers):
+        """Detail must include index_type so agents can spot UNSIGNED_SHORT truncation (r28)."""
+        resp = client.get("/api/v1/frames/1/drawcalls/0", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "index_type" in data
+        # conftest mock sets index_type = 0x1403 (GL_UNSIGNED_SHORT)
+        assert data["index_type"] == 0x1403
+
+    def test_get_drawcall_index_type_non_indexed(
+        self, client, auth_headers, mock_query_engine
+    ):
+        """Non-indexed draws (glDrawArrays) report index_type=0."""
+        dc = mock_query_engine.get_draw_call(1, 0)
+        dc.index_count = 0
+        dc.index_type = 0
+        resp = client.get("/api/v1/frames/1/drawcalls/0", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["index_count"] == 0
+        assert data["index_type"] == 0
+
     def test_get_nonexistent_drawcall_404(self, client, auth_headers):
         resp = client.get("/api/v1/frames/1/drawcalls/9999", headers=auth_headers)
         assert resp.status_code == 404

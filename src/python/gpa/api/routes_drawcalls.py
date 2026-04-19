@@ -27,6 +27,7 @@ def _drawcall_detail(dc) -> Dict[str, Any]:
     result.update(
         {
             "index_count": dc.index_count,
+            "index_type": getattr(dc, "index_type", 0) or 0,
             "pipeline_state": pipeline_state,
         }
     )
@@ -170,5 +171,6 @@ def get_drawcall_vertices(
         "dc_id": dc_id,
         "vertex_count": dc.vertex_count,
         "index_count": dc.index_count,
+        "index_type": getattr(dc, "index_type", 0) or 0,
         "primitive_type": dc.primitive_type,
     })

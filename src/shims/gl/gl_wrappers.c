@@ -69,6 +69,7 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
     gpa_shadow_record_draw(&gpa_shadow);
     gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
+                               /*index_type=*/0,
                                /*instance_count=*/1);
     (void)first;
 }
@@ -80,8 +81,9 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices
     gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
+                               /*index_type=*/(uint32_t)type,
                                /*instance_count=*/1);
-    (void)type; (void)indices;
+    (void)indices;
 }
 
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei instancecount) {
@@ -90,6 +92,7 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei inst
     gpa_shadow_record_draw(&gpa_shadow);
     gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
+                               /*index_type=*/0,
                                (uint32_t)instancecount);
     (void)first;
 }
@@ -102,8 +105,9 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
     gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
+                               /*index_type=*/(uint32_t)type,
                                (uint32_t)instancecount);
-    (void)type; (void)indices;
+    (void)indices;
 }
 
 /* --------------------------------------------------------------------------

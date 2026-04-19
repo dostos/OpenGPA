@@ -17,12 +17,15 @@ void gpa_frame_on_swap(void);
  *   vertex_count   - number of vertices (count arg to glDrawArrays, or
  *                    derived from index count for glDrawElements)
  *   index_count    - number of indices (0 for non-indexed draws)
+ *   index_type     - GL index type enum (GL_UNSIGNED_SHORT / INT / BYTE);
+ *                    0 for non-indexed draws
  *   instance_count - instance count (1 for non-instanced draws)
  */
 void gpa_frame_record_draw_call(const GpaShadowState* shadow,
                                  uint32_t primitive,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
+                                 uint32_t index_type,
                                  uint32_t instance_count);
 
 /* Reset per-frame draw call recording buffer. Called at the start of each

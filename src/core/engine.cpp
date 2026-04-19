@@ -502,6 +502,12 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                     dc_ptr += 4;
                 }
 
+                // Index type (uint32 GL enum; 0 for non-indexed draws)
+                if (dc_ptr + 4 <= dc_end) {
+                    std::memcpy(&dc.index_type, dc_ptr, 4);
+                    dc_ptr += 4;
+                }
+
                 frame.draw_calls.push_back(std::move(dc));
             }
 

@@ -41,6 +41,7 @@ typedef struct {
     uint32_t index_count;
     uint32_t instance_count;
     uint32_t shader_program_id;
+    uint32_t index_type;  /* GL enum: GL_UNSIGNED_SHORT/INT/BYTE; 0 for non-indexed */
 
     /* Pipeline state */
     int32_t  viewport[4];
@@ -93,6 +94,7 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
                                  uint32_t primitive,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
+                                 uint32_t index_type,
                                  uint32_t instance_count) {
     if (gpa_draw_call_count >= GPA_MAX_DRAW_CALLS_PER_FRAME) return;
 
@@ -105,6 +107,7 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
     s->index_count      = index_count;
     s->instance_count   = instance_count;
     s->shader_program_id = shadow->current_program;
+    s->index_type       = index_type;
 
     /* Pipeline state */
     memcpy(s->viewport, shadow->viewport, sizeof(s->viewport));
@@ -193,6 +196,7 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
  *   uint16  debug_group_path_len
  *   debug_group_path_len chars (no null terminator)
  *   uint32  fbo_color_attachment_tex
+ *   uint32  index_type  (GL enum; 0 for non-indexed draws)
  *
  * Returns the number of bytes written.  The caller must ensure `buf` has
  * enough room; `buf_max` is the hard ceiling.
@@ -285,6 +289,10 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         /* FBO color attachment texture (uint32) */
         if (p + 4 > end) break;
         memcpy(p, &s->fbo_color_attachment_tex, 4); p += 4;
+
+        /* Index type (uint32 GL enum; 0 for non-indexed draws) */
+        if (p + 4 > end) break;
+        memcpy(p, &s->index_type, 4); p += 4;
     }
 
     return (size_t)(p - buf);

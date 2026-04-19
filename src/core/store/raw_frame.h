@@ -57,6 +57,9 @@ struct RawDrawCall {
 
     // FBO attachment info (color attachment texture ID at time of draw)
     uint32_t fbo_color_attachment_tex = 0;
+
+    // GL index type enum for indexed draws (GL_UNSIGNED_SHORT/INT/BYTE); 0 for glDrawArrays*
+    uint32_t index_type = 0;
 };
 
 // A per-frame glClear record

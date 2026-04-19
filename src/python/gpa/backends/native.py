@@ -133,6 +133,7 @@ class NativeBackend(FrameProvider):
             })
 
         fbo_tex = getattr(dc, "fbo_color_attachment_tex", 0) or 0
+        index_type = getattr(dc, "index_type", 0) or 0
 
         return DrawCallInfo(
             id=dc.id,
@@ -145,6 +146,7 @@ class NativeBackend(FrameProvider):
             params=params,
             textures=textures,
             fbo_color_attachment_tex=fbo_tex,
+            index_type=index_type,
         )
 
     # -- FrameProvider implementation ----------------------------------------

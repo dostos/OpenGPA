@@ -80,7 +80,8 @@ PYBIND11_MODULE(_gpa_core, m) {
                              dc.index_data.size());
         })
         .def_readonly("debug_group_path", &gpa::NormalizedDrawCall::debug_group_path)
-        .def_readonly("fbo_color_attachment_tex", &gpa::NormalizedDrawCall::fbo_color_attachment_tex);
+        .def_readonly("fbo_color_attachment_tex", &gpa::NormalizedDrawCall::fbo_color_attachment_tex)
+        .def_readonly("index_type", &gpa::NormalizedDrawCall::index_type);
 
     // -------------------------------------------------------------------------
     // DrawCallDiff

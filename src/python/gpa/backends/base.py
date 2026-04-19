@@ -47,6 +47,7 @@ class DrawCallInfo:
     params: List[Dict[str, Any]] = field(default_factory=list)
     textures: List[Dict[str, Any]] = field(default_factory=list)
     fbo_color_attachment_tex: int = 0
+    index_type: int = 0
 
 
 # ---------------------------------------------------------------------------
