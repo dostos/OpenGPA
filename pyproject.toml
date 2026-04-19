@@ -23,3 +23,4 @@ dev = [
 
 [project.scripts]
 gpa-curate = "gpa.eval.curation.pipeline:main"
+gpa = "gpa.cli.main:main"

@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Wrapper that invokes the gpa CLI from a source checkout without needing
+# `pip install -e .`.  Honours $GPA_PYTHON to pin the interpreter.
+set -e
+here="$(cd "$(dirname "$0")" && pwd)"
+root="$(cd "$here/.." && pwd)"
+py="${GPA_PYTHON:-python3}"
+PYTHONPATH="$root/src/python${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m gpa.cli.main "$@"
