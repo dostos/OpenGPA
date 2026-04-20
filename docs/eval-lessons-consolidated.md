@@ -189,6 +189,9 @@ In decreasing order of leverage:
    directly**, not via self-reported counter.
 5. **Add derived `fragment_outputs_mismatch_attachments` field** (R5 gap 4)
    — the raw MRT data is there (`9cb4eee`); the derivation is not.
+6. R8 found 2/11 remaining Haiku timeouts from "warning surfaces symptom,
+   not root cause" pattern. Tier-2 closure hint shipped as `3b99ef5`
+   addresses this.
 
 ---
 
