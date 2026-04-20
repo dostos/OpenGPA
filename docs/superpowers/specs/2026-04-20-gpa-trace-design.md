@@ -1,7 +1,8 @@
 # `gpa trace` — Reverse-Lookup Value Attribution
 
 **Date:** 2026-04-20
-**Status:** design; not yet implemented
+**Status:** Phases 1–3 shipped; Phase 4 (Round-9 measurement) pending
+**Usage:** see [`docs/gpa-trace-usage.md`](../../gpa-trace-usage.md)
 **Motivation:** Rounds 5–8 showed OpenGPA loses on "source-logical" bugs (r27 fractional `maxZoom`, r28 16-bit index overflow, r29 mapbox symbol-layer collision). These bugs have consistent GL state; the error is in app-level logic that *produced* the value. Call-stack attribution alone is insufficient — it points to the call site, but the value itself is typically a N-hop transformation of deeper framework fields. In a 300K-line codebase the agent still has to trace.
 
 `gpa trace` inverts the problem: **given a captured value, list app-level fields that currently equal it.** Narrows the search radius from "entire codebase" to "these 3 fields." The agent spends one query instead of twenty greps.
@@ -171,34 +172,78 @@ One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the 
 
 > "Reverse-lookup app-level fields whose value matches a captured uniform / texture ID / literal. Answers 'where in the framework state did this value come from?' Useful when a uniform looks wrong and you need to find the deeper field that set it."
 
-## Implementation phases
+## Implementation status: shipped
 
-### Phase 1 — WebGL capture (ships in ~2 days)
+### Phase 1 — WebGL capture (shipped)
 
-- Extend `src/shims/webgl/gpa-shim.js`:
-  - Hook `bindRoot()` registry + default roots
-  - BFS scanner with depth/size caps
-  - On each `gl.uniform*` / `gl.bindTexture` (gated mode): build value-index, POST to `/frames/{frame}/drawcalls/{dc}/sources`
-- New server endpoint `POST /frames/{id}/drawcalls/{dc}/sources` in new `routes_trace.py`
-- In-memory value-index store keyed by (frame, dc)
+- `src/shims/webgl/extension/gpa-trace.js` — BFS scanner with depth/size
+  caps, gated/lazy/eager modes, SDK `gpa.trace.addRoot()`, POSTs to
+  `/frames/{id}/drawcalls/{dc}/sources`.
+- `src/python/gpa/api/trace_store.py` — in-memory LRU-per-frame store
+  (`put` / `get` / `find_value` / `get_frame`).
+- `src/python/gpa/api/routes_trace.py` — POST/GET raw sources endpoint.
+- 32 unit tests.
 
-### Phase 2 — query surface
+### Phase 2 — query surface (shipped)
 
 - `src/python/gpa/cli/commands/trace.py` — `gpa trace uniform|texture|value`
-- `src/python/gpa/cli/checks/trace_value.py` — optional check that flags "uniform value matches field X — likely came from there"
-- MCP tool `gpa_trace_value`
+  with `--frame / --dc / --json`. Plain-text renderer matches the
+  "Query response" section's shape.
+- REST endpoints added to `routes_trace.py`:
+  - `GET /frames/{id}/drawcalls/{dc}/trace/uniform/{name}`
+  - `GET /frames/{id}/drawcalls/{dc}/trace/texture/{tex_id}`
+  - `GET /frames/{id}/drawcalls/{dc}/trace/value?query=<literal>`
+  - `GET /frames/{id}/trace/value?query=<literal>` (frame-wide)
+  Value matching is done by parsing the stored hash-key back into a
+  number (IEEE 754 round-trip, float32-tolerant) rather than by
+  re-hashing the query literal — re-implementing JS's
+  `Number.prototype.toString(36)` exactly is fiddly and unnecessary.
+- MCP tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` in
+  `src/python/gpa/mcp/server.py`.
 
-### Phase 3 — confidence + ranking
+### Phase 3 — confidence + ranking (shipped)
 
-- Path hop-count as base distance
-- Value-rarity heuristic (count occurrences across all frames; unique-ish values → higher confidence)
-- Framework-specific ranking hints (e.g. three.js `uniforms.*.value` paths rank above generic `_private` paths)
+- `src/python/gpa/api/trace_ranking.py` — `rank_candidates()` sorts by
+  `(tier desc, hops asc, path length asc)`. Inputs:
+  - Hop distance: `.`-separated depth from the declared root (bracket
+    indexing `foo[0]` counts as a hop).
+  - Value rarity: `rank_candidates(..., corpus={"__count__": N})`;
+    `N == 1` upgrades one tier, `N > 5` downgrades one tier.
+  - Framework hints: a short list of regex prefixes
+    (`FRAMEWORK_HINT_PATTERNS`) — three.js `uniforms.*.value`, mapbox-gl
+    `map._transform` / `map.style`, PIXI `app.stage`, and the generic
+    `scene` / `camera` roots. Match → +1 tier.
+- `build_corpus_for_value()` walks the last 10 frames to build the
+  rarity count.
+- Query routes invoke ranking automatically; CLI JSON output exposes
+  both `confidence` (ranked) and `raw_confidence` (from the scanner).
 
-### Phase 4 — measurement (Round 9)
+### Phase 4 — measurement (Round 9, pending)
 
-- Re-run R7's 20 scenarios + the 10 state-collision scenarios with tracing enabled
-- Target: r27 / r28 / r29 go from 0/4 → ≥ 2/4 correct
-- Measure: query count delta (how often agents actually use `gpa trace` vs other tools)
+- Re-run R7's 20 scenarios + the 10 state-collision scenarios with
+  tracing enabled.
+- Target: r27 / r28 / r29 go from 0/4 → ≥ 2/4 correct.
+- Measure: query count delta (how often agents actually use
+  `gpa trace` vs other tools).
+
+## Divergences from the original design
+
+- **REST path layout**. The original design named the query endpoint
+  `/frames/{id}/drawcalls/{dc}/value-origin?field=<name>`. Shipped shape
+  is resource-oriented — `/trace/uniform/{name}`, `/trace/texture/{id}`,
+  `/trace/value?query=<lit>` — which matches the CLI subcommand naming
+  and avoids overloading a single endpoint with three distinct
+  semantics.
+- **Query-side hashing** replaced with **query-side reverse-parsing** of
+  stored hash keys. The JS scanner uses `Number.prototype.toString(36)`
+  which has "shortest round-trip" float formatting that is
+  painful to re-implement exactly in Python. Parsing the base-36 digits
+  back into a Python `float` and comparing with `math.isclose(rel=1e-5)`
+  handles both the float32-vs-float64 precision gap (captured uniforms
+  are float32) and the JS→Python numeric round-trip in one pass.
+- **Vector-uniform lookup** compares the whole array first (via
+  canonical JSON → djb2 hash). Per-component fallback was considered
+  and dropped for V1 — scenario data so far has not needed it.
 
 ## Open questions
 
@@ -213,7 +258,7 @@ One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the 
 
 Early versions of this doc imagined a route where the agent describes the value it's tracing and an LLM writes a grep-over-snapshot query. Dropped: this is exactly what the agent was doing in R5 that blew cache_read to +241K. The point of `gpa trace` is that the answer is pre-computed at capture time — no grepping needed.
 
-## Success criteria
+## Success criteria — awaiting Round 9 measurement
 
 After Phase 4 (Round 9):
 
