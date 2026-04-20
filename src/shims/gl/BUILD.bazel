@@ -46,7 +46,11 @@ cc_library(
         "gl_wrappers.h",
         "ipc_client.h",
     ],
-    deps = [":shadow_state"],
+    linkopts = ["-ldl"],
+    deps = [
+        ":native_trace",
+        ":shadow_state",
+    ],
     visibility = ["//visibility:public"],
 )
 

@@ -4,6 +4,7 @@
 #include "gl_wrappers.h"
 #include "shadow_state.h"
 #include "ipc_client.h"
+#include "native_trace.h"
 
 GpaRealGlFuncs gpa_real_gl = {0};
 GpaShadowState gpa_shadow = {0};
@@ -22,6 +23,9 @@ void gpa_init(void) {
     gpa_wrappers_ready = 1;
     gpa_wrappers_init();
     gpa_shadow_init(&gpa_shadow);
+    /* Phase 1 of `gpa trace` native side: opt-in via GPA_TRACE_NATIVE=1.
+     * No-op otherwise. */
+    gpa_native_trace_init();
 }
 
 /* Phase 2: connect IPC to engine. Only called from glXSwapBuffers,

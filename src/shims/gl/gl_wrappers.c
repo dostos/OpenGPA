@@ -5,10 +5,21 @@
 #include "gl_wrappers.h"
 #include "shadow_state.h"
 #include "frame_capture.h"
+#include "native_trace.h"
 
 /* Declared in gl_shim.c */
 extern GpaShadowState gpa_shadow;
 void gpa_init(void);
+
+/* Native-trace scan hook. Fires on glUniform* / glBindTexture in gated
+ * mode, matching the browser JS scanner. No-op unless GPA_TRACE_NATIVE=1
+ * was set at shim init. */
+static inline void gpa_trace_gated(void) {
+    if (gpa_native_trace_is_enabled()) {
+        gpa_native_trace_scan(gpa_shadow.frame_number,
+                              gpa_shadow.draw_call_count);
+    }
+}
 
 /* --------------------------------------------------------------------------
  * Dispatch table initialization
@@ -124,24 +135,28 @@ void glUniform1f(GLint location, GLfloat v0) {
     gpa_init();
     gpa_real_gl.glUniform1f(location, v0);
     gpa_shadow_set_uniform_1f(&gpa_shadow, location, v0);
+    gpa_trace_gated();
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
     gpa_init();
     gpa_real_gl.glUniform3f(location, v0, v1, v2);
     gpa_shadow_set_uniform_3f(&gpa_shadow, location, v0, v1, v2);
+    gpa_trace_gated();
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
     gpa_init();
     gpa_real_gl.glUniform4f(location, v0, v1, v2, v3);
     gpa_shadow_set_uniform_4f(&gpa_shadow, location, v0, v1, v2, v3);
+    gpa_trace_gated();
 }
 
 void glUniform1i(GLint location, GLint v0) {
     gpa_init();
     gpa_real_gl.glUniform1i(location, v0);
     gpa_shadow_set_uniform_1i(&gpa_shadow, location, v0);
+    gpa_trace_gated();
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
@@ -149,6 +164,7 @@ void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
     gpa_init();
     gpa_real_gl.glUniformMatrix4fv(location, count, transpose, value);
     gpa_shadow_set_uniform_mat4(&gpa_shadow, location, value);
+    gpa_trace_gated();
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
@@ -156,6 +172,7 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
     gpa_init();
     gpa_real_gl.glUniformMatrix3fv(location, count, transpose, value);
     gpa_shadow_set_uniform_mat3(&gpa_shadow, location, value);
+    gpa_trace_gated();
 }
 
 /* --------------------------------------------------------------------------
@@ -174,6 +191,7 @@ void glBindTexture(GLenum target, GLuint texture) {
     if (target == GL_TEXTURE_2D) {
         gpa_shadow_bind_texture_2d(&gpa_shadow, texture);
     }
+    gpa_trace_gated();
 }
 
 void glTexImage2D(GLenum target, GLint level, GLint internalformat,
