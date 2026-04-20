@@ -258,6 +258,45 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
+        "name": "gpa_trace_value",
+        "description": (
+            "Reverse-lookup app-level fields whose value matches a captured "
+            "uniform / texture ID / literal. Answers 'where in the framework "
+            "state did this value come from?' Useful when a uniform looks "
+            "wrong and you need to find the deeper field that set it. "
+            "Requires the WebGL gpa-trace shim to have been enabled in the "
+            "target page."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "frame_id": {
+                    "type": ["integer", "string"],
+                    "description": "Frame ID or 'latest'",
+                    "default": "latest",
+                },
+                "dc_id": {
+                    "type": "integer",
+                    "description": "Draw call ID (required for uniform lookup; optional for value)",
+                },
+                "field": {
+                    "type": "string",
+                    "description": (
+                        "Uniform name to trace. Exactly one of 'field' or "
+                        "'value' must be given."
+                    ),
+                },
+                "value": {
+                    "type": "string",
+                    "description": (
+                        "Literal value (number / string / bool) to reverse-look-up. "
+                        "Exactly one of 'field' or 'value' must be given."
+                    ),
+                },
+            },
+        },
+    },
+    {
         "name": "gpa_check",
         "description": (
             "Drill down into a single diagnostic check with full detail. Use "
@@ -608,6 +647,58 @@ def _tool_gpa_check(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(payload, indent=2)
 
 
+def _tool_gpa_trace_value(client: APIClient, args: Dict[str, Any]) -> str:
+    from urllib.parse import quote
+
+    field = args.get("field")
+    value = args.get("value")
+    if (field is None) == (value is None):
+        return json.dumps(
+            {
+                "error": (
+                    "Exactly one of 'field' or 'value' must be provided"
+                ),
+            },
+            indent=2,
+        )
+
+    frame_id = _resolve_frame_id_for_checks(client, args.get("frame_id", "latest"))
+    if frame_id is None:
+        return json.dumps({"error": "no frames captured yet"}, indent=2)
+
+    dc_id = args.get("dc_id")
+    if dc_id is not None:
+        try:
+            dc_id = int(dc_id)
+        except (TypeError, ValueError):
+            return json.dumps({"error": f"invalid dc_id: {dc_id!r}"}, indent=2)
+
+    if field is not None:
+        if dc_id is None:
+            return json.dumps(
+                {"error": "dc_id is required when tracing a uniform field"},
+                indent=2,
+            )
+        path = (
+            f"/frames/{frame_id}/drawcalls/{dc_id}"
+            f"/trace/uniform/{quote(str(field), safe='')}"
+        )
+        data = client.get(path)
+    else:
+        if dc_id is None:
+            path = (
+                f"/frames/{frame_id}/trace/value"
+                f"?query={quote(str(value), safe='')}"
+            )
+        else:
+            path = (
+                f"/frames/{frame_id}/drawcalls/{dc_id}"
+                f"/trace/value?query={quote(str(value), safe='')}"
+            )
+        data = client.get(path)
+    return json.dumps(data, indent=2)
+
+
 def _tool_query_material(client: APIClient, args: Dict[str, Any]) -> str:
     frame_id = int(args["frame_id"])
     object_name = str(args["object_name"])
@@ -635,6 +726,7 @@ _DISPATCH = {
     "query_annotations": _tool_query_annotations,
     "gpa_report": _tool_gpa_report,
     "gpa_check": _tool_gpa_check,
+    "gpa_trace_value": _tool_gpa_trace_value,
 }
 
 

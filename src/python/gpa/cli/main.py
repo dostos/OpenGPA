@@ -32,6 +32,7 @@ from gpa.cli.commands import report as report_cmd
 from gpa.cli.commands import run as run_cmd
 from gpa.cli.commands import start as start_cmd
 from gpa.cli.commands import stop as stop_cmd
+from gpa.cli.commands import trace as trace_cmd
 
 
 def _add_session_arg(p: argparse.ArgumentParser) -> None:
@@ -153,6 +154,42 @@ def build_parser() -> argparse.ArgumentParser:
     _add_session_arg(p_ann)
     p_ann.add_argument("--frame", type=int, required=True)
 
+    # ---- trace ------------------------------------------------------------
+    p_trace = sub.add_parser(
+        "trace",
+        help=(
+            "Reverse-lookup a captured value → app-level JS fields that hold it. "
+            "Requires the WebGL shim (gpa-trace.js) to be enabled in the target."
+        ),
+    )
+    _add_session_arg(p_trace)
+    trace_sub = p_trace.add_subparsers(dest="trace_cmd", required=True)
+
+    p_t_uniform = trace_sub.add_parser(
+        "uniform", help="Trace a uniform by name (requires --dc)"
+    )
+    p_t_uniform.add_argument("name", help="Uniform name (e.g. uZoom)")
+    p_t_uniform.add_argument("--frame", type=int, default=None)
+    p_t_uniform.add_argument("--dc", type=int, default=None)
+    p_t_uniform.add_argument("--json", dest="json_output", action="store_true")
+
+    p_t_texture = trace_sub.add_parser(
+        "texture", help="Trace a texture id (requires --dc)"
+    )
+    p_t_texture.add_argument("tex_id", type=int, help="GL texture object id")
+    p_t_texture.add_argument("--frame", type=int, default=None)
+    p_t_texture.add_argument("--dc", type=int, default=None)
+    p_t_texture.add_argument("--json", dest="json_output", action="store_true")
+
+    p_t_value = trace_sub.add_parser(
+        "value",
+        help="Trace a literal value (number/string/bool) across the frame",
+    )
+    p_t_value.add_argument("literal", help="Literal value (e.g. 16.58 or hello)")
+    p_t_value.add_argument("--frame", type=int, default=None)
+    p_t_value.add_argument("--dc", type=int, default=None)
+    p_t_value.add_argument("--json", dest="json_output", action="store_true")
+
     return parser
 
 
@@ -227,6 +264,24 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return annotations_cmd.run(
             frame=args.frame,
             session_dir=args.session,
+        )
+    if args.cmd == "trace":
+        if args.trace_cmd == "uniform":
+            target = args.name
+        elif args.trace_cmd == "texture":
+            target = str(args.tex_id)
+        elif args.trace_cmd == "value":
+            target = args.literal
+        else:  # pragma: no cover
+            parser.error(f"unknown trace subcommand: {args.trace_cmd!r}")
+            return 1
+        return trace_cmd.run(
+            subcommand=args.trace_cmd,
+            target=target,
+            frame=args.frame,
+            dc=args.dc,
+            session_dir=args.session,
+            json_output=args.json_output,
         )
 
     parser.error(f"unknown command: {args.cmd}")  # pragma: no cover
