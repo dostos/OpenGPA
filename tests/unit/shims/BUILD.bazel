@@ -12,3 +12,13 @@ cc_test(
     linkopts = ["-lpthread"],
     deps = ["//src/shims/gl:http_post"],
 )
+
+cc_test(
+    name = "test_native_trace",
+    srcs = ["test_native_trace.c"],
+    data = ["//tests/unit/shims/fixtures:trace_fixture"],
+    deps = [
+        "//src/shims/gl:dwarf_parser",
+        "//src/shims/gl:native_trace",
+    ],
+)

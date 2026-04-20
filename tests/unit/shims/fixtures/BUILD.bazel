@@ -1,0 +1,19 @@
+# Fixture binary compiled WITH debug info preserved so the hand-rolled
+# DWARF parser has something to read. We use a genrule to bypass bazel's
+# default strip-at-link behavior.
+#
+# Note: existing eval targets at //tests/eval:* are built WITHOUT `-g` by
+# default. For the native trace to reflect those binaries' globals at
+# runtime, their cc_binary rules would need `copts = ["-g"]` + a way to
+# retain debug sections in the linked output (e.g. this genrule pattern,
+# or building with --compilation_mode=dbg).
+
+genrule(
+    name = "trace_fixture",
+    srcs = ["trace_fixture.c"],
+    outs = ["trace_fixture_bin"],
+    cmd = "$(CC) -g -gdwarf-4 -O0 -no-pie -o $@ $<",
+    toolchains = ["@bazel_tools//tools/cpp:current_cc_toolchain"],
+    executable = True,
+    visibility = ["//tests/unit/shims:__pkg__"],
+)

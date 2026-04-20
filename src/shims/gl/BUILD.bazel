@@ -22,6 +22,18 @@ cc_library(
 )
 
 cc_library(
+    name = "native_trace",
+    srcs = ["native_trace.c"],
+    hdrs = ["native_trace.h"],
+    linkopts = ["-ldl"],
+    deps = [
+        ":dwarf_parser",
+        ":http_post",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "gpa_gl_impl",
     srcs = [
         "frame_capture.c",
