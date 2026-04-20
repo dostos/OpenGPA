@@ -72,7 +72,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
    respond to closure signals and narrower tools; wrong-class failures need
    better data quality. R8 validated the split: closure signal drove R8
    timeouts+wrong to 4/52 total, with zero wrong-class failures in either
-   mode. Tracking separately since `<commit-sha>`.
+   mode. Tracking separately since `729b4f8`.
 
 ---
 
