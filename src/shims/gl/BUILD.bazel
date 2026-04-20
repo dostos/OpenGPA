@@ -8,6 +8,20 @@ cc_library(
 )
 
 cc_library(
+    name = "dwarf_parser",
+    srcs = ["dwarf_parser.c"],
+    hdrs = ["dwarf_parser.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "http_post",
+    srcs = ["http_post.c"],
+    hdrs = ["http_post.h"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
     name = "gpa_gl_impl",
     srcs = [
         "frame_capture.c",

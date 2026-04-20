@@ -5,3 +5,10 @@ cc_test(
     srcs = ["test_shadow_state.c"],
     deps = ["//src/shims/gl:shadow_state"],
 )
+
+cc_test(
+    name = "test_http_post",
+    srcs = ["test_http_post.c"],
+    linkopts = ["-lpthread"],
+    deps = ["//src/shims/gl:http_post"],
+)
