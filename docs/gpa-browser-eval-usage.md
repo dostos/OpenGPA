@@ -27,9 +27,10 @@ bazel build //...
 Xvfb :99 -screen 0 800x600x24 &
 export DISPLAY=:99
 
-# Invoke
-PYTHONPATH=src/python python3 -m gpa.cli.main \
-    run-browser --scenario r21_tile_id_overflow --timeout 10
+# Invoke. `bin/gpa` auto-detects the bazel-built Python 3.11 interpreter
+# and prepends `bazel-bin/src/bindings` to PYTHONPATH so `_gpa_core`
+# resolves without manual env-var plumbing. Set $GPA_PYTHON to override.
+bin/gpa run-browser --scenario r21_tile_id_overflow --timeout 10
 ```
 
 Expected output:

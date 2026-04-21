@@ -1,8 +1,82 @@
 #!/usr/bin/env bash
 # Wrapper that invokes the gpa CLI from a source checkout without needing
-# `pip install -e .`.  Honours $GPA_PYTHON to pin the interpreter.
+# `pip install -e .`.
+#
+# Autodetects the bazel-built Python 3.11 interpreter and the pybind11
+# extension `_gpa_core.so` so users don't have to plumb PYTHONPATH /
+# GPA_PYTHON manually. Honours an explicit $GPA_PYTHON if set.
+#
+# Fallback: if bazel artifacts aren't present, uses `python3` and warns.
+
 set -e
 here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
-py="${GPA_PYTHON:-python3}"
-PYTHONPATH="$root/src/python${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m gpa.cli.main "$@"
+
+# ---------------------------------------------------------------------------
+# 1. Locate `_gpa_core.so` under <repo>/bazel-bin/src/bindings/.
+# ---------------------------------------------------------------------------
+bindings_dir="$root/bazel-bin/src/bindings"
+have_bindings=0
+if [ -f "$bindings_dir/_gpa_core.so" ]; then
+    have_bindings=1
+fi
+
+# ---------------------------------------------------------------------------
+# 2. Locate the bazel-managed Python 3.11 interpreter.
+#    Search the user's bazel output_base for the rules_python runtime.
+# ---------------------------------------------------------------------------
+detect_bazel_python() {
+    # Typical layout: <output_base>/external/rules_python~~python~python_3_11_<triple>/bin/python3.11
+    local bazel_root="${HOME}/.cache/bazel/_bazel_${USER:-$(id -un)}"
+    [ -d "$bazel_root" ] || return 1
+    local candidate
+    # -maxdepth keeps this fast even with many output bases.
+    candidate="$(find "$bazel_root" -maxdepth 6 -type d \
+                    -name 'rules_python*python_3_11*' 2>/dev/null | head -n1)"
+    [ -n "$candidate" ] || return 1
+    if [ -x "$candidate/bin/python3.11" ]; then
+        printf '%s\n' "$candidate/bin/python3.11"
+        return 0
+    fi
+    if [ -x "$candidate/bin/python3" ]; then
+        printf '%s\n' "$candidate/bin/python3"
+        return 0
+    fi
+    return 1
+}
+
+if [ -n "$GPA_PYTHON" ]; then
+    py="$GPA_PYTHON"
+else
+    py="$(detect_bazel_python || true)"
+    if [ -z "$py" ]; then
+        if [ "$have_bindings" = "1" ]; then
+            echo "[gpa] warning: bazel python 3.11 not found; falling back to python3." \
+                 "Set GPA_PYTHON to override." >&2
+        fi
+        py="python3"
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 3. Assemble PYTHONPATH. Prepend bindings dir so `import _gpa_core` works.
+# ---------------------------------------------------------------------------
+pypath="$root/src/python"
+if [ "$have_bindings" = "1" ]; then
+    pypath="$bindings_dir:$pypath"
+else
+    echo "[gpa] warning: $bindings_dir/_gpa_core.so not found; native backend will fail." \
+         "Build it with 'bazel build //src/bindings:_gpa_core.so'." >&2
+fi
+
+export GPA_PYTHON="$py"
+
+# Diagnostic hook used by unit tests (and humans): dump the resolved env and exit 0.
+if [ "${GPA_DIAG:-0}" = "1" ]; then
+    printf 'GPA_PYTHON=%s\n' "$py"
+    printf 'PYTHONPATH=%s\n' "$pypath${PYTHONPATH:+:$PYTHONPATH}"
+    printf 'bindings_found=%s\n' "$have_bindings"
+    exit 0
+fi
+
+PYTHONPATH="$pypath${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m gpa.cli.main "$@"

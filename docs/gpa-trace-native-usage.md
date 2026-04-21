@@ -36,8 +36,10 @@ GPA_TRACE_NATIVE=1 \
   GPA_TOKEN=TOKEN \
   bazel-bin/tests/eval/e5_uniform_collision
 
-# Query — same CLI surface as the browser path.
-gpa trace value 100.0 --origin dwarf-globals
+# Query — same CLI surface as the browser path. `bin/gpa` autodetects the
+# bazel-built Python 3.11 + _gpa_core.so; no manual PYTHONPATH/GPA_PYTHON
+# setup required once you've run `bazel build //src/bindings:_gpa_core.so`.
+bin/gpa trace value 100.0 --origin dwarf-globals
 ```
 
 At shim init you'll see a stderr line such as:
