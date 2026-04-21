@@ -18,6 +18,9 @@ cc_library(
     name = "stack_walker",
     srcs = ["stack_walker.c"],
     hdrs = ["stack_walker.h"],
+    # libunwind headers live in the multiarch include path on Debian/Ubuntu
+    # (/usr/include/x86_64-linux-gnu/libunwind.h); bazel's sandbox default
+    # include search doesn't find them.
     copts = ["-I/usr/include/x86_64-linux-gnu"],
     linkopts = [
         "-lunwind",
