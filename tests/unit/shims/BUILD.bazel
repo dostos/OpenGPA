@@ -22,3 +22,13 @@ cc_test(
         "//src/shims/gl:native_trace",
     ],
 )
+
+cc_test(
+    name = "test_stack_walker",
+    srcs = ["test_stack_walker.c"],
+    copts = ["-O0"],
+    deps = [
+        "//src/shims/gl:dwarf_locations",
+        "//src/shims/gl:stack_walker",
+    ],
+)

@@ -15,6 +15,26 @@ cc_library(
 )
 
 cc_library(
+    name = "stack_walker",
+    srcs = ["stack_walker.c"],
+    hdrs = ["stack_walker.h"],
+    copts = ["-I/usr/include/x86_64-linux-gnu"],
+    linkopts = [
+        "-lunwind",
+        "-lunwind-x86_64",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "dwarf_locations",
+    srcs = ["dwarf_locations.c"],
+    hdrs = ["dwarf_locations.h"],
+    visibility = ["//visibility:public"],
+    deps = [":stack_walker"],
+)
+
+cc_library(
     name = "http_post",
     srcs = ["http_post.c"],
     hdrs = ["http_post.h"],
