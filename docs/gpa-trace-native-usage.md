@@ -19,10 +19,15 @@ scanner; the only new field in the POST payload is `"origin":
 # Build the shim.
 bazel build //src/shims/gl:gpa_gl
 
-# Build the scenario WITH debug info (most eval targets default to -O0
-# without -g; pass --compilation_mode=dbg or bake `copts = ["-g",
-# "-gdwarf-4"]` into the target).
-bazel build --compilation_mode=dbg //tests/eval/e5_uniform_collision
+# Build the scenario. As of `tests/eval/BUILD.bazel` every eval
+# `cc_binary` carries `copts = ["-g", "-gdwarf-4",
+# "-fno-omit-frame-pointer", "-O0"]`, so the object files always have
+# DWARF 4. You MUST pass `--strip=never` on the build command so Bazel
+# does not strip `.debug_info` out of the linked binary (fastbuild
+# strips by default). `--compilation_mode=dbg` also works but is
+# heavier; `--strip=never` is sufficient and is the recommended
+# invocation for running native trace against eval targets.
+bazel build --strip=never //tests/eval/e5_uniform_collision
 
 # Run with native trace enabled.
 GPA_TRACE_NATIVE=1 \

@@ -8,8 +8,20 @@ load("@rules_cc//cc:defs.bzl", "cc_binary")
 _SCENARIO_MDS = glob(["*/scenario.md"])
 _SCENARIO_DIRS = [m[:-len("/scenario.md")] for m in _SCENARIO_MDS]
 
+# Debug info required for native `gpa trace` DWARF scanning (see
+# docs/gpa-trace-native-usage.md). Build with `--strip=never` so the linker
+# does not discard .debug_info sections:
+#     bazel build --strip=never //tests/eval/...
+# The `-fno-omit-frame-pointer` flag is also required for Phase 2 stack-local
+# reverse lookups (frame-pointer walking).
 [cc_binary(
     name = d,
     srcs = glob([d + "/*.c"]),
+    copts = [
+        "-g",
+        "-gdwarf-4",
+        "-fno-omit-frame-pointer",
+        "-O0",
+    ],
     linkopts = ["-lGL", "-lX11", "-lm"],
 ) for d in _SCENARIO_DIRS if glob([d + "/*.c"])]
