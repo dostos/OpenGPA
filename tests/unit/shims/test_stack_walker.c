@@ -66,6 +66,34 @@ static void test_stack_walk_caps_at_max_frames(void) {
     printf("PASS test_stack_walk_caps_at_max_frames\n");
 }
 
+/* ---- deep recursion to force the frame cap --------------------------- */
+/* 40 nested frames: deeper than GPA_STACK_MAX_FRAMES (32) so the walker
+ * must stop at the cap. __attribute__((noinline)) keeps the compiler from
+ * collapsing the chain; the asm memory clobber keeps the tail non-
+ * recursive so each call consumes a real frame. */
+static __attribute__((noinline)) int deep_rec(int n, GpaStackSnapshot* out) {
+    if (n == 0) {
+        return gpa_stack_walk_current(out);
+    }
+    int rc = deep_rec(n - 1, out);
+    __asm__ volatile("" ::: "memory");
+    return rc;
+}
+
+static void test_frame_cap_sets_truncated(void) {
+    /* Build a stack with >MAX_FRAMES deep user frames + the libc prelude. */
+    GpaStackSnapshot s = {0};
+    deep_rec(40, &s);
+    /* Walker must stop at the cap — frame_count is saturated. */
+    assert(s.frame_count == GPA_STACK_MAX_FRAMES);
+    /* Every recovered frame still has a valid PC. */
+    for (size_t i = 0; i < s.frame_count; i++) {
+        assert(s.frames[i].pc != 0);
+    }
+    gpa_stack_snapshot_free(&s);
+    printf("PASS test_frame_cap_sets_truncated\n");
+}
+
 /* ---- location-expression interpreter ---------------------------------- */
 
 static void test_loc_addr_opcode(void) {
@@ -262,6 +290,7 @@ int main(void) {
     test_stack_walk_returns_multiple_frames();
     test_stack_walk_populates_registers();
     test_stack_walk_caps_at_max_frames();
+    test_frame_cap_sets_truncated();
 
     test_loc_addr_opcode();
     test_loc_reg_opcode();

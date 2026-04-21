@@ -27,7 +27,12 @@ cc_test(
 cc_test(
     name = "test_stack_walker",
     srcs = ["test_stack_walker.c"],
-    copts = ["-O0"],
+    # -O0 + -fno-omit-frame-pointer: the frame-cap and register tests
+    # rely on every `deepN` / `deep_rec` call consuming a real frame
+    # that libunwind can recover. gcc at -O0 keeps frame pointers by
+    # default, but spelling it out documents intent and protects against
+    # surprise if anyone bumps the optimization level.
+    copts = ["-O0", "-fno-omit-frame-pointer"],
     deps = [
         "//src/shims/gl:dwarf_locations",
         "//src/shims/gl:stack_walker",

@@ -589,15 +589,21 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
      * array in the same pass, then emit value_index after. */
     char* vi_buf = NULL; size_t vi_cap = 0, vi_len = 0;
     int vi_first = 1;
-    int truncated = 0;
+    int budget_truncated = 0;
+    /* Frame-cap truncation: if the walker returned exactly MAX_FRAMES we
+     * can't distinguish "stack was exactly 32 deep" from "stack was deeper
+     * and libunwind stopped early". Treat both as truncated so downstream
+     * tools know the trace may be incomplete. Budget-overrun truncation
+     * is tracked separately below so it can terminate the scan loop. */
+    int frame_cap_truncated = (snap.frame_count == GPA_STACK_MAX_FRAMES);
 
     pthread_rwlock_rdlock(&G.lock);
-    for (size_t fi = 0; fi < snap.frame_count && !truncated; fi++) {
+    for (size_t fi = 0; fi < snap.frame_count && !budget_truncated; fi++) {
         if ((fi & 3) == 0) {
             long elapsed = now_us() - start_us;
             if (elapsed > BUDGET_MS * 1000 ||
                 G.test_budget_overrun_ms > BUDGET_MS) {
-                truncated = 1; break;
+                budget_truncated = 1; break;
             }
         }
         GpaStackFrame* f = &snap.frames[fi];
@@ -669,6 +675,7 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
         free(vi_buf);
     }
     len = json_append(&buf, &cap, len, "}");
+    int truncated = budget_truncated || frame_cap_truncated;
     len = json_append(&buf, &cap, len, truncated ? ",\"truncated\":true" : ",\"truncated\":false");
     long scan_us = now_us() - start_us;
     char scan_ms_buf[48];
