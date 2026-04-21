@@ -271,15 +271,23 @@ static int abbrev_parse(DwAbbrevTable* out,
                 { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
             if (an == 0 && af == 0) break;
             if (a.attr_count == acap) {
-                acap = acap ? acap * 2 : 8;
-                a.attrs = (DwAttrSpec*)realloc(a.attrs, acap * sizeof(DwAttrSpec));
+                size_t new_cap = acap ? acap * 2 : 8;
+                DwAttrSpec* tmp = (DwAttrSpec*)realloc(
+                    a.attrs, new_cap * sizeof(DwAttrSpec));
+                if (!tmp) { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
+                a.attrs = tmp;
+                acap = new_cap;
             }
             a.attrs[a.attr_count++] = (DwAttrSpec){an, af};
         }
 
         if (out->count == out->cap) {
-            out->cap = out->cap ? out->cap * 2 : 16;
-            out->items = (DwAbbrev*)realloc(out->items, out->cap * sizeof(DwAbbrev));
+            size_t new_cap = out->cap ? out->cap * 2 : 16;
+            DwAbbrev* tmp = (DwAbbrev*)realloc(
+                out->items, new_cap * sizeof(DwAbbrev));
+            if (!tmp) { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
+            out->items = tmp;
+            out->cap = new_cap;
         }
         out->items[out->count++] = a;
     }

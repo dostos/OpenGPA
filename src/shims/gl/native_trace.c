@@ -221,9 +221,22 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
     }
 
     if (G.module_count == G.module_cap) {
-        G.module_cap = G.module_cap ? G.module_cap * 2 : 4;
-        G.modules = (TracedModule*)realloc(G.modules,
-                                           G.module_cap * sizeof(TracedModule));
+        size_t new_cap = G.module_cap ? G.module_cap * 2 : 4;
+        TracedModule* tmp = (TracedModule*)realloc(
+            G.modules, new_cap * sizeof(TracedModule));
+        if (!tmp) {
+            /* OOM: keep the old array + counts intact and drop this module.
+             * Previously the unchecked assignment leaked the old pointer
+             * AND wrote past the end on the next line. */
+            fprintf(stderr,
+                    "[OpenGPA] native-trace: OOM growing modules array; "
+                    "skipping %s\n", path);
+            gpa_dwarf_globals_free(&gl);
+            if (subs_ok) gpa_dwarf_subprograms_free(&subs);
+            return 0;
+        }
+        G.modules = tmp;
+        G.module_cap = new_cap;
     }
     TracedModule* m = &G.modules[G.module_count++];
     m->globals = gl;
@@ -294,12 +307,20 @@ static long now_us(void) {
     return (long)(tv.tv_sec * 1000000L + tv.tv_usec);
 }
 
-/* Append JSON-escaped string to buffer. Returns new length. */
+/* Append JSON-escaped string to buffer. Returns new length on success, or
+ * `len` unchanged on OOM (caller is expected to abort the scan before
+ * flushing). Note: on OOM we leave *buf / *cap alone; the original data
+ * stays valid — previously an unchecked realloc would leak *buf and crash
+ * on the next memcpy. */
 static size_t json_append(char** buf, size_t* cap, size_t len, const char* s) {
     size_t n = strlen(s);
     if (len + n + 1 > *cap) {
-        while (len + n + 1 > *cap) *cap = *cap ? *cap * 2 : 1024;
-        *buf = (char*)realloc(*buf, *cap);
+        size_t new_cap = *cap;
+        while (len + n + 1 > new_cap) new_cap = new_cap ? new_cap * 2 : 1024;
+        char* tmp = (char*)realloc(*buf, new_cap);
+        if (!tmp) return len;  /* OOM: drop this append. */
+        *buf = tmp;
+        *cap = new_cap;
     }
     memcpy(*buf + len, s, n);
     return len + n;
@@ -311,7 +332,15 @@ static size_t json_esc(char** buf, size_t* cap, size_t len, const char* s) {
         char esc[8];
         if (c == '"' || c == '\\') { snprintf(esc, sizeof(esc), "\\%c", c); len = json_append(buf, cap, len, esc); }
         else if ((unsigned char)c < 0x20) { snprintf(esc, sizeof(esc), "\\u%04x", c); len = json_append(buf, cap, len, esc); }
-        else { if (len + 2 > *cap) { *cap *= 2; *buf = (char*)realloc(*buf, *cap); } (*buf)[len++] = c; }
+        else {
+            if (len + 2 > *cap) {
+                size_t new_cap = *cap ? *cap * 2 : 1024;
+                char* tmp = (char*)realloc(*buf, new_cap);
+                if (!tmp) continue;  /* OOM: drop the char. */
+                *buf = tmp; *cap = new_cap;
+            }
+            (*buf)[len++] = c;
+        }
     }
     return json_append(buf, cap, len, "\"");
 }
@@ -617,11 +646,17 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
     if (vi_buf) {
         /* Append accumulated value_index. */
         if (len + vi_len + 1 > cap) {
-            while (len + vi_len + 1 > cap) cap = cap ? cap * 2 : 1024;
-            buf = (char*)realloc(buf, cap);
+            size_t new_cap = cap;
+            while (len + vi_len + 1 > new_cap) new_cap = new_cap ? new_cap * 2 : 1024;
+            char* tmp = (char*)realloc(buf, new_cap);
+            if (tmp) { buf = tmp; cap = new_cap; }
+            /* else: leave buf intact; the memcpy below would overrun, so
+             * skip the append on OOM. */
         }
-        memcpy(buf + len, vi_buf, vi_len);
-        len += vi_len;
+        if (len + vi_len + 1 <= cap) {
+            memcpy(buf + len, vi_buf, vi_len);
+            len += vi_len;
+        }
         free(vi_buf);
     }
     len = json_append(&buf, &cap, len, "}");
