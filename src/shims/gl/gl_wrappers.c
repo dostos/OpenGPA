@@ -12,12 +12,21 @@ extern GpaShadowState gpa_shadow;
 void gpa_init(void);
 
 /* Native-trace scan hook. Fires on glUniform* / glBindTexture in gated
- * mode, matching the browser JS scanner. No-op unless GPA_TRACE_NATIVE=1
- * was set at shim init. */
+ * mode, matching the browser JS scanner.
+ *
+ *   GPA_TRACE_NATIVE=1        → globals scan (Phase 1)
+ *   GPA_TRACE_NATIVE_STACK=1  → stack-local scan (Phase 2)
+ *
+ * Both env vars are independent; either or both may be enabled. Each scan
+ * is a no-op unless its scanner was successfully initialised. */
 static inline void gpa_trace_gated(void) {
     if (gpa_native_trace_is_enabled()) {
         gpa_native_trace_scan(gpa_shadow.frame_number,
                               gpa_shadow.draw_call_count);
+    }
+    if (gpa_native_trace_stack_is_enabled()) {
+        gpa_native_trace_scan_stack(gpa_shadow.frame_number,
+                                    gpa_shadow.draw_call_count);
     }
 }
 

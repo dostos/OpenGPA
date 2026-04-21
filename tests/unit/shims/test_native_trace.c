@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -343,6 +344,46 @@ static void test_pc_index_lookup_roundtrip(void) {
     printf("PASS test_pc_index_lookup_roundtrip\n");
 }
 
+/* ------------------------------------------------------------------------
+ * Bug 3: SIGSEGV guard around global dereference.
+ *
+ * Craft a globals entry that points at an address we've `munmap`'d. The
+ * guarded deref must NOT crash the test process; it should log and
+ * continue with the next global.
+ * ------------------------------------------------------------------------ */
+static void test_scan_survives_unmapped_address(void) {
+    /* Map a page, then unmap it. The address is now reserved-but-unmapped
+     * and any read will fault. */
+    void* p = mmap(NULL, 4096, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANON, -1, 0);
+    assert(p != MAP_FAILED);
+    /* Write something so we could detect a spurious success below. */
+    *(double*)p = 42.0;
+    int munmap_rc = munmap(p, 4096);
+    assert(munmap_rc == 0);
+
+    /* A second valid global we can prove is still reached after the crash. */
+    static volatile double live_double = 16.58;
+
+    size_t skips_before = gpa_native_trace_test_segv_skip_count();
+    gpa_native_trace_test_inject_global(
+        "g_unmapped", (uintptr_t)p, 8, GPA_DW_ATE_FLOAT
+    );
+    gpa_native_trace_test_inject_global(
+        "g_live", (uintptr_t)&live_double, 8, GPA_DW_ATE_FLOAT
+    );
+
+    /* Must not crash. */
+    gpa_native_trace_scan(9999, 0);
+
+    size_t skips_after = gpa_native_trace_test_segv_skip_count();
+    /* At least one SIGSEGV-skip must have occurred on the unmapped entry. */
+    assert(skips_after > skips_before);
+
+    printf("PASS test_scan_survives_unmapped_address (skipped=%zu)\n",
+           skips_after - skips_before);
+}
+
 int main(void) {
     locate_fixture();
     fprintf(stderr, "fixture at: %s\n", fixture_path);
@@ -354,6 +395,7 @@ int main(void) {
     test_scan_respects_budget();
     test_dwarf_parse_subprograms_lists_main();
     test_pc_index_lookup_roundtrip();
+    test_scan_survives_unmapped_address();
     printf("All native-trace tests passed.\n");
     return 0;
 }
