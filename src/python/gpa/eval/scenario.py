@@ -5,6 +5,7 @@ metadata for use by the evaluation harness.
 """
 from __future__ import annotations
 
+import logging
 import os
 import re
 from dataclasses import dataclass, field
@@ -12,6 +13,34 @@ from pathlib import Path
 from typing import Any, Optional
 
 import yaml
+
+_log = logging.getLogger(__name__)
+
+# Valid values for FixMetadata.bug_class per the maintainer-framing spec
+# (docs/superpowers/specs/2026-04-21-maintainer-framing-design.md).  Unknown
+# values are preserved on the dataclass but a warning is logged.
+_VALID_BUG_CLASSES = frozenset(
+    {"framework-internal", "consumer-misuse", "user-config", "legacy"}
+)
+
+
+@dataclass
+class FixMetadata:
+    """Structured representation of the `## Fix` YAML block.
+
+    Populated from the fenced ```yaml ... ``` block inside the `## Fix`
+    section of a scenario.md.  All fields optional at the dataclass level;
+    parser enforces required-field presence before constructing the object
+    (see `_parse_fix_section`).
+    """
+
+    fix_pr_url: Optional[str] = None
+    fix_sha: Optional[str] = None
+    fix_parent_sha: Optional[str] = None
+    bug_class: Optional[str] = None  # framework-internal | consumer-misuse | user-config | legacy
+    files: list[str] = field(default_factory=list)
+    change_summary: str = ""
+    diff_excerpt: Optional[str] = None
 
 
 @dataclass
@@ -51,6 +80,10 @@ class ScenarioMetadata:
     upstream_snapshot_repo: Optional[str] = None
     upstream_snapshot_sha: Optional[str] = None
     upstream_snapshot_relevant_files: list[str] = field(default_factory=list)
+    # --- Maintainer-framing Fix metadata (R10+) ---
+    # None for legacy scenarios authored before the maintainer-framing spec.
+    # See docs/superpowers/specs/2026-04-21-maintainer-framing-design.md.
+    fix: Optional[FixMetadata] = None
 
 
 # Section heading aliases — maps canonical name -> list of accepted headings
@@ -71,6 +104,7 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "observed_helps": ["observed gpa helpfulness", "observed opengpa helpfulness", "observed helpfulness"],
     "failure_mode": ["failure mode"],
     "upstream_snapshot": ["upstream snapshot"],
+    "fix": ["fix"],
 }
 
 
@@ -237,6 +271,104 @@ def _parse_upstream_snapshot(section_text: str) -> tuple[Optional[str], Optional
     return repo, sha, relevant
 
 
+def _parse_fix_section(section_text: str, scenario_id: str = "") -> Optional[FixMetadata]:
+    """Parse the `## Fix` section body into a `FixMetadata` or return None.
+
+    Returns None (and emits a warning on the module logger) when:
+      - The section exists but has no ```yaml ... ``` fenced block
+      - The YAML block is malformed
+      - Required fields (`fix_pr_url`, `bug_class`, `files`) are missing
+      - `files` is an empty list AND `bug_class` != "legacy"
+
+    A `bug_class: legacy` value with `files: []` is explicitly allowed —
+    it's the retrofit escape hatch for scenarios whose fix PR can't be
+    resolved.  See maintainer-framing design doc, "Retrofit plan" section.
+    """
+    if not section_text.strip():
+        # Section heading present but entirely empty — treat as missing.
+        _log.warning(
+            "scenario %s: `## Fix` section has no YAML block; fix metadata dropped",
+            scenario_id or "<unknown>",
+        )
+        return None
+
+    data = _extract_yaml_block(section_text)
+    if data is None:
+        _log.warning(
+            "scenario %s: `## Fix` section has no parseable YAML block; "
+            "fix metadata dropped",
+            scenario_id or "<unknown>",
+        )
+        return None
+    if not isinstance(data, dict):
+        _log.warning(
+            "scenario %s: `## Fix` YAML did not parse as a mapping; "
+            "fix metadata dropped",
+            scenario_id or "<unknown>",
+        )
+        return None
+
+    fix_pr_url = data.get("fix_pr_url")
+    bug_class = data.get("bug_class")
+    files_raw = data.get("files")
+    files: list[str] = []
+    if isinstance(files_raw, list):
+        files = [str(f) for f in files_raw if f is not None and str(f).strip()]
+
+    # Required-field check: missing fix_pr_url or bug_class → invalid.
+    if not fix_pr_url or not bug_class:
+        _log.warning(
+            "scenario %s: `## Fix` missing required field(s) "
+            "(fix_pr_url=%r, bug_class=%r); fix metadata dropped",
+            scenario_id or "<unknown>",
+            fix_pr_url,
+            bug_class,
+        )
+        return None
+
+    # Empty `files` is allowed only when bug_class is the explicit legacy marker.
+    if not files and bug_class != "legacy":
+        _log.warning(
+            "scenario %s: `## Fix` has empty files list with bug_class=%r "
+            "(only allowed when bug_class == 'legacy'); fix metadata dropped",
+            scenario_id or "<unknown>",
+            bug_class,
+        )
+        return None
+
+    if bug_class not in _VALID_BUG_CLASSES:
+        _log.warning(
+            "scenario %s: `## Fix` has unknown bug_class %r "
+            "(expected one of %s); keeping string as-is",
+            scenario_id or "<unknown>",
+            bug_class,
+            sorted(_VALID_BUG_CLASSES),
+        )
+
+    change_summary = data.get("change_summary") or ""
+    # YAML block scalars (>) can leave a trailing newline; normalize.
+    if isinstance(change_summary, str):
+        change_summary = change_summary.strip()
+    else:
+        change_summary = str(change_summary)
+
+    diff_excerpt = data.get("diff_excerpt")
+    if diff_excerpt is not None and not isinstance(diff_excerpt, str):
+        diff_excerpt = str(diff_excerpt)
+
+    return FixMetadata(
+        fix_pr_url=str(fix_pr_url),
+        fix_sha=(str(data["fix_sha"]) if data.get("fix_sha") else None),
+        fix_parent_sha=(
+            str(data["fix_parent_sha"]) if data.get("fix_parent_sha") else None
+        ),
+        bug_class=str(bug_class),
+        files=files,
+        change_summary=change_summary,
+        diff_excerpt=diff_excerpt,
+    )
+
+
 class ScenarioLoader:
     """Loads OpenGPA evaluation scenarios from the tests/eval directory."""
 
@@ -332,6 +464,11 @@ class ScenarioLoader:
             sections.get("upstream_snapshot", "")
         )
 
+        # Parse `## Fix` section if present.  None for legacy scenarios.
+        fix_meta: Optional[FixMetadata] = None
+        if "fix" in sections:
+            fix_meta = _parse_fix_section(sections["fix"], scenario_id)
+
         return ScenarioMetadata(
             id=scenario_id,
             title=sections.get("_title", scenario_id),
@@ -367,6 +504,7 @@ class ScenarioLoader:
             upstream_snapshot_repo=upstream_repo,
             upstream_snapshot_sha=upstream_sha,
             upstream_snapshot_relevant_files=upstream_files_list,
+            fix=fix_meta,
         )
 
     def load_all(self) -> list[ScenarioMetadata]:
