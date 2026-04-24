@@ -996,3 +996,203 @@ diagnosis test).
 - `docs/superpowers/eval/round9/` — scored.json, summary.txt, runner
   scripts, score.py, captures.txt, scenarios.txt, tasks.txt.
 
+
+## Round 10 — Maintainer-framing baseline (2026-04-24)
+
+First measurement under the new maintainer-framing scorer
+(`gpa.eval.scorer.score_maintainer_patch`): file-overlap instead of
+keyword overlap, with out-of-tree rejection and partial credit for
+multi-file fixes. 9 framework-maintenance scenarios from commit
+`729a153`; 3 model tiers × 2 modes × 9 scenarios = **54 runs**.
+
+### Setup notes
+
+- Capture pipeline was broken across all 27 with_gpa runs — the runner
+  pre-created the session directory with `mkdir -p` before calling
+  `gpa start --session`, which rejects existing directories with
+  `FileExistsError`. Agents in `with_gpa` mode saw no session and had
+  no GPA endpoint to call; the mode is effectively code_only + one
+  extra `# Runtime session` line in the prompt.
+- Port-collision workaround worked as designed: each run calls
+  `python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); ...'`
+  to grab a free port before `gpa start --port`. Zero collisions
+  observed across 54 parallel dispatches.
+- The retry-on-max-turns path fires only on `error_max_turns` subtype;
+  a `timeout 1200` SIGKILL mid-stream does not emit that event, so
+  r17_mapbox code_only sonnet was killed at the 20-min wall and the
+  primary file has no `result` event (scorer correctly buckets it as
+  `timeout`).
+- Total wall time: ~18 minutes. Total cost: **$32.65 of $80 cap**.
+
+### Accuracy — maintainer_solved rate
+
+| mode | haiku | sonnet | opus |
+|------|-------|--------|------|
+| code_only | 5/9 (56%) | 5/9 (56%) | 5/9 (56%) |
+| with_gpa  | 5/9 (56%) | 7/9 (78%) | 5/9 (56%) |
+
+The 78% sonnet-with_gpa cell is the only cell that beats 56%. Because
+all 27 with_gpa captures failed (see Setup notes) and sonnet invoked
+zero real GPA endpoints on its two with_gpa wins, the +2 solves come
+from pure variance (sonnet's extended thinking burning on harder
+mapbox scenarios), not from GPA telemetry.
+
+### Mean file_score
+
+| mode | haiku | sonnet | opus |
+|------|-------|--------|------|
+| code_only | 0.50 | 0.46 | 0.57 |
+| with_gpa  | 0.52 | 0.75 | 0.52 |
+
+### File-score distribution (fs=0.0 / partial / fs=1.0)
+
+| mode | haiku | sonnet | opus |
+|------|-------|--------|------|
+| code_only | 2/4/3 | 3/3/3 | 3/1/5 |
+| with_gpa  | 3/2/4 | 1/2/6 | 3/2/4 |
+
+Partial credit fired on 14/54 runs (26%) — these are real multi-file
+fixes where the agent nominated 1 of 2 (fs=0.5) or 1–2 of 6–7 (fs=0.14
+to 0.33) ground-truth files. R2 (2-file fix) shows the canonical
+pattern: haiku/sonnet code_only got 0.5 (bloom.frag, missed texture.frag);
+with_gpa both got 1.0. R24 (2-file fix) shows the same split — opus
+code_only and sonnet with_gpa got both, the rest got 0.5.
+
+### Out-of-tree violations
+
+| mode | haiku | sonnet | opus |
+|------|-------|--------|------|
+| code_only | 0 | 0 | 0 |
+| with_gpa  | 0 | 0 | 0 |
+
+**Zero out-of-tree rejections across all 54 runs.** The prompt's
+"Files MUST be paths inside the framework repo" clause was sufficient
+— agents never proposed `main.c` or `tests/*` paths. This is a clean
+signal that the maintainer-framing prompt targets the correct search
+surface.
+
+### Mean cost / cache_read / output_tokens / turns
+
+| mode | model | cost | cache_read | out_tokens | turns |
+|------|-------|------|-----------:|-----------:|------:|
+| code_only | haiku  | $0.374 | 2,142,576 | 12,127 | 29.6 |
+| code_only | sonnet | $0.713 | 1,046,777 | 14,581 | 15.9 |
+| code_only | opus   | $0.612 |   355,494 |  5,040 |  9.8 |
+| with_gpa  | haiku  | $0.337 | 2,220,933 |  9,616 | 29.8 |
+| with_gpa  | sonnet | $0.842 |   561,992 | 19,610 | 17.6 |
+| with_gpa  | opus   | $0.749 |   576,908 |  6,812 | 14.9 |
+
+- Haiku's cache_read is ~4–6× higher than opus/sonnet: it makes more
+  tool calls per run (mean 29.6 turns vs opus's 9.8) and re-reads
+  cached system prompts each turn.
+- Opus's per-run cost ($0.61–0.75) is only ~1.7× haiku's ($0.34–0.37)
+  and **below** sonnet's ($0.71–0.84). The R9 recalibration
+  (`5.0 → 1.4` opus multiplier) holds on this cat-3 workload.
+- Sonnet-with_gpa cost jumped to $0.842/run (from $0.713 code_only) —
+  this is the extended-thinking burn on r17_mapbox and r18_raster
+  that eventually solved them.
+
+### GPA endpoint calls
+
+| mode | model | non-zero runs | total calls / 9 runs |
+|------|-------|--------------:|---------------------:|
+| code_only | all | 0 | 0 (as expected) |
+| with_gpa  | haiku  | 0 | 0 |
+| with_gpa  | sonnet | 0 | 0 |
+| with_gpa  | opus   | 1 | 2 |
+
+**Of 27 with_gpa runs, 1 attempted a real `gpa` call** (opus on
+r17_mapbox, two `gpa report --json` invocations). Every other
+with_gpa agent — including both sonnet runs that solved an otherwise
+unsolved scenario — used only `Read` / `Grep` / `Glob` / `Bash
+find|grep` on the snapshot. Given the capture-pipeline bug above,
+this is the worst-case outcome: even when the prompt promises GPA,
+agents with a readable snapshot ignore it. R9 saw 1/48 with_gpa
+agents call `gpa trace`; R10 sees 1/27 call any GPA endpoint. Pattern
+is consistent.
+
+### Tool-call breakdown (mean / run, across with_gpa × model)
+
+| model | Read | Grep | Bash | Glob | Agent | gpa |
+|-------|-----:|-----:|-----:|-----:|------:|----:|
+| haiku  |  8.3 | 1.9 | 16.8 | 0.7 | 0.0 | 0.0 |
+| sonnet | 19.2 | 3.3 | 19.6 | 2.7 | 0.9 | 0.0 |
+| opus   |  4.6 | 2.0 |  8.8 | 0.4 | 0.1 | 0.2 |
+
+Sonnet's Read count (19.2/run) is ~4× opus (4.6/run) — sonnet browses
+more aggressively, opus makes pointier picks. Haiku's high Bash count
+(16.8/run) is mostly `find`, not `gpa`.
+
+### Per-scenario outcomes (Y = solved under that mode × model)
+
+| Scenario | code h | code s | code o | gpa h | gpa s | gpa o |
+|----------|--------|--------|--------|-------|-------|-------|
+| r2_certain_effects_produce_invalid_alpha_va      | Y | Y | Y | Y | Y | Y |
+| r6_to_create_an_orm_texture_an_incorrect_va      | Y | Y | Y | Y | Y | Y |
+| r11_screen_glitch_with_bloom_on_m1_mac           | Y | Y | Y | Y | Y | Y |
+| r11_webglrenderer_ubo_uniform_buffer_object_     | Y | Y | Y | Y | Y | Y |
+| r14_webgpurenderer_make_colored_shadows_opti     | . | . | . | . | . | . |
+| r17_incorrect_clipping_with_global_clipping_     | . | . | . | . | . | . |
+| r17_mapbox_gl_js_image_overlay_coordinates_p     | . | . | . | . | Y | . |
+| r18_raster_tiles_aren_t_perfectly_crisp_at_i     | . | . | . | . | Y | . |
+| r24_logarithmicdepthbuffer_causes_reflector_     | Y | Y | Y | Y | Y | Y |
+
+- **6-way solves** (5 scenarios): r2, r6, r11_bloom, r11_ubo,
+  r24_logdepth. Easy — agent nominated the framework file the issue
+  body already named.
+- **Single-cell solves** (2 scenarios): r17_mapbox and r18_raster,
+  both only by sonnet with_gpa. Sonnet burned 40+ turns and extended
+  thinking to triangulate these, with no GPA calls. The win is the
+  thinking budget, not the telemetry surface.
+- **Zero-solve** (2 scenarios): r14_shadows and r17_clipping. The
+  ground-truth fix for both is a deep multi-file refactor (2 files
+  for r14, 6 for r17). No tier found the correct set. r14's ground
+  truth (`src/nodes/lighting/ShadowNode.js` and
+  `src/renderers/common/ShadowMap.js`) was consistently missed in
+  favor of adjacent files (`AnalyticLightNode.js`,
+  `LightShadow.js`).
+
+### Verdict — does file-overlap scoring reveal a cleaner signal?
+
+**Partial yes, with caveats.**
+
+- **Cleaner:** partial credit now fires (14/54 runs); out-of-tree
+  rejection is enforced (0 violations); no keyword-bag false
+  positives. The scoring is mechanical and reproducible.
+- **Dirty:** we still can't distinguish "agent reasoned correctly and
+  happened to name the right file" from "agent reasoned from the
+  reported file path in the issue body." 4 of the 5 six-way-solve
+  scenarios contain the fix file path verbatim in the user report.
+- **Not the GPA signal we wanted:** the capture pipeline was broken
+  for all 27 with_gpa runs so we cannot compare with_gpa vs code_only
+  in this round. The clean keyword-independence is a win; the
+  with_gpa–code_only delta is not a GPA result, and must be re-run
+  with working captures before any claim about GPA utility on
+  maintenance workloads.
+
+### Findings to act on (next round)
+
+1. **Fix the capture-init race.** Do NOT pre-create the session dir
+   with `mkdir -p`; let `Session.create` own directory creation.
+2. **Retry also on timeout** (not just `error_max_turns`). The
+   current `timeout 1200` SIGKILL wins the race against claude's
+   retry emit and leaves runs verdicted as `timeout` with zero data.
+3. **The agent bias away from GPA persists.** When a snapshot is
+   readable, 26/27 agents skip GPA entirely. Either re-frame the
+   scenarios so the snapshot alone is insufficient (bug lives in a
+   value the snapshot can't reveal — e.g. a runtime precision
+   float), or re-structure the prompt to mandate at least one GPA
+   call before proposing a patch.
+4. **r14_shadows and r17_clipping are genuinely hard.** Zero-tier
+   solve rate means either the ground-truth file list is too narrow
+   (agents nominated adjacent, plausible files) or these need
+   either a richer scorer (semantic-match judge on the
+   change_summary) or a larger thinking budget.
+
+### Raw artifacts
+
+- `/tmp/eval_round10/*.jsonl` — 54 primary + 5 retry-backup transcripts.
+- `docs/superpowers/eval/round10/` — scored.json, tasks.txt,
+  scenarios.txt, runner scripts, score.py, snapshot_map.sh,
+  build_prompt.py.
+

@@ -1,0 +1,1551 @@
+[
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 8,
+    "cost_usd": 0.15911585,
+    "total_output_tokens": 8148,
+    "cache_read": 313506,
+    "cache_creation": 69585,
+    "tool_counts": {
+      "Bash": 3,
+      "Read": 4
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag"
+    ],
+    "file_misses": [
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 30,
+    "cost_usd": 0.78872775,
+    "total_output_tokens": 19974,
+    "cache_read": 900780,
+    "cache_creation": 58349,
+    "tool_counts": {
+      "Grep": 10,
+      "Glob": 3,
+      "Read": 16
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag"
+    ],
+    "file_misses": [
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 10,
+    "cost_usd": 0.40952549999999993,
+    "total_output_tokens": 3253,
+    "cache_read": 202066,
+    "cache_creation": 36338,
+    "tool_counts": {
+      "Glob": 2,
+      "Read": 2,
+      "Grep": 1,
+      "Bash": 4
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag",
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 18,
+    "cost_usd": 0.19214605,
+    "total_output_tokens": 8221,
+    "cache_read": 1096343,
+    "cache_creation": 33023,
+    "tool_counts": {
+      "Bash": 12,
+      "Read": 5
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag",
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 14,
+    "cost_usd": 0.49236750000000007,
+    "total_output_tokens": 7848,
+    "cache_read": 191675,
+    "cache_creation": 34023,
+    "tool_counts": {
+      "Agent": 1,
+      "Glob": 5,
+      "Read": 16,
+      "Grep": 4,
+      "Bash": 26
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag",
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r2_certain_effects_produce_invalid_alpha_va",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 26,
+    "cost_usd": 1.0096077499999998,
+    "total_output_tokens": 8185,
+    "cache_read": 1085378,
+    "cache_creation": 41943,
+    "tool_counts": {
+      "Bash": 18,
+      "Read": 7
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/effects/glsl/bloom.frag",
+      "src/effects/glsl/texture.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 73,
+    "cost_usd": 0.6334919500000001,
+    "total_output_tokens": 11686,
+    "cache_read": 5218012,
+    "cache_creation": 42215,
+    "tool_counts": {
+      "Bash": 72
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 23,
+    "cost_usd": 0.314532,
+    "total_output_tokens": 3484,
+    "cache_read": 470140,
+    "cache_creation": 32312,
+    "tool_counts": {
+      "Grep": 4,
+      "Bash": 16,
+      "Read": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 1,
+    "cost_usd": 0.5472427499999999,
+    "total_output_tokens": 315,
+    "cache_read": 36068,
+    "cache_creation": 595,
+    "tool_counts": {
+      "Bash": 11,
+      "Grep": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 34,
+    "cost_usd": 0.36784490000000003,
+    "total_output_tokens": 5458,
+    "cache_read": 2843174,
+    "cache_creation": 44798,
+    "tool_counts": {
+      "Bash": 30,
+      "Read": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 8,
+    "cost_usd": 0.2213512,
+    "total_output_tokens": 1156,
+    "cache_read": 119944,
+    "cache_creation": 27622,
+    "tool_counts": {
+      "Grep": 5,
+      "Agent": 1,
+      "Glob": 4,
+      "Read": 3,
+      "Bash": 12
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 21,
+    "cost_usd": 0.58960675,
+    "total_output_tokens": 3874,
+    "cache_read": 698301,
+    "cache_creation": 22957,
+    "tool_counts": {
+      "Bash": 17,
+      "Grep": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/shader-chunks/shaders/gbuffer-metalness.frag"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 5,
+    "cost_usd": 0.10420869999999999,
+    "total_output_tokens": 1794,
+    "cache_read": 213967,
+    "cache_creation": 59044,
+    "tool_counts": {
+      "Bash": 3,
+      "Read": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 3,
+    "cost_usd": 0.1167105,
+    "total_output_tokens": 856,
+    "cache_read": 46170,
+    "cache_creation": 24002,
+    "tool_counts": {
+      "Grep": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 3,
+    "cost_usd": 0.2625675,
+    "total_output_tokens": 873,
+    "cache_read": 63965,
+    "cache_creation": 33396,
+    "tool_counts": {
+      "Grep": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 9,
+    "cost_usd": 0.08423775,
+    "total_output_tokens": 2532,
+    "cache_read": 474415,
+    "cache_creation": 19257,
+    "tool_counts": {
+      "Bash": 7,
+      "Read": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 3,
+    "cost_usd": 0.11732234999999999,
+    "total_output_tokens": 936,
+    "cache_read": 45897,
+    "cache_creation": 23867,
+    "tool_counts": {
+      "Grep": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 3,
+    "cost_usd": 0.25944549999999994,
+    "total_output_tokens": 750,
+    "cache_read": 63946,
+    "cache_creation": 33390,
+    "tool_counts": {
+      "Grep": 1,
+      "Read": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 17,
+    "cost_usd": 0.2355245,
+    "total_output_tokens": 9891,
+    "cache_read": 997485,
+    "cache_creation": 68960,
+    "tool_counts": {
+      "Bash": 11,
+      "Read": 5
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 5,
+    "cost_usd": 0.25405695,
+    "total_output_tokens": 4562,
+    "cache_read": 74752,
+    "cache_creation": 30161,
+    "tool_counts": {
+      "Agent": 1,
+      "Glob": 2,
+      "Grep": 1,
+      "Read": 8,
+      "Bash": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 3,
+    "cost_usd": 0.40523549999999997,
+    "total_output_tokens": 5529,
+    "cache_read": 63826,
+    "cache_creation": 37610,
+    "tool_counts": {
+      "Grep": 1,
+      "Read": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 17,
+    "cost_usd": 0.24317990000000003,
+    "total_output_tokens": 14371,
+    "cache_read": 1166639,
+    "cache_creation": 43636,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 10,
+      "Read": 4
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 5,
+    "cost_usd": 0.48221844999999997,
+    "total_output_tokens": 17139,
+    "cache_read": 116862,
+    "cache_creation": 28033,
+    "tool_counts": {
+      "Agent": 1,
+      "Glob": 3,
+      "Grep": 3,
+      "Read": 11,
+      "Bash": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 3,
+    "cost_usd": 0.3196475,
+    "total_output_tokens": 2339,
+    "cache_read": 63725,
+    "cache_creation": 36684,
+    "tool_counts": {
+      "Glob": 1,
+      "Read": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/renderers/webgl/WebGLUniformsGroups.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 68,
+    "cost_usd": 0.7597133000000003,
+    "total_output_tokens": 17062,
+    "cache_read": 5831883,
+    "cache_creation": 72592,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 43,
+      "Read": 22
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/renderers/shaders/UniformsLib.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 11,
+    "cost_usd": 0.9994781499999998,
+    "total_output_tokens": 14208,
+    "cache_read": 203139,
+    "cache_creation": 38616,
+    "tool_counts": {
+      "Agent": 1,
+      "Read": 22,
+      "Glob": 2,
+      "Bash": 42,
+      "Grep": 4
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/nodes/lighting/AnalyticLightNode.js",
+      "src/renderers/webgl/WebGLShadowMap.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 6,
+    "cost_usd": 0.41839450000000006,
+    "total_output_tokens": 3036,
+    "cache_read": 170514,
+    "cache_creation": 41150,
+    "tool_counts": {
+      "Bash": 2,
+      "Grep": 1,
+      "Read": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/nodes/lighting/AnalyticLightNode.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 65,
+    "cost_usd": 0.7674641,
+    "total_output_tokens": 15495,
+    "cache_read": 5917746,
+    "cache_creation": 78206,
+    "tool_counts": {
+      "Bash": 42,
+      "Read": 22
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/renderers/shaders/ShaderLib.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 7,
+    "cost_usd": 0.9073074999999999,
+    "total_output_tokens": 18735,
+    "cache_read": 157897,
+    "cache_creation": 42255,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 39,
+      "Read": 15,
+      "Glob": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/lights/LightShadow.js",
+      "src/nodes/lighting/AnalyticLightNode.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 5,
+    "cost_usd": 0.39436725,
+    "total_output_tokens": 3336,
+    "cache_read": 132582,
+    "cache_creation": 39141,
+    "tool_counts": {
+      "Bash": 1,
+      "Grep": 1,
+      "Read": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/nodes/lighting/ShadowNode.js",
+      "src/renderers/common/ShadowMap.js"
+    ],
+    "file_extras": [
+      "src/lights/LightShadow.js",
+      "src/nodes/lighting/AnalyticLightNode.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 21,
+    "cost_usd": 0.28916990000000004,
+    "total_output_tokens": 8929,
+    "cache_read": 1386084,
+    "cache_creation": 84614,
+    "tool_counts": {
+      "Bash": 10,
+      "Read": 10
+    },
+    "gpa_calls": 0,
+    "file_score": 0.3333333333333333,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 6,
+    "cost_usd": 0.4801087499999999,
+    "total_output_tokens": 9833,
+    "cache_read": 107907,
+    "cache_creation": 39150,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 6,
+      "Read": 14
+    },
+    "gpa_calls": 0,
+    "file_score": 0.16666666666666666,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_extras": [
+      "src/renderers/webgl/WebGLClipping.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 6,
+    "cost_usd": 0.43842800000000004,
+    "total_output_tokens": 4885,
+    "cache_read": 135166,
+    "cache_creation": 39788,
+    "tool_counts": {
+      "Grep": 2,
+      "Read": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 0.16666666666666666,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_extras": [
+      "src/renderers/webgl/WebGLClipping.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 18,
+    "cost_usd": 0.1844155,
+    "total_output_tokens": 8354,
+    "cache_read": 1046500,
+    "cache_creation": 30294,
+    "tool_counts": {
+      "Bash": 9,
+      "Read": 8
+    },
+    "gpa_calls": 0,
+    "file_score": 0.16666666666666666,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_extras": [
+      "src/renderers/webgl/WebGLClipping.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 15,
+    "cost_usd": 0.58983,
+    "total_output_tokens": 11131,
+    "cache_read": 454289,
+    "cache_creation": 30859,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 7,
+      "Read": 27,
+      "Grep": 3
+    },
+    "gpa_calls": 0,
+    "file_score": 0.16666666666666666,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_extras": [
+      "src/renderers/webgl/WebGLClipping.js"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_incorrect_clipping_with_global_clipping_",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 7,
+    "cost_usd": 0.5176489999999999,
+    "total_output_tokens": 5904,
+    "cache_read": 211513,
+    "cache_creation": 42278,
+    "tool_counts": {
+      "Glob": 1,
+      "Read": 3,
+      "Grep": 2
+    },
+    "gpa_calls": 0,
+    "file_score": 0.16666666666666666,
+    "file_hits": [
+      "src/renderers/WebGLRenderer.js"
+    ],
+    "file_misses": [
+      "examples/jsm/objects/Reflector.js",
+      "examples/jsm/objects/ReflectorForSSRPass.js",
+      "examples/jsm/objects/Refractor.js",
+      "examples/jsm/objects/Water.js",
+      "src/renderers/webgl/WebGLRenderStates.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 24,
+    "cost_usd": 0.36318125,
+    "total_output_tokens": 16480,
+    "cache_read": 1650675,
+    "cache_creation": 92439,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 13,
+      "Read": 8
+    },
+    "gpa_calls": 0,
+    "file_score": 0.14285714285714285,
+    "file_hits": [
+      "src/shaders/raster.vertex.glsl"
+    ],
+    "file_misses": [
+      "debug/image-perspective.html",
+      "src/render/draw_raster.js",
+      "src/render/program/raster_program.js",
+      "src/source/canvas_source.js",
+      "src/source/image_source.js",
+      "src/source/video_source.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 0,
+    "cost_usd": 0.0,
+    "total_output_tokens": 1181,
+    "cache_read": 4705829,
+    "cache_creation": 367109,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 10,
+      "Read": 20,
+      "Glob": 5,
+      "Grep": 13
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": false,
+    "maintainer_solved": false,
+    "verdict": "timeout"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 13,
+    "cost_usd": 0.67728,
+    "total_output_tokens": 6980,
+    "cache_read": 439090,
+    "cache_creation": 45304,
+    "tool_counts": {
+      "Bash": 7,
+      "Read": 5
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "debug/image-perspective.html",
+      "src/render/draw_raster.js",
+      "src/render/program/raster_program.js",
+      "src/shaders/raster.vertex.glsl",
+      "src/source/canvas_source.js",
+      "src/source/image_source.js",
+      "src/source/video_source.js"
+    ],
+    "file_extras": [
+      "src/source/image_source.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 40,
+    "cost_usd": 0.43406934999999996,
+    "total_output_tokens": 10857,
+    "cache_read": 2590156,
+    "cache_creation": 96399,
+    "tool_counts": {
+      "Skill": 1,
+      "Glob": 6,
+      "mcp__plugin_serena_serena__activate_project": 1,
+      "mcp__plugin_serena_serena__initial_instructions": 1,
+      "Grep": 17,
+      "Read": 12
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "debug/image-perspective.html",
+      "src/render/draw_raster.js",
+      "src/render/program/raster_program.js",
+      "src/shaders/raster.vertex.glsl",
+      "src/source/canvas_source.js",
+      "src/source/image_source.js",
+      "src/source/video_source.js"
+    ],
+    "file_extras": [
+      "src/data/bounds_attributes.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 26,
+    "cost_usd": 1.70428415,
+    "total_output_tokens": 49516,
+    "cache_read": 1152425,
+    "cache_creation": 99518,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 11,
+      "Grep": 12,
+      "Read": 28
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5714285714285714,
+    "file_hits": [
+      "src/render/draw_raster.js",
+      "src/render/program/raster_program.js",
+      "src/shaders/raster.vertex.glsl",
+      "src/source/image_source.js"
+    ],
+    "file_misses": [
+      "debug/image-perspective.html",
+      "src/source/canvas_source.js",
+      "src/source/video_source.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 15,
+    "cost_usd": 0.9859557500000001,
+    "total_output_tokens": 11275,
+    "cache_read": 662084,
+    "cache_creation": 59671,
+    "tool_counts": {
+      "Bash": 7,
+      "Read": 3,
+      "Grep": 2,
+      "gpa": 2
+    },
+    "gpa_calls": 2,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "debug/image-perspective.html",
+      "src/render/draw_raster.js",
+      "src/render/program/raster_program.js",
+      "src/shaders/raster.vertex.glsl",
+      "src/source/canvas_source.js",
+      "src/source/image_source.js",
+      "src/source/video_source.js"
+    ],
+    "file_extras": [
+      "src/source/image_source.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 25,
+    "cost_usd": 0.34215085,
+    "total_output_tokens": 9319,
+    "cache_read": 1743826,
+    "cache_creation": 96801,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 12,
+      "Read": 10
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_extras": [
+      "src/geo/transform.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 42,
+    "cost_usd": 2.31173455,
+    "total_output_tokens": 46100,
+    "cache_read": 2079885,
+    "cache_creation": 103116,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 41,
+      "Read": 40,
+      "Glob": 2,
+      "Grep": 15
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_extras": [
+      "src/geo/transform.ts",
+      "src/render/draw_raster.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 18,
+    "cost_usd": 1.1132315,
+    "total_output_tokens": 9200,
+    "cache_read": 890043,
+    "cache_creation": 70096,
+    "tool_counts": {
+      "Glob": 2,
+      "Read": 7,
+      "Grep": 7,
+      "Bash": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_extras": [
+      "src/geo/transform.ts",
+      "src/render/draw_raster.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 21,
+    "cost_usd": 0.2912043000000001,
+    "total_output_tokens": 7899,
+    "cache_read": 1360778,
+    "cache_creation": 92390,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 10,
+      "Read": 8
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_extras": [
+      "src/render/draw_raster.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 40,
+    "cost_usd": 1.6450563999999996,
+    "total_output_tokens": 38324,
+    "cache_read": 1334556,
+    "cache_creation": 84735,
+    "tool_counts": {
+      "Agent": 1,
+      "Glob": 8,
+      "Bash": 50,
+      "Read": 34
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 23,
+    "cost_usd": 1.2074510999999994,
+    "total_output_tokens": 10393,
+    "cache_read": 906029,
+    "cache_creation": 39255,
+    "tool_counts": {
+      "Bash": 26,
+      "Agent": 1,
+      "Read": 15
+    },
+    "gpa_calls": 0,
+    "file_score": 0.0,
+    "file_hits": [],
+    "file_misses": [
+      "src/geo/transform.js",
+      "src/render/draw_raster.js"
+    ],
+    "file_extras": [
+      "src/geo/transform.ts",
+      "src/render/draw_raster.ts"
+    ],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": false,
+    "verdict": "wrong"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "code_only",
+    "model": "haiku",
+    "turns": 25,
+    "cost_usd": 0.4786332,
+    "total_output_tokens": 25832,
+    "cache_read": 1927747,
+    "cache_creation": 125234,
+    "tool_counts": {
+      "mcp__plugin_serena_serena__activate_project": 1,
+      "mcp__plugin_serena_serena__initial_instructions": 1,
+      "Glob": 2,
+      "Read": 12,
+      "Grep": 8
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [
+      "examples/js/objects/Reflector.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "code_only",
+    "model": "sonnet",
+    "turns": 23,
+    "cost_usd": 1.15306825,
+    "total_output_tokens": 31031,
+    "cache_read": 832391,
+    "cache_creation": 71787,
+    "tool_counts": {
+      "Agent": 1,
+      "Glob": 4,
+      "Read": 21,
+      "Grep": 8,
+      "Bash": 5
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [
+      "examples/js/objects/Reflector.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "code_only",
+    "model": "opus",
+    "turns": 28,
+    "cost_usd": 1.23545925,
+    "total_output_tokens": 11286,
+    "cache_read": 1198711,
+    "cache_creation": 56607,
+    "tool_counts": {
+      "Glob": 3,
+      "Read": 7,
+      "Grep": 4,
+      "Bash": 13
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "examples/js/objects/Reflector.js",
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "with_gpa",
+    "model": "haiku",
+    "turns": 46,
+    "cost_usd": 0.4723151500000001,
+    "total_output_tokens": 13354,
+    "cache_read": 3492649,
+    "cache_creation": 44769,
+    "tool_counts": {
+      "Skill": 1,
+      "Bash": 31,
+      "Read": 12
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [
+      "examples/js/objects/Reflector.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "with_gpa",
+    "model": "sonnet",
+    "turns": 40,
+    "cost_usd": 1.4194357000000002,
+    "total_output_tokens": 31707,
+    "cache_read": 1484383,
+    "cache_creation": 82148,
+    "tool_counts": {
+      "Agent": 1,
+      "Bash": 28,
+      "Read": 39,
+      "Grep": 1,
+      "Glob": 1
+    },
+    "gpa_calls": 0,
+    "file_score": 1.0,
+    "file_hits": [
+      "examples/js/objects/Reflector.js",
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  },
+  {
+    "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
+    "mode": "with_gpa",
+    "model": "opus",
+    "turns": 31,
+    "cost_usd": 1.4586810000000001,
+    "total_output_tokens": 15249,
+    "cache_read": 1368612,
+    "cache_creation": 62876,
+    "tool_counts": {
+      "Glob": 2,
+      "Read": 9,
+      "Grep": 9,
+      "Bash": 10
+    },
+    "gpa_calls": 0,
+    "file_score": 0.5,
+    "file_hits": [
+      "examples/jsm/objects/Reflector.js"
+    ],
+    "file_misses": [
+      "examples/js/objects/Reflector.js"
+    ],
+    "file_extras": [],
+    "out_of_tree": [],
+    "parsed_json": true,
+    "maintainer_solved": true,
+    "verdict": "solved"
+  }
+]

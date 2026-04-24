@@ -1,0 +1,12 @@
+Round 10 — 54 runs
+
+Total cost: $32.65
+Verdicts: {'solved': 32, 'wrong': 21, 'timeout': 1}
+
+Mode × Model solve rates:
+  code_only haiku: 5/9
+  code_only opus: 5/9
+  code_only sonnet: 5/9
+  with_gpa haiku: 5/9
+  with_gpa opus: 5/9
+  with_gpa sonnet: 7/9
