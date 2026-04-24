@@ -5,6 +5,7 @@ hint comments in source files, via runtime-output strings that announce
 the bug, or via a scenario.md `## User Report` section that states the
 root cause instead of describing symptoms.
 """
+import re
 from pathlib import Path
 
 import pytest
@@ -41,6 +42,17 @@ Both quads are red.
 The second `glBindTexture(GL_TEXTURE_2D, tex_blue)` call is omitted before
 drawing the right quad, so the right draw inherits the red texture from
 the previous draw.
+
+## Fix
+```yaml
+fix_pr_url: https://github.com/example/repo/pull/2
+fix_sha: deadbeef12345
+fix_parent_sha: cafebabe6789
+bug_class: framework-internal
+files:
+  - src/renderer/draw.c
+change_summary: Re-bind the correct texture before the second draw.
+```
 
 ## Difficulty Rating
 2/5
@@ -168,3 +180,98 @@ def test_neutral_what_comments_are_allowed(tmp_path):
     )
     d = _write_scenario(tmp_path, ok, GOOD_SCENARIO_MD)
     assert check_contamination(d) is None
+
+
+# --- `## Fix` section validation (maintainer-framing spec, Phase 1) ------
+
+
+def test_validator_rejects_missing_fix_section(tmp_path):
+    """A new draft without a `## Fix` heading is rejected."""
+    no_fix = re.sub(
+        r"\n## Fix\n```yaml\n.*?\n```\n", "\n", GOOD_SCENARIO_MD, flags=re.DOTALL
+    )
+    # Sanity: our regex actually removed the section.
+    assert "## Fix" not in no_fix
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, no_fix)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "missing_fix_section" in reason
+
+
+def test_validator_rejects_fix_without_files(tmp_path):
+    """`## Fix` with an empty files list and non-legacy bug_class is rejected."""
+    empty_files = GOOD_SCENARIO_MD.replace(
+        "files:\n  - src/renderer/draw.c",
+        "files: []",
+    )
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, empty_files)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "fix_section_files_empty" in reason
+
+
+def test_validator_accepts_legacy_bug_class(tmp_path):
+    """`bug_class: legacy` with `files: []` is the retrofit escape hatch."""
+    legacy = GOOD_SCENARIO_MD.replace(
+        "bug_class: framework-internal\nfiles:\n  - src/renderer/draw.c",
+        "bug_class: legacy\nfiles: []",
+    )
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, legacy)
+    assert check_contamination(d) is None
+
+
+def test_validator_accepts_framework_internal_with_files(tmp_path):
+    """The default `GOOD_SCENARIO_MD` (framework-internal + 1 file) passes."""
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, GOOD_SCENARIO_MD)
+    assert check_contamination(d) is None
+
+
+def test_validator_rejects_fix_section_without_yaml_block(tmp_path):
+    """A `## Fix` heading with only prose and no yaml fence is rejected."""
+    prose_only = re.sub(
+        r"## Fix\n```yaml\n.*?\n```\n",
+        "## Fix\nJust some prose without any yaml block whatsoever.\n",
+        GOOD_SCENARIO_MD,
+        flags=re.DOTALL,
+    )
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, prose_only)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "missing_yaml_block" in reason
+
+
+def test_validator_rejects_invalid_bug_class(tmp_path):
+    """A bug_class that isn't in the controlled vocabulary is rejected."""
+    invalid = GOOD_SCENARIO_MD.replace(
+        "bug_class: framework-internal", "bug_class: totally-made-up"
+    )
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, invalid)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "invalid_bug_class" in reason
+
+
+def test_validator_rejects_fix_missing_pr_url(tmp_path):
+    """A fix block that omits fix_pr_url is rejected."""
+    no_url = re.sub(
+        r"fix_pr_url: [^\n]+\n", "", GOOD_SCENARIO_MD
+    )
+    assert "fix_pr_url" not in no_url
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, no_url)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "missing_fix_pr_url" in reason
+
+
+def test_validator_rejects_fix_missing_bug_class(tmp_path):
+    """A fix block that omits bug_class is rejected."""
+    no_class = re.sub(
+        r"bug_class: [^\n]+\n", "", GOOD_SCENARIO_MD
+    )
+    assert "bug_class" not in no_class
+    d = _write_scenario(tmp_path, GOOD_MAIN_C, no_class)
+    reason = check_contamination(d)
+    assert reason is not None
+    assert "missing_bug_class" in reason
+
+

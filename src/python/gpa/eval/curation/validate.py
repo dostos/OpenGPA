@@ -7,10 +7,19 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+import yaml
+
 from gpa.eval.curation.draft import DraftResult
 from gpa.eval.curation.prompts import load_prompt
 from gpa.eval.curation.signature_matchers import match_signature
 from gpa.eval.scenario import ScenarioLoader
+
+
+# Valid bug_class values per the maintainer-framing spec
+# (docs/superpowers/specs/2026-04-21-maintainer-framing-design.md).
+_VALID_BUG_CLASSES = frozenset(
+    {"framework-internal", "consumer-misuse", "user-config", "legacy"}
+)
 
 
 @dataclass
@@ -105,6 +114,76 @@ def check_contamination(scenario_dir: Path) -> Optional[str]:
         return "scenario.md missing `## User Report` section"
     if not re.search(r"^##\s+Ground Truth\s*$", md_text, re.MULTILINE):
         return "scenario.md missing `## Ground Truth` section"
+
+    # `## Fix` section is required on newly-drafted scenarios per the
+    # maintainer-framing spec (Phase 1).  This check runs from the
+    # curation Validator only; the scenario loader does NOT call
+    # check_contamination, so the 94+ pre-existing on-disk scenarios
+    # without a `## Fix` section continue to load normally.
+    fix_reason = _check_fix_section(md_text)
+    if fix_reason is not None:
+        return fix_reason
+
+    return None
+
+
+def _check_fix_section(md_text: str) -> Optional[str]:
+    """Return a rejection-reason string if the scenario.md is missing a
+    well-formed `## Fix` section, else None.
+
+    Rules (matching the maintainer-framing spec, Phase 1):
+      - Section heading `## Fix` must be present.
+      - Section body must contain a ```yaml ... ``` fenced block.
+      - YAML must parse as a mapping with fix_pr_url and bug_class.
+      - bug_class must be one of the valid values.
+      - For non-legacy bug_class, `files` must be a non-empty list.
+      - `bug_class: legacy` with an empty files list is allowed (explicit
+        retrofit escape hatch).
+    """
+    if not re.search(r"^##\s+Fix\s*$", md_text, re.MULTILINE):
+        return "missing_fix_section"
+
+    # Extract the `## Fix` section body, bounded by the next `## ` heading
+    # or end of file.
+    m = re.search(
+        r"^##\s+Fix\s*\n(.+?)(?=\n##\s+|\Z)",
+        md_text, re.MULTILINE | re.DOTALL,
+    )
+    if not m:
+        # Heading at the very end of the file with no body.
+        return "fix_section_empty"
+
+    section_body = m.group(1)
+
+    yaml_m = re.search(r"```yaml\s*\n(.+?)\n```", section_body, re.DOTALL)
+    if not yaml_m:
+        return "fix_section_missing_yaml_block"
+
+    try:
+        data = yaml.safe_load(yaml_m.group(1))
+    except yaml.YAMLError as e:
+        return f"fix_section_yaml_parse_error: {e}"
+
+    if not isinstance(data, dict):
+        return "fix_section_yaml_not_mapping"
+
+    if not data.get("fix_pr_url"):
+        return "fix_section_missing_fix_pr_url"
+
+    bug_class = data.get("bug_class")
+    if not bug_class:
+        return "fix_section_missing_bug_class"
+    if bug_class not in _VALID_BUG_CLASSES:
+        return f"fix_section_invalid_bug_class: {bug_class!r}"
+
+    files_raw = data.get("files")
+    files: list = []
+    if isinstance(files_raw, list):
+        files = [f for f in files_raw if f is not None and str(f).strip()]
+
+    # Empty files permitted iff bug_class is the explicit legacy marker.
+    if not files and bug_class != "legacy":
+        return "fix_section_files_empty"
 
     return None
 

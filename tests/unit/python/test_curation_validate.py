@@ -4,6 +4,23 @@ from gpa.eval.curation.validate import Validator, ValidationResult
 from gpa.eval.curation.draft import DraftResult
 from gpa.eval.curation.llm_client import LLMResponse
 
+
+# Minimal `## Fix` block injected into each test's md_body.  The Phase-1
+# validator requires this on all new drafts (see
+# docs/superpowers/specs/2026-04-21-maintainer-framing-design.md).  A
+# "framework-internal" class with one fake file is the most realistic
+# shape; validation doesn't actually resolve the URL.
+_FIX_BLOCK = (
+    "## Fix\n```yaml\n"
+    "fix_pr_url: https://github.com/x/y/pull/2\n"
+    "fix_sha: deadbeef12345\n"
+    "fix_parent_sha: cafebabe6789\n"
+    "bug_class: framework-internal\n"
+    "files:\n  - src/renderer/draw.c\n"
+    "change_summary: Test fixture fix block.\n"
+    "```\n"
+)
+
 def test_validator_builds_runs_and_signature_matches(tmp_path):
     scenario_id = "r_test_ok"
     draft = DraftResult(
@@ -15,6 +32,7 @@ def test_validator_builds_runs_and_signature_matches(tmp_path):
             "## Expected Correct Output\ne\n"
             "## Actual Broken Output\na\n"
             "## Ground Truth\n> quote\ndiag\n"
+            + _FIX_BLOCK +
             "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n"
             "## How GPA Helps\nh\n"
@@ -58,7 +76,9 @@ def test_validator_fails_on_signature_mismatch(tmp_path):
         md_body=(
             "# R_TEST_MISMATCH\n"
             "## User Report\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
-            "## Ground Truth\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
+            "## Ground Truth\n> quote\ndiag\n"
+            + _FIX_BLOCK +
+            "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
@@ -94,7 +114,9 @@ def test_validator_cleans_up_on_mismatch(tmp_path):
         md_body=(
             "# R_TEST_CLEANUP\n"
             "## User Report\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
-            "## Ground Truth\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
+            "## Ground Truth\n> quote\ndiag\n"
+            + _FIX_BLOCK +
+            "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
@@ -129,7 +151,9 @@ def test_validator_cleans_up_when_build_fails(tmp_path):
         md_body=(
             "# R_TEST_BUILD_FAIL\n"
             "## User Report\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
-            "## Ground Truth\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
+            "## Ground Truth\n> quote\ndiag\n"
+            + _FIX_BLOCK +
+            "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
@@ -159,7 +183,9 @@ def test_validator_keeps_files_on_success(tmp_path):
         md_body=(
             "# R_TEST_OK_KEEP\n"
             "## User Report\nb\n## Expected Correct Output\ne\n## Actual Broken Output\na\n"
-            "## Ground Truth\n> quote\ndiag\n## Difficulty Rating\n3/5\n"
+            "## Ground Truth\n> quote\ndiag\n"
+            + _FIX_BLOCK +
+            "## Difficulty Rating\n3/5\n"
             "## Adversarial Principles\n- p\n## How GPA Helps\nh\n"
             "## Source\n- **URL**: https://x/1\n## Tier\ncore\n## API\nopengl\n"
             "## Framework\nnone\n"
@@ -197,6 +223,7 @@ def test_validator_writes_multiple_files_to_scenario_dir(tmp_path):
                 "## User Report\nb\n## Expected Correct Output\ne\n"
                 "## Actual Broken Output\na\n"
                 "## Ground Truth\n> quote\ndiag\n"
+                + _FIX_BLOCK +
                 "## Difficulty Rating\n3/5\n"
                 "## Adversarial Principles\n- p\n"
                 "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
@@ -239,6 +266,7 @@ def test_validator_cleans_up_whole_dir_on_failure(tmp_path):
             "scenario.md": (
                 "# R_FAIL\n## User Report\nb\n## Expected Correct Output\ne\n"
                 "## Actual Broken Output\na\n## Ground Truth\n> q\nd\n"
+                + _FIX_BLOCK +
                 "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
                 "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
                 "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
@@ -299,6 +327,7 @@ def test_validator_uses_llm_fallback_on_ambiguous(tmp_path):
     md_body = (
         "# R_X\n## User Report\nb\n## Expected Correct Output\ne\n"
         "## Actual Broken Output\na\n## Ground Truth\n> q\nd\n"
+        + _FIX_BLOCK +
         "## Difficulty Rating\n3/5\n## Adversarial Principles\n- p\n"
         "## How GPA Helps\nh\n## Source\n- **URL**: https://x/1\n"
         "## Tier\ncore\n## API\nopengl\n## Framework\nnone\n"
