@@ -102,6 +102,21 @@ section; the agent must do its own reasoning.>
 ## Ground Truth
 <root cause, citing the upstream thread with at least one quoted passage>
 
+## Fix
+```yaml
+fix_pr_url: <full URL of the merged PR that fixed this bug, e.g. https://github.com/owner/repo/pull/NNN>
+fix_sha: <merge commit SHA of the fix PR — 40-char hex, or short SHA if that's what the issue thread has>
+fix_parent_sha: <parent of the merge — MUST equal upstream_snapshot.sha above, i.e. the pre-fix commit>
+bug_class: <framework-internal | consumer-misuse | user-config>
+files:
+  - <path/to/first/file/touched/by/the/fix.ext>     # relative to repo root
+  - <path/to/second.ext>                             # optional; list all files the fix PR modifies
+change_summary: >
+  <One to two sentences in plain English describing what the fix does.
+  Cite the maintainer's reasoning from the PR body or issue thread when
+  useful, but do NOT paste the full diff here.>
+```
+
 ## Difficulty Rating
 <N>/5
 
@@ -138,6 +153,27 @@ spec:
 - **Verdict**: yes | no | ambiguous
 - **Reasoning**: <why>
 ```
+
+## Populating the `## Fix` section (REQUIRED)
+
+This section is machine-readable ground truth for the maintainer-framing scorer. It MUST be present on every new draft. Rules:
+
+- `fix_pr_url`: the full HTTPS URL of the merged PR that fixed this bug. If the issue thread links to PR #NNN with `Fixes #ISSUE` / `Closes #ISSUE`, that's the fix PR. If multiple PRs are linked, pick the one whose merge commit landed on the default branch and whose diff touches rendering code.
+- `fix_sha`: the merge-commit SHA of that PR (40-char hex preferred; short 7+ char SHA accepted). If the issue thread doesn't surface a specific SHA, pick from the PR's commits list.
+- `fix_parent_sha`: MUST equal the SHA you put in `## Upstream Snapshot` — i.e. the pre-fix commit the eval agent will read against. If `## Upstream Snapshot.SHA` is still the `(auto-resolve from PR #NNN)` token, leave `fix_parent_sha` as the same token; the post-draft pipeline resolves both together.
+- `bug_class`: exactly one of
+  - `framework-internal` — maintainer patches the framework's own code. This is the most common case.
+  - `consumer-misuse` — maintainer's response is "this is not a framework bug; use X API instead." No diff to the framework.
+  - `user-config` — maintainer's response is "set `renderer.foo = true`" or similar config-only change.
+- `files`: list of every file path the fix PR modifies, relative to the repo root. Copy from `gh pr view <PR> --json files` or the PR's "Files changed" tab. Non-empty list required for `framework-internal` and most `consumer-misuse` cases.
+- `change_summary`: 1-2 sentences describing what the fix does in plain English. Not a diff excerpt, not the PR title — an explanation a maintainer could write in their own words. Quote the PR body or commit message if it's short and clear.
+- Optional `diff_excerpt`: 3-5 lines of the critical diff (unified-diff format). Useful for scoring debug; skip if the patch is large or cluttered.
+
+**Rejection policy for unresolvable fix PRs**: If the issue is closed without a merged PR (reason-completed but no linked PR), closed as a duplicate with no follow-up fix, or the fix is a one-liner in a refactor PR where you can't isolate it — prefer to REJECT the candidate. To reject, emit NO scenario at all; just explain in a top-level `<!-- draft_error: fix_pr_not_resolvable -->` HTML comment.
+
+If you drafted anyway (e.g. because the issue is valuable context even without a clean fix), set `bug_class: legacy` and `files: []`. The validator will pass this through, but the scenario is excluded from the maintainer-framing eval set.
+
+A well-formed scenario MUST have a non-empty `files` list.
 
 ## When to include an Upstream Snapshot reference
 

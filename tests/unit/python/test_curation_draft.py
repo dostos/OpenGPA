@@ -427,3 +427,63 @@ def test_draft_rejects_response_without_any_filename_markers():
     import pytest
     with pytest.raises(ValueError, match="filename"):
         d.draft(_default_thread(), _default_triage(), scenario_id="r1_test")
+
+
+# --- `## Fix` section parsing (maintainer-framing spec, Phase 1) ---------
+
+_MD_BODY_WITH_FIX = _MD_BODY.replace(
+    "## Difficulty Rating\n3/5",
+    "## Fix\n"
+    "```yaml\n"
+    "fix_pr_url: https://github.com/x/y/pull/2\n"
+    "fix_sha: deadbeef12345\n"
+    "fix_parent_sha: cafebabe6789\n"
+    "bug_class: framework-internal\n"
+    "files:\n"
+    "  - src/renderers/webgl/WebGLBackground.js\n"
+    "change_summary: Move autoClear call before background render.\n"
+    "```\n"
+    "\n"
+    "## Difficulty Rating\n3/5",
+)
+
+
+def test_draft_parses_md_body_with_fix_section():
+    """A drafter response carrying a `## Fix` block round-trips through
+    Draft._parse_files + Draft._validate cleanly.  The parse stage isn't
+    Fix-aware, but the markdown must still be preserved intact."""
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        _wrap_draft_response(_C_CODE, _MD_BODY_WITH_FIX)
+    )
+    d = Draft(llm_client=llm)
+    result = d.draft(_default_thread(), _default_triage(), scenario_id="r1_test")
+    assert "## Fix" in result.md_body
+    assert "fix_pr_url: https://github.com/x/y/pull/2" in result.md_body
+    assert "bug_class: framework-internal" in result.md_body
+    # Downstream sections must survive past the nested yaml fence.
+    assert "## Bug Signature" in result.md_body
+    assert "type: color_histogram_in_region" in result.md_body
+
+
+def test_drafted_fix_section_loads_through_scenario_loader(tmp_path):
+    """End-to-end: a DraftResult.md_body that contains `## Fix` yields a
+    ScenarioMetadata.fix populated when written to disk and reloaded."""
+    from gpa.eval.scenario import ScenarioLoader
+    llm = MagicMock()
+    llm.complete.return_value = _fake_response(
+        _wrap_draft_response(_C_CODE, _MD_BODY_WITH_FIX)
+    )
+    d = Draft(llm_client=llm)
+    result = d.draft(_default_thread(), _default_triage(), scenario_id="r1_test")
+
+    scenario_dir = tmp_path / "r1_test"
+    scenario_dir.mkdir()
+    for name, content in result.files.items():
+        (scenario_dir / name).write_text(content)
+
+    scenario = ScenarioLoader(eval_dir=str(tmp_path)).load("r1_test")
+    assert scenario.fix is not None
+    assert scenario.fix.fix_pr_url == "https://github.com/x/y/pull/2"
+    assert scenario.fix.bug_class == "framework-internal"
+    assert scenario.fix.files == ["src/renderers/webgl/WebGLBackground.js"]
