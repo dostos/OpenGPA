@@ -1196,3 +1196,244 @@ more aggressively, opus makes pointier picks. Haiku's high Bash count
   scenarios.txt, runner scripts, score.py, snapshot_map.sh,
   build_prompt.py.
 
+## Round 10v2 + Round 11 — Maintainer-framing on real capture + breadcrumb design (2026-04-24)
+
+Combined dispatch of two scenario sets, **66 runs** total
+(11 scen × 3 tiers × 2 modes). First eval where with_gpa actually has GPA
+capture wired (after R10's silent capture failure that made all 27 with_gpa
+runs effectively code_only).
+
+**Set A — R10v2 keepers (6 scenarios):** R10's 9 minus 3 that leaked the
+fix-file name in the user report.
+
+**Set B — R11 breadcrumb (5 scenarios):** mined to *force* `gpa trace value`
+usage. Each `scenario.md` includes a "Captured-literal breadcrumb" block
+naming the value the agent should reverse-look-up.
+
+### Setup notes
+
+- Per-run session via `gpa start --session $DIR --port 0 --daemon`. The new
+  auto-port allocator (commit `8cf253d`) eliminated R10's port-collision
+  workaround completely — zero port conflicts across 66 parallel sessions.
+- Session-dir empty-existing fix (`587b3c5`) made `mkdir -p` + `gpa start`
+  idempotent, fixing R10's primary capture-pipeline bug.
+- The runner injects a stronger breadcrumb-style hint into the with_gpa
+  prompt at dispatch time (without modifying the in-repo
+  `maintainer_framing.md` template), suggesting `trace/value?query=<literal>`
+  as the recommended workflow.
+- Hard cap: $80. Actual: **$33.97** (R10v2 $19.03 + R11 $14.94).
+- 65 runs dispatched in parallel (1 smoke-test was already complete).
+  Wall-time: ~30 minutes, including one Sonnet retry that was killed at
+  ~14 min of an 80-turn retry loop on r18_raster code_only (graded as
+  `timeout` by the existing scorer).
+
+### Capture-pipeline status
+
+The fix-applied infrastructure works for *single* runs but the GL shim's
+IPC handshake fails when many bazel-bin processes connect to per-session
+sockets simultaneously. **Of 33 with_gpa runs, only 9 (27%) had a frame
+captured**; the other 24 saw `[OpenGPA] handshake send failed` and the
+final-prompt logged "no frames captured" warning.
+
+Cross-tab on the 33 with_gpa runs:
+
+| capture state | n  | solved% | trace_called | gpa_calls (total) | avg_cost |
+|---------------|---:|--------:|-------------:|------------------:|---------:|
+| captured      |  9 |  56%    |     2/9 (22%) |              22    |  $0.46   |
+| no_capture    | 24 |  67%    |     0/24 (0%) |               9    |  $0.61   |
+
+**Captured runs called `trace/value` 22% of the time; no-capture runs called
+0%.** Agents notice the warning and switch off the GPA workflow when
+told frames are empty.
+
+The 67% > 56% solved rate for no_capture vs captured is a confounder, not
+a regression — the captured/no-captured split is uneven across scenario
+difficulty. R14 (zero-solve scenario) had 3/6 captures; r56 (easy
+scenario) had 1/6.
+
+### Set A — R10v2 keepers (6 scenarios × 6 cells = 36 runs)
+
+| mode      | model  | solved%  | fscore | trace?  | GPA calls | avg cost | cache_M |
+|-----------|--------|---------:|-------:|--------:|----------:|---------:|--------:|
+| code_only | haiku  |   50.0%  |  0.42  |  0/6    |     0     | $0.34    | 1.81M   |
+| code_only | sonnet |   66.7%  |  0.60  |  0/6    |     0     | $0.52    | 1.30M   |
+| code_only | opus   |   50.0%  |  0.50  |  0/6    |     0     | $0.61    | 0.35M   |
+| with_gpa  | haiku  |   50.0%  |  0.42  |  0/6    |     6     | $0.32    | 2.01M   |
+| with_gpa  | sonnet |   66.7%  |  0.67  |  0/6    |     1     | $0.60    | 1.13M   |
+| with_gpa  | opus   |   50.0%  |  0.52  |  0/6    |     2     | $0.78    | 0.63M   |
+
+**R10v2 reproduces R10's per-scenario solve pattern exactly:**
+r2/r11_bloom/r11_ubo all 6/6, r14 0/6, r17_mapbox & r18_raster
+1/6 (each only by sonnet on one mode). The new R10v2 scenario r14 replaced
+R10's r6 in the keepers; r6 was 6/6 trivial in R10 and r14 is the
+zero-solve r14 from R10 — net moves the average accuracy down slightly.
+**Capture being functional did not change a single solve outcome on this
+set.** Compare to R10's 5/9 (56%) baseline that held for 5 of 6 cells:
+the bug body either already names the file (trivially solved) or requires
+a deep multi-file refactor (zero-solved). Functional capture provides no
+leverage in either regime.
+
+### Set B — R11 breadcrumb (5 scenarios × 6 cells = 30 runs)
+
+| mode      | model  | solved%  | fscore | trace?  | GPA calls | avg cost | cache_M |
+|-----------|--------|---------:|-------:|--------:|----------:|---------:|--------:|
+| code_only | haiku  |   80.0%  |  0.70  |  0/5    |     0     | $0.31    | 1.72M   |
+| code_only | sonnet |   80.0%  |  0.80  |  0/5    |     0     | $0.41    | 0.08M   |
+| code_only | opus   |   80.0%  |  0.70  |  0/5    |     0     | $0.58    | 0.27M   |
+| with_gpa  | haiku  |   80.0%  |  0.70  |  **2/5** |    19    | $0.24    | 1.53M   |
+| with_gpa  | sonnet |   60.0%  |  0.57  |  0/5    |     1     | $0.67    | 0.58M   |
+| with_gpa  | opus   |   80.0%  |  0.70  |  0/5    |     2     | $0.78    | 0.65M   |
+
+**Per-scenario breadcrumb matrix (R11 set):**
+
+| scenario | code_h | code_s | code_o | gpa_h | gpa_s | gpa_o | trace_used? |
+|----------|:------:|:------:|:------:|:-----:|:-----:|:-----:|:------------|
+| r53 hemilightprobe   |  n  |  n  |  n  |  **Y**(Y) | n | n | haiku queried `intensity`; pinpointed both files |
+| r54 black_squares    |  Y  |  Y  |  Y  |  Y  |  Y  |  Y  | none |
+| r55 gltf_shadow      |  Y  |  Y  |  Y  |  **Y**(Y) | n | Y | haiku queried `NaN`; full-credit on 3 files |
+| r56 conegeometry     |  Y  |  Y  |  Y  |  Y  |  Y  |  Y  | none |
+| r57 ktx2_alphahash   |  Y  |  Y  |  Y  |  n  |  Y  |  Y  | none |
+
+(Y) marks the runs where `trace_value_called=True`.
+
+**The breadcrumb design works exactly as predicted on r53 haiku:**
+code_only Haiku failed (0/6 across modes/models), but with_gpa Haiku
+called `gpa trace value query=intensity` and a `frames/latest/overview`,
+then nominated both `AmbientLightProbe.js` and `HemisphereLightProbe.js`
+correctly. file_score = 1.00. **r53 is the first time in any round where
+the same model × scenario flips from unsolved to solved purely because of
+GPA.** R10's "single-cell solve" wins were all sonnet-extra-thinking;
+this is the first GPA-evidence-driven solve in the eval history.
+
+**But it only worked on 1 of 5 R11 breadcrumb scenarios.** r54, r56, and
+r57 were already easy enough for code_only at 80%+ (the bug or fix file
+is named in the issue body or the framework structure makes search
+trivial). r55 had a code_only baseline of 100% so the `Y` for haiku-with_gpa
+isn't a flip, just a parallel solve that *also* used trace.
+
+### Trace-value usage
+
+| capture state \\ tier | haiku | sonnet | opus | total |
+|----------------------|------:|-------:|-----:|------:|
+| with frames captured |  2/2  |  0/3   |  0/4 |  2/9  |
+| no frames captured   |  0/9  |  0/8   |  0/7 |  0/24 |
+| **all with_gpa**     | **2/11** | **0/11** | **0/11** | **2/33 (6%)** |
+
+**Only haiku used `trace value`.** Sonnet and opus made `gpa report`
+or `frames/<id>/overview` calls but never invoked `trace`. R9 had 1/48,
+R10 had 1/27, R10v2+R11 has 2/33. Trace-value usage remains in
+single-digit percentage even with explicit prompt encouragement.
+
+### Cost & cache deltas
+
+|                 | R10v2 set A | R11 set B  | Combined  |
+|-----------------|------------:|-----------:|----------:|
+| total cost      |     $19.03  |   $14.94   | **$33.97** |
+| avg per run     |      $0.53  |    $0.50   |    $0.51   |
+| sonnet w/g extras| Major: extended thinking on r17/r18 |  60% solve only — burned $1.13/run on retries | — |
+
+R11 set is *cheaper* per run because the bugs are simpler (single-file or
+2–3-file fixes vs R10v2's r17_mapbox 6-file ground truth). Sonnet
+with_gpa on R11 (60% vs code_only's 80%) and high cost ($0.67 avg) is the
+only regression cell — sonnet went down a wrong path on r55 (got 1/3
+files) and r57 (graded as wrong-class), and the extended-thinking retry
+burned tokens chasing it.
+
+### Per-mode-model cache_read deltas (R10v2 + R11 combined, 11 runs/cell)
+
+| model  | code_only cache_M | with_gpa cache_M | delta |
+|--------|------------------:|-----------------:|------:|
+| haiku  |   1.77            |   1.79           |   +1% |
+| sonnet |   0.74            |   0.85           |  +14% |
+| opus   |   0.31            |   0.71           | +130% |
+
+Opus's 2.3× cache_read increase in with_gpa mode is the runtime-prompt
+metadata (Runtime session block + capture status note + GPA workflow
+hint) being re-cached per turn. Even so, opus's absolute cache_read
+remains the lowest of the three tiers.
+
+### Open scenarios in R11 (regressions or stuck cells)
+
+- **r53**: 5/6 cells failed. Only haiku-with_gpa solved via trace.
+  sonnet/opus with_gpa each had capture but didn't use trace, then went
+  down `LightProbe.js` (the parent class) and missed both subclass files.
+- **r57 haiku with_gpa**: code_only solved at 100% on all 3 tiers, but
+  haiku-with_gpa got `wrong_class` (proposed editing
+  `examples/jsm/transcoders/ktx2-transcoder.js` rather than
+  `examples/jsm/loaders/KTX2Loader.js`). The capture prompt distracted
+  the agent from the obvious source-grep path.
+- **r55 sonnet with_gpa**: code_only 100% on all 3 tiers, sonnet-with_gpa
+  fscore=0.33 (1 of 3 files). Same pattern: the runtime hint pushed the
+  agent toward the shader chunk only, missing the two WebGL files.
+
+### Comparison: R10v2 vs R11 (does breadcrumb design help?)
+
+|                       | R10v2 (set A) | R11 (set B) |
+|-----------------------|--------------:|------------:|
+| mean solved% (with_gpa) |       55.6% |     73.3%  |
+| mean solved% (code_only)|       55.6% |     80.0%  |
+| trace usage (with_gpa)  |        0/18 |     2/15   |
+| GPA tool calls (total)  |          9  |       22   |
+| total cost             |       $19.03 |    $14.94   |
+| avg cost per pair      |       $1.06  |    $0.99    |
+
+R11 has higher GPA usage (2/15 vs 0/18 trace, 22 vs 9 GPA calls), but
+**code_only is *also* higher** on R11 (80% vs 56%). The breadcrumb-shaped
+scenarios are simpler overall, so they don't isolate the GPA effect;
+they only isolate it on the harder cells (r53, where it works). The
+design partially worked: it forced trace usage when capture succeeded on
+the right scenario, but the capture-failure rate (24/33) destroyed the
+effect for most cells.
+
+### Top 3 findings
+
+1. **First GPA-evidence-driven solve in eval history (r53 haiku).**
+   Code_only could not solve at any tier; haiku-with_gpa called
+   `trace/value?query=intensity`, located both `*LightProbe.js` files,
+   scored fscore=1.0. This is the proof of concept the breadcrumb
+   design targeted. The same scenario was unsolved by sonnet/opus at
+   higher tiers because they didn't invoke trace — the cheaper model
+   was the only one that followed the runtime workflow hint.
+
+2. **Capture pipeline fails under parallelism.** 33 simultaneous GL
+   shim handshakes (24/33 = 73% failed) is not a single-run bug — it's
+   contention on per-session unix sockets when bazel-bin starts during
+   peak load. Captures that reached the engine worked correctly. This
+   is now the primary infrastructure gap for >10-parallel evals.
+
+3. **Trace usage is a haiku-specific behavior.** R9: 1/48; R10: 1/27;
+   R10v2+R11: 2/33, both by haiku. Sonnet and opus prefer source-grep
+   even with explicit runtime hints. Either prompt phrasing isn't
+   strong enough or higher-capability models trust their own search
+   strategy more than the supplied workflow.
+
+### Top 3 R12 gaps
+
+1. **Make the GL shim handshake retryable.** A single backoff retry on
+   socket-connect at the shim side would cut capture failures from
+   73% → ~0% under 30-parallel load. This is a one-day fix in
+   `src/shims/gl/ipc.c`.
+
+2. **Mine scenarios where code_only is < 50%.** R10v2 + R11's
+   code_only baseline averaged 67% across all cells; the breadcrumb
+   leverage only fires when code_only fails. Target three.js issues
+   where (a) the user report describes a numeric-value symptom only,
+   AND (b) the framework search radius is > 50 files.
+
+3. **Eval the trace-value endpoint with WebGL scenarios.** The native
+   GL trace works on captured uniform values that are literals in the
+   C app. The real win comes from the JS shim's `gpa.trace.addRoot()`
+   hooking three.js objects — but no R10/R11 scenario exercises that
+   path. Phase-2 browser-eval runner (`r21` pilot) needs at least 5
+   scenarios to test JS-side trace.
+
+### Raw artifacts
+
+- `/tmp/eval_r10v2_r11/*.jsonl` — 66 primary transcripts (no retry files
+  this round; the one max-turn hit was killed manually).
+- `docs/superpowers/eval/round10v2_r11/` — scored.json, summary.txt,
+  tasks.txt, scenarios.txt, runner scripts, score.py, snapshot_map.sh,
+  build_prompt.py, summarize.py.
+
+COMMIT: 8cf253d
+

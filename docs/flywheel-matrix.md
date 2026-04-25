@@ -1,6 +1,6 @@
 # OpenGPA Flywheel — Problem × Solution Matrix
 
-*Living document. Last updated 2026-04-21.*
+*Living document. Last updated 2026-04-24.*
 
 **Purpose.** Identifies common problems agents face per scenario category, maps
 the API/CLI/tool solutions we've shipped to those problems, and exposes gaps
@@ -100,7 +100,7 @@ category 2.
 |---|---|---|---|
 | Reproduce the user's bug | Scenario repro + `gpa run` | — | — |
 | Capture runtime state at reproduction | `gpa report`, all narrow endpoints | R4–R8 state-collision wins | — |
-| Find the offending code location | `gpa trace` reverse value-lookup (`99ca5fa`, `7ac2b43`) | **R9: 1/48 invocations — mostly unused** | Scenarios haven't demanded it yet (see Mining Priorities) |
+| Find the offending code location | `gpa trace` reverse value-lookup (`99ca5fa`, `7ac2b43`) | **R9: 1/48; R10: 1/27; R10v2+R11: 2/33** — first real solve (r53 haiku, with `query=intensity`) but still haiku-only behavior | Capture-pipeline contention blocks the evidence path on 70% of parallel runs (R10v2+R11) — fix shim handshake retry |
 | Navigate the framework architecture | Generic `Read` / `Grep` / `Glob` on full snapshot | — | Adequate but inefficient — agents re-grep a lot |
 | Impact analysis (what else does this function affect?) | — | — | **Gap — no callgraph / reference search** |
 | Verify a fix doesn't regress | — | — | **Gap — no test-run tool** |
@@ -126,6 +126,8 @@ Each row tags the dominant category + key finding. Full detail in
 | R7 (20 scen) | mixed (mis-labeled) | Stream-json telemetry revealed Haiku timeouts vs Sonnet wrong-class |
 | R8 (15 scen) | `graphics-lib-dev` state-collision | **−$0.088/pair** — cleanest win; reproducible |
 | R9 (21 scen, 3 tiers) | mixed | Sonnet state-collision −$0.090; carryover **+$0.389**; Opus 100% with_gpa; trace 1/48 uses |
+| R10 (9 scen, 3 tiers) | `framework-maintenance × web-3d` | Maintainer-framing baseline; capture broken on all 27 with_gpa; 1/27 GPA invocations |
+| R10v2 + R11 (11 scen, 3 tiers) | `framework-maintenance × web-3d` (breadcrumb-shaped) | First GPA-evidence-driven solve in eval history (r53 haiku via trace value); 24/33 captures still failed under parallel load; trace usage 2/33 — only haiku invokes it; code_only baseline reproduces R10 exactly |
 
 **The "mixed" label on R5–R7** is the biggest lesson: we evaluated two or
 three categories in one batch and averaged signals that moved in opposite

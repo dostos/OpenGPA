@@ -1,0 +1,113 @@
+R10v2 + R11 evaluation summary  (66 runs)
+================================================================================
+
+=========== Set A — R10v2 keepers (6 scen × 6 cells = 36) (36 rows) ===========
+
+MODE       MODEL      N  solved%  fscore              verdict  gpa_calls  trace?    cost   cache_r
+--------------------------------------------------------------------------------------------------------------
+code_only  haiku      6    50.0%    0.42     solved=3,wrong=3          0    0/6  $ 2.01   10.83M
+code_only  sonnet     6    66.7%    0.60 solved=4,timeout=1,w          0    0/6  $ 3.15    7.82M
+code_only  opus       6    50.0%    0.50     solved=3,wrong=3          0    0/6  $ 3.66    2.09M
+with_gpa   haiku      6    50.0%    0.42 solved=3,timeout=1,w          6    0/6  $ 1.95   12.07M
+with_gpa   sonnet     6    66.7%    0.67 solved=4,timeout=1,w          1    0/6  $ 3.58    6.78M
+with_gpa   opus       6    50.0%    0.52     solved=3,wrong=3          2    0/6  $ 4.68    3.78M
+
+=========== Set B — R11 breadcrumb (5 scen × 6 cells = 30) (30 rows) ===========
+
+MODE       MODEL      N  solved%  fscore              verdict  gpa_calls  trace?    cost   cache_r
+--------------------------------------------------------------------------------------------------------------
+code_only  haiku      5    80.0%    0.70     solved=4,wrong=1          0    0/5  $ 1.55    8.60M
+code_only  sonnet     5    80.0%    0.80     solved=4,wrong=1          0    0/5  $ 2.03    0.40M
+code_only  opus       5    80.0%    0.70     solved=4,wrong=1          0    0/5  $ 2.88    1.34M
+with_gpa   haiku      5    80.0%    0.70     solved=4,wrong=1         19    2/5  $ 1.22    7.67M
+with_gpa   sonnet     5    60.0%    0.57     solved=3,wrong=2          1    0/5  $ 3.36    2.88M
+with_gpa   opus       5    80.0%    0.70     solved=4,wrong=1          2    0/5  $ 3.90    3.27M
+
+=========== R11 breadcrumb per-scenario breadcrumb matrix ===========
+
+SCENARIO                                       MODEL    mode        solved  trace_called  breadcrumb_seen  gpa_calls  fscore
+----------------------------------------------------------------------------------------------------------------------------------
+r53_hemispherelightprobe_intensity_wrong_      haiku    code_only        n             n                n          0    0.00
+r53_hemispherelightprobe_intensity_wrong_      haiku    with_gpa         Y             Y                n          4    1.00
+r53_hemispherelightprobe_intensity_wrong_      sonnet   code_only        n             n                n          0    0.00
+r53_hemispherelightprobe_intensity_wrong_      sonnet   with_gpa         n             n                n          0    0.00
+r53_hemispherelightprobe_intensity_wrong_      opus     code_only        n             n                n          0    0.00
+r53_hemispherelightprobe_intensity_wrong_      opus     with_gpa         n             n                n          0    0.00
+
+r54_black_squares_when_rendering_glass_ma      haiku    code_only        Y             n                n          0    0.50
+r54_black_squares_when_rendering_glass_ma      haiku    with_gpa         Y             n                n          1    0.50
+r54_black_squares_when_rendering_glass_ma      sonnet   code_only        Y             n                n          0    1.00
+r54_black_squares_when_rendering_glass_ma      sonnet   with_gpa         Y             n                n          0    0.50
+r54_black_squares_when_rendering_glass_ma      opus     code_only        Y             n                n          0    0.50
+r54_black_squares_when_rendering_glass_ma      opus     with_gpa         Y             n                n          1    0.50
+
+r55_certain_gltf_models_not_receiving_sha      haiku    code_only        Y             n                n          0    1.00
+r55_certain_gltf_models_not_receiving_sha      haiku    with_gpa         Y             Y                Y          9    1.00
+r55_certain_gltf_models_not_receiving_sha      sonnet   code_only        Y             n                n          0    1.00
+r55_certain_gltf_models_not_receiving_sha      sonnet   with_gpa         n             n                n          1    0.33
+r55_certain_gltf_models_not_receiving_sha      opus     code_only        Y             n                n          0    1.00
+r55_certain_gltf_models_not_receiving_sha      opus     with_gpa         Y             n                n          1    1.00
+
+r56_conegeometry_has_wrong_side_faces_and      haiku    code_only        Y             n                n          0    1.00
+r56_conegeometry_has_wrong_side_faces_and      haiku    with_gpa         Y             n                n          1    1.00
+r56_conegeometry_has_wrong_side_faces_and      sonnet   code_only        Y             n                n          0    1.00
+r56_conegeometry_has_wrong_side_faces_and      sonnet   with_gpa         Y             n                n          0    1.00
+r56_conegeometry_has_wrong_side_faces_and      opus     code_only        Y             n                n          0    1.00
+r56_conegeometry_has_wrong_side_faces_and      opus     with_gpa         Y             n                n          0    1.00
+
+r57_ktx2_texture_with_alphahash_renders_a      haiku    code_only        Y             n                n          0    1.00
+r57_ktx2_texture_with_alphahash_renders_a      haiku    with_gpa         n             n                n          4    0.00
+r57_ktx2_texture_with_alphahash_renders_a      sonnet   code_only        Y             n                n          0    1.00
+r57_ktx2_texture_with_alphahash_renders_a      sonnet   with_gpa         Y             n                n          0    1.00
+r57_ktx2_texture_with_alphahash_renders_a      opus     code_only        Y             n                n          0    1.00
+r57_ktx2_texture_with_alphahash_renders_a      opus     with_gpa         Y             n                n          0    1.00
+
+
+=========== R10v2 keepers per-scenario breadcrumb matrix ===========
+
+SCENARIO                                       MODEL    mode        solved  trace_called  breadcrumb_seen  gpa_calls  fscore
+----------------------------------------------------------------------------------------------------------------------------------
+r11_screen_glitch_with_bloom_on_m1_mac         haiku    code_only        Y             n                n          0    1.00
+r11_screen_glitch_with_bloom_on_m1_mac         haiku    with_gpa         Y             n                n          4    1.00
+r11_screen_glitch_with_bloom_on_m1_mac         sonnet   code_only        Y             n                n          0    1.00
+r11_screen_glitch_with_bloom_on_m1_mac         sonnet   with_gpa         Y             n                n          0    1.00
+r11_screen_glitch_with_bloom_on_m1_mac         opus     code_only        Y             n                n          0    1.00
+r11_screen_glitch_with_bloom_on_m1_mac         opus     with_gpa         Y             n                n          0    1.00
+
+r11_webglrenderer_ubo_uniform_buffer_object_   haiku    code_only        Y             n                n          0    1.00
+r11_webglrenderer_ubo_uniform_buffer_object_   haiku    with_gpa         Y             n                n          0    1.00
+r11_webglrenderer_ubo_uniform_buffer_object_   sonnet   code_only        Y             n                n          0    1.00
+r11_webglrenderer_ubo_uniform_buffer_object_   sonnet   with_gpa         Y             n                n          0    1.00
+r11_webglrenderer_ubo_uniform_buffer_object_   opus     code_only        Y             n                n          0    1.00
+r11_webglrenderer_ubo_uniform_buffer_object_   opus     with_gpa         Y             n                n          1    1.00
+
+r14_webgpurenderer_make_colored_shadows_opti   haiku    code_only        n             n                n          0    0.00
+r14_webgpurenderer_make_colored_shadows_opti   haiku    with_gpa         n             n                n          1    0.00
+r14_webgpurenderer_make_colored_shadows_opti   sonnet   code_only        n             n                n          0    0.00
+r14_webgpurenderer_make_colored_shadows_opti   sonnet   with_gpa         n             n                n          0    0.00
+r14_webgpurenderer_make_colored_shadows_opti   opus     code_only        n             n                n          0    0.00
+r14_webgpurenderer_make_colored_shadows_opti   opus     with_gpa         n             n                n          0    0.00
+
+r17_mapbox_gl_js_image_overlay_coordinates_p   haiku    code_only        n             n                n          0    0.00
+r17_mapbox_gl_js_image_overlay_coordinates_p   haiku    with_gpa         n             n                n          0    0.00
+r17_mapbox_gl_js_image_overlay_coordinates_p   sonnet   code_only        Y             n                n          0    0.57
+r17_mapbox_gl_js_image_overlay_coordinates_p   sonnet   with_gpa         n             n                n          1    0.00
+r17_mapbox_gl_js_image_overlay_coordinates_p   opus     code_only        n             n                n          0    0.00
+r17_mapbox_gl_js_image_overlay_coordinates_p   opus     with_gpa         n             n                n          0    0.14
+
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   haiku    code_only        n             n                n          0    0.00
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   haiku    with_gpa         n             n                n          1    0.00
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   sonnet   code_only        n             n                n          0    0.00
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   sonnet   with_gpa         Y             n                n          0    1.00
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   opus     code_only        n             n                n          0    0.00
+r18_raster_tiles_aren_t_perfectly_crisp_at_i   opus     with_gpa         n             n                n          1    0.00
+
+r2_certain_effects_produce_invalid_alpha_va    haiku    code_only        Y             n                n          0    0.50
+r2_certain_effects_produce_invalid_alpha_va    haiku    with_gpa         Y             n                n          0    0.50
+r2_certain_effects_produce_invalid_alpha_va    sonnet   code_only        Y             n                n          0    1.00
+r2_certain_effects_produce_invalid_alpha_va    sonnet   with_gpa         Y             n                n          0    1.00
+r2_certain_effects_produce_invalid_alpha_va    opus     code_only        Y             n                n          0    1.00
+r2_certain_effects_produce_invalid_alpha_va    opus     with_gpa         Y             n                n          0    1.00
+
+
+TOTAL cost: $33.97
