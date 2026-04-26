@@ -211,6 +211,85 @@ def test_discoverer_skips_so_when_no_so_search_provider(tmp_path):
     assert candidates == []
 
 
+def test_discoverer_per_query_fairness(tmp_path):
+    """Iter 5 fix: with many candidates per query and a small batch_quota,
+    quota must be split evenly across queries instead of the first query
+    consuming all of it.
+
+    Setup: 3 queries A/B/C each return 100 candidates with disjoint URL
+    prefixes. With batch_quota=9 we expect 3 per query (per_query_cap=3),
+    not 9 from query A.
+    """
+    class FakeSearch:
+        def search_issues(self, q, per_page=30):
+            # Each query produces 100 candidates with a query-tagged prefix.
+            return [
+                DiscoveryCandidate(url=f"https://x/{q}/{i}",
+                                   source_type="issue",
+                                   title=f"z-fighting in scene {i}")
+                for i in range(100)
+            ]
+
+        def search_commits(self, q, per_page=30):
+            return []
+
+    log = CoverageLog(tmp_path / "log.jsonl")
+    d = Discoverer(
+        search=FakeSearch(), coverage_log=log,
+        queries={"issue": ["A", "B", "C"], "commit": []},
+        batch_quota=9,
+    )
+    candidates = d.run()
+
+    assert len(candidates) == 9, f"expected 9 candidates total, got {len(candidates)}"
+
+    # Bucket per source-query (the URL prefix encodes which query produced it).
+    per_query_counts: dict[str, int] = {"A": 0, "B": 0, "C": 0}
+    for c in candidates:
+        # URLs look like https://x/A/0  -> bucket key 'A'.
+        bucket = c.url.split("/")[3]
+        per_query_counts[bucket] += 1
+
+    # Round-robin fairness: 9 quota / 3 queries = 3 per query, exact.
+    assert per_query_counts == {"A": 3, "B": 3, "C": 3}, (
+        f"expected 3 per query, got {per_query_counts}"
+    )
+
+
+def test_discoverer_per_query_fairness_absorbs_remainder(tmp_path):
+    """When the per-query cap leaves quota slots unfilled, remaining slots
+    must be absorbed by re-iterating queries that still have material.
+    Order is preserved (early queries get the extra slots first)."""
+    class FakeSearch:
+        def search_issues(self, q, per_page=30):
+            return [
+                DiscoveryCandidate(url=f"https://x/{q}/{i}",
+                                   source_type="issue",
+                                   title=f"shadow bug {i}")
+                for i in range(100)
+            ]
+
+        def search_commits(self, q, per_page=30):
+            return []
+
+    log = CoverageLog(tmp_path / "log.jsonl")
+    # 10 quota / 3 queries = per_query_cap 3 -> first pass yields 9. The
+    # 10th slot must be absorbed by re-iterating, and should go to query A
+    # (first in YAML order) before B or C.
+    d = Discoverer(
+        search=FakeSearch(), coverage_log=log,
+        queries={"issue": ["A", "B", "C"], "commit": []},
+        batch_quota=10,
+    )
+    candidates = d.run()
+
+    assert len(candidates) == 10
+    per_query_counts: dict[str, int] = {"A": 0, "B": 0, "C": 0}
+    for c in candidates:
+        per_query_counts[c.url.split("/")[3]] += 1
+    assert per_query_counts == {"A": 4, "B": 3, "C": 3}, per_query_counts
+
+
 def test_discoverer_skips_obviously_non_rendering(tmp_path):
     from gpa.eval.curation.discover import Discoverer, DiscoveryCandidate
     from gpa.eval.curation.coverage_log import CoverageLog

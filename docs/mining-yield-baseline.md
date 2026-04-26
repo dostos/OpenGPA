@@ -388,3 +388,142 @@ PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \\
 
 Per-candidate JSONL: `/tmp/yield-records.jsonl` (default).
 Wall-time: ~28 min (discoverer ~10s, then ~30-180s/candidate × 30).
+
+## Iteration 5 — discoverer fairness + true generalization (2026-04-26)
+
+### Diff summary (2 bullets)
+
+- **Discoverer.run() now uses per-query fairness.** Computes
+  `per_query_cap = max(1, batch_quota // total_queries)`, then drains
+  each query up to its cap in YAML order (pass 1). If quota is
+  unfilled, raises every query's cap by 1 and re-iterates (pass 2+)
+  until quota is full or all queries are exhausted. Fixes the iter-4
+  failure where the first 3 (Babylon) queries each returned 30+
+  candidates and consumed the entire `batch_quota=30`, leaving the
+  17 remaining queries (PlayCanvas, A-Frame, MapLibre, deck.gl,
+  kepler.gl, p5.js, PixiJS, 6 PR queries, 2 SO queries) unrun.
+- Refactored the previous three sequential `for q in queries[...]:`
+  loops into one shared scheduling loop with two helpers
+  (`_fetch_for_query` per kind, `_consider_candidate` for
+  dedup + non-rendering pre-filter). Two new unit tests pin the
+  fairness contract (3 queries × 100 candidates / quota=9 → 3 per
+  query, not 9 from query A; quota=10 → 4/3/3 absorbing the remainder
+  in YAML order). 821 / 821 Python tests pass (819 baseline + 2 new).
+
+### Repo distribution of the 30 candidates (cross-family signal)
+
+True cross-family coverage: **10 distinct repos** (vs. iter 4's 1).
+Pass 1 produced 18 URLs (one per issue/PR query; SO returned 0 hits
+for the 2 tag pairs, hitting the API's empty-tag-intersection case);
+pass 2 absorbed the remaining 12 by cycling back to the issue queries
+in YAML order — same families, different issues.
+
+| Repo                        | Count | Of which drafted | Of which fetch_failed |
+| --------------------------- | ----- | ---------------- | --------------------- |
+| BabylonJS/Babylon.js        | 7     | 1                | 0                     |
+| playcanvas/engine           | 5     | 4                | 0                     |
+| pixijs/pixijs               | 4     | 0                | 0                     |
+| maplibre/maplibre-gl-js     | 3     | 0                | 0                     |
+| visgl/deck.gl               | 3     | 0                | 0                     |
+| aframevr/aframe             | 2     | 0                | 0                     |
+| keplergl/kepler.gl          | 2     | 0                | 0                     |
+| processing/p5.js            | 2     | 1                | 0                     |
+| regl-project/regl           | 1     | 0                | 1 (PR fetch-fail)     |
+| greggman/twgl.js            | 1     | 0                | 1 (PR fetch-fail)     |
+
+### Per-stage table — iter 3 vs. iter 4 (broken) vs. iter 5 (fixed)
+
+Iter 5 uses identical query YAML and `batch_quota=30` to iter 4.
+
+| Stage                       | Iter 3 (n=8, three.js) | Iter 4 (n=30, Babylon-only) | Iter 5 (n=30, 10 repos) |
+| --------------------------- | ---------------------- | --------------------------- | ----------------------- |
+| URLs from discovery         | 100%                   | 100%                        | 100%                    |
+| After URL dedup             | 62.5%                  | 100%                        | 93.3%                   |
+| After thread fetch          | 100%                   | 100% / cum                  | **78.6%** (6 fetch-fail)|
+| After triage in_scope       | 80%                    | 53.3%                       | **45.5%**               |
+| After fingerprint dedup     | 100%                   | 93.8%                       | 100%                    |
+| After successful draft      | 100%                   | 46.7%                       | **60.0%**               |
+| **End-to-end yield**        | **50%**                | **23.3%**                   | **20.0%**               |
+
+Top rejection reasons (iter 5):
+
+| reason                                            | count |
+| ------------------------------------------------- | ----- |
+| out_of_scope_not_rendering_bug                    | 12    |
+| fetch_failed                                      | 6     |
+| draft_invalid                                     | 3     |
+| url_dedup                                         | 2     |
+| drafter_declined:not_a_rendering_bug              | 1     |
+
+### Verdict — does the iter-3 tuning generalize cross-family?
+
+**No.** End-to-end yield held at **20.0%** (6/30 drafted), within run-to-run
+noise of iter 4's 23.3% — the cross-family signal is essentially
+indistinguishable from the Babylon-only signal. Both are roughly half
+of iter 3's 50% on a three.js-heavy corpus, so the iter-3 tuning is
+**three.js-shaped** rather than generally tuned. Per-stage attribution:
+
+- **Triage acceptance fell to 45.5%** (vs. iter-3's 80% on three.js),
+  consistent with iter 4. Confirms the broader corpus surfaces more
+  user-question and roadmap-tracking threads that the triager
+  correctly rejects.
+- **New attrition step exposed:** **6/28 = 21% of fresh URLs hit
+  `fetch_failed`** — these are the 6 PR queries (Babylon, PlayCanvas,
+  MapLibre, deck.gl, regl, twgl). The thread-fetcher only handles
+  `/issues/<n>` URLs; `/pull/<n>` URLs return error and immediately
+  reject. Iter 4 never exposed this because all 30 candidates were
+  Babylon issues; iter 5's fairness fix now lets PR-shaped URLs
+  through and pays the cost.
+- **Drafter conversion held at 60%** (6/10 in-scope → drafted), close
+  to iter-4's 46.7%; the 4 PlayCanvas drafts in particular all
+  succeeded as `bug_class: legacy` stubs.
+
+So yield does NOT clear the 40%+ generalization bar this iteration set
+out to test for. The arithmetic ceiling is still ~6 in-scope drafts /
+30 candidates, but two of the three gates dropping it (PR fetch-fail
+and triage strictness) are addressable.
+
+### New #1 bottleneck — PR/commit URLs aren't fetchable
+
+`fetch_failed` was 0 in iter 3, 1 in iter 4, **6 in iter 5** —
+exclusively on `/pull/<n>` URLs from the 6 merged-PR queries. That's
+20% of the iter-5 quota wasted at a stage that doesn't even reach
+triage. Two clean fixes:
+
+1. **Detect `/pull/<n>` in the fetcher** and either route through
+   the PR API (already covered by `gh api repos/X/pulls/Y/comments`)
+   or treat the PR's linked-issues as the thread.
+2. **Drop the merged-PR queries** from `generalization_queries.yaml`
+   and replace with broader `is:issue is:closed` queries from the same
+   repos — keeps the 9-family coverage without the PR-shape bottleneck.
+
+### Recommended iteration 6
+
+Two-part fix targeting the new PR-fetcher bottleneck AND the underlying
+"three.js-shaped triage" signal:
+
+1. **Fix PR-URL fetching OR replace PR queries with issue queries** in
+   `generalization_queries.yaml`. Either reclaims ~20% of the quota.
+   Expected: yield climbs to ~25-30% on the cross-family corpus.
+2. **Tune the triager against non-three.js threads.** Sample the 12
+   `out_of_scope_not_rendering_bug` rejections, look for false rejects
+   in the PixiJS / deck.gl / kepler.gl / MapLibre clusters, and adjust
+   the prompt's heuristics to handle map-tile / data-vis / 2D-canvas
+   bug-shapes (currently the triager pattern-matches against shader /
+   uniform / depth, which under-weights non-3D rendering bugs).
+
+If iter 6 lands yield in the 30-40% range across 10 families, that's
+the "real R12 mining" green light — quota=200 across this corpus
+would commit ~60-80 in-scope drafts per batch.
+
+### Reproducing iter 5
+
+```bash
+PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
+    --batch-quota 30 \
+    --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
+```
+
+Per-candidate JSONL: `/tmp/yield-records.jsonl` (default).
+Wall-time: ~27 min (discoverer ~10s, then ~30-300s/candidate × 30).
+

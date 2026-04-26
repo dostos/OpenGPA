@@ -209,78 +209,161 @@ class Discoverer:
         self._quota = batch_quota
 
     def run(self) -> list[DiscoveryCandidate]:
+        """Discover candidates with per-query fairness.
+
+        Iterates all queries (issue + commit + stackoverflow) once each,
+        capped at ``per_query_cap = max(1, batch_quota // total_queries)`` URLs
+        per query. If the first pass leaves the quota unfilled, a second pass
+        re-iterates any queries that hit their cap to absorb the remainder.
+        Query order is preserved within each pass so the YAML's intended
+        priority is honored.
+
+        This avoids the prior "first query wins all quota" failure mode where
+        a single high-yield query at the top of the list would consume the
+        full ``batch_quota`` and starve the rest of the cross-family corpus.
+        """
+        # Collect all queries with their per-type executor. Each entry is
+        # (kind, query_payload) where executor knowns how to fetch + adapt.
+        issue_qs = list(self._queries.get("issue", []))
+        commit_qs = list(self._queries.get("commit", []))
+        so_qs = list(self._queries.get("stackoverflow", [])) if self._so_search is not None else []
+
+        all_query_descs: list[tuple[str, object]] = (
+            [("issue", q) for q in issue_qs]
+            + [("commit", q) for q in commit_qs]
+            + [("stackoverflow", tags) for tags in so_qs]
+        )
+        total_queries = len(all_query_descs)
+        if total_queries == 0:
+            return []
+
+        per_query_cap = max(1, self._quota // total_queries)
+
         seen: set[str] = set()
         out: list[DiscoveryCandidate] = []
+        # Per-query iterator state across passes: idx -> remaining-cands list,
+        # plus how many we've already emitted from that query.
+        per_query_pools: list[list[DiscoveryCandidate]] = [
+            self._fetch_for_query(kind, payload) for kind, payload in all_query_descs
+        ]
+        per_query_emitted: list[int] = [0] * total_queries
 
-        for q in self._queries.get("issue", []):
+        def _drain_query(idx: int, cap: int) -> int:
+            """Emit up to ``cap`` (relative to current count from this query)
+            additional candidates for query ``idx``. Returns how many were
+            appended to ``out``. Stops early if the global quota is reached."""
+            appended = 0
+            pool = per_query_pools[idx]
+            while pool and per_query_emitted[idx] < cap:
+                if len(out) >= self._quota:
+                    return appended
+                cand = pool.pop(0)
+                accepted = self._consider_candidate(cand, seen)
+                if accepted is None:
+                    # Filtered (dup / non-rendering) — does not count against cap.
+                    continue
+                out.append(accepted)
+                per_query_emitted[idx] += 1
+                appended += 1
+            return appended
+
+        # Pass 1: per-query fairness.
+        for i in range(total_queries):
             if len(out) >= self._quota:
                 break
-            for cand in self._search.search_issues(q):
-                if len(out) >= self._quota:
-                    break
-                if cand.url in seen:
-                    continue
-                if self._log.contains_url(cand.url):
-                    continue
-                if _is_obviously_non_rendering(cand):
-                    # Record as rejected at discovery so we still get the denominator
-                    # and don't re-check on next batch.
-                    self._log_discovery_rejection(cand, reason="out_of_scope_not_rendering_bug")
-                    seen.add(cand.url)
-                    continue
-                seen.add(cand.url)
-                out.append(cand)
+            _drain_query(i, per_query_cap)
 
-        for q in self._queries.get("commit", []):
+        # Pass 2+: keep cycling through queries that still have material,
+        # raising each query's cap one at a time until the global quota is
+        # filled or every query is exhausted. Preserves YAML order within
+        # each pass.
+        while len(out) >= 0:
             if len(out) >= self._quota:
                 break
-            for cand in self._search.search_commits(q):
+            progress = False
+            for i in range(total_queries):
                 if len(out) >= self._quota:
                     break
-                if cand.url in seen:
+                if not per_query_pools[i]:
                     continue
-                if self._log.contains_url(cand.url):
-                    continue
-                if _is_obviously_non_rendering(cand):
-                    self._log_discovery_rejection(cand, reason="out_of_scope_not_rendering_bug")
-                    seen.add(cand.url)
-                    continue
-                seen.add(cand.url)
-                out.append(cand)
-
-        # Stack Overflow queries (only if SO search was injected).
-        if self._so_search is not None:
-            for tags in self._queries.get("stackoverflow", []):
-                if len(out) >= self._quota:
-                    break
-                for q in self._so_search.search_questions(tags):
-                    if len(out) >= self._quota:
-                        break
-                    if q.url in seen:
-                        continue
-                    if self._log.contains_url(q.url):
-                        continue
-                    if _is_obviously_non_rendering_so(q):
-                        rej = DiscoveryCandidate(
-                            url=q.url, source_type="stackoverflow",
-                            title=q.title, labels=list(q.tags or []),
-                        )
-                        self._log_discovery_rejection(
-                            rej, reason="out_of_scope_not_rendering_bug"
-                        )
-                        seen.add(q.url)
-                        continue
-                    seen.add(q.url)
-                    out.append(DiscoveryCandidate(
-                        url=q.url,
-                        source_type="stackoverflow",
-                        title=q.title,
-                        labels=list(q.tags or []),
-                        created_at=q.creation_date,
-                        metadata={"accepted_answer_id": q.accepted_answer_id},
-                    ))
+                # Raise this query's cap by 1 and try to drain.
+                added = _drain_query(i, per_query_emitted[i] + 1)
+                if added > 0:
+                    progress = True
+            if not progress:
+                # Every query is either exhausted or only producing filtered
+                # results — nothing more to do.
+                break
 
         return out
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    def _fetch_for_query(self, kind: str, payload) -> list[DiscoveryCandidate]:
+        """Fetch raw candidates for one query.
+
+        Returns a list of ``DiscoveryCandidate`` objects, normalized for
+        the in-memory pool. SO questions are converted to candidates here
+        (carrying the metadata the rest of the pipeline expects).
+        """
+        if kind == "issue":
+            return list(self._search.search_issues(payload))
+        if kind == "commit":
+            return list(self._search.search_commits(payload))
+        if kind == "stackoverflow":
+            cands: list[DiscoveryCandidate] = []
+            for q in self._so_search.search_questions(payload):
+                cands.append(DiscoveryCandidate(
+                    url=q.url,
+                    source_type="stackoverflow",
+                    title=q.title,
+                    labels=list(q.tags or []),
+                    created_at=q.creation_date,
+                    metadata={"accepted_answer_id": q.accepted_answer_id},
+                ))
+            return cands
+        return []
+
+    def _consider_candidate(
+        self,
+        cand: "DiscoveryCandidate",
+        seen: set[str],
+    ) -> Optional["DiscoveryCandidate"]:
+        """Apply dedup + non-rendering pre-filter to one candidate.
+
+        Returns the candidate to emit, or ``None`` if it was filtered (dup
+        or obviously non-rendering). Records discovery-stage rejections to
+        the coverage log to mirror the legacy behavior so per-batch denom
+        accounting remains correct.
+        """
+        if cand.url in seen:
+            return None
+        if self._log.contains_url(cand.url):
+            return None
+        if cand.source_type == "stackoverflow":
+            # SO uses a tag-aware variant of the non-rendering filter.
+            class _ProxyQ:
+                def __init__(self, c):
+                    self.title = c.title
+                    self.tags = c.labels
+                    self.url = c.url
+            if _is_obviously_non_rendering_so(_ProxyQ(cand)):
+                self._log_discovery_rejection(
+                    cand, reason="out_of_scope_not_rendering_bug"
+                )
+                seen.add(cand.url)
+                return None
+        else:
+            if _is_obviously_non_rendering(cand):
+                self._log_discovery_rejection(
+                    cand, reason="out_of_scope_not_rendering_bug"
+                )
+                seen.add(cand.url)
+                return None
+        seen.add(cand.url)
+        return cand
 
     def _log_discovery_rejection(self, cand: "DiscoveryCandidate",
                                   reason: str) -> None:
