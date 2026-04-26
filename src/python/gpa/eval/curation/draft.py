@@ -24,6 +24,12 @@ _FENCE_CLOSE_RE = re.compile(r"^```\s*$", re.MULTILINE)
 
 _ALLOWED_EXTENSIONS = {".c", ".h", ".md", ".glsl", ".vert", ".frag"}
 
+# Bug classes that route to the maintainer-framing path (no C repro).
+# Anything else (None, "graphics-lib-dev") routes to the legacy C-draft path.
+_MAINTAINER_FRAMING_BUG_CLASSES = frozenset(
+    {"framework-internal", "consumer-misuse", "user-config"}
+)
+
 
 class DraftRejectedByModel(ValueError):
     """The drafter LLM explicitly declined to draft a scenario.
@@ -125,23 +131,136 @@ class DraftResult:
         )
 
 
+def _is_maintainer_framing(triage: TriageResult, url: Optional[str] = None) -> bool:
+    """Returns True iff this triage routes to the maintainer-framing drafter.
+
+    bug_class in {framework-internal, consumer-misuse, user-config} routes to
+    the maintainer-framing drafter. Everything else (None, graphics-lib-dev,
+    legacy, unknown) routes to the legacy C-draft path.
+
+    When ``bug_class`` is None and ``url`` is supplied, falls back to a
+    URL-based heuristic: any github.com/<known-framework-org>/* issue routes
+    to maintainer-framing. This catches cases where the triager left
+    bug_class unset on `ambiguous` verdicts but the URL itself is dispositive.
+    """
+    if triage.bug_class in _MAINTAINER_FRAMING_BUG_CLASSES:
+        return True
+    if triage.bug_class is None and url:
+        return _url_is_framework_repo(url)
+    return False
+
+
+# Known graphics-framework org/repo prefixes. Used as a fallback when the
+# triager doesn't classify bug_class explicitly. Conservative — only matches
+# repos we've already mined from in R10+ rounds.
+_FRAMEWORK_REPO_RE = re.compile(
+    r"github\.com/("
+    r"BabylonJS/Babylon\.js"
+    r"|mrdoob/three\.js"
+    r"|playcanvas/engine"
+    r"|pixijs/pixijs"
+    r"|pmndrs/(?:react-three-fiber|drei|postprocessing|three-mesh-bvh)"
+    r"|aframevr/aframe"
+    r"|maplibre/maplibre-gl-js"
+    r"|visgl/(?:deck\.gl|luma\.gl)"
+    r"|keplergl/kepler\.gl"
+    r"|processing/p5\.js"
+    r"|CesiumGS/cesium"
+    r"|Kitware/vtk-js"
+    r"|KhronosGroup/glTF-Sample-Viewer"
+    r"|gpujs/gpu\.js"
+    r"|iTowns/itowns"
+    r"|antvis/L7"
+    r"|google/filament"
+    r"|xeokit/xeokit-sdk"
+    r"|Potree/potree"
+    r"|cocos/cocos-engine"
+    r"|regl-project/regl"
+    r"|greggman/twgl\.js"
+    r")/(?:issues|pull|commit)/",
+    re.IGNORECASE,
+)
+
+
+def _url_is_framework_repo(url: str) -> bool:
+    return bool(_FRAMEWORK_REPO_RE.search(url))
+
+
 class Draft:
     def __init__(self, llm_client: LLMClient):
         self._llm = llm_client
-        self._system = load_prompt("draft_core_system")
+        self._system_lib = load_prompt("draft_core_system")
+        self._system_maintainer = load_prompt("draft_maintainer_framing_system")
+        # Backward-compatible attribute used by older tests / callers.
+        self._system = self._system_lib
 
     def draft(self, thread: IssueThread, triage: TriageResult,
               scenario_id: str,
               previous_error: Optional[str] = None) -> DraftResult:
         """Generate a scenario draft.
 
+        Bifurcates by triage.bug_class:
+          - `framework-internal | consumer-misuse | user-config` → maintainer-framing
+            drafter (scenario.md-only, no C repro).
+          - anything else (None | graphics-lib-dev | legacy | unknown) → legacy
+            C-draft path (main.c + scenario.md).
+
         If ``previous_error`` is provided, it's included in the user message as
         feedback from a failed prior attempt. The drafter should address the
         specific issue and produce a valid draft on retry.
         """
+        if _is_maintainer_framing(triage, url=thread.url):
+            return self._draft_maintainer_framing(
+                thread, triage, scenario_id, previous_error
+            )
+        return self._draft_lib(thread, triage, scenario_id, previous_error)
+
+    def _draft_lib(self, thread: IssueThread, triage: TriageResult,
+                   scenario_id: str,
+                   previous_error: Optional[str]) -> DraftResult:
+        """Legacy graphics-lib drafter — emits main.c + scenario.md."""
+        user = self._build_user_message(thread, triage, scenario_id, previous_error)
+
+        resp = self._llm.complete(
+            system=self._system_lib,
+            messages=[{"role": "user", "content": user}],
+            max_tokens=8000,
+        )
+
+        files = self._parse_files(resp.text)
+        self._validate(files, thread.url)
+        return DraftResult(scenario_id=scenario_id, files=files)
+
+    def _draft_maintainer_framing(
+        self, thread: IssueThread, triage: TriageResult,
+        scenario_id: str,
+        previous_error: Optional[str],
+    ) -> DraftResult:
+        """Maintainer-framing drafter — emits scenario.md only."""
+        user = self._build_user_message(thread, triage, scenario_id, previous_error)
+
+        resp = self._llm.complete(
+            system=self._system_maintainer,
+            messages=[{"role": "user", "content": user}],
+            max_tokens=8000,
+        )
+
+        files = self._parse_files_maintainer_framing(resp.text)
+        self._validate_maintainer_framing(files, thread.url)
+        return DraftResult(scenario_id=scenario_id, files=files)
+
+    @staticmethod
+    def _build_user_message(thread: IssueThread, triage: TriageResult,
+                            scenario_id: str,
+                            previous_error: Optional[str]) -> str:
+        bug_class_line = (
+            f"Triage bug_class: {triage.bug_class}\n"
+            if triage.bug_class else ""
+        )
         base_user = (
             f"Scenario ID: {scenario_id}\n"
             f"Triage fingerprint: {triage.fingerprint}\n"
+            f"{bug_class_line}"
             f"Triage summary: {triage.summary}\n\n"
             f"URL: {thread.url}\n"
             f"Title: {thread.title}\n\n"
@@ -150,25 +269,14 @@ class Draft:
         )
 
         if previous_error:
-            user = (
+            return (
                 base_user
                 + "\n\n---\n\n"
                 + "IMPORTANT: Your previous draft attempt was rejected by validation with this error:\n\n"
                 + f"    {previous_error}\n\n"
                 + "Please produce a new draft that fixes this specific issue. All other rules still apply."
             )
-        else:
-            user = base_user
-
-        resp = self._llm.complete(
-            system=self._system,
-            messages=[{"role": "user", "content": user}],
-            max_tokens=8000,
-        )
-
-        files = self._parse_files(resp.text)
-        self._validate(files, thread.url)
-        return DraftResult(scenario_id=scenario_id, files=files)
+        return base_user
 
     @staticmethod
     def _parse_files(text: str) -> dict:
@@ -344,6 +452,231 @@ class Draft:
             raise ValueError("Bug Signature must have 'type' and 'spec' keys")
 
         # Defense-in-depth path sanity check (also enforced in _parse_files).
+        for filename in files:
+            parts = filename.split("/")
+            if ".." in parts or filename.startswith("/"):
+                raise ValueError(f"invalid path '{filename}'")
+
+    @staticmethod
+    def _parse_files_maintainer_framing(text: str) -> dict:
+        """Parse a maintainer-framing draft response.
+
+        Expected format: exactly ONE filename-marked block, pointing at
+        ``scenario.md``. Anything else fails. The relaxed
+        ``main.c``-must-exist invariant from `_parse_files` is dropped here
+        because maintainer-framing scenarios are scenario.md-only.
+        """
+        markers = [
+            (m.start(), m.end(), m.group(1).strip())
+            for m in _FILENAME_MARKER_RE.finditer(text)
+        ]
+        out: dict = {}
+        for i, (start, end, filename) in enumerate(markers):
+            segment_end = markers[i + 1][0] if i + 1 < len(markers) else len(text)
+            segment = text[end:segment_end]
+
+            m_open = _FENCE_OPEN_RE.search(segment)
+            if not m_open:
+                raise ValueError(
+                    f"filename marker '{filename}' has no following fenced block"
+                )
+            body_start = m_open.end() + 1
+            closes = list(_FENCE_CLOSE_RE.finditer(segment, m_open.end()))
+            if not closes:
+                raise ValueError(
+                    f"filename marker '{filename}' block has no closing fence"
+                )
+            m_close = closes[-1]
+            body = segment[body_start:m_close.start()]
+            if body.endswith("\n"):
+                body = body[:-1]
+
+            # Validate filename — same rules as graphics-lib path.
+            if filename.startswith("/"):
+                raise ValueError(
+                    f"filename '{filename}' is absolute (starts with '/')"
+                )
+            parts = filename.split("/")
+            if ".." in parts:
+                raise ValueError(
+                    f"filename '{filename}' traverses parents ('..' component)"
+                )
+            if any(not p for p in parts):
+                raise ValueError(
+                    f"filename '{filename}' has an empty path component"
+                )
+            basename = parts[-1]
+            if "." not in basename:
+                raise ValueError(f"filename '{filename}' has no extension")
+            ext = "." + basename.rsplit(".", 1)[1].lower()
+            if ext not in _ALLOWED_EXTENSIONS:
+                raise ValueError(
+                    f"filename '{filename}' extension '{ext}' not allowed; "
+                    f"allowed: {sorted(_ALLOWED_EXTENSIONS)}"
+                )
+            if filename in out:
+                raise ValueError(f"duplicate filename '{filename}'")
+
+            out[filename] = body
+
+        if not out:
+            err_match = _DRAFT_ERROR_MARKER_RE.search(text)
+            if err_match:
+                raise DraftRejectedByModel(
+                    reason=err_match.group(1).strip().lower(),
+                    message=(
+                        f"drafter declined: <!-- draft_error: "
+                        f"{err_match.group(1).strip()} -->"
+                    ),
+                )
+            raise ValueError(
+                "No filename-marked fenced blocks found. "
+                "Expected: <!-- filename: scenario.md -->\n```markdown\n...\n```"
+            )
+
+        # Maintainer-framing must NOT include any .c file. Reject if it does
+        # so the caller doesn't accidentally feed the file to the C-build path.
+        for name in out:
+            if name.endswith(".c"):
+                raise ValueError(
+                    f"maintainer-framing draft must not contain C source "
+                    f"files; got '{name}'"
+                )
+        if "scenario.md" not in out:
+            raise ValueError(
+                "maintainer-framing draft missing scenario.md"
+            )
+        return out
+
+    @staticmethod
+    def _validate_maintainer_framing(files: dict, issue_url: str) -> None:
+        """Static validation of a maintainer-framing draft.
+
+        Checks (in order):
+          - scenario.md is present and non-empty.
+          - `## User Report` and `## Ground Truth` sections present.
+          - `## Ground Truth` cites upstream evidence (blockquote / PR /
+            commit / URL).
+          - `## Fix` block parses as YAML with required fields.
+          - Files list is non-empty (or bug_class == "legacy").
+          - User Report does NOT contain forbidden contamination patterns
+            (fix PR number, fix file paths, fix SHA).
+        """
+        md_body = files.get("scenario.md", "")
+        if not md_body:
+            raise ValueError("scenario.md missing")
+
+        # User Report
+        if not re.search(r"^##\s+User Report\s*$", md_body, re.MULTILINE):
+            raise ValueError("scenario.md missing `## User Report` section")
+
+        # Ground Truth
+        m = re.search(
+            r"##\s+Ground Truth(?:\s+Diagnosis)?\s*\n(.+?)(?=\n##\s+|\Z)",
+            md_body, re.DOTALL | re.IGNORECASE,
+        )
+        if not m:
+            raise ValueError("Ground Truth section missing")
+        diagnosis_body = m.group(1)
+
+        has_blockquote = bool(re.search(r"^>\s+", diagnosis_body, re.MULTILINE))
+        has_pr_ref = bool(re.search(
+            r"\b(?:PR|pull\s+request|pull/)\s*#?(\d+)\b",
+            diagnosis_body, re.IGNORECASE,
+        ))
+        has_commit_ref = bool(re.search(
+            r"\b(?:commit\s+|/commit/)([a-f0-9]{7,})\b",
+            diagnosis_body, re.IGNORECASE,
+        ))
+        has_github_url = bool(re.search(
+            r"github\.com/[\w.-]+/[\w.-]+/(?:pull|commit)/[\w]+",
+            diagnosis_body, re.IGNORECASE,
+        ))
+        if not (has_blockquote or has_pr_ref or has_commit_ref or has_github_url):
+            raise ValueError(
+                "Ground Truth section missing upstream citation. "
+                "Cite via (a) a > blockquote, (b) 'PR #NNN' / 'pull request #NNN', "
+                "(c) 'commit <sha>' where sha is 7+ hex chars, or "
+                "(d) a github.com/.../pull|commit/... URL."
+            )
+
+        # ## Fix block
+        m_fix = re.search(
+            r"##\s+Fix\s*\n(.+?)(?=\n##\s+|\Z)",
+            md_body, re.DOTALL | re.IGNORECASE,
+        )
+        if not m_fix:
+            raise ValueError("`## Fix` section missing")
+        fix_body = m_fix.group(1)
+
+        m_yaml = re.search(r"```yaml\s*\n(.+?)\n```", fix_body, re.DOTALL)
+        if not m_yaml:
+            raise ValueError("`## Fix` section missing yaml fenced block")
+        try:
+            data = yaml.safe_load(m_yaml.group(1))
+        except yaml.YAMLError as e:
+            raise ValueError(f"`## Fix` YAML parse failed: {e}")
+        if not isinstance(data, dict):
+            raise ValueError("`## Fix` YAML did not parse as a mapping")
+
+        if not data.get("fix_pr_url"):
+            raise ValueError("`## Fix` missing fix_pr_url")
+        bug_class = data.get("bug_class")
+        if not bug_class:
+            raise ValueError("`## Fix` missing bug_class")
+
+        files_raw = data.get("files")
+        files_list: list = []
+        if isinstance(files_raw, list):
+            files_list = [f for f in files_raw if f is not None and str(f).strip()]
+        if not files_list and bug_class != "legacy":
+            raise ValueError(
+                f"`## Fix` files list is empty (only allowed for "
+                f"bug_class: legacy; got bug_class: {bug_class!r})"
+            )
+
+        # User-Report contamination check — extract just the User Report body.
+        ur_m = re.search(
+            r"##\s+User Report\s*\n(.+?)(?=\n##\s+|\Z)",
+            md_body, re.DOTALL | re.IGNORECASE,
+        )
+        if ur_m:
+            user_report = ur_m.group(1)
+            # Forbid mention of the fix PR number (the agent's job is to find it).
+            fix_pr_url = str(data.get("fix_pr_url") or "")
+            pr_num_m = re.search(r"/pull/(\d+)", fix_pr_url)
+            if pr_num_m:
+                pr_num = pr_num_m.group(1)
+                if re.search(rf"#{pr_num}\b", user_report):
+                    raise ValueError(
+                        f"User Report contains the fix PR number "
+                        f"#{pr_num} (would spoil the eval)"
+                    )
+                if re.search(rf"PR\s*#?{pr_num}\b", user_report, re.IGNORECASE):
+                    raise ValueError(
+                        f"User Report references PR {pr_num} (would spoil the eval)"
+                    )
+            # Forbid the fix SHA (full or short).
+            fix_sha = str(data.get("fix_sha") or "")
+            if fix_sha and len(fix_sha) >= 7 and not fix_sha.startswith("(auto-resolve"):
+                if fix_sha[:7].lower() in user_report.lower():
+                    raise ValueError(
+                        f"User Report contains the fix SHA prefix "
+                        f"{fix_sha[:7]} (would spoil the eval)"
+                    )
+            # Forbid any of the fix files appearing verbatim in the User Report.
+            for f in files_list:
+                fstr = str(f).strip()
+                if not fstr or len(fstr) < 8:
+                    # Avoid false positives on extremely short paths
+                    continue
+                if fstr in user_report:
+                    raise ValueError(
+                        f"User Report contains fix file path {fstr!r} "
+                        f"(would spoil the eval)"
+                    )
+
+        # Defense-in-depth path sanity check.
         for filename in files:
             parts = filename.split("/")
             if ".." in parts or filename.startswith("/"):

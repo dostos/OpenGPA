@@ -240,7 +240,15 @@ class CurationPipeline:
         )
         if workdir.should_skip_stage("triage", current_input_hash=triage_hash):
             cached = workdir.read_stage("triage")
-            triage = TriageResult(**cached["output"])
+            cached_output = cached["output"]
+            # Forward-compat: older cache entries don't have bug_class.
+            triage = TriageResult(
+                verdict=cached_output["verdict"],
+                fingerprint=cached_output["fingerprint"],
+                rejection_reason=cached_output.get("rejection_reason"),
+                summary=cached_output.get("summary", ""),
+                bug_class=cached_output.get("bug_class"),
+            )
         else:
             triage = self._triager.triage(thread)
             workdir.write_stage(
@@ -250,6 +258,7 @@ class CurationPipeline:
                     "fingerprint": triage.fingerprint,
                     "rejection_reason": triage.rejection_reason,
                     "summary": triage.summary,
+                    "bug_class": triage.bug_class,
                 },
                 input_hash=triage_hash,
             )
@@ -430,8 +439,12 @@ class CurationPipeline:
 
         # C compile-check with one retry. If gcc can't parse the drafter's C
         # source, feed the stderr back via `previous_error` and let the drafter
-        # try once more. Snapshot-only scenarios (no main.c) skip this check.
-        compile_err = _check_c_compiles(draft.files, scenario_id)
+        # try once more. Maintainer-framing drafts (no .c files) skip this check
+        # entirely — there's nothing to compile.
+        from gpa.eval.curation.validate import _is_maintainer_framing_draft as _is_mfd
+        compile_err = None if _is_mfd(draft) else _check_c_compiles(
+            draft.files, scenario_id
+        )
         if compile_err:
             try:
                 draft = self._drafter.draft(
@@ -462,7 +475,9 @@ class CurationPipeline:
                 if resolved_md != draft.files["scenario.md"]:
                     draft.files["scenario.md"] = resolved_md
             scenario_id = draft.scenario_id
-            compile_err = _check_c_compiles(draft.files, scenario_id)
+            compile_err = None if _is_mfd(draft) else _check_c_compiles(
+                draft.files, scenario_id
+            )
             if compile_err:
                 log_rejection(
                     coverage_log=self._log,
@@ -478,6 +493,18 @@ class CurationPipeline:
         if not self._skip_validate:
             vres = self._validator.validate(draft)
             if not vres.ok:
+                # Maintainer-framing scenarios run static validation only;
+                # surface their structured rejection reasons instead of
+                # collapsing everything to symptom_mismatch_at_validation.
+                from gpa.eval.curation.validate import _is_maintainer_framing_draft
+                if _is_maintainer_framing_draft(draft):
+                    # vres.reason is one of: fix_metadata_unparseable,
+                    # fix_files_empty, fix_commit_invalid, scenario parse
+                    # failed: ..., contamination: ... — keep the slug as-is
+                    # so the analyst can attribute attrition.
+                    rejection_reason = vres.reason.split(":", 1)[0].strip()
+                else:
+                    rejection_reason = "symptom_mismatch_at_validation"
                 log_rejection(
                     coverage_log=self._log,
                     summary_path=self._summary,
@@ -485,7 +512,7 @@ class CurationPipeline:
                     source_type=cand.source_type,
                     triage_verdict=triage.verdict,
                     fingerprint=triage.fingerprint,
-                    rejection_reason="symptom_mismatch_at_validation",
+                    rejection_reason=rejection_reason,
                 )
                 return
 

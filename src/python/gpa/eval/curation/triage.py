@@ -128,6 +128,18 @@ _VALID_REJECTIONS = {
     "out_of_scope_insufficient_info", "not_reproducible", "non_english",
 }
 
+# Drafter-routing classification.  Decides whether the drafter writes a C
+# repro (graphics-lib-dev) or a maintainer-framing scenario (framework
+# bugs).  None on legacy/cached results means "graphics-lib-dev" (back-compat
+# default).  See iter-9 design in `docs/mining-yield-baseline.md`.
+_VALID_BUG_CLASSES = {
+    None,
+    "graphics-lib-dev",
+    "framework-internal",
+    "consumer-misuse",
+    "user-config",
+}
+
 
 @dataclass
 class IssueThread:
@@ -143,6 +155,10 @@ class TriageResult:
     fingerprint: str
     rejection_reason: Optional[str]
     summary: str
+    # Drafter routing — see iter-9 bifurcation. None = legacy / unset =
+    # graphics-lib-dev path. Values: graphics-lib-dev | framework-internal |
+    # consumer-misuse | user-config.
+    bug_class: Optional[str] = None
 
 
 class Triage:
@@ -184,9 +200,14 @@ class Triage:
         reason = d.get("rejection_reason")
         if reason not in _VALID_REJECTIONS:
             reason = None
+
+        bug_class = d.get("bug_class")
+        if bug_class not in _VALID_BUG_CLASSES:
+            bug_class = None
         return TriageResult(verdict=verdict, fingerprint=fp,
                             rejection_reason=reason,
-                            summary=d.get("summary", "")[:200])
+                            summary=d.get("summary", "")[:200],
+                            bug_class=bug_class)
 
 
 def fetch_thread(url: str) -> IssueThread:

@@ -30,6 +30,16 @@ class ValidationResult:
     metadata: Optional[dict] = None
 
 
+def _is_maintainer_framing_draft(draft: DraftResult) -> bool:
+    """Returns True iff the draft is the maintainer-framing shape (no C source).
+
+    The bifurcation lives in `Draft._draft_*` — by the time a draft reaches
+    the validator, the absence of any ``.c`` file is the structural signal
+    that we should run static checks instead of build-and-capture.
+    """
+    return not any(name.endswith(".c") for name in draft.files)
+
+
 # Patterns that reveal the diagnosis if present in source files or
 # scenario.md's User Report section. These defeat the eval by leaking the
 # answer to the agent. See `prompts/draft_core_system.md` and
@@ -236,6 +246,13 @@ class Validator:
                 ok=False, reason=f"contamination: {contamination_reason}"
             )
 
+        # Maintainer-framing scenarios (no .c file in the draft) skip the
+        # framebuffer-capture path entirely. The framework's rendering pipeline
+        # cannot be reproduced from a minimal C program; the scenario is a
+        # pointer to the real fix PR. Validate via static checks only.
+        if _is_maintainer_framing_draft(draft):
+            return self._validate_maintainer_framing(draft, scenario_dir)
+
         # Parse the md for the signature
         try:
             scenario = ScenarioLoader(eval_dir=str(self.eval_dir)).load(draft.scenario_id)
@@ -279,6 +296,47 @@ class Validator:
                 framebuffer_png=fb, metadata=meta)
         return ValidationResult(ok=False, reason=f"signature did not match: {m.reason}",
                                 framebuffer_png=fb, metadata=meta)
+
+    def _validate_maintainer_framing(
+        self, draft: DraftResult, scenario_dir: Path
+    ) -> ValidationResult:
+        """Static validation for a maintainer-framing scenario.
+
+        No build, no capture. Checks:
+          - ScenarioLoader can parse the scenario.md.
+          - FixMetadata is present + parseable.
+          - `files` list is non-empty (or bug_class == 'legacy').
+          - `fix_sha` looks like a 7+ hex char SHA OR an `(auto-resolve ...)` token.
+        """
+        try:
+            scenario = ScenarioLoader(eval_dir=str(self.eval_dir)).load(
+                draft.scenario_id
+            )
+        except Exception as e:
+            return ValidationResult(
+                ok=False, reason=f"scenario parse failed: {e}"
+            )
+        fix = scenario.fix
+        if fix is None:
+            return ValidationResult(
+                ok=False, reason="fix_metadata_unparseable"
+            )
+
+        if not fix.files and fix.bug_class != "legacy":
+            return ValidationResult(ok=False, reason="fix_files_empty")
+
+        sha = (fix.fix_sha or "").strip()
+        # Accept either a real hex SHA (7+ chars) or the `(auto-resolve ...)`
+        # placeholder that the post-draft pipeline resolves later.
+        sha_ok = bool(re.match(r"^[a-fA-F0-9]{7,}$", sha)) or (
+            "auto-resolve" in sha
+        )
+        if not sha_ok:
+            return ValidationResult(ok=False, reason="fix_commit_invalid")
+
+        return ValidationResult(
+            ok=True, reason="maintainer-framing static checks passed",
+        )
 
     def _ask_llm(self, md_body: str, fb_png: bytes) -> bool:
         sys = load_prompt("symptom_match_fallback_system")

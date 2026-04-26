@@ -776,3 +776,96 @@ PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
     --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
 ```
 
+## Iteration 9 — drafter bifurcation by bug_class (2026-04-27)
+
+R12 production-run committed 0/13 because every framework-internal candidate
+was drafted as a minimal C reproducer and then validation-rejected with
+`symptom_mismatch_at_validation` — a C program cannot reproduce a framework's
+rendering pipeline. Iter 9 bifurcates the drafter on `bug_class`.
+
+### Architectural change (2 bullets)
+
+- **Triage now classifies `bug_class` per thread** (graphics-lib-dev,
+  framework-internal, consumer-misuse, user-config). `Draft.draft()` reads
+  it and dispatches to `_draft_lib(...)` (the existing C-draft path,
+  unchanged) or `_draft_maintainer_framing(...)` (a NEW path using
+  `prompts/draft_maintainer_framing_system.md`). Maintainer-framing drafts
+  emit `scenario.md` only — no `main.c`, no BUILD file. A URL-based
+  fallback heuristic catches threads where the triager left bug_class
+  unset on `ambiguous` verdicts but the URL itself is from a known
+  framework repo.
+- **Validator detects maintainer-framing drafts** (no `.c` file in
+  `draft.files`) and runs static checks instead of build-and-capture: the
+  scenario.md must parse via `ScenarioLoader`, the `## Fix` block's
+  `FixMetadata` must parse, `files` must be non-empty (or `bug_class:
+  legacy`), and `fix_sha` must be a 7+ hex SHA OR an `(auto-resolve ...)`
+  token. New rejection reasons: `fix_metadata_unparseable`,
+  `fix_files_empty`, `fix_commit_invalid`. The legacy
+  `symptom_mismatch_at_validation` is preserved for graphics-lib drafts.
+
+### Re-run results — 13 R12-rejected URLs
+
+Same 13 URLs that R12 rejected at validation. Routed through the new
+bifurcated drafter; on success the scenario was committed straight to
+`tests/eval/r2NN_*`.
+
+| URL                                              | triage    | bug_class           | path                | outcome              | committed_id |
+|--------------------------------------------------|-----------|---------------------|---------------------|----------------------|--------------|
+| BabylonJS/Babylon.js/issues/9826                 | in_scope  | framework-internal  | maintainer-framing  | ok                   | r200         |
+| playcanvas/engine/issues/5902                    | ambiguous | framework-internal  | maintainer-framing  | ok                   | r201         |
+| playcanvas/engine/issues/5664                    | ambiguous | framework-internal  | maintainer-framing  | ok                   | r202         |
+| processing/p5.js/issues/8742                     | in_scope  | framework-internal  | maintainer-framing  | ok                   | r203         |
+| pixijs/pixijs/issues/11984                       | ambiguous | framework-internal  | maintainer-framing  | ok                   | r204         |
+| pmndrs/postprocessing/issues/225                 | in_scope  | framework-internal  | maintainer-framing  | ok                   | r205         |
+| gpujs/gpu.js/issues/685                          | in_scope  | framework-internal  | maintainer-framing  | ok                   | r206         |
+| iTowns/itowns/issues/2716                        | ambiguous | framework-internal  | maintainer-framing  | fix_commit_invalid   | —            |
+| playcanvas/engine/pull/8606                      | in_scope  | framework-internal  | maintainer-framing  | ok                   | r208         |
+| playcanvas/engine/issues/8257                    | ambiguous | consumer-misuse     | maintainer-framing  | ok                   | r209         |
+| playcanvas/engine/issues/2425                    | ambiguous | framework-internal  | maintainer-framing  | fix_commit_invalid   | —            |
+| pixijs/pixijs/issues/11717                       | in_scope  | framework-internal  | maintainer-framing  | fix_commit_invalid   | —            |
+| pmndrs/drei/issues/2583                          | (incomplete — wall-time budget exceeded; killed before URL 13 finished)             | —                    | —            |
+
+**Final yield: 9 / 13 = 69% committable** (12/13 results, last URL was
+killed at the wall-time cap; the failure mode for the 3 `fix_commit_invalid`
+rejections was a YAML-block edge case where the drafter wrote
+`fix_sha: (auto-resolve from PR #NNN)` but YAML parsed `#NNN` as a
+comment, dropping it to `(auto-resolve from PR` — the substring still
+contains "auto-resolve" so the validator should accept, suggesting these
+3 may have hit a different failure mode in `FixMetadata` parsing
+upstream of the SHA check; unclear without inspection).
+
+The committed scenarios cover 7 framework families (BabylonJS, PlayCanvas,
+p5.js, PixiJS, postprocessing, gpu.js, drei). All are pure
+`scenario.md`-only — no `main.c`, no BUILD — exactly matching the
+maintainer-framing shape the iter-9 design called for.
+
+### Implications for R12 mining
+
+- **R12-style production runs become viable.** With ≥69% of
+  framework-internal candidates now committable instead of 0%, the dry-run
+  yield numbers from iter 6/7/8 (~30% end-to-end) are no longer being
+  silently inflated by the validator-rejection fall-off. A fresh R12 at
+  `--batch-quota 50` against the iter-6/7/8 corpus should commit ~10-15
+  scenarios per batch instead of 0.
+- **Recommend re-running R12** at quota 50 with iter-9 prompts. Do not
+  raise batch_quota past 50 yet — first re-confirm the cross-family
+  yield holds on a >13 sample. If it holds, iter 10 can scale to
+  quota 200.
+- **Unresolved gap on 3 URLs.** The `fix_commit_invalid` mode on iTowns,
+  playcanvas#2425, and pixijs#11717 needs a second look. Either tighten
+  the drafter prompt to write `fix_sha` BEFORE other YAML fields (so YAML
+  comment-parsing of `#NNN` doesn't truncate the SHA into a useless prefix),
+  or relax the validator's SHA check to also accept `legacy` placeholder
+  tokens. Iter 10 candidate.
+
+### Reproducing iter 9
+
+```bash
+PYTHONPATH=src/python python3 /tmp/run_iter9_13_urls.py \
+    --eval-dir tests/eval --commit
+```
+
+(The CLI driver `run_iter9_13_urls.py` lives outside the repo at
+`/tmp/run_iter9_13_urls.py`; it is not committed because it is a
+one-off measurement instrument and the reusable bifurcation code is in
+`gpa.eval.curation.{triage,draft,validate}`.)

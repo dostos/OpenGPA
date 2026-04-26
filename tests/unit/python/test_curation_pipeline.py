@@ -573,7 +573,8 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
     triage_resp = (
         '```json\n{"triage_verdict":"in_scope",'
         '"root_cause_fingerprint":"state_leak:material_clone_tex_binding",'
-        '"rejection_reason":null,"summary":"state leak"}\n```'
+        '"rejection_reason":null,"summary":"state leak",'
+        '"bug_class":"graphics-lib-dev"}\n```'
     )
 
     c_src = ('// SOURCE: ' + fixture["url"] + '\n'
