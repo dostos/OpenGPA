@@ -586,3 +586,56 @@ The `out_of_scope_not_rendering_bug` count (13) is the remaining headline reject
 1. **Sample 5-6 of those rejections and read the actual issue content.** If the rejections are CORRECT (declarative-wrapper bugs that are genuinely config-not-render), we're at our ceiling on this corpus. If a meaningful fraction are OVER-AGGRESSIVE (R3F bugs that actually expose a wrong-render symptom), tune triage to recognize "declarative wrapper produced wrong-render".
 2. **Accept 30% as the cross-family steady state.** Move to real R12 mining at higher batch quota with this discoverer.
 
+---
+
+## Iteration 7 — triage audit (2026-04-26)
+
+Iter 6 left 13 rejections under `out_of_scope_not_rendering_bug`. Hypothesis was that triage might be over-aggressive on declarative-wrapper bugs (R3F, drei, AntV/L7, deck.gl, MapLibre) where the issue framing emphasizes prop/config but the underlying GL state is wrong. Phase 1: audit a 6-issue sample.
+
+### Sample (1 each from priority repos that yielded 0 drafted in iter 6)
+
+| URL | repo | verdict | one-line summary |
+|-----|------|---------|------------------|
+| https://github.com/aframevr/aframe/issues/5816 | aframevr/aframe | **CORRECT** | Meta browser-extension throws `XRWebGLBinding` TypeError before WebXR session starts; no GL pipeline runs at all, so there is no GL state for OpenGPA to capture. |
+| https://github.com/visgl/deck.gl/issues/10224 | visgl/deck.gl | **CORRECT** | JS `TypeError` in `WEBGLRenderPass` ctor (`framebuffer.colorAttachments` undefined) halts render pipeline; symptom is "rendering stops" / "stuck on first frame" diagnosable from a JS stack — frame capture would just show stale/no draw calls. |
+| https://github.com/pmndrs/react-three-fiber/issues/3686 | pmndrs/react-three-fiber | **CORRECT** | `useFrame({ fps: 60 })` actually runs at 40-50 fps — pure frame-pacing/perf bug, rendered pixels are correct. |
+| https://github.com/pmndrs/drei/issues/1968 | pmndrs/drei | **CORRECT** | `useTexture(..., onLoad)` callback fires every render due to wrong `useEffect` dep array; texture itself renders fine. |
+| https://github.com/antvis/L7/issues/642 | antvis/L7 | **CORRECT** | Open-ended design question about CRS handling across map engines, closed as stale (5 years old); not a bug report. |
+| https://github.com/maplibre/maplibre-gl-js/issues/7448 | maplibre/maplibre-gl-js | **CORRECT** | User misread the docs — `setStyle({ diff: true })` does not "merge" old + new styles; maintainer pushed back, no rendering bug. |
+
+### Tally
+
+- **COUNT_CORRECT = 6 / 6**
+- **COUNT_OVER_AGGRESSIVE = 0 / 6**
+- **COUNT_AMBIGUOUS = 0 / 6**
+
+deck.gl#10224 is the one that came closest to "wrong-render-but-framed-as-config": the layer visibly stops updating. But the root cause is observable as a JS stack trace at pipeline-init time, not as a wrong-pixel state — OpenGPA's draw-call trace would show "no draw calls were issued" which is no better than the existing Chrome console error. So still CORRECT.
+
+### Decision
+
+**DO NOT TUNE.** The triage rejections in this corpus are accurate. Phase 2 + Phase 3 skipped per the audit decision rule (OVER_AGGRESSIVE < 3).
+
+### Final per-stage table (unchanged from iter 6)
+
+| Stage                   | Iter 3 (3.js, n=8) | Iter 5 (cross-family broken-PR, n=30) | Iter 6 (cross-family + PR-fix + new groups, n=30) | **Iter 7 (audit only, no tune)** |
+| ----------------------- | ------------------ | ------------------------------------- | ------------------------------------------------- | -------------------------------- |
+| URL dedup pass          | 62.5%              | 93.3%                                 | 93.3%                                             | **(no re-run)**                  |
+| Thread fetch            | 100%               | 78.6%                                 | 100%                                              | —                                |
+| Triage in_scope         | 80%                | 45.5%                                 | 50.0%                                             | —                                |
+| Fingerprint novel       | 100%               | 100%                                  | 92.9%                                             | —                                |
+| Drafted                 | 100%               | 60%                                   | 69.2%                                             | —                                |
+| **End-to-end yield**    | **50%**            | **20.0%**                             | **30.0%**                                         | **30.0% (audit-confirmed)**      |
+
+### Recommendation
+
+Accept 30.0% as the cross-family steady-state ceiling on the iter-6 corpus and **move to real R12 mining at higher batch quota** (e.g. `--batch-quota 200`). The 13 `out_of_scope_not_rendering_bug` rejections are dominated by:
+
+- **Host-side JS exceptions** (4/13: aframe XR-extension, deck.gl `WEBGLRenderPass`, Babylon shadow ctor, drei `useTexture`)
+- **Frame-pacing / performance** (1/13: r3f `useFrame` 60fps stutter)
+- **Memory / VRAM management** (1/13: maplibre tile-pool cap)
+- **Feature-tracking + design-question issues with no concrete bug** (3/13: Babylon viewer roadmap, Babylon geospatial roadmap, L7 CRS design question)
+- **Documentation / user-misread** (1/13: maplibre setStyle diff)
+- **Refactoring / feature PRs** (2/13: Cesium WebGL1-removal, luma.gl KHR_animation_pointer)
+- **CPU-side property bug w/ no wrong-pixel symptom** (1/13: PixiJS Text.width)
+
+None of these would be helped by frame capture. The triage prompt is correctly distinguishing them from in-scope bugs. Future yield gains should come from broader corpus (more repos, more issue queries) rather than tuning the triage to be less strict.
