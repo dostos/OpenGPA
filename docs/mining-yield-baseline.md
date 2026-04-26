@@ -639,3 +639,140 @@ Accept 30.0% as the cross-family steady-state ceiling on the iter-6 corpus and *
 - **CPU-side property bug w/ no wrong-pixel symptom** (1/13: PixiJS Text.width)
 
 None of these would be helped by frame capture. The triage prompt is correctly distinguishing them from in-scope bugs. Future yield gains should come from broader corpus (more repos, more issue queries) rather than tuning the triage to be less strict.
+## Iteration 8 — corpus expansion (2026-04-26)
+
+Phase 1 vetted 10 candidate framework groups. Phase 2 expanded the YAML
+with 4 surviving groups (filament, xeokit, potree, cocos-engine). Phase 3
+ran a dry-run with batch_quota=40 against the iter-6 prompts (no LLM-prompt
+changes) to see if corpus expansion lifts the iter-7 30% ceiling.
+
+### Phase 1 — vet table
+
+| # | repo                              | stars | pushed     | open | verdict | reason                                                  |
+|---|-----------------------------------|-------|------------|------|---------|---------------------------------------------------------|
+| 1 | google/filament                   | 20012 | 2026-04-26 |  197 | KEEP    | Native PBR engine, very active, GL-render bugs surface  |
+| 2 | xeokit/xeokit-sdk                 |   896 | 2026-04-24 |  187 | KEEP    | BIM/CAD viewer, ~800 star bar, active                   |
+| 3 | Potree/potree                     |  5432 | 2026-01-08 |  820 | KEEP    | Point-cloud renderer, 820 open issues, recent push      |
+| 4 | needle-tools/needle-engine        |     - | -          |    - | CULL    | 404 not found at that path                              |
+| 5 | mozilla/hubs                      |  2203 | 2026-04-16 | 1218 | CULL    | issues exist but search API rejects with 422 (visibility constraint) |
+| 6 | vega/vega-webgl-renderer          |    48 | 2016-12-21 |    2 | CULL    | <800 stars, dead since 2016                             |
+| 7 | StrandedKitty/streets-gl          |  1010 | 2025-08-21 |  105 | CULL    | last-pushed 2025-08-21 = 8 months ago (>6mo cutoff)     |
+| 8 | KhronosGroup/glTF-Sample-Models   |  3520 | 2023-12-22 |    0 | CULL    | archived, 0 open issues                                 |
+| 9 | gkjohnson/three-mesh-bvh*         |  3332 | 2026-04-11 |   78 | CULL    | listed as pmndrs/three-mesh-bvh (404); kept after path fix but dropped from queries to fit search budget |
+|10 | cocos/cocos-engine                |  9540 | 2026-02-11 | 1024 | KEEP    | Game engine w/ WebGL backend, active, 1024 open issues  |
+
+Kept 4 of 10. Three were culled for not meeting the criteria the user
+stated explicitly (404, <800 stars, archived, last-push >6mo). One
+(mozilla/hubs) had a search-API visibility quirk that makes it unusable
+for issue-driven mining. One (gkjohnson/three-mesh-bvh) was technically
+eligible after path fix-up but was dropped from the final corpus to keep
+total search calls under the 30/min rate-limit cliff.
+
+### Phase 2 — new queries added
+
+| repo               | issue queries | PR queries | total |
+|--------------------|---------------|-----------|-------|
+| google/filament    | 1             | 1         | 2     |
+| xeokit/xeokit-sdk  | 1             | 0         | 1     |
+| Potree/potree      | 1             | 0         | 1     |
+| cocos/cocos-engine | 1             | 1         | 2     |
+| **TOTAL ADDED**    | 4             | 2         | 6     |
+
+To stay inside the GitHub search rate limit (30 calls/min, all queries fired
+back-to-back by the discoverer), 6 lower-yield iter-6 PR queries were dropped:
+Babylon, MapLibre, deck.gl, R3F, luma.gl PR queries (each 0 drafted in iter 6)
+and pixijs blend/post issue query (0 drafted). Each dropped repo still has
+at least one closed-issue query in the corpus.
+
+### Phase 3 — dry-run results
+
+Discoverer returned 40 candidates after pre-filter (full quota). Per-stage:
+
+```
+URLs from discovery:    40
+After URL dedup:        37   (37/40 = 92.5% fresh)
+After thread fetch:     37   (37/37 = 100.0% fetched)
+After triage in_scope:  15   (15/37 = 40.5% accept)
+After fingerprint dedup:15   (15/15 = 100.0% novel)
+After successful draft: 12   (12/15 = 80.0% draft success)
+
+End-to-end yield:       12/40 = 30.0%
+```
+
+### Repo distribution of the drafted scenarios
+
+| repo                                | drafted |
+| ----------------------------------- | ------- |
+| playcanvas/engine                   | 5       |
+| processing/p5.js                    | 2       |
+| CesiumGS/cesium                     | 1       |
+| Kitware/vtk-js                      | 1       |
+| gpujs/gpu.js                        | 1       |
+| iTowns/itowns                       | 1       |
+| pmndrs/drei                         | 1       |
+
+### All candidates by repo (incl. culled-at-stage)
+
+| repo                                | candidates | drafted |
+| ----------------------------------- | ---------- | ------- |
+| playcanvas/engine                   | 5          | 5       |
+| BabylonJS/Babylon.js                | 4          | 0       |
+| aframevr/aframe                     | 2          | 0       |
+| maplibre/maplibre-gl-js             | 2          | 0       |
+| visgl/deck.gl                       | 2          | 0       |
+| keplergl/kepler.gl                  | 2          | 0       |
+| processing/p5.js                    | 2          | 2       |
+| pixijs/pixijs                       | 2          | 0       |
+| pmndrs/react-three-fiber            | 2          | 0       |
+| pmndrs/drei                         | 2          | 1       |
+| CesiumGS/cesium                     | 2          | 1       |
+| google/filament                     | 2          | 0       |
+| cocos/cocos-engine                  | 2          | 0       |
+| pmndrs/postprocessing               | 1          | 0       |
+| Kitware/vtk-js                      | 1          | 1       |
+| KhronosGroup/glTF-Sample-Viewer     | 1          | 0       |
+| gpujs/gpu.js                        | 1          | 1       |
+| iTowns/itowns                       | 1          | 1       |
+| antvis/L7                           | 1          | 0       |
+| visgl/luma.gl                       | 1          | 0       |
+| xeokit/xeokit-sdk                   | 1          | 0       |
+| potree/potree                       | 1          | 0       |
+
+### Top rejection reasons
+
+| reason                                            | count |
+| ------------------------------------------------- | ----- |
+| out_of_scope_not_rendering_bug                    | 20     |
+| url_dedup                                         | 3     |
+| draft_invalid                                     | 1     |
+| draft_error                                       | 1     |
+| out_of_scope_insufficient_info                    | 1     |
+| not_reproducible                                  | 1     |
+| drafter_declined:not_a_rendering_bug              | 1     |
+
+### Per-stage table — Iter 6 vs. Iter 7 vs. Iter 8
+
+| Stage                   | Iter 6 (n=30, 18 groups) | Iter 7 (audit, no run) | **Iter 8 (n=40, 22 groups)** |
+| ----------------------- | ------------------------ | ---------------------- | ------------------------------- |
+| URL dedup pass          | 93.3% (28/30)            | (no re-run)            | **92.5% (37/40)**           |
+| Thread fetch            | 100% (28/28)             | —                      | **100.0% (37/37)**           |
+| Triage in_scope         | 50.0% (14/28)            | —                      | **40.5% (15/37)**           |
+| Fingerprint novel       | 92.9% (13/14)            | —                      | **100.0% (15/15)**           |
+| Drafted                 | 69.2% (9/13)             | —                      | **80.0% (12/15)**           |
+| **End-to-end yield**    | **30.0% (9/30)**         | **30.0% audit**        | **30.0% (12/40)**           |
+
+### Verdict — did corpus expansion lift the ceiling?
+
+**No, held flat.** End-to-end yield held at 30.0% (vs. iter-6's 30.0%),
+within run-to-run noise of the 30% ceiling. Corpus expansion to 22
+framework groups confirms the iter-7 audit conclusion: 30% is the
+steady-state ceiling on issue-driven mining with these prompts.
+
+### Reproducing iter 8
+
+```bash
+PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
+    --batch-quota 40 \
+    --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
+```
+

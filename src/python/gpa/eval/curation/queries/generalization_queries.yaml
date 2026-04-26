@@ -1,23 +1,36 @@
-# Iter 6 — expanded cross-family corpus + new framework groups.
+# Iter 8 — 30 total queries across 22 framework groups (18 iter-6 + 4 new).
 #
-# Goal: confirm the iter-3 tuning generalizes across a broader query set
-# spanning >=18 framework families. Iter 5 showed 20% yield on 10 families;
-# iter 6 adds 9 more groups (R3F, drei, Cesium, VTK, glTF-Sample-Viewer, gpu.js,
-# itowns, antv/L7, luma.gl, postprocessing) to test if yield holds when more
-# bug-shapes (CAD/BIM, scientific viz, GPU compute, geo-3D, R3F-declarative)
-# enter the corpus.
+# Goal: test whether further corpus expansion lifts the cross-family yield
+# ceiling above iter 7's audit-confirmed 30.0%. Iter 6 reached 30% on 18
+# groups; iter 7 audited the rejections and confirmed they were correct
+# (no triage tuning needed); iter 8 keeps iter-6 prompts untouched and
+# adds 4 new framework groups (filament, xeokit, potree, cocos-engine)
+# drawn from native PBR engines, BIM/CAD viewers, point-cloud renderers,
+# and game engines with WebGL backends. If yield holds at ~30%, that's
+# the ceiling on issue-driven mining and we move to real R12. If it
+# lifts, more groups would be warranted.
 #
-# Mix per spec:
-#   - ~60% issue is:closed reason:completed
-#   - ~30% is:pr is:merged "fix:"
-#   - ~10% StackOverflow tag pairs
+# Constraint: GitHub /search/issues rate limit is 30/min and the
+# discoverer fires all queries back-to-back. To make room for 6 new
+# /search/issues queries (filament x2, xeokit x1, potree x1, cocos x2)
+# while staying inside the per-minute budget, 6 lower-yield iter-6 PR
+# queries on already-represented repos were removed (Babylon PR,
+# MapLibre PR, deck.gl PR, R3F PR, luma.gl PR, pixijs blend/post).
+# Each dropped repo still has at least one closed-issue query in the
+# corpus. Net: 28 issue queries + 2 SO pairs = 30 total queries.
+#
+# Mix per spec (across the 28 issue-endpoint queries):
+#   - ~86% issue is:closed reason:completed (24/28)
+#   - ~14% is:pr is:merged "fix:" (4/28: cesium, filament, cocos, playcanvas)
+#   - SO tag pairs (2) hit StackExchange (separate rate limit)
 #
 # All `is:issue` and `is:pr` queries live in `issue:` because the GitHub
 # /search/issues endpoint handles both (mirrors baseline conventions).
-# Total: 30 queries (was 18 in iter 5). batch_quota=30 with the iter-5
-# per-query fairness still gives ~1 candidate per query (full draining).
+# batch_quota=40 with iter-5 per-query fairness gives floor(40/30)=1
+# per query plus pass-2 absorption (~10 candidates absorbed back into
+# higher-yield queries).
 
-batch_quota: 30
+batch_quota: 40
 queries:
   issue:
     # === Web-3D engines (iter 5 carryover, closed issues) ===
@@ -38,11 +51,11 @@ queries:
     # === Web-2D / canvas (iter 5 carryover) ===
     - 'repo:processing/p5.js is:issue is:closed reason:completed "WEBGL" "wrong" OR "incorrect" OR "broken"'
     - 'repo:pixijs/pixijs is:issue is:closed reason:completed "mipmap" OR "filter" "wrong" OR "incorrect"'
-    - 'repo:pixijs/pixijs is:issue is:closed reason:completed "blend" OR "post" "wrong" OR "incorrect"'
+    # iter-8: dropped 'pixijs blend OR post' (0 drafted in iter 6) to stay under 30/min search budget
 
     # === NEW: pmndrs/react-three-fiber (declarative R3F, 30k stars) ===
     - 'repo:pmndrs/react-three-fiber is:issue is:closed reason:completed "render" OR "material" "wrong" OR "broken"'
-    - 'repo:pmndrs/react-three-fiber is:pr is:merged "fix:" render OR shader OR uniform'
+    # iter-8: dropped 'r3f is:pr is:merged fix:' (0 drafted in iter 6) to stay under 30/min search budget
 
     # === NEW: pmndrs/drei (R3F helpers, 9k stars) ===
     - 'repo:pmndrs/drei is:issue is:closed reason:completed "render" OR "shadow" "wrong" OR "incorrect"'
@@ -71,13 +84,25 @@ queries:
 
     # === NEW: visgl/luma.gl (low-level WebGL/WebGPU, 2.4k stars) ===
     - 'repo:visgl/luma.gl is:issue is:closed reason:completed "shader" OR "uniform" OR "buffer" "wrong" OR "incorrect"'
-    - 'repo:visgl/luma.gl is:pr is:merged "fix:" shader OR uniform OR texture'
+    # iter-8: dropped 'luma.gl is:pr is:merged fix:' (0 drafted in iter 6) to stay under 30/min search budget
+
+    # === NEW iter 8: google/filament (native PBR engine, 20k stars) ===
+    - 'repo:google/filament is:issue is:closed reason:completed "render" OR "shader" "wrong" OR "incorrect" OR "artifact"'
+    - 'repo:google/filament is:pr is:merged "fix:" shader OR material OR shadow'
+
+    # === NEW iter 8: xeokit/xeokit-sdk (BIM/CAD viewer, 896 stars) ===
+    - 'repo:xeokit/xeokit-sdk is:issue is:closed reason:completed "model" OR "geometry" OR "render" "wrong" OR "incorrect"'
+
+    # === NEW iter 8: Potree/potree (point-cloud renderer, 5.4k stars) ===
+    - 'repo:Potree/potree is:issue is:closed reason:completed "point" OR "cloud" OR "render" "wrong" OR "incorrect" OR "missing"'
+
+    # === NEW iter 8: cocos/cocos-engine (game engine w/ WebGL backend, 9.5k stars) ===
+    - 'repo:cocos/cocos-engine is:issue is:closed reason:completed "render" OR "shader" OR "material" "wrong" OR "incorrect"'
+    - 'repo:cocos/cocos-engine is:pr is:merged "fix:" render OR shader OR shadow'
 
     # === Iter 5 carryover PRs (now fetchable thanks to iter 6 PR fetcher) ===
-    - 'repo:BabylonJS/Babylon.js is:pr is:merged "fix:" shadow OR depth OR stencil'
+    # iter-8: dropped Babylon/MapLibre/deck.gl PR queries (0 drafted in iter 6) to stay under 30/min search budget; playcanvas PR retained (top iter-6 yielder, 1 drafted PR).
     - 'repo:playcanvas/engine is:pr is:merged "fix:" instancing OR blend OR transparency'
-    - 'repo:maplibre/maplibre-gl-js is:pr is:merged "fix:" tile OR zoom OR coord'
-    - 'repo:visgl/deck.gl is:pr is:merged "fix:" layer OR mipmap OR texture'
 
   commit: []
 
