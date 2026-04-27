@@ -484,3 +484,51 @@ Land:
 
 Tests: `bazel test //tests/unit/python/...` after each step. Spec-only
 commit; tests not affected.
+
+---
+
+## Validation results — bidirectional narrow queries (2026-04-27)
+
+The four new CLI commands were exercised against live captures of the
+three R9 carryover scenarios after building under
+`bazel build --incompatible_disallow_empty_glob=false`. Each scenario was
+captured under the `LD_PRELOAD` shim against an engine bound on
+`127.0.0.1:18099`. Sample outputs (≤8 lines each, machine output verbatim)
+are reproduced below.
+
+### Scenario × command sample-output table
+
+| Scenario | Command | Sample output (truncated to ≤6 lines) |
+|---|---|---|
+| `r10_feedback_loop_error_with_transmission_an` | `gpa explain-draw 0` | `draw 0  frame 1` / `node      (no debug-group context)` / `shader    program 3` / `textures  unit0 tex1 32856 800x600` / `state     GL_BLEND=0  GL_CULL_FACE=0  GL_DEPTH_TEST=0` |
+| `r10_feedback_loop_error_with_transmission_an` | `gpa scene-explain --pixel 400,300` | `scene-explain frame 1  pixel (400,300)` / `  rgba=(210,207,78,255)  depth=0.0` / `  draw      0  (approximate)` / `  textures  unit0 tex1 32856` |
+| `r22_point_sprite_rendering_issues_with_three` | `gpa explain-draw 0` | `draw 0  frame 2` / `shader    program 3` / `uniforms  uniform_0=[1.811,0,0,…]` / `textures  (none bound)` / `state     GL_BLEND=1  GL_CULL_FACE=0  GL_DEPTH_TEST=1` |
+| `r22_point_sprite_rendering_issues_with_three` | `gpa scene-explain --pixel 100,100` | `scene-explain frame 2  pixel (100,100)` / `  rgba=(28,36,46,255)  depth=1.0` / `  draw      (no draw covers this pixel)` / `  resolved  miss` |
+| `r27_bug_black_squares_appear_when_rendering_` | `gpa explain-draw 0` | `draw 0  frame 3` / `shader    program 1` / `uniforms  (none decoded)` / `textures  (none bound)` / `state     GL_BLEND=0  GL_CULL_FACE=0  GL_DEPTH_TEST=0` |
+| `r27_bug_black_squares_appear_when_rendering_` | `gpa diff-draws 0 1 --scope all` | `[gpa] one of draws 0,1 not found in frame latest.` / `  Example: gpa diff-draws 4 5` (exit 1; r27 only emits one draw call) |
+| (all three) | `gpa scene-find type:Mesh` | `[gpa] no scene-graph annotation for frame N — need a Tier-3 plugin. See src/python/gpa/framework/threejs_link_plugin.js for a sketch.` (exit 1) |
+
+### Notes
+
+- All four commands operate without crashing on minimal eval scenarios.
+- The Tier-2 commands (`explain-draw`, `diff-draws`) degrade gracefully
+  when the Tier-3 plugin is absent — they show the GL view and a
+  ``(no debug-group context)`` placeholder for `scene_node_path`.
+- `scene-explain --pixel` returns either a draw_call_id with
+  `resolved:"approximate"` (bounding-box hit) or `resolved:"miss"` for
+  out-of-bounds pixels, both with the pixel rgba/depth.
+- `scene-find` correctly emits the exit-1 + plugin-help message when no
+  Tier-3 annotation exists for the frame.
+- Cost-delta validation (the agent-with-vs-without round on r10/r22/r27)
+  is the next eval round's job, per spec § 5. This validation pass
+  confirms the *functional* slice (capture → REST → CLI) and the
+  exit-code contracts, not the cost metric.
+- The PIXI scenario `r25` is intentionally skipped per spec § 5 (a
+  separate plugin will be needed).
+
+Pre-existing infra note: `tests/eval/BUILD.bazel` glob fails under the
+default Bazel mode because at least one scenario directory
+(`r200_out_of_sync_vr_camera_with_lens_flares`) ships with only
+`scenario.md` and no `.c` source. The validation captures above used
+`--incompatible_disallow_empty_glob=false` to side-step that glob
+strictness; tightening the BUILD definition is left as a follow-up.

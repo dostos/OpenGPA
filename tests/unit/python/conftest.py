@@ -96,6 +96,9 @@ def _make_drawcall(dc_id: int = 0, frame_id: int = 1) -> MagicMock:
     # COLOR_ATTACHMENT1 = tex 12 (second MRT target), rest unbound.
     dc.fbo_color_attachments = [7, 12, 0, 0, 0, 0, 0, 0]
     dc.index_type = 0x1403  # GL_UNSIGNED_SHORT
+    # Default empty debug groups; tests that exercise correlation can
+    # override this on the returned mock.
+    dc.debug_groups = []
     return dc
 
 

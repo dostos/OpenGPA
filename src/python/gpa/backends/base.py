@@ -51,6 +51,9 @@ class DrawCallInfo:
     # the slot is unbound. Non-MRT draws have entries 1..7 = 0.
     fbo_color_attachments: List[int] = field(default_factory=lambda: [0] * 8)
     index_type: int = 0
+    # Path of GL_KHR_debug push groups active at draw time, outermost first.
+    # Names are preserved verbatim (so node names containing '/' are safe).
+    debug_groups: List[str] = field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

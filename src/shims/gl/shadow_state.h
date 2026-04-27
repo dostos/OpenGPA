@@ -181,5 +181,12 @@ void gpa_shadow_new_frame(GpaShadowState *state);
 void gpa_shadow_push_debug_group(GpaShadowState *state, uint32_t id, const char *name);
 void gpa_shadow_pop_debug_group(GpaShadowState *state);
 int  gpa_shadow_get_debug_group_path(const GpaShadowState *state, char *buf, size_t buf_size);
+/* Get the i-th debug group name (0-indexed). Returns the string length
+ * written into ``buf`` (excluding the NUL terminator) on success, or 0 if
+ * the index is out of range. ``buf`` is always NUL-terminated. */
+int  gpa_shadow_get_debug_group_name(const GpaShadowState *state,
+                                     uint32_t index,
+                                     char *buf,
+                                     size_t buf_size);
 
 #endif /* GPA_SHADOW_STATE_H */

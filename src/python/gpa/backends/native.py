@@ -147,6 +147,15 @@ class NativeBackend(FrameProvider):
             elif len(fbo_attachments) > 8:
                 fbo_attachments = fbo_attachments[:8]
 
+        # debug_groups: prefer the new list field; fall back to splitting
+        # the legacy '/'-joined path if the binding only exposes that.
+        raw_groups = getattr(dc, "debug_groups", None)
+        if raw_groups is not None:
+            debug_groups = [str(g) for g in raw_groups]
+        else:
+            path = getattr(dc, "debug_group_path", "") or ""
+            debug_groups = path.split("/") if path else []
+
         return DrawCallInfo(
             id=dc.id,
             primitive_type=dc.primitive_type,
@@ -160,6 +169,7 @@ class NativeBackend(FrameProvider):
             fbo_color_attachment_tex=fbo_tex,
             fbo_color_attachments=fbo_attachments,
             index_type=index_type,
+            debug_groups=debug_groups,
         )
 
     # -- FrameProvider implementation ----------------------------------------

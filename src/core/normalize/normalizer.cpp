@@ -80,7 +80,7 @@ NormalizedFrame Normalizer::normalize(const gpa::store::RawFrame& raw) const {
         dc.vertex_data = rdc.vertex_data;
         dc.index_data  = rdc.index_data;
 
-        dc.debug_group_path = rdc.debug_group_path;
+        dc.debug_groups = rdc.debug_groups;
         dc.fbo_color_attachment_tex = rdc.fbo_color_attachment_tex;
         dc.fbo_color_attachments = rdc.fbo_color_attachments;
         dc.index_type = rdc.index_type;

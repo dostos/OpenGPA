@@ -54,7 +54,8 @@ struct RawDrawCall {
     };
     std::vector<VertexAttr> attributes;
 
-    std::string debug_group_path;
+    /* Path of GL_KHR_debug push groups active at draw time, outermost first. */
+    std::vector<std::string> debug_groups;
 
     // FBO attachment info (color attachment texture ID at time of draw).
     // `fbo_color_attachment_tex` is kept equal to fbo_color_attachments[0]

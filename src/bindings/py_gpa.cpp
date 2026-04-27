@@ -79,7 +79,18 @@ PYBIND11_MODULE(_gpa_core, m) {
             return py::bytes(reinterpret_cast<const char*>(dc.index_data.data()),
                              dc.index_data.size());
         })
-        .def_readonly("debug_group_path", &gpa::NormalizedDrawCall::debug_group_path)
+        .def_readonly("debug_groups", &gpa::NormalizedDrawCall::debug_groups)
+        .def_property_readonly("debug_group_path",
+            [](const gpa::NormalizedDrawCall& dc) {
+                /* Backward-compat scalar: '/'-joined groups. New code should
+                 * read ``debug_groups`` directly to avoid '/' ambiguity. */
+                std::string out;
+                for (size_t i = 0; i < dc.debug_groups.size(); ++i) {
+                    if (i > 0) out.push_back('/');
+                    out.append(dc.debug_groups[i]);
+                }
+                return out;
+            })
         .def_readonly("fbo_color_attachment_tex", &gpa::NormalizedDrawCall::fbo_color_attachment_tex)
         .def_property_readonly("fbo_color_attachments",
             [](const gpa::NormalizedDrawCall& dc) {

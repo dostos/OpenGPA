@@ -484,15 +484,25 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                     dc.params.push_back(std::move(param));
                 }
 
-                // Debug group path: uint16 len + chars
+                // Debug groups: uint16 group_count, then each
+                //   { uint16 name_len, name_len chars (no null terminator) }
                 if (dc_ptr + 2 <= dc_end) {
-                    uint16_t path_len = 0;
-                    std::memcpy(&path_len, dc_ptr, 2); dc_ptr += 2;
-                    if (path_len > 512) path_len = 512; // sanity
-                    if (path_len > 0 && dc_ptr + path_len <= dc_end) {
-                        dc.debug_group_path.assign(
-                            reinterpret_cast<const char*>(dc_ptr), path_len);
-                        dc_ptr += path_len;
+                    uint16_t group_count = 0;
+                    std::memcpy(&group_count, dc_ptr, 2); dc_ptr += 2;
+                    if (group_count > 32) group_count = 32; // sanity = GPA_MAX_DEBUG_GROUP_DEPTH
+                    dc.debug_groups.reserve(group_count);
+                    for (uint16_t gi = 0; gi < group_count; ++gi) {
+                        if (dc_ptr + 2 > dc_end) break;
+                        uint16_t name_len = 0;
+                        std::memcpy(&name_len, dc_ptr, 2); dc_ptr += 2;
+                        if (name_len > 256) name_len = 256; // sanity
+                        if (name_len > 0 && dc_ptr + name_len > dc_end) break;
+                        std::string name;
+                        if (name_len > 0) {
+                            name.assign(reinterpret_cast<const char*>(dc_ptr), name_len);
+                            dc_ptr += name_len;
+                        }
+                        dc.debug_groups.push_back(std::move(name));
                     }
                 }
 

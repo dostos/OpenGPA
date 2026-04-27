@@ -125,13 +125,9 @@ class FrameworkQueryEngine:
             data_sources.append("metadata")
 
         # If draw calls carry debug group paths, record that source
+        from .debug_groups import _draw_call_groups
         for dc in dcs:
-            dgp = (
-                dc.get('debug_group_path', '')
-                if isinstance(dc, dict)
-                else getattr(dc, 'debug_group_path', '')
-            )
-            if dgp:
+            if _draw_call_groups(dc):
                 if "debug_markers" not in data_sources:
                     data_sources.append("debug_markers")
                 break

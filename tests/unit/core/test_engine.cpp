@@ -258,7 +258,7 @@ static std::vector<uint8_t> build_frame_with_vec4_param(
     push_f32(z);
     push_f32(w);
 
-    // debug_group_path: empty (uint16 len = 0)
+    // debug_groups: empty list (uint16 group_count = 0)
     buf.push_back(0); buf.push_back(0);
 
     return buf;

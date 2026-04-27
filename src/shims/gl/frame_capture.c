@@ -67,8 +67,12 @@ typedef struct {
     uint32_t param_count;
     GpaShadowUniform params[GPA_MAX_UNIFORMS];
 
-    /* Debug group path (GL_KHR_debug push/pop group stack) */
-    char debug_group_path[512];
+    /* Debug groups (GL_KHR_debug push/pop group stack) — list form.
+     * Each entry is the literal name of one push group, in order from outer
+     * to inner. ``debug_group_count`` is the depth at draw time; names are
+     * stored in ``debug_groups[]`` (NUL-terminated, capped per-name). */
+    uint32_t debug_group_count;
+    char     debug_groups[GPA_MAX_DEBUG_GROUP_DEPTH][GPA_MAX_DEBUG_GROUP_NAME];
 
     /* FBO color attachment texture (for feedback loop detection).
      * `fbo_color_attachment_tex` preserves the pre-MRT single-attachment API
@@ -155,7 +159,15 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
     memcpy(s->params, shadow->uniforms,
            s->param_count * sizeof(GpaShadowUniform));
 
-    gpa_shadow_get_debug_group_path(shadow, s->debug_group_path, sizeof(s->debug_group_path));
+    /* Capture each currently-active push-group name as its own entry. */
+    s->debug_group_count = shadow->debug_group_depth;
+    if (s->debug_group_count > GPA_MAX_DEBUG_GROUP_DEPTH) {
+        s->debug_group_count = GPA_MAX_DEBUG_GROUP_DEPTH;
+    }
+    for (uint32_t gi = 0; gi < s->debug_group_count; gi++) {
+        gpa_shadow_get_debug_group_name(shadow, gi, s->debug_groups[gi],
+                                        GPA_MAX_DEBUG_GROUP_NAME);
+    }
 
     /* FBO color attachments — look up the current bound FBO's MRT table.
      * Slot 0 is mirrored to `fbo_color_attachment_tex` for backward compat. */
@@ -207,8 +219,8 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
  *   uint32  param_count
  *   param_count * { uint32 location, uint32 type, uint32 data_size,
  *                   data_size bytes of data }
- *   uint16  debug_group_path_len
- *   debug_group_path_len chars (no null terminator)
+ *   uint16  debug_group_count
+ *   debug_group_count * { uint16 name_len, name_len chars (no null term) }
  *   uint32  fbo_color_attachment_tex       (backward-compat scalar = slot 0)
  *   uint32  index_type  (GL enum; 0 for non-indexed draws)
  *   uint32  fbo_color_attachments[8]       (MRT: COLOR_ATTACHMENT0..7 tex IDs)
@@ -295,11 +307,25 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
             }
         }
 
-        /* Wire format: uint16 path_len, then path_len chars (no null terminator) */
-        uint16_t path_len = (uint16_t)strlen(s->debug_group_path);
-        if (p + 2 + path_len > end) break;
-        memcpy(p, &path_len, 2); p += 2;
-        if (path_len > 0) { memcpy(p, s->debug_group_path, path_len); p += path_len; }
+        /* Wire format: uint16 debug_group_count, then for each:
+         *   uint16 name_len + name_len chars (no null terminator). */
+        uint16_t group_count = (uint16_t)s->debug_group_count;
+        /* Worst-case sizing check: 2 + group_count * (2 + GPA_MAX_DEBUG_GROUP_NAME). */
+        size_t worst = 2;
+        for (uint16_t gi = 0; gi < group_count; gi++) {
+            worst += 2 + strlen(s->debug_groups[gi]);
+        }
+        if (p + worst > end) break;
+        memcpy(p, &group_count, 2); p += 2;
+        for (uint16_t gi = 0; gi < group_count; gi++) {
+            const char* gname = s->debug_groups[gi];
+            uint16_t name_len = (uint16_t)strlen(gname);
+            memcpy(p, &name_len, 2); p += 2;
+            if (name_len > 0) {
+                memcpy(p, gname, name_len);
+                p += name_len;
+            }
+        }
 
         /* FBO color attachment texture (uint32) — backward-compat slot 0 */
         if (p + 4 > end) break;

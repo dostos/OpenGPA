@@ -363,3 +363,24 @@ int gpa_shadow_get_debug_group_path(const GpaShadowState *state, char *buf,
     buf[written] = '\0';
     return written;
 }
+
+int gpa_shadow_get_debug_group_name(const GpaShadowState *state,
+                                    uint32_t index,
+                                    char *buf,
+                                    size_t buf_size) {
+    if (buf_size == 0) {
+        return 0;
+    }
+    if (index >= state->debug_group_depth) {
+        buf[0] = '\0';
+        return 0;
+    }
+    const char *name = state->debug_group_stack[index].name;
+    size_t name_len = strlen(name);
+    if (name_len + 1 > buf_size) {
+        name_len = buf_size - 1;
+    }
+    memcpy(buf, name, name_len);
+    buf[name_len] = '\0';
+    return (int)name_len;
+}

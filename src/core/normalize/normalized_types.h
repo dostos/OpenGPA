@@ -54,7 +54,8 @@ struct NormalizedDrawCall {
     std::vector<uint8_t> vertex_data;
     std::vector<uint8_t> index_data;
 
-    std::string debug_group_path;
+    // Path of GL_KHR_debug push groups active at draw time, outermost first.
+    std::vector<std::string> debug_groups;
 
     // FBO color attachment texture (for feedback loop detection).
     // `fbo_color_attachment_tex` mirrors fbo_color_attachments[0] for

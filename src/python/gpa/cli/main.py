@@ -26,12 +26,16 @@ from gpa.cli.commands import annotate as annotate_cmd
 from gpa.cli.commands import annotations as annotations_cmd
 from gpa.cli.commands import check as check_cmd
 from gpa.cli.commands import check_config as check_config_cmd
+from gpa.cli.commands import diff_draws as diff_draws_cmd
 from gpa.cli.commands import dump as dump_cmd
 from gpa.cli.commands import env as env_cmd
+from gpa.cli.commands import explain_draw as explain_draw_cmd
 from gpa.cli.commands import frames as frames_cmd
 from gpa.cli.commands import report as report_cmd
 from gpa.cli.commands import run as run_cmd
 from gpa.cli.commands import run_browser as run_browser_cmd
+from gpa.cli.commands import scene_explain as scene_explain_cmd
+from gpa.cli.commands import scene_find as scene_find_cmd
 from gpa.cli.commands import start as start_cmd
 from gpa.cli.commands import stop as stop_cmd
 from gpa.cli.commands import trace as trace_cmd
@@ -163,6 +167,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     # ---- check-config -----------------------------------------------------
     check_config_cmd.add_subparser(sub)
+
+    # ---- bidirectional narrow scene↔GL queries ----------------------------
+    explain_draw_cmd.add_subparser(sub)
+    diff_draws_cmd.add_subparser(sub)
+    scene_find_cmd.add_subparser(sub)
+    scene_explain_cmd.add_subparser(sub)
 
     # ---- annotate ---------------------------------------------------------
     p_annotate = sub.add_parser(
@@ -297,6 +307,39 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             severity=args.severity,
             rules=args.rules,
             rule=args.rule,
+            json_output=args.json_output,
+        )
+    if args.cmd == "explain-draw":
+        return explain_draw_cmd.run(
+            draw_id=args.draw_id,
+            session_dir=args.session,
+            frame=args.frame,
+            field=args.field,
+            json_output=args.json_output,
+            full=args.full,
+        )
+    if args.cmd == "diff-draws":
+        return diff_draws_cmd.run(
+            a=args.a,
+            b=args.b,
+            session_dir=args.session,
+            frame=args.frame,
+            scope=args.scope,
+            json_output=args.json_output,
+        )
+    if args.cmd == "scene-find":
+        return scene_find_cmd.run(
+            predicates=args.predicates,
+            session_dir=args.session,
+            frame=args.frame,
+            limit=args.limit,
+            json_output=args.json_output,
+        )
+    if args.cmd == "scene-explain":
+        return scene_explain_cmd.run(
+            pixel=args.pixel,
+            session_dir=args.session,
+            frame=args.frame,
             json_output=args.json_output,
         )
     if args.cmd == "annotate":
