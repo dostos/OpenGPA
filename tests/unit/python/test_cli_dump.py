@@ -135,7 +135,7 @@ def test_dump_unknown_target(session_dir, injected_rest, monkeypatch):
         ("drawcall", "explain-draw"),
         ("shader", "explain-draw"),
         ("textures", "explain-draw"),
-        ("attachments", "check-config"),
+        ("attachments", "/api/v1/frames/"),
     ],
 )
 def test_dump_removed_subtarget_shows_redirect(
@@ -151,7 +151,7 @@ def test_dump_removed_subtarget_shows_redirect(
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = dump_cmd.run(
-        what=subtarget, frame=1, dc=0,
+        what=subtarget, frame=1,
         client=injected_rest, print_stream=buf,
     )
     assert rc == 3
@@ -161,6 +161,31 @@ def test_dump_removed_subtarget_shows_redirect(
     assert redirect_substr in captured.err
     # Nothing should have been written to stdout — the redirect is on stderr.
     assert buf.getvalue() == ""
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        # Bare form (no positional id) — exercised pre-fix too.
+        ["dump", "drawcall"],
+        # Natural form with trailing positional id — used to die with exit 2
+        # (argparse "unrecognized arguments") before the trailing-REMAINDER
+        # absorber was added. Must now reach the redirect handler too.
+        ["dump", "drawcall", "0"],
+    ],
+)
+def test_dump_removed_subtarget_via_full_cli(argv, session_dir, monkeypatch, capsys):
+    """Regression guard: full CLI parser must route ``dump drawcall [0]``
+    through the redirect (exit 3), not argparse's exit 2."""
+    from gpa.cli.main import main as cli_main
+
+    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    rc = cli_main(argv)
+    assert rc == 3
+    err = capsys.readouterr().err
+    assert "drawcall" in err
+    assert "removed" in err.lower()
+    assert "explain-draw" in err
 
 
 # --------------------------------------------------------------------------- #

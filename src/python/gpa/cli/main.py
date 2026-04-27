@@ -158,11 +158,15 @@ def build_parser() -> argparse.ArgumentParser:
     _add_session_arg(p_dump)
     p_dump.add_argument("what", help="frame | drawcalls | pixel")
     p_dump.add_argument("--frame", type=int, default=None)
-    p_dump.add_argument("--dc", type=int, default=None)
     p_dump.add_argument("--x", type=int, default=None)
     p_dump.add_argument("--y", type=int, default=None)
     p_dump.add_argument("--format", dest="fmt", default="plain",
                         choices=["plain", "json", "compact"])
+    # Silently absorb trailing positional args (e.g. ``gpa dump drawcall 0``)
+    # so removed subtargets reach the redirect handler instead of dying with
+    # an argparse "unrecognized arguments" error (exit 2).
+    p_dump.add_argument("trailing", nargs=argparse.REMAINDER,
+                        help=argparse.SUPPRESS)
 
     # ---- frames -----------------------------------------------------------
     p_frames = sub.add_parser("frames", help="List captured frame ids")
@@ -300,7 +304,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             what=args.what,
             session_dir=args.session,
             frame=args.frame,
-            dc=args.dc,
             x=args.x,
             y=args.y,
             fmt=args.fmt,

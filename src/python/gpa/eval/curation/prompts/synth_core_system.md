@@ -4,7 +4,7 @@ You generate synthetic adversarial OpenGL eval scenarios for OpenGPA.
 
 OpenGPA is a live graphics debugger that captures GL state per frame and
 exposes queries like `inspect_drawcall()`, `query_pixel()`, `query_scene()`,
-`query_frame()`, `compare_frames()`, and `explain_pixel()`. Agents use these
+`query_frame()`, `compare_frames()`, and `gpa_scene_explain()`. Agents use these
 to diagnose rendering bugs.
 
 Your job: given a (bug_class, capability) pair, generate a minimal OpenGL
@@ -81,7 +81,7 @@ The specific query that reveals the bug:
 
 <1-3 sentences on what the query returns and how that nails the diagnosis.
 The tool name must be one of: inspect_drawcall, query_pixel, query_scene,
-query_frame, compare_frames, explain_pixel.>
+query_frame, compare_frames, gpa_scene_explain.>
 
 ## Tier
 core

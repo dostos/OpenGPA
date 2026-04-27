@@ -96,12 +96,12 @@ def _dump_pixel(
 
 
 REMOVED_SUBTARGETS = {
-    "drawcall": "use `gpa explain-draw <id>` instead",
-    "shader": "use `gpa explain-draw <id> --field shader` instead",
-    "textures": "use `gpa explain-draw <id> --field textures` instead",
+    "drawcall": "use `gpa explain-draw <draw-id>` instead",
+    "shader": "use `gpa explain-draw <draw-id> --field shader` instead",
+    "textures": "use `gpa explain-draw <draw-id> --field textures` instead",
     "attachments": (
-        "use `gpa check-config --rule mipmap-on-npot-without-min-filter` "
-        "(or another config rule) instead"
+        "removed; no narrow replacement yet — use REST "
+        "GET /api/v1/frames/<id>/drawcalls/<dc>/attachments directly"
     ),
 }
 
@@ -112,9 +112,9 @@ REMOVED_SUBTARGETS = {
 
 
 _DISPATCH = {
-    "frame": ("frame", True, False, False),
-    "drawcalls": ("drawcalls", True, False, False),
-    "pixel": ("pixel", True, False, True),
+    "frame": ("frame", True, False),
+    "drawcalls": ("drawcalls", True, False),
+    "pixel": ("pixel", True, True),
 }
 
 
@@ -123,7 +123,6 @@ def run(
     what: str,
     session_dir: Optional[Path] = None,
     frame: Optional[int] = None,
-    dc: Optional[int] = None,
     x: Optional[int] = None,
     y: Optional[int] = None,
     fmt: str = "plain",
@@ -147,7 +146,7 @@ def run(
         print(f"[gpa] unknown dump target: {what!r}. Known: {known}", file=sys.stderr)
         return 1
 
-    _, needs_frame, needs_dc, needs_xy = _DISPATCH[what]
+    _, needs_frame, needs_xy = _DISPATCH[what]
 
     sess = Session.discover(explicit=session_dir)
     if sess is None:
@@ -172,9 +171,6 @@ def run(
     else:
         frame_id = int(frame) if frame is not None else 0
 
-    if needs_dc and dc is None:
-        print(f"[gpa] dump {what} requires --dc N", file=sys.stderr)
-        return 1
     if needs_xy and (x is None or y is None):
         print(f"[gpa] dump {what} requires --x and --y", file=sys.stderr)
         return 1
