@@ -1,4 +1,4 @@
-"""``gpa trace {uniform|texture|value}`` — reverse-lookup value attribution.
+"""``gpa trace {uniform|value}`` — reverse-lookup value attribution.
 
 Hits the engine's trace endpoints to resolve a captured value back to
 the app-level JS fields that currently hold it. Plain-text output is
