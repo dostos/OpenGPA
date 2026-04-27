@@ -11,8 +11,12 @@ from gpa.eval.scenario import ScenarioMetadata
 
 
 def _capture_via_rest(base_url: str, token: str) -> dict:
-    """Fetch the latest captured framebuffer + metadata via REST."""
-    import base64
+    """Fetch the latest captured frame metadata via REST.
+
+    Note: framebuffer image bytes are not exposed by the Tier-1 native
+    backend, so ``framebuffer_png`` is always empty. Downstream consumers
+    that need the image must obtain it through another path.
+    """
     import json
     import urllib.request
 
@@ -23,15 +27,11 @@ def _capture_via_rest(base_url: str, token: str) -> dict:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.read()
 
-    fb_resp = json.loads(_get("/api/v1/frames/current/framebuffer"))
-    png_b64 = fb_resp.get("image_base64", "")
-    fb = base64.b64decode(png_b64) if png_b64 else b""
-
     overview = json.loads(_get("/api/v1/frames/current/overview"))
     drawcalls = json.loads(_get("/api/v1/frames/current/drawcalls?limit=200&offset=0"))
 
     return {
-        "framebuffer_png": fb,
+        "framebuffer_png": b"",
         "metadata": {
             "draw_call_count": overview.get("draw_call_count", 0),
             "draw_calls": drawcalls.get("items", []),

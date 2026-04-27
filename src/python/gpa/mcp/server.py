@@ -37,7 +37,7 @@ TOOLS: List[Dict[str, Any]] = [
     {
         "name": "query_frame",
         "description": (
-            "Get a frame overview, draw call list, or framebuffer info. "
+            "Get a frame overview or draw call list. "
             "Use 'latest' as frame_id to get the most recent frame."
         ),
         "inputSchema": {
@@ -49,7 +49,7 @@ TOOLS: List[Dict[str, Any]] = [
                 },
                 "view": {
                     "type": "string",
-                    "enum": ["overview", "drawcalls", "framebuffer"],
+                    "enum": ["overview", "drawcalls"],
                     "description": "Which aspect of the frame to retrieve",
                     "default": "overview",
                 },
@@ -535,8 +535,6 @@ def _tool_query_frame(client: APIClient, args: Dict[str, Any]) -> str:
         offset = int(args.get("offset", 0))
         data = client.get(f"/frames/{frame_id}/drawcalls",
                           {"limit": limit, "offset": offset})
-    elif view == "framebuffer":
-        data = client.get(f"/frames/{frame_id}/framebuffer")
     else:
         data = {"error": f"Unknown view '{view}'"}
 
