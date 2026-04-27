@@ -165,7 +165,13 @@ def build_parser() -> argparse.ArgumentParser:
     # Silently absorb trailing positional args (e.g. ``gpa dump drawcall 0``)
     # so removed subtargets reach the redirect handler instead of dying with
     # an argparse "unrecognized arguments" error (exit 2).
-    p_dump.add_argument("trailing", nargs=argparse.REMAINDER,
+    #
+    # NB: ``nargs="*"`` (NOT ``argparse.REMAINDER``). REMAINDER is greedy and
+    # eats every subsequent token including option-like strings (e.g. it would
+    # swallow ``--x 10`` from ``gpa dump pixel --x 10 --y 20``), leaving the
+    # real flags as ``None`` and silently breaking ``dump pixel/frame/drawcalls``.
+    # ``nargs="*"`` only absorbs trailing POSITIONALS, leaving flags for argparse.
+    p_dump.add_argument("trailing", nargs="*", default=[],
                         help=argparse.SUPPRESS)
 
     # ---- frames -----------------------------------------------------------

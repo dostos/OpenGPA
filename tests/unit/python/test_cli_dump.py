@@ -169,7 +169,7 @@ def test_dump_removed_subtarget_shows_redirect(
         # Bare form (no positional id) — exercised pre-fix too.
         ["dump", "drawcall"],
         # Natural form with trailing positional id — used to die with exit 2
-        # (argparse "unrecognized arguments") before the trailing-REMAINDER
+        # (argparse "unrecognized arguments") before the trailing-positional
         # absorber was added. Must now reach the redirect handler too.
         ["dump", "drawcall", "0"],
     ],
@@ -186,6 +186,74 @@ def test_dump_removed_subtarget_via_full_cli(argv, session_dir, monkeypatch, cap
     assert "drawcall" in err
     assert "removed" in err.lower()
     assert "explain-draw" in err
+
+
+# --------------------------------------------------------------------------- #
+# Kept subtargets via FULL CLI — anti-regression for argparse.REMAINDER which
+# greedily ate flags (`--x 10 --y 20`), silently breaking ``dump pixel`` etc.
+# These tests must go through the full argparse path (`cli_main(argv)`); the
+# direct ``dump_cmd.run(...)`` tests above bypass argparse entirely and so
+# would not have caught the regression.
+# --------------------------------------------------------------------------- #
+
+
+def test_dump_pixel_via_full_cli_parses_xy(session_dir, monkeypatch):
+    """``gpa dump pixel --x 10 --y 20 --frame 1`` must reach the handler with
+    x=10, y=20, frame=1 — not all-None (which is what REMAINDER produced)."""
+    from gpa.cli import main as cli_main_mod
+
+    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(cli_main_mod.dump_cmd, "run", fake_run)
+    rc = cli_main_mod.main(["dump", "pixel", "--x", "10", "--y", "20", "--frame", "1"])
+    assert rc == 0
+    assert captured["what"] == "pixel"
+    assert captured["x"] == 10
+    assert captured["y"] == 20
+    assert captured["frame"] == 1
+    assert captured["fmt"] == "plain"
+
+
+def test_dump_frame_via_full_cli_parses_frame(session_dir, monkeypatch):
+    """``gpa dump frame --frame 7`` must reach the handler with frame=7."""
+    from gpa.cli import main as cli_main_mod
+
+    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(cli_main_mod.dump_cmd, "run", fake_run)
+    rc = cli_main_mod.main(["dump", "frame", "--frame", "7"])
+    assert rc == 0
+    assert captured["what"] == "frame"
+    assert captured["frame"] == 7
+
+
+def test_dump_drawcalls_via_full_cli_parses_format(session_dir, monkeypatch):
+    """``gpa dump drawcalls --format json`` must reach the handler with
+    fmt='json' (REMAINDER would have absorbed ``--format json``)."""
+    from gpa.cli import main as cli_main_mod
+
+    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    captured = {}
+
+    def fake_run(**kwargs):
+        captured.update(kwargs)
+        return 0
+
+    monkeypatch.setattr(cli_main_mod.dump_cmd, "run", fake_run)
+    rc = cli_main_mod.main(["dump", "drawcalls", "--format", "json"])
+    assert rc == 0
+    assert captured["what"] == "drawcalls"
+    assert captured["fmt"] == "json"
 
 
 # --------------------------------------------------------------------------- #
