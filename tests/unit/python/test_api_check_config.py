@@ -151,11 +151,20 @@ class TestPerRuleFiring:
         assert "auto-clear-with-no-explicit-clear" in rules
 
     def test_depth_write_fires(self):
-        dc = _make_minimal_dc()
-        dc.pipeline.viewport = (0, 0, 800, 600)
-        dc.pipeline.depth_test = False
-        dc.pipeline.depth_write = True
-        qe = _qe_for_state(draw_calls=[dc], clear_count=1)
+        # Tightened predicate (commit fee6c06 follow-up) requires at least
+        # one OTHER drawcall with depth_test=True in the same frame to
+        # signal the app is actually using the depth buffer. Without that
+        # guard the rule fires on every minimal GL app that just runs
+        # under spec defaults (depth_test off, depth_write on).
+        dc0 = _make_minimal_dc(dc_id=0)
+        dc0.pipeline.viewport = (0, 0, 800, 600)
+        dc0.pipeline.depth_test = False
+        dc0.pipeline.depth_write = True
+        dc1 = _make_minimal_dc(dc_id=1)
+        dc1.pipeline.viewport = (0, 0, 800, 600)
+        dc1.pipeline.depth_test = True
+        dc1.pipeline.depth_write = True
+        qe = _qe_for_state(draw_calls=[dc0, dc1], clear_count=1)
         c = _build_app_with(qe)
         r = c.get(
             "/api/v1/frames/1/check-config?severity=info",
@@ -241,11 +250,17 @@ class TestPerRuleFiring:
 
 class TestFiltering:
     def test_rule_filter_returns_only_requested(self):
-        dc = _make_minimal_dc()
-        dc.pipeline.viewport = (0, 0, 800, 600)
-        dc.pipeline.depth_test = False
-        dc.pipeline.depth_write = True
-        qe = _qe_for_state(draw_calls=[dc], clear_count=0)
+        # Two drawcalls so the tightened depth-write rule has the depth
+        # buffer "in use" signal it now requires.
+        dc0 = _make_minimal_dc(dc_id=0)
+        dc0.pipeline.viewport = (0, 0, 800, 600)
+        dc0.pipeline.depth_test = False
+        dc0.pipeline.depth_write = True
+        dc1 = _make_minimal_dc(dc_id=1)
+        dc1.pipeline.viewport = (0, 0, 800, 600)
+        dc1.pipeline.depth_test = True
+        dc1.pipeline.depth_write = True
+        qe = _qe_for_state(draw_calls=[dc0, dc1], clear_count=0)
         c = _build_app_with(qe)
         r = c.get(
             "/api/v1/frames/1/check-config"

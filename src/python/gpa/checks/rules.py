@@ -457,23 +457,75 @@ class PremultipliedAlphaIncoherenceRule(Rule):
 # ---- Rule 5: depth-write-without-depth-test ------------------------------
 
 
-class DepthWriteWithoutDepthTestRule(Rule):
-    """``glDepthMask(GL_TRUE)`` while ``GL_DEPTH_TEST`` is disabled.
+# GL_ALWAYS — the depth function value where the comparison "always passes"
+# regardless of stored depth. Functionally equivalent (for the purposes of
+# this rule) to GL_DEPTH_TEST being disabled: the test never rejects, so the
+# write goes through unconditionally.
+_GL_ALWAYS = 0x0207
 
-    Often unintentional: write goes through but the frame's depth
-    buffer is no longer self-consistent against later draws.
-    Captured directly in ``pipeline_state`` per draw call.
+
+class DepthWriteWithoutDepthTestRule(Rule):
+    """``glDepthMask(GL_TRUE)`` while no depth comparison is happening.
+
+    Spec intent (``docs/superpowers/specs/2026-04-27-scene-graph-cli-design.md``
+    §2.2): fire when a draw writes the depth buffer but performs no depth
+    comparison — i.e. ``glDepthMask(GL_TRUE)`` AND (``GL_DEPTH_TEST`` disabled
+    OR ``glDepthFunc(GL_ALWAYS)``). That's the bug pattern: the depth buffer
+    accumulates values without comparison, so later passes see inconsistent
+    depth.
+
+    Tightened predicate (vs the original "depth_write && !depth_test"):
+
+    1. Per-draw must have ``depth_write_enabled=True`` AND either
+       ``depth_test_enabled=False`` OR ``depth_func==GL_ALWAYS``.
+    2. The frame as a whole must show evidence that the app is actually
+       using the depth buffer — at least one OTHER drawcall must have
+       ``depth_test_enabled=True``. Without that evidence, the offending
+       draw is just running against GL spec defaults (``GL_DEPTH_TEST`` is
+       disabled by default; ``glDepthMask`` defaults to GL_TRUE) and the
+       depth buffer isn't being used at all — there's no leak to flag.
+
+    The original predicate (no frame-level guard) fires on every minimal
+    GL app that simply doesn't enable depth testing, which is noise.
     """
 
     id = "depth-write-without-depth-test"
 
+    @staticmethod
+    def _is_offender(ps: Dict[str, Any]) -> bool:
+        if not ps.get("depth_write_enabled"):
+            return False
+        # Either depth-test off, or depth-func always-passes.
+        if not ps.get("depth_test_enabled"):
+            return True
+        try:
+            depth_func = int(ps.get("depth_func", 0) or 0)
+        except (TypeError, ValueError):
+            depth_func = 0
+        return depth_func == _GL_ALWAYS
+
     def check(self, gl_state: Dict[str, Any]) -> Optional[Finding]:
+        dcs = _drawcalls(gl_state)
+        if not dcs:
+            return None
         offenders: List[int] = []
-        for dc in _drawcalls(gl_state):
+        any_real_depth_test = False
+        for dc in dcs:
             ps = dc.get("pipeline_state") or {}
-            if ps.get("depth_write_enabled") and not ps.get("depth_test_enabled"):
+            if self._is_offender(ps):
                 offenders.append(int(dc.get("id", -1)))
-        if not offenders:
+                continue
+            # A non-offender that has GL_DEPTH_TEST enabled with a
+            # non-trivial func (anything other than GL_ALWAYS) signals
+            # the app actually uses the depth buffer this frame.
+            if ps.get("depth_test_enabled"):
+                try:
+                    df = int(ps.get("depth_func", 0) or 0)
+                except (TypeError, ValueError):
+                    df = 0
+                if df != _GL_ALWAYS:
+                    any_real_depth_test = True
+        if not offenders or not any_real_depth_test:
             return None
         return self._finding(
             evidence={

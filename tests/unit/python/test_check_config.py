@@ -50,6 +50,7 @@ def _dc(
     blend_dst: str = "ZERO",
     depth_test: bool = True,
     depth_write: bool = True,
+    depth_func: int = 0x0201,  # GL_LESS, the spec default
     viewport_w: int = 800,
     viewport_h: int = 600,
     fbo_color_attachment_tex: int = 0,
@@ -72,6 +73,7 @@ def _dc(
             "blend_dst": blend_dst,
             "depth_test_enabled": depth_test,
             "depth_write_enabled": depth_write,
+            "depth_func": depth_func,
         },
         "params": [],
         "textures": list(textures or []),
@@ -225,11 +227,31 @@ class TestPremultipliedAlpha:
 
 
 class TestDepthWrite:
-    def test_fires_on_dw_without_dt(self):
+    def test_fires_on_dw_without_dt_when_app_uses_depth(self):
+        # Tightened predicate: at least one OTHER drawcall must show the app
+        # is actually using the depth buffer (depth_test=True) before we
+        # flag the offender. Otherwise default-state minimal apps would
+        # always trigger this.
         rule = DepthWriteWithoutDepthTestRule()
         rule.message_template = "x"
         state = _state(drawcalls=[
-            _dc(depth_test=False, depth_write=True),
+            _dc(dc_id=0, depth_test=False, depth_write=True),
+            _dc(dc_id=1, depth_test=True, depth_write=True),
+        ])
+        f = rule.check(state)
+        assert f is not None
+        assert 0 in f.evidence["draw_call_ids"]
+        # Only dc 0 is the offender; dc 1 has depth-test on.
+        assert 1 not in f.evidence["draw_call_ids"]
+
+    def test_fires_on_depth_func_always_when_app_uses_depth(self):
+        # Spec intent: GL_DEPTH_TEST enabled but depth_func==GL_ALWAYS is
+        # functionally identical to depth-test off — the test never rejects.
+        rule = DepthWriteWithoutDepthTestRule()
+        rule.message_template = "x"
+        state = _state(drawcalls=[
+            _dc(dc_id=0, depth_test=True, depth_write=True, depth_func=0x0207),
+            _dc(dc_id=1, depth_test=True, depth_write=True, depth_func=0x0201),
         ])
         f = rule.check(state)
         assert f is not None
@@ -239,6 +261,30 @@ class TestDepthWrite:
         rule = DepthWriteWithoutDepthTestRule()
         rule.message_template = "x"
         state = _state(drawcalls=[_dc(depth_test=True, depth_write=True)])
+        assert rule.check(state) is None
+
+    def test_quiet_when_app_does_not_use_depth_at_all(self):
+        # The phase-5 false-positive case: minimal GL app that never enables
+        # depth-test. depth_write=True is the GL spec default for
+        # glDepthMask. Without ANY drawcall using depth-test, the depth
+        # buffer isn't being used — there's nothing to leak into.
+        rule = DepthWriteWithoutDepthTestRule()
+        rule.message_template = "x"
+        state = _state(drawcalls=[
+            _dc(dc_id=0, depth_test=False, depth_write=True),
+            _dc(dc_id=1, depth_test=False, depth_write=True),
+        ])
+        assert rule.check(state) is None
+
+    def test_quiet_when_depth_write_disabled(self):
+        # depth_write=False is the explicit "I'm not writing depth" signal;
+        # never fire regardless of depth_test state.
+        rule = DepthWriteWithoutDepthTestRule()
+        rule.message_template = "x"
+        state = _state(drawcalls=[
+            _dc(dc_id=0, depth_test=False, depth_write=False),
+            _dc(dc_id=1, depth_test=True, depth_write=True),
+        ])
         assert rule.check(state) is None
 
 
@@ -310,9 +356,14 @@ class TestEngineRun:
     def test_severity_filter_drops_lower(self):
         eng = default_engine()
         # State that fires (a) auto-clear (error), (b) viewport-info,
-        # (c) depth-write (warn).
+        # (c) depth-write (warn). The depth-write rule needs at least one
+        # OTHER drawcall with depth_test=True to fire (tightened
+        # predicate); add it.
         state = _state(
-            drawcalls=[_dc(viewport_w=400, depth_test=False, depth_write=True)],
+            drawcalls=[
+                _dc(dc_id=0, viewport_w=400, depth_test=False, depth_write=True),
+                _dc(dc_id=1, viewport_w=400, depth_test=True, depth_write=True),
+            ],
             clear_count=0,
         )
         info = eng.run(state, min_severity="info")
@@ -328,7 +379,10 @@ class TestEngineRun:
     def test_rule_filter_scopes(self):
         eng = default_engine()
         state = _state(
-            drawcalls=[_dc(depth_test=False, depth_write=True)],
+            drawcalls=[
+                _dc(dc_id=0, depth_test=False, depth_write=True),
+                _dc(dc_id=1, depth_test=True, depth_write=True),
+            ],
             clear_count=1,  # so auto-clear does NOT fire
         )
         only = eng.run(
@@ -342,7 +396,10 @@ class TestEngineRun:
     def test_findings_sorted_severity_desc(self):
         eng = default_engine()
         state = _state(
-            drawcalls=[_dc(viewport_w=400, depth_test=False, depth_write=True)],
+            drawcalls=[
+                _dc(dc_id=0, viewport_w=400, depth_test=False, depth_write=True),
+                _dc(dc_id=1, viewport_w=400, depth_test=True, depth_write=True),
+            ],
             clear_count=0,
         )
         findings = eng.run(state, min_severity="info")

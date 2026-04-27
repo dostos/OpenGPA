@@ -456,28 +456,45 @@ under the live engine + GL shim. No framework annotation was supplied, so this
 exercises only the GL-state-derived rule path. Each scenario was a single-frame
 capture; rules ran with `--severity info`.
 
+### Initial firings (commit `fee6c06`, before predicate audit)
+
 | Scenario | Frame size | Findings | Rule ids fired |
 |---|---|---|---|
 | `r10_feedback_loop_error_with_transmission_an` | 800x600 | 2 | `depth-write-without-depth-test` (warn), `mipmap-on-npot-without-min-filter` (warn) |
-| `r22_point_sprite_rendering_issues_with_three` | 800x600 | 0 | (none — frame state was clean against the 7 enabled rules) |
+| `r22_point_sprite_rendering_issues_with_three` | 800x600 | 0 | (none) |
 | `r25_filters_with_backbuffers_seem_not_to_wor` | 256x256 | 1 | `depth-write-without-depth-test` (warn) |
 | `r27_bug_black_squares_appear_when_rendering_` | 512x512 | 1 | `depth-write-without-depth-test` (warn) |
 
-Notes:
+A 3/4 firing rate of `depth-write-without-depth-test` was suspiciously high — these scenarios are about transmission rendering, point sprites, PIXI filters, and glass; not depth-test issues. An audit was run to verify the predicate's signal-to-noise.
 
-- All 8 rules loaded and evaluated. `unused-uniform-set` is disabled-by-default
-  (info, awaits a FrameProvider field) so 7 rules ran for each frame.
-- The `depth-write-without-depth-test` fire is a real GL signature in three
-  scenarios — depth_test=False, depth_write=True. Whether it points at the
-  underlying bug class for these specific scenarios will be measured in the
-  next eval round; the value here is that the agent now has a one-shot
-  GL-state warning to consult before reading source.
-- `r22` produced no findings against the captured frame, which is the
-  expected outcome for a bug class that does not project onto any of the
-  current rules' GL signatures (it was a point-sprite vertex-attribute
-  issue). It's a candidate for a future rule — `point-sprite-without-PROGRAM_POINT_SIZE`.
+### Predicate audit (post-`fee6c06` follow-up)
+
+**Hypothesis confirmed: predicate too loose.** All three R9 firings (and 3/5 unrelated control scenarios — `e1_state_leak`, `e3_index_buffer_obo`, `e9_scissor_not_reset`) triggered purely because of GL spec defaults: `glDepthMask` defaults to `GL_TRUE` and `glEnable(GL_DEPTH_TEST)` defaults to disabled. Any minimal GL test that does not explicitly enable depth-test triggered the rule, regardless of whether the depth buffer is actually being used. Per-drawcall pipeline state inspection on r10/r25/r27 confirmed: `depth_test=False, depth_write=True, depth_func=GL_LESS (513)` — the spec defaults verbatim. r22 was the negative control: it explicitly calls `glEnable(GL_DEPTH_TEST)`, so the rule (correctly) didn't fire.
+
+Tightening: the rule now requires (a) per-draw `depth_write=True AND (depth_test=False OR depth_func==GL_ALWAYS)` AND (b) frame-level evidence that the app is actually using the depth buffer — at least one OTHER drawcall in the frame must have `depth_test=True` with a non-`GL_ALWAYS` `depth_func`. Without (b), the depth buffer isn't being used at all and there's nothing to leak into. (`src/python/gpa/checks/rules.py::DepthWriteWithoutDepthTestRule.check`.)
+
+### Re-validation after tightening
+
+| Scenario | Old firings | New firings |
+|---|---|---|
+| `r10_feedback_loop_error_with_transmission_an` | depth-write, npot | npot only |
+| `r22_point_sprite_rendering_issues_with_three` | (none) | (none) |
+| `r25_filters_with_backbuffers_seem_not_to_wor` | depth-write | (none) |
+| `r27_bug_black_squares_appear_when_rendering_` | depth-write | (none) |
+| `e10_compensating_vp` | (none) | (none) |
+| `e1_state_leak` | depth-write | (none) |
+| `e2_nan_propagation` | (none) | (none) |
+| `e3_index_buffer_obo` | depth-write | (none) |
+| `e9_scissor_not_reset` | depth-write | (none) |
+
+Clean-control false-positive rate: was 3/5 → now 0/5. Depth-related scenarios (e22, e23, e26) likewise quiet — they enable depth-test correctly.
+
+Unit-test coverage updated in `tests/unit/python/test_check_config.py::TestDepthWrite` (4 cases: TP under multi-draw evidence, TP via `depth_func=GL_ALWAYS`, FP-rejected on minimal default state, FP-rejected on `depth_write=False`). Suite: 910 passed.
+
+### Notes
+
+- The audit found the rule was a high-noise false-positive cannon (60% on unrelated controls). The headline R9 carryover bugs were never depth-test issues — the rule was just registering GL spec defaults from minimal scenario apps.
+- The npot finding on r10 is an unrelated rule (`mipmap-on-npot-without-min-filter`) that surfaces because the FBO color attachment is 800x600. Out of scope for this audit.
+- `r22` produces no findings, which is the expected outcome for a bug class that does not project onto any of the current rules' GL signatures (point-sprite vertex-attribute issue). Candidate for a future rule — `point-sprite-without-PROGRAM_POINT_SIZE`.
 - This validates the rule pipeline end-to-end (engine load, REST query,
-  frame-state extraction, rule fire, finding serialization). Cost-delta
-  measurement against the no-GPA control is the next eval round's job;
-  this section is evidence that check-config produces actionable output
-  on real captures, not a cost-delta claim.
+  frame-state extraction, rule fire, finding serialization) AND validates that the rule predicate matches the spec's intended bug shape, not just GL defaults. Cost-delta measurement against the no-GPA control is the next eval round's job.
