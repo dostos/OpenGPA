@@ -869,3 +869,102 @@ PYTHONPATH=src/python python3 /tmp/run_iter9_13_urls.py \
 `/tmp/run_iter9_13_urls.py`; it is not committed because it is a
 one-off measurement instrument and the reusable bifurcation code is in
 `gpa.eval.curation.{triage,draft,validate}`.)
+
+## Iteration 10 — fix_commit_invalid post-mortem (2026-04-27)
+
+Followup to iter 9's 9/13 yield. Iter 9 hypothesised the 3 `fix_commit_invalid`
+rejections came from YAML's `#` comment parser eating part of `(auto-resolve
+from PR #NNN)` placeholders. Empirical investigation showed that hypothesis
+was **wrong** in the load-bearing sense: while YAML safe_load DOES truncate
+`(auto-resolve from PR #NNN)` to `(auto-resolve from PR`, the validator's
+`auto-resolve in sha` substring check still passed on those — that's exactly
+why r200, r201, r202, r204, r206, r209 (all `bug_class: legacy` with
+`fix_sha: (auto-resolve from ...)`) committed successfully.
+
+### Diagnosis (4 bullets, empirically verified)
+
+- **Root cause is non-deterministic LLM placeholder choice for `legacy` SHA.**
+  When the drafter LLM correctly identifies a thread as `bug_class: legacy`
+  (no fix PR resolvable), it improvises the `fix_sha` placeholder. Sometimes
+  it writes `(auto-resolve from PR #NNN)` (passes the validator's
+  `"auto-resolve" in sha` substring check), sometimes `(n/a)`, `(none)`,
+  `(not resolvable)`, `unknown`, `TBD` — all of which fail the same check.
+- **Phase-1 raw-LLM-output capture confirmed this.** The 3 iter-9 failures
+  were re-drafted via `_draft_maintainer_framing`. Two of three (iTowns#2716,
+  pixijs#11717) emitted `auto-resolve`-flavored placeholders on this run and
+  validated; one (playcanvas#2425) emitted `fix_sha: (n/a)` and hit the
+  same `fix_commit_invalid` as iter 9. Iter 9's 3 failures were thus a single
+  pattern with stochastic exposure: the LLM got it "right" 6/9 legacy times
+  and "wrong" 3/9 in iter 9.
+- **The `bug_class: legacy` escape hatch is supposed to mean "no fix exists
+  yet" — gating its `fix_sha` on placeholder format is self-inconsistent
+  with `files: []` already being permitted.** The spec says legacy = "fix PR
+  not resolvable from the issue thread alone." If `files` legitimately is
+  `[]`, then `fix_sha` legitimately has no canonical form. The validator was
+  treating SHA-format strictness as load-bearing for legacy when it isn't.
+- **The fix is in the validator, not the drafter prompt.** Tightening the
+  prompt to mandate `fix_sha: (auto-resolve)` would work but would lock a
+  documentary placeholder into a brittle string-pattern test. Loosening the
+  validator to accept any non-empty `fix_sha` for `bug_class == "legacy"`
+  (matching how it already accepts empty `files: []` for legacy) is one
+  internally-consistent change.
+
+### Fix
+
+- `Validator._validate_maintainer_framing` (`src/python/gpa/eval/curation/
+  validate.py`): when `fix.bug_class == "legacy"`, accept any non-empty
+  `fix_sha` (or absent). For non-legacy bug classes the SHA gate is
+  unchanged: real hex (7+ chars) OR contains `auto-resolve`.
+- 2 new unit tests cover the iter-10 contract: `legacy` accepts a
+  panel of placeholders (`(n/a)`, `(none)`, `(unknown)`, `TBD`, ...);
+  `framework-internal` still rejects `(n/a)` (regression guard).
+
+### Re-run results (4 URLs that failed/timed-out in iter 9)
+
+| URL | triage | bug_class (drafter) | outcome | committed_id |
+|---|---|---|---|---|
+| iTowns/itowns/issues/2716           | ambiguous | legacy | ok | r210 |
+| playcanvas/engine/issues/2425       | ambiguous | legacy | ok | r211 |
+| pixijs/pixijs/issues/11717          | in_scope  | legacy | ok | r212 |
+| pmndrs/drei/issues/2583             | in_scope  | legacy | ok | r213 |
+
+All 4 emitted `bug_class: legacy` (the LLM's correct judgement that no fix
+PR is resolvable from these threads). Iter-9 would have rejected 3 of them
+on `fix_sha` placeholder format. Iter-10 accepts all 4.
+
+### Updated small-corpus yield
+
+**Iter 10 yield: 13 / 13 = 100% committable** (from iter 9's 9/13 = 69%).
+All 13 R12-rejected URLs are now committed as r200-r206, r208-r213
+(r207 still skipped — was a duplicate fingerprint). The small-corpus run
+is no longer a meaningful bottleneck signal — every framework-bug URL the
+mining pipeline serves up to this code path commits.
+
+### Recommendation for production R12
+
+- **R12 at `--batch-quota 50` is now safe to run.** Iter-9's recommendation
+  ("re-run R12 at quota 50, expect ~10-15 commits per batch") stands, but
+  with iter-10's fix the floor on legacy-classification yield rises from
+  ~69% to effectively 100% conditional on the drafter producing a parseable
+  block. Expected commits per batch: 12-18 (out of 50 fresh URLs, after
+  triage/dedup/draft attrition).
+- **Do NOT raise quota past 50 yet.** The 13-URL corpus is small. Re-confirm
+  the 100% legacy commit rate on a wider draw (50+ fresh URLs spanning ≥10
+  framework families) before scaling to quota 200. The non-determinism that
+  produced iter-9's 3 failures could mask other rare LLM placeholder
+  patterns we haven't seen.
+- **Sweep the existing 9 r200-r209 scenarios** through the iter-10 validator
+  to confirm none regress. Verified: all 9 still pass the new gate (the
+  new check is strictly more permissive for `legacy`, identical for
+  non-`legacy`).
+
+### Reproducing iter 10
+
+```bash
+PYTHONPATH=src/python python3 /tmp/iter10_run_4_urls.py \
+    --eval-dir /home/jingyulee/gh/gla/tests/eval --commit
+```
+
+(One-off driver lives at `/tmp/iter10_run_4_urls.py`; the reusable
+bifurcation + iter-10 validator code is in `gpa.eval.curation.validate`
+and `gpa.eval.curation.draft`.)

@@ -306,7 +306,24 @@ class Validator:
           - ScenarioLoader can parse the scenario.md.
           - FixMetadata is present + parseable.
           - `files` list is non-empty (or bug_class == 'legacy').
-          - `fix_sha` looks like a 7+ hex char SHA OR an `(auto-resolve ...)` token.
+          - For non-`legacy` bug_class: `fix_sha` looks like a 7+ hex char SHA
+            OR an `(auto-resolve ...)` token (the post-draft pipeline resolves
+            those later).
+          - For `legacy` bug_class (the explicit "no fix PR" escape hatch),
+            `fix_sha` is permitted to be any non-empty placeholder
+            (`(n/a)`, `(none)`, `(auto-resolve when fix lands)`, etc.) OR
+            absent entirely. By definition there is no fix commit to point
+            at; the placeholder is documentation, not a load-bearing field.
+
+        Iter-10 fix: previously the validator required every draft's
+        `fix_sha` to be either real hex or contain the substring
+        `auto-resolve`. The drafter LLM, when emitting a `bug_class: legacy`
+        block (because the issue thread didn't surface a clean fix PR), would
+        non-deterministically choose between `(auto-resolve from PR #NNN)`,
+        `(n/a)`, `(none)`, `unknown`, etc. — only the first variant passed
+        validation. Since the legacy escape hatch is a "no fix exists"
+        signal, the SHA placeholder format does not matter for legacy and
+        the validator now accepts any non-empty value.
         """
         try:
             scenario = ScenarioLoader(eval_dir=str(self.eval_dir)).load(
@@ -326,11 +343,16 @@ class Validator:
             return ValidationResult(ok=False, reason="fix_files_empty")
 
         sha = (fix.fix_sha or "").strip()
-        # Accept either a real hex SHA (7+ chars) or the `(auto-resolve ...)`
-        # placeholder that the post-draft pipeline resolves later.
-        sha_ok = bool(re.match(r"^[a-fA-F0-9]{7,}$", sha)) or (
-            "auto-resolve" in sha
-        )
+        if fix.bug_class == "legacy":
+            # Legacy = "no fix PR identifiable". The fix_sha placeholder is
+            # purely documentary. Accept any non-empty string OR absent.
+            sha_ok = True
+        else:
+            # Non-legacy: real hex SHA (7+ chars) or auto-resolve placeholder
+            # the post-draft pipeline resolves later.
+            sha_ok = bool(re.match(r"^[a-fA-F0-9]{7,}$", sha)) or (
+                "auto-resolve" in sha
+            )
         if not sha_ok:
             return ValidationResult(ok=False, reason="fix_commit_invalid")
 

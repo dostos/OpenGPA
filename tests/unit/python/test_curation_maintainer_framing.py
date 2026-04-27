@@ -471,6 +471,80 @@ def test_maintainer_framing_validator_accepts_legacy_with_empty_files(tmp_path):
     assert vres.ok, f"legacy-with-empty-files should validate; got: {vres.reason}"
 
 
+def test_maintainer_framing_validator_accepts_legacy_with_any_fix_sha_placeholder(tmp_path):
+    """Iter-10 regression: when bug_class == 'legacy' (the explicit "no fix
+    PR identifiable" escape hatch), the drafter LLM legitimately writes a
+    variety of placeholder strings for fix_sha — `(n/a)`, `(none)`,
+    `(unknown)`, `(auto-resolve when fix lands)`, etc. These are documentary
+    only; there is no fix SHA by definition. The validator must not gate on
+    the placeholder format.
+
+    Iter 9 silently rejected `(n/a)` and `(none)` while accepting
+    `(auto-resolve from PR #NNN)`, causing 1+ false-rejection per R12 batch
+    when the LLM happened to pick the wrong placeholder. Iter 10 widens the
+    legacy gate to accept any non-empty fix_sha or absent fix_sha.
+    """
+    eval_dir = tmp_path / "eval"
+    eval_dir.mkdir()
+    placeholders = [
+        "(n/a)",
+        "(none)",
+        "(unknown)",
+        "(auto-resolve when fix lands)",
+        "(auto-resolve from PR #NNN)",
+        "TBD",
+        "deferred",
+    ]
+    runner = MagicMock()
+    for i, placeholder in enumerate(placeholders):
+        md = _MAINTAINER_MD.replace(
+            "bug_class: framework-internal\n",
+            "bug_class: legacy\n",
+        ).replace(
+            "fix_sha: 7716cd9415b12c9f29596ca838a7a99814b82787\n",
+            f"fix_sha: {placeholder}\n",
+        ).replace(
+            "files:\n"
+            "  - src/nodes/functions/BSDF/V_GGX_SmithCorrelated_Anisotropic.js\n"
+            "  - src/renderers/shaders/ShaderChunk/lights_physical_pars_fragment.glsl.js\n",
+            "files: []\n",
+        )
+        draft = DraftResult(
+            scenario_id=f"r223_test_{i}",
+            files={"scenario.md": md},
+        )
+        validator = Validator(eval_dir=str(eval_dir), runner=runner)
+        vres = validator.validate(draft)
+        assert vres.ok, (
+            f"legacy + fix_sha={placeholder!r} should validate; "
+            f"got: {vres.reason}"
+        )
+
+
+def test_maintainer_framing_validator_still_rejects_invalid_sha_for_non_legacy(tmp_path):
+    """The legacy widening from iter-10 must NOT loosen the SHA check for
+    non-legacy bug classes. A `framework-internal` draft that writes
+    `fix_sha: (n/a)` is still wrong: there IS a fix PR, the agent's
+    download-and-diff pipeline depends on a resolvable SHA, and the legacy
+    escape hatch was not used.
+    """
+    eval_dir = tmp_path / "eval"
+    eval_dir.mkdir()
+    md = _MAINTAINER_MD.replace(
+        "fix_sha: 7716cd9415b12c9f29596ca838a7a99814b82787\n",
+        "fix_sha: (n/a)\n",
+    )
+    draft = DraftResult(
+        scenario_id="r224_test",
+        files={"scenario.md": md},
+    )
+    runner = MagicMock()
+    validator = Validator(eval_dir=str(eval_dir), runner=runner)
+    vres = validator.validate(draft)
+    assert not vres.ok
+    assert vres.reason == "fix_commit_invalid"
+
+
 # --- Triage bug_class round trip ------------------------------------------
 
 
