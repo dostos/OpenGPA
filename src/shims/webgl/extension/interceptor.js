@@ -2,7 +2,11 @@
   'use strict';
 
   // ---------------------------------------------------------------------------
-  // State tracking — mirrors the shadow state kept by the OpenGL LD_PRELOAD shim
+  // State tracking — mirrors the shadow state kept by the OpenGL LD_PRELOAD shim.
+  //
+  // State is single-instance per page (shared across all WebGL contexts).
+  // This is the existing convention — see boundTextures, viewport, etc.
+  // Multi-canvas correctness would require a per-context map; out of scope.
   // ---------------------------------------------------------------------------
   const state = {
     connected: false,
@@ -196,11 +200,7 @@
     const origPushDebugGroup = proto.pushDebugGroup;
     if (typeof origPushDebugGroup === 'function') {
       proto.pushDebugGroup = function () {
-        try {
-          state.debugGroupStack.push(_coerceMessage(arguments));
-        } catch (e) {
-          state.debugGroupErrors++;
-        }
+        state.debugGroupStack.push(_coerceMessage(arguments));
         return origPushDebugGroup.apply(this, arguments);
       };
     }
@@ -233,11 +233,7 @@
         const origPopMarker = ext.popGroupMarkerEXT;
         if (typeof origPushMarker === 'function') {
           ext.pushGroupMarkerEXT = function (marker) {
-            try {
-              state.debugGroupStack.push(typeof marker === 'string' ? marker : '');
-            } catch (e) {
-              state.debugGroupErrors++;
-            }
+            state.debugGroupStack.push(typeof marker === 'string' ? marker : '');
             return origPushMarker.call(this, marker);
           };
         }

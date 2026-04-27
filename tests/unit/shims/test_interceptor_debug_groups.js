@@ -213,6 +213,49 @@ test('single push+pop — drawcall inside group has debug_groups: ["Helmet"]',
     });
   });
 
+test('pushDebugGroup() with no arguments — debug_groups contains empty string',
+  function (done) {
+    // Exercises _coerceMessage's args.length < 3 + empty-args fallback path.
+    const h = makeSandbox();
+    const gl = makeContext(h.proto2);
+    settleOpen(function () {
+      h.raf(function () {
+        gl.pushDebugGroup();         // no args at all
+        gl.drawArrays(4, 0, 3);
+        gl.popDebugGroup();
+      });
+      h.flushRAF();
+      h.raf(function () {});
+      h.flushRAF();
+      const dc = h.sentFrames[0].drawCalls[0];
+      assert.deepStrictEqual(dc.debug_groups, [''],
+        'no-args pushDebugGroup must coerce to empty string, not crash');
+      assert.strictEqual(h.sentFrames[0].debugGroupErrors, 0);
+      done();
+    });
+  });
+
+test('pushDebugGroup("Foo") single-arg EXT-style call — debug_groups: ["Foo"]',
+  function (done) {
+    // Exercises _coerceMessage's args.length < 3 fallback to args[0].
+    const h = makeSandbox();
+    const gl = makeContext(h.proto2);
+    settleOpen(function () {
+      h.raf(function () {
+        gl.pushDebugGroup('Foo');    // EXT-style single string arg
+        gl.drawArrays(4, 0, 3);
+        gl.popDebugGroup();
+      });
+      h.flushRAF();
+      h.raf(function () {});
+      h.flushRAF();
+      const dc = h.sentFrames[0].drawCalls[0];
+      assert.deepStrictEqual(dc.debug_groups, ['Foo'],
+        'single-arg pushDebugGroup must use args[0] as the label');
+      done();
+    });
+  });
+
 test('nested push+pop — debug_groups: ["Scene", "Helmet"]',
   function (done) {
     const h = makeSandbox();
