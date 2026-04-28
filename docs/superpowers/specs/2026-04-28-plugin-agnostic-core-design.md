@@ -110,8 +110,8 @@ doesn't bake the three.js plugin name into the CLI surface.
 
 ### 4. Tests
 
-`tests/unit/python/test_trace_ranking.py` currently has six tests
-covering the now-deleted framework-hint logic:
+`tests/unit/python/test_trace_ranking.py` currently has seven tests
+covering or touching the framework-hint logic:
 
 | Test | Disposition |
 |------|-------------|
@@ -121,6 +121,10 @@ covering the now-deleted framework-hint logic:
 | `test_non_hint_path_gets_no_bump` | Delete (no longer meaningful — *every* path gets no bump) |
 | `test_framework_hint_list_is_nonempty_and_documented` | Delete (asserts the allowlist exists) |
 | `test_raw_confidence_preserved` | Rewrite — remove the framework-hint half of the assertion; keep the rarity half |
+| `test_unique_rare_framework_path_beats_common_deep_path` | Keep — still passes; the framework-shaped path wins on structural signals alone (shorter hops + length), so the assertion holds without the bump. Update the inline comment to drop "framework hint". |
+
+Also delete the now-unused import at `test_trace_ranking.py:11`:
+`FRAMEWORK_HINT_PATTERNS` from `gpa.api.trace_ranking`.
 
 Add one new test: `test_no_framework_specific_bump` — feed three paths
 shaped like `THREE.uniforms.x.value`, `map._transform.x`, and
@@ -132,8 +136,9 @@ gets a structural bump).
 
 No public-API break. `rank_candidates()` signature, return shape, and
 field names (`confidence`, `raw_confidence`, `distance_hops`) stay
-stable. Only the tier values for framework-shaped paths shift downward
-by one.
+stable. The tier values for paths that previously matched a
+`FRAMEWORK_HINT_PATTERNS` regex shift down by one (since they no
+longer receive the +1 bump); paths that didn't match are unchanged.
 
 ## Acceptance
 
@@ -141,12 +146,13 @@ by one.
 - `tests/unit/python/test_trace_ranking.py` passes with the new test
   set.
 - Full Python unit test suite (`pytest tests/unit/python/`) is green.
-- `git grep -i "three\|threejs\|mapbox\|babylon\|webgl"` over
-  `src/python/gpa/cli/`, `src/python/gpa/mcp/`, `src/python/gpa/api/`
-  surfaces no remaining framework references in user-facing strings or
-  ranking logic. (Code comments referring to specific frameworks as
-  illustrative examples are allowed; they're explanatory, not
-  load-bearing.)
+- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b"`
+  over `src/python/gpa/cli/`, `src/python/gpa/mcp/`,
+  `src/python/gpa/api/` returns zero hits. (The grep is intentionally
+  precise so legitimate occurrences of "WebGL Tier-3 SDK" — the new
+  neutral phrasing — don't self-trip. Code comments referring to
+  specific frameworks as illustrative examples are still allowed;
+  they're explanatory, not load-bearing.)
 
 ## Net diff estimate
 
