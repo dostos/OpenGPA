@@ -1,0 +1,13 @@
+{
+  "name": "@opengpa/threejs-sidecar",
+  "version": "0.1.0",
+  "description": "OpenGPA Tier-3 metadata sidecar for Three.js. POSTs scene-graph metadata to the OpenGPA engine for agent-driven debugging.",
+  "type": "module",
+  "main": "index.js",
+  "exports": "./index.js",
+  "files": ["index.js", "README.md"],
+  "scripts": {
+    "test": "node --test test.js"
+  },
+  "license": "MIT"
+}

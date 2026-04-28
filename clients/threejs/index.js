@@ -1,5 +1,3 @@
-// COPY of clients/threejs/index.js — kept here for the Chrome extension's <script>-tag loader.
-// Edit clients/threejs/index.js, then re-copy.
 /**
  * OpenGPA Three.js Plugin
  *
@@ -113,10 +111,10 @@ class OpenGPAThreePlugin {
   }
 }
 
-// Export for both module and script tag usage
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = OpenGPAThreePlugin;
-}
+export default OpenGPAThreePlugin;
+export { OpenGPAThreePlugin };
+
+// Backwards compat for Chrome extension's <script>-tag injection:
 if (typeof window !== 'undefined') {
   window.OpenGPAThreePlugin = OpenGPAThreePlugin;
 }
