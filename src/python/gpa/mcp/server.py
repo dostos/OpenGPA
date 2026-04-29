@@ -185,9 +185,9 @@ TOOLS: List[Dict[str, Any]] = [
         "name": "query_annotations",
         "description": (
             "Return free-form framework annotations for a frame (POSTed by a "
-            "plugin as a JSON dict). Empty dict if nothing was posted. Useful "
-            "for JS-layer state upstream of GL calls (e.g. mapbox tile cache, "
-            "current zoom level)."
+            "Tier-3 plugin as a JSON dict). Empty dict if nothing was posted. "
+            "Useful for app-level state (scene graph, materials, render config) "
+            "upstream of the GL/WebGL/Vulkan call site."
         ),
         "inputSchema": {
             "type": "object",
@@ -234,8 +234,8 @@ TOOLS: List[Dict[str, Any]] = [
             "uniform / texture ID / literal. Answers 'where in the framework "
             "state did this value come from?' Useful when a uniform looks "
             "wrong and you need to find the deeper field that set it. "
-            "Requires the WebGL gpa-trace shim to have been enabled in the "
-            "target page."
+            "Requires a value scanner (native DWARF symbols or WebGL Tier-3 "
+            "SDK) to be active in the target."
         ),
         "inputSchema": {
             "type": "object",
