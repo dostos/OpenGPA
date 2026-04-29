@@ -1,0 +1,58 @@
+# R13 — Cat-2 framework-app-dev × web-3d config-bug mining.
+#
+# Goal: surface user-config bugs that EXERCISE the 7 newly-shipped
+# `gpa check-config` rules, so R13 evaluates whether the toolkit's
+# config-rule-narrow surface actually moves agent diagnosis quality.
+#
+# Per `docs/flywheel-matrix.md` mining priority #2 (~5 scenarios):
+# canonical config bugs — `autoClear`, `physicallyCorrectLights`,
+# `colorSpace`, `toneMapping`, `depthWrite`, `setSize`/viewport,
+# `minFilter`/NPOT. The check-config rules cover GL-state patterns
+# that surface across frameworks; mined corpus is three.js-heavy
+# because three.js has the most bug volume on GitHub Issues.
+#
+# Bias toward the `user-config` bug shape per
+# `prompts/triage_system.md`: closed by maintainer with a one-line
+# config flip, not code. Search terms target the canonical config
+# names exposed by each rule.
+
+batch_quota: 10
+queries:
+  issue:
+    # 1) auto-clear bugs — "ghost / smear / trail" symptoms when the
+    #    framework's auto-clear is disabled but no manual clear runs.
+    - 'repo:mrdoob/three.js is:issue is:closed "autoClear" "ghost" OR "smear" OR "trail" OR "previous frame"'
+
+    # 2) color-space encoding mismatches — washed-out / over-saturated
+    #    output when textures linear/sRGB are mixed.
+    - 'repo:mrdoob/three.js is:issue is:closed "colorSpace" "wash" OR "saturat" OR "wrong color" OR "too bright"'
+
+    # 3) tone-mapping on non-float targets — banding / clipping.
+    - 'repo:mrdoob/three.js is:issue is:closed "toneMapping" "banding" OR "clipping" OR "wrong" OR "broken"'
+
+    # 4) premultiplied-alpha mismatches — halo / dark fringes.
+    - 'repo:mrdoob/three.js is:issue is:closed "premultiplied" OR "premultipliedAlpha" "halo" OR "fringe" OR "dark"'
+
+    # 5) depth-write-without-depth-test — transparency artefacts.
+    - 'repo:mrdoob/three.js is:issue is:closed "depthWrite" OR "depth write" "transparent" OR "transparency" "wrong"'
+
+    # 6) viewport / setSize regressions after canvas resize.
+    - 'repo:mrdoob/three.js is:issue is:closed "setSize" OR "setPixelRatio" "blurry" OR "pixelat" OR "stretched"'
+
+    # 7) NPOT-with-mipmap-without-min-filter — textures render black.
+    - 'repo:mrdoob/three.js is:issue is:closed "NPOT" OR "non power of two" "black" OR "blank"'
+
+    # 8) Cross-framework: cover the same patterns in BabylonJS for
+    #    consumer-misuse balance. Babylon names differ but the GL
+    #    state patterns are identical.
+    - 'repo:BabylonJS/Babylon.js is:issue is:closed "wash" OR "saturat" OR "wrong color" "texture"'
+    - 'repo:BabylonJS/Babylon.js is:issue is:closed "transparent" OR "transparency" "wrong" "depth"'
+
+  commit: []
+
+  stackoverflow:
+    # SO is structurally biased toward consumer-misuse / user-config —
+    # asker has wrong rendered output, top-voted answer says "set X."
+    # Target three.js since it dominates SO graphics traffic.
+    - ["three.js", "autoClear"]
+    - ["three.js", "colorSpace"]
