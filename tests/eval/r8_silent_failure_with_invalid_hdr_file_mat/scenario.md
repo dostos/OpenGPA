@@ -25,9 +25,9 @@ Source: https://github.com/BabylonJS/Babylon.js/issues/18151
 
 ## Fix
 ```yaml
-fix_pr_url: (unresolved — issue open, no fix PR identified at draft time)
-fix_sha: (auto-resolve from issue #18151)
-fix_parent_sha: (auto-resolve from issue #18151)
+fix_pr_url: (none — issue open, no fix PR identified)
+fix_sha: (none)
+fix_parent_sha: (none)
 bug_class: legacy
 framework: babylon.js
 framework_version: (latest at 2025 issue filing)

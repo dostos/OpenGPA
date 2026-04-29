@@ -35,15 +35,18 @@ See draft at https://github.com/Mugen87/three.js/commit/818a050b9c0da69122c97456
 
 ## Fix
 ```yaml
-fix_pr_url: https://github.com/mrdoob/three.js/issues/32583
-fix_sha: (auto-resolve from issue #32583)
-fix_parent_sha: (auto-resolve from issue #32583)
+fix_pr_url: https://github.com/mrdoob/three.js/pull/32594
+fix_sha: ecf6e9c2a1b611dec468965db6c831b63889cbe8
+fix_parent_sha: 11dc4c60a4e083666ca719a4ed9febcdd514c103
 bug_class: framework-internal
 framework: three.js
 framework_version: r178
 files:
+  - src/Three.TSL.js
   - src/materials/nodes/NodeMaterial.js
-  - src/materials/nodes/Line2NodeMaterial.js
+  - src/nodes/accessors/Position.js
+  - src/nodes/core/NodeBuilder.js
+  - src/renderers/webgpu/nodes/WGSLNodeBuilder.js
 change_summary: >
   Make NodeMaterial.setupDepth()'s logarithmic-depth path derive view-space
   Z from the actual vertex/clip-space output (vertex.z / vertex.w via

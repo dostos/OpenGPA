@@ -35,8 +35,8 @@ The relevant maintainer-authored docs that this scenario should ground out again
 ## Fix
 ```yaml
 fix_pr_url: (none — issue closed without a fix PR; engine workarounds documented instead)
-fix_sha: (auto-resolve from PR #NNN)
-fix_parent_sha: (auto-resolve from PR #NNN)
+fix_sha: (none)
+fix_parent_sha: (none)
 bug_class: legacy
 framework: babylon.js
 framework_version: 3.x
