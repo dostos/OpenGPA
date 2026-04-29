@@ -8,7 +8,6 @@ from __future__ import annotations
 import pytest
 
 from gpa.api.trace_ranking import (
-    FRAMEWORK_HINT_PATTERNS,
     build_corpus_for_value,
     rank_candidates,
 )
@@ -124,46 +123,27 @@ def test_rarity_corpus_as_path_map_counts_keys():
     assert out[0]["confidence"] == "medium"  # count is 2, mid band
 
 
-# ----------------------------------------------------------------------
-# Framework-specific hints
-# ----------------------------------------------------------------------
-
-
-def test_framework_hint_boosts_low_to_medium():
-    cands = [{"path": "THREE.uniforms.uZoom.value", "confidence": "low"}]
-    out = rank_candidates(cands)
-    assert out[0]["confidence"] == "medium"
-
-
-def test_framework_hint_boosts_medium_to_high():
-    cands = [{"path": "map._transform._maxZoom", "confidence": "medium"}]
-    out = rank_candidates(cands)
-    assert out[0]["confidence"] == "high"
-
-
-def test_framework_hint_preserves_high():
-    cands = [{"path": "scene.foo", "confidence": "high"}]
-    out = rank_candidates(cands)
-    assert out[0]["confidence"] == "high"
-
-
-def test_non_hint_path_gets_no_bump():
-    cands = [{"path": "random._private.stash", "confidence": "low"}]
-    out = rank_candidates(cands)
-    assert out[0]["confidence"] == "low"
-
-
-def test_framework_hint_list_is_nonempty_and_documented():
-    """Sanity — if someone wipes the heuristic list, the test fails loudly."""
-    assert len(FRAMEWORK_HINT_PATTERNS) >= 3
-
-
 def test_raw_confidence_preserved():
     cands = [{"path": "map._transform.zoom", "confidence": "low"}]
     out = rank_candidates(cands, corpus={"__count__": 1})
-    # Expect double promotion: rarity (low → medium) + hint (medium → high)
+    # Single promotion: rarity (low → medium). No framework-hint bump exists.
     assert out[0]["raw_confidence"] == "low"
-    assert out[0]["confidence"] == "high"
+    assert out[0]["confidence"] == "medium"
+
+
+def test_no_framework_specific_bump():
+    """Three paths shaped like three.js / mapbox / unknown-framework patterns
+    must end up with the same tier when they share raw confidence and hop
+    distance — the ranker must not bump any of them on framework grounds."""
+    cands = [
+        {"path": "THREE.uniforms.uZoom.value", "confidence": "low"},
+        {"path": "map._transform.zoom",       "confidence": "low"},
+        {"path": "random.deep.value",         "confidence": "low"},
+    ]
+    out = rank_candidates(cands)
+    tiers = {c["path"]: c["confidence"] for c in out}
+    assert tiers["THREE.uniforms.uZoom.value"] == tiers["random.deep.value"]
+    assert tiers["map._transform.zoom"]       == tiers["random.deep.value"]
 
 
 # ----------------------------------------------------------------------
@@ -179,7 +159,7 @@ def test_unique_rare_framework_path_beats_common_deep_path():
         {"path": "map._transform._maxZoom", "confidence": "high"},
     ]
     out = rank_candidates(cands, corpus={"__count__": 1})
-    # Unique + high + framework hint + shallow → first.
+    # Unique + high + shallow → first (no framework-specific bump anymore).
     assert out[0]["path"] == "map._transform._maxZoom"
 
 

@@ -3,7 +3,7 @@
 The Phase-1 scanner writes candidates as ``{path, type, confidence}`` where
 ``confidence`` is a coarse "high" for non-trivial values and "low" for
 trivial ones (0/1/""/true/false). This module re-scores and sorts
-candidates at query time using three signals:
+candidates at query time using two structural signals:
 
 1. **Hop distance** — proxy for "closeness to the calling code". Counted
    as the number of ``.`` / ``[`` separators in the path minus one (the
@@ -11,40 +11,17 @@ candidates at query time using three signals:
 2. **Value rarity** — count how many distinct *paths* hold the observed
    value across the last N frames. Rare values (count == 1) upgrade to
    "high"; over-common values (count > 5) downgrade to "low".
-3. **Framework-specific hints** — a small, explicit allowlist of path
-   prefixes that historically carry real app state (as opposed to
-   private caches). Match → small confidence bump. Documented in
-   ``FRAMEWORK_HINT_PATTERNS`` below.
 
 Ranking order, stable sort: ``(confidence tier desc, hops asc, path_len asc)``.
+
+Note: the ranker is intentionally framework-agnostic. Plugins that want
+to elevate framework-specific paths should emit ``confidence: "high"``
+from the scanner side; GPA core does not encode plugin-specific hints.
 """
 from __future__ import annotations
 
 import re
 from typing import Any, Dict, Iterable, List, Optional
-
-
-# ----------------------------------------------------------------------
-# Framework-specific hints
-# ----------------------------------------------------------------------
-# Short, intentional list. Each pattern targets a known "real state"
-# location across the three mined frameworks (three.js, mapbox-gl-js,
-# PIXI). Extending this list requires evidence that the prefix carries
-# app-level values in practice — we don't want to rank arbitrary
-# `_private` caches higher just because they happen to match.
-FRAMEWORK_HINT_PATTERNS = (
-    # Three.js: shader uniforms are canonically at `uniforms.<name>.value`.
-    re.compile(r"^THREE\.uniforms\."),
-    re.compile(r"(^|\.)uniforms\.[A-Za-z0-9_]+\.value"),
-    # mapbox-gl-js: the live map transform and style state.
-    re.compile(r"^map\._transform\."),
-    re.compile(r"^map\.style\."),
-    # PIXI: renderer / app stage.
-    re.compile(r"^app\.stage\."),
-    # Generic: a `scene` or `camera` root is almost always app-visible.
-    re.compile(r"^scene\."),
-    re.compile(r"^camera\."),
-)
 
 
 # ----------------------------------------------------------------------
@@ -65,14 +42,6 @@ def _hop_count(path: str) -> int:
     # Normalise ``foo[0]`` → ``foo.0`` so we count `[` as a separator.
     norm = re.sub(r"\[[^\]]*\]", ".idx", path)
     return norm.count(".")
-
-
-def _framework_bump(path: str) -> int:
-    """Return ``+1`` if *path* matches a known framework hint, else ``0``."""
-    for rx in FRAMEWORK_HINT_PATTERNS:
-        if rx.search(path):
-            return 1
-    return 0
 
 
 def _apply_rarity(
@@ -99,17 +68,6 @@ def _apply_rarity(
             return "low"
         return "low"
     return base_tier
-
-
-def _apply_bump(tier: str, bump: int) -> str:
-    """Apply a framework-hint bump (currently 0 or +1)."""
-    if bump <= 0:
-        return tier
-    if tier == "low":
-        return "medium"
-    if tier == "medium":
-        return "high"
-    return tier
 
 
 # ----------------------------------------------------------------------
@@ -160,7 +118,6 @@ def rank_candidates(
         tier = raw_tier
         if rarity_count is not None:
             tier = _apply_rarity(tier, rarity_count)
-        tier = _apply_bump(tier, _framework_bump(path))
         entry = dict(c)
         entry["distance_hops"] = _hop_count(path)
         entry["confidence"] = tier
