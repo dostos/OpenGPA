@@ -470,10 +470,11 @@ Run:
 
 ```bash
 git grep -E '\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b' \
-    -- 'src/python/gpa/cli/' 'src/python/gpa/mcp/' 'src/python/gpa/api/'
+    -- 'src/python/gpa/cli/' 'src/python/gpa/mcp/' 'src/python/gpa/api/' \
+       ':(exclude)src/python/gpa/api/routes_trace.py'
 ```
 
-Expected: **zero output, exit code 1** (`git grep` returns 1 when no matches). If anything matches, that file still has a framework-specific reference and Task 1-4 missed it — go back and fix.
+Expected: **zero output, exit code 1** (`git grep` returns 1 when no matches). If anything matches outside `routes_trace.py`, that file still has a framework-specific reference and Task 1-4 missed it — go back and fix. (`routes_trace.py` is excluded because its docstrings reference `gpa-trace.js` as the canonical wire-format reference implementation — those mentions are spec contracts, not framework coupling.)
 
 - [ ] **Step 2: Confirm full unit test suite is green**
 

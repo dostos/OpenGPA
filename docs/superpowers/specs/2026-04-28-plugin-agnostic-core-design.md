@@ -146,13 +146,16 @@ longer receive the +1 bump); paths that didn't match are unchanged.
 - `tests/unit/python/test_trace_ranking.py` passes with the new test
   set.
 - Full Python unit test suite (`pytest tests/unit/python/`) is green.
-- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b"`
-  over `src/python/gpa/cli/`, `src/python/gpa/mcp/`,
-  `src/python/gpa/api/` returns zero hits. (The grep is intentionally
-  precise so legitimate occurrences of "WebGL Tier-3 SDK" — the new
-  neutral phrasing — don't self-trip. Code comments referring to
-  specific frameworks as illustrative examples are still allowed;
-  they're explanatory, not load-bearing.)
+- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b" -- 'src/python/gpa/cli/' 'src/python/gpa/mcp/' 'src/python/gpa/api/' ':(exclude)src/python/gpa/api/routes_trace.py'`
+  returns zero hits. (The grep is intentionally precise so legitimate
+  occurrences of "WebGL Tier-3 SDK" — the new neutral phrasing — don't
+  self-trip. Code comments referring to specific frameworks as
+  illustrative examples are still allowed; they're explanatory, not
+  load-bearing. `routes_trace.py` is excluded from the grep because its
+  module + helper docstrings reference `gpa-trace.js` as the canonical
+  wire-format reference implementation — those mentions are wire-format
+  spec contracts, not framework coupling, and Phase 2's manifest
+  contract should not retire them.)
 
 ## Net diff estimate
 
