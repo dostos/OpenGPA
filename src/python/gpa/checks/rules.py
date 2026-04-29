@@ -45,13 +45,15 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
         "default_enabled": True,
         "message": (
             "Frame contains draw calls but no glClear was issued before "
-            "the first draw. If renderer.autoClear is false, the framework "
-            "expects the app to clear manually — the previous frame's "
-            "contents will ghost into this one."
+            "the first draw. If the framework's auto-clear is disabled "
+            "(e.g. three.js `renderer.autoClear=false`), the app must "
+            "clear manually — the previous frame's contents will ghost "
+            "into this one."
         ),
         "hint": (
-            "Either call renderer.clear() at the top of the frame, or "
-            "restore renderer.autoClear=true."
+            "Issue an explicit `glClear` at the top of the frame, or "
+            "restore the framework's auto-clear flag (e.g. three.js "
+            "`renderer.autoClear=true`)."
         ),
     },
     {
@@ -65,9 +67,9 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "or over-saturated output."
         ),
         "hint": (
-            "Pick one color space per material slot and set "
-            "texture.colorSpace (three.js) or set the equivalent flag on "
-            "the framework's image loader."
+            "Pick one color space per material slot and set the texture's "
+            "color-space flag (e.g. three.js `texture.colorSpace`) or the "
+            "framework's image-loader equivalent."
         ),
     },
     {
@@ -80,8 +82,9 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "tone-mapping output will band visibly."
         ),
         "hint": (
-            "Either disable renderer.toneMapping (NoToneMapping) or "
-            "render to an RGBA16F target before the final blit."
+            "Either disable tone-mapping at the framework level (e.g. "
+            "three.js `renderer.toneMapping = NoToneMapping`) or render "
+            "to an RGBA16F target before the final blit."
         ),
     },
     {
@@ -96,9 +99,11 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "boundaries."
         ),
         "hint": (
-            "Decide on one alpha convention per scene. In three.js, "
-            "set material.premultipliedAlpha consistently or disable "
-            "transparency on materials that should be opaque."
+            "Decide on one alpha convention per scene — align all "
+            "materials to premultiplied (`ONE / ONE_MINUS_SRC_ALPHA`) "
+            "or all to straight (`SRC_ALPHA / ONE_MINUS_SRC_ALPHA`); "
+            "disable transparency on opaque materials (e.g. three.js "
+            "`material.premultipliedAlpha`, `material.transparent`)."
         ),
     },
     {
@@ -111,9 +116,10 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "through without being read."
         ),
         "hint": (
-            "Set material.depthWrite=false on transparent / overlay "
-            "materials whose depth buffer state should not leak into "
-            "later passes."
+            "Disable depth writes via `glDepthMask(GL_FALSE)` on "
+            "transparent / overlay draws (e.g. three.js "
+            "`material.depthWrite=false`) so their state does not leak "
+            "into later passes."
         ),
     },
     {
@@ -125,8 +131,9 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "match the framebuffer's dimensions."
         ),
         "hint": (
-            "Confirm renderer.setSize() and renderer.setPixelRatio() "
-            "are being called after CSS resize. Off-screen passes "
+            "Re-issue `glViewport()` after the surface dimensions "
+            "change (e.g. three.js `renderer.setSize()` + "
+            "`setPixelRatio()` on browser resize). Off-screen passes "
             "(FBO != 0) are excluded from this check."
         ),
     },
@@ -141,9 +148,10 @@ _EMBEDDED_RULES: List[Dict[str, Any]] = [
             "min_filter renders fully black."
         ),
         "hint": (
-            "Either resize the texture to a power-of-two, or set "
-            "texture.minFilter = THREE.LinearFilter (no mipmap) before "
-            ".needsUpdate = true."
+            "Either resize the texture to a power-of-two, or set its "
+            "min-filter to a non-mipmap filter (e.g. `GL_LINEAR`; "
+            "three.js: `texture.minFilter = THREE.LinearFilter; "
+            "texture.needsUpdate = true`)."
         ),
     },
     {
@@ -332,13 +340,14 @@ _SRGB_FORMATS = {"SRGB8", "SRGB8_ALPHA8"}
 
 class ColorSpaceEncodingMismatchRule(Rule):
     """Texture is sampled as if linear but format suggests sRGB use, or
-    vice versa. Captures the common three.js ``colorSpace`` mistake.
+    vice versa. Common bug class in any framework that exposes a
+    per-texture color-space flag (three.js, A-Frame, …).
 
     Today we flag the simple GL-only signature: a draw call samples
     a texture whose ``format`` is plain ``RGBA8`` while at least one
     other texture in the same frame uses an explicit ``SRGB8_ALPHA8``
     format — the mismatch is the smoking gun. This is a heuristic but
-    is high-precision in practice for the three.js bug class.
+    is high-precision for the color-space-mismatch bug class in practice.
     """
 
     id = "color-space-encoding-mismatch"

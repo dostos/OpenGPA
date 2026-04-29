@@ -9,6 +9,11 @@
 #   error = certainly broken; almost no false positives
 #   warn  = likely-wrong; small false-positive rate
 #   info  = stylistic / disabled / awaiting capture support
+#
+# Wording convention: hints describe the GL-level state to fix.
+# Framework-specific syntax (three.js, mapbox, etc.) appears only as
+# parenthetical examples — never as primary advice — so the rules stay
+# useful regardless of which framework the agent is debugging.
 
 rules:
   - id: auto-clear-with-no-explicit-clear
@@ -16,12 +21,13 @@ rules:
     default_enabled: true
     message: >-
       Frame contains draw calls but no glClear was issued before the
-      first draw. If renderer.autoClear is false, the framework expects
-      the app to clear manually — the previous frame's contents will
-      ghost into this one.
+      first draw. If the framework's auto-clear is disabled (e.g.
+      three.js `renderer.autoClear=false`), the app must clear manually
+      — the previous frame's contents will ghost into this one.
     hint: >-
-      Either call renderer.clear() at the top of the frame, or restore
-      renderer.autoClear=true.
+      Issue an explicit `glClear` at the top of the frame, or restore
+      the framework's auto-clear flag (e.g. three.js
+      `renderer.autoClear=true`).
 
   - id: color-space-encoding-mismatch
     severity: warn
@@ -32,9 +38,9 @@ rules:
       shader without explicit conversion causes washed-out or
       over-saturated output.
     hint: >-
-      Pick one color space per material slot and set
-      texture.colorSpace (three.js) or set the equivalent flag on the
-      framework's image loader.
+      Pick one color space per material slot and set the texture's
+      color-space flag (e.g. three.js `texture.colorSpace`) or the
+      framework's image-loader equivalent.
 
   - id: tone-mapping-on-non-float-target
     severity: warn
@@ -44,8 +50,9 @@ rules:
       sampled but every active render target is RGBA8. The tone-mapping
       output will band visibly.
     hint: >-
-      Either disable renderer.toneMapping (NoToneMapping) or render to
-      an RGBA16F target before the final blit.
+      Either disable tone-mapping at the framework level (e.g. three.js
+      `renderer.toneMapping = NoToneMapping`) or render to an RGBA16F
+      target before the final blit.
 
   - id: premultiplied-alpha-incoherence
     severity: warn
@@ -56,9 +63,11 @@ rules:
       draw calls. Without per-material alignment this produces
       double-darkening or halo artefacts at material boundaries.
     hint: >-
-      Decide on one alpha convention per scene. In three.js, set
-      material.premultipliedAlpha consistently or disable transparency
-      on materials that should be opaque.
+      Decide on one alpha convention per scene — align all materials
+      to premultiplied (`ONE / ONE_MINUS_SRC_ALPHA`) or all to straight
+      (`SRC_ALPHA / ONE_MINUS_SRC_ALPHA`); disable transparency on
+      opaque materials (e.g. three.js `material.premultipliedAlpha`,
+      `material.transparent`).
 
   - id: depth-write-without-depth-test
     severity: warn
@@ -68,8 +77,9 @@ rules:
       glDepthMask(GL_TRUE) — the depth buffer is being written through
       without being read.
     hint: >-
-      Set material.depthWrite=false on transparent / overlay materials
-      whose depth buffer state should not leak into later passes.
+      Disable depth writes via `glDepthMask(GL_FALSE)` on transparent
+      / overlay draws (e.g. three.js `material.depthWrite=false`) so
+      their state does not leak into later passes.
 
   - id: viewport-not-equal-framebuffer-size
     severity: info
@@ -78,9 +88,10 @@ rules:
       Default framebuffer is bound but glViewport does not match
       the framebuffer's dimensions.
     hint: >-
-      Confirm renderer.setSize() and renderer.setPixelRatio() are
-      being called after CSS resize. Off-screen passes (FBO != 0) are
-      excluded from this check.
+      Re-issue `glViewport()` after the surface dimensions change
+      (e.g. three.js `renderer.setSize()` + `setPixelRatio()` on
+      browser resize). Off-screen passes (FBO != 0) are excluded from
+      this check.
 
   - id: mipmap-on-npot-without-min-filter
     severity: warn
@@ -90,9 +101,10 @@ rules:
       On WebGL1 (and on GLES2 without OES_texture_npot), sampling
       these with a mipmap-requiring min_filter renders fully black.
     hint: >-
-      Either resize the texture to a power-of-two, or set
-      texture.minFilter = THREE.LinearFilter (no mipmap) before
-      .needsUpdate = true.
+      Either resize the texture to a power-of-two, or set its
+      min-filter to a non-mipmap filter (e.g. `GL_LINEAR`; three.js:
+      `texture.minFilter = THREE.LinearFilter; texture.needsUpdate =
+      true`).
 
   - id: unused-uniform-set
     severity: info
