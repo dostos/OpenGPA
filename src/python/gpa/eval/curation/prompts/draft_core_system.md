@@ -249,7 +249,7 @@ This section is machine-readable ground truth for the maintainer-framing scorer.
 - `bug_class`: exactly one of
   - `framework-internal` — maintainer patches the framework's own code. This is the most common case.
   - `consumer-misuse` — maintainer's response is "this is not a framework bug; use X API instead." No diff to the framework.
-  - `user-config` — maintainer's response is "set `renderer.foo = true`" or similar config-only change.
+  - `user-config` — maintainer's response is a config-flip, not code (e.g. "enable auto-clear" / "set the color-space flag" / "switch tone-mapping mode"; in three.js this would read as "set `renderer.autoClear = true`" or similar one-liner).
 - `files`: list of every file path the fix PR modifies, relative to the repo root. Copy from `gh pr view <PR> --json files` or the PR's "Files changed" tab. Non-empty list required for `framework-internal` and most `consumer-misuse` cases.
 - `change_summary`: 1-2 sentences describing what the fix does in plain English. Not a diff excerpt, not the PR title — an explanation a maintainer could write in their own words. Quote the PR body or commit message if it's short and clear.
 - Optional `diff_excerpt`: 3-5 lines of the critical diff (unified-diff format). Useful for scoring debug; skip if the patch is large or cluttered.
