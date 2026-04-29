@@ -97,7 +97,7 @@ def rank_candidates(
         enriched with:
 
         - ``distance_hops`` — computed hop count
-        - ``confidence`` — re-scored tier after rarity + hint bump
+        - ``confidence`` — re-scored tier after rarity adjustment
         - ``raw_confidence`` — the original scanner-provided tier
     """
     rarity_count: Optional[int] = None
