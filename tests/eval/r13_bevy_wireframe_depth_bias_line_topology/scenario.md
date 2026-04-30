@@ -172,5 +172,5 @@ spec:
   `wireframe_pipeline` are constructed.
 
 ## Observed OpenGPA Helpfulness
-- **Verdict**: ambiguous
-- **Evidence**: validation skipped (committed via direct gh-driven fetch, no eval run yet)
+- **Verdict**: no
+- **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.
