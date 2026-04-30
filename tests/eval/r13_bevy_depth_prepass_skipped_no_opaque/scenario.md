@@ -75,6 +75,12 @@ change_summary: >
   scene.
 ```
 
+## Upstream Snapshot
+- **Repo**: https://github.com/bevyengine/bevy
+- **SHA**: 14f34fa98d1c913a6e357009a66bf18393aa2f8f
+- **Relevant Files**:
+  - crates/bevy_core_pipeline/src/prepass/node.rs
+
 ## Flywheel Cell
 primary: framework-maintenance.game-engine.code-navigation
 secondary:

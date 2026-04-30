@@ -100,6 +100,13 @@ change_summary: >
   see them.
 ```
 
+## Upstream Snapshot
+- **Repo**: https://github.com/bevyengine/bevy
+- **SHA**: d7c5621f3afd3cf58154a3f3f614c909e4529783
+- **Relevant Files**:
+  - crates/bevy_pbr/src/cluster/cluster_raster.wgsl
+  - crates/bevy_pbr/src/cluster/gpu.rs
+
 ## Flywheel Cell
 primary: framework-maintenance.game-engine.code-navigation
 secondary:

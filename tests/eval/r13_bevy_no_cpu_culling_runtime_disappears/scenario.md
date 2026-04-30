@@ -112,6 +112,12 @@ change_summary: >
   the entity correctly.
 ```
 
+## Upstream Snapshot
+- **Repo**: https://github.com/bevyengine/bevy
+- **SHA**: c34a27cefc9ce297c586d03e5cc361da9e8a2b81
+- **Relevant Files**:
+  - crates/bevy_pbr/src/render/mesh.rs
+
 ## Flywheel Cell
 primary: framework-maintenance.game-engine.code-navigation
 secondary:

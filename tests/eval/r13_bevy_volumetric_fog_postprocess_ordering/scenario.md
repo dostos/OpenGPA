@@ -79,6 +79,13 @@ change_summary: >
   with TAA.
 ```
 
+## Upstream Snapshot
+- **Repo**: https://github.com/bevyengine/bevy
+- **SHA**: 8ec74bd64f6a6d31b69eca9e768000fa7f8f5bc3
+- **Relevant Files**:
+  - crates/bevy_pbr/src/volumetric_fog/mod.rs
+  - crates/bevy_pbr/src/wireframe.rs
+
 ## Flywheel Cell
 primary: framework-maintenance.game-engine.code-navigation
 secondary:

@@ -100,6 +100,13 @@ change_summary: >
   succeeds.
 ```
 
+## Upstream Snapshot
+- **Repo**: https://github.com/bevyengine/bevy
+- **SHA**: 70c56c241b7888891902f74582f2df12b2dbb77d
+- **Relevant Files**:
+  - crates/bevy_pbr/src/wireframe.rs
+  - crates/bevy_sprite_render/src/mesh2d/wireframe2d.rs
+
 ## Flywheel Cell
 primary: framework-maintenance.game-engine.code-navigation
 secondary:
