@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
+#include <stdint.h>
 
 /* --------------------------------------------------------------------------
  * Swapchain image tracking
@@ -33,6 +35,77 @@ static uint32_t      g_swapchain_count = 0;
 static SwapchainInfo *find_swapchain(VkSwapchainKHR sc) {
     for (uint32_t i = 0; i < g_swapchain_count; i++) {
         if (g_swapchains[i].swapchain == sc) return &g_swapchains[i];
+    }
+    return NULL;
+}
+
+/* --------------------------------------------------------------------------
+ * Headless surface + swapchain emulation
+ *
+ * When chromium (or any other Vulkan client) requests
+ * VK_EXT_headless_surface and no underlying ICD supports it, we synthesize
+ * the entire surface + swapchain stack in-layer:
+ *   - vkCreateHeadlessSurfaceEXT      → return a handle pointing into our registry
+ *   - vkDestroySurfaceKHR              → free if ours, else chain
+ *   - vkGetPhysicalDeviceSurface{Support,Capabilities,Formats,PresentModes}KHR
+ *                                      → synthetic responses for our surfaces
+ *   - vkCreateSwapchainKHR             → if surface is ours, allocate real
+ *                                        VkImage objects (with backing memory)
+ *                                        ourselves and wrap them in a
+ *                                        synthetic VkSwapchainKHR handle
+ *   - vkDestroySwapchainKHR / vkGetSwapchainImagesKHR / vkAcquireNextImageKHR /
+ *     vkQueuePresentKHR                → operate on our registry; capture frame
+ *                                        on present.
+ *
+ * Non-our surfaces / swapchains chain down to the next layer / driver
+ * unchanged.
+ * -------------------------------------------------------------------------- */
+
+#define GPA_HEADLESS_MAGIC      0x47504148u  /* 'GPAH' */
+#define GPA_HEADLESS_SC_MAGIC   0x47504153u  /* 'GPAS' */
+#define GPA_MAX_HEADLESS_SURFACES   8
+#define GPA_MAX_HEADLESS_SWAPCHAINS 8
+#define GPA_MAX_HEADLESS_IMAGES     4
+
+typedef struct {
+    uint32_t   magic;
+    int        in_use;
+    VkInstance instance;
+} GpaHeadlessSurface;
+
+typedef struct {
+    uint32_t       magic;
+    int            in_use;
+    VkDevice       device;
+    GpaHeadlessSurface *surface;
+    VkFormat       format;
+    VkExtent2D     extent;
+    uint32_t       image_count;
+    VkImage        images[GPA_MAX_HEADLESS_IMAGES];
+    VkDeviceMemory memories[GPA_MAX_HEADLESS_IMAGES];
+    uint32_t       next_acquire;
+} GpaHeadlessSwapchain;
+
+static GpaHeadlessSurface   g_h_surfaces[GPA_MAX_HEADLESS_SURFACES];
+static GpaHeadlessSwapchain g_h_swapchains[GPA_MAX_HEADLESS_SWAPCHAINS];
+static pthread_mutex_t      g_headless_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static GpaHeadlessSurface *find_headless_surface(VkSurfaceKHR sfc) {
+    for (int i = 0; i < GPA_MAX_HEADLESS_SURFACES; i++) {
+        GpaHeadlessSurface *s = &g_h_surfaces[i];
+        if (s->in_use && s->magic == GPA_HEADLESS_MAGIC &&
+            (VkSurfaceKHR)(uintptr_t)s == sfc)
+            return s;
+    }
+    return NULL;
+}
+
+static GpaHeadlessSwapchain *find_headless_swapchain(VkSwapchainKHR sc) {
+    for (int i = 0; i < GPA_MAX_HEADLESS_SWAPCHAINS; i++) {
+        GpaHeadlessSwapchain *s = &g_h_swapchains[i];
+        if (s->in_use && s->magic == GPA_HEADLESS_SC_MAGIC &&
+            (VkSwapchainKHR)(uintptr_t)s == sc)
+            return s;
     }
     return NULL;
 }
@@ -71,13 +144,18 @@ gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
     VkResult result = next_create_instance(pCreateInfo, pAllocator, pInstance);
     if (result != VK_SUCCESS) return result;
 
-    /* Build and store our instance dispatch table */
+    /* Build and store our instance dispatch table.
+     *
+     * We store `next_gipa` itself — NOT `next_gipa(instance, "vkGetInstanceProcAddr")`.
+     * The latter returns a loader-level resolver that re-enters our layer when
+     * asked for instance-level functions (vkGetPhysicalDeviceSurface*KHR), which
+     * causes infinite recursion. `next_gipa` is the next-layer-down GIPA passed
+     * to us via VkLayerInstanceCreateInfo and dispatches directly below us. */
     GpaInstanceDispatch disp;
     memset(&disp, 0, sizeof(disp));
     disp.dispatch_key = *(void **)(*pInstance);
-    disp.GetInstanceProcAddr =
-        (PFN_vkGetInstanceProcAddr)next_gipa(*pInstance,
-                                             "vkGetInstanceProcAddr");
+    disp.instance     = *pInstance;
+    disp.GetInstanceProcAddr = next_gipa;
     disp.DestroyInstance =
         (PFN_vkDestroyInstance)next_gipa(*pInstance, "vkDestroyInstance");
     disp.CreateDevice =
@@ -85,6 +163,26 @@ gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
     disp.EnumeratePhysicalDevices =
         (PFN_vkEnumeratePhysicalDevices)next_gipa(*pInstance,
                                                   "vkEnumeratePhysicalDevices");
+    /* Resolve surface queries here once so we can chain down without going
+     * through our own GIPA (which would recurse — the loader trampoline
+     * dispatches extension-function lookups through every layer). */
+    disp.DestroySurfaceKHR = (PFN_vkDestroySurfaceKHR)
+        next_gipa(*pInstance, "vkDestroySurfaceKHR");
+    disp.GetPhysicalDeviceSurfaceSupportKHR =
+        (PFN_vkGetPhysicalDeviceSurfaceSupportKHR)
+        next_gipa(*pInstance, "vkGetPhysicalDeviceSurfaceSupportKHR");
+    disp.GetPhysicalDeviceSurfaceCapabilitiesKHR =
+        (PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR)
+        next_gipa(*pInstance, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR");
+    disp.GetPhysicalDeviceSurfaceFormatsKHR =
+        (PFN_vkGetPhysicalDeviceSurfaceFormatsKHR)
+        next_gipa(*pInstance, "vkGetPhysicalDeviceSurfaceFormatsKHR");
+    disp.GetPhysicalDeviceSurfacePresentModesKHR =
+        (PFN_vkGetPhysicalDeviceSurfacePresentModesKHR)
+        next_gipa(*pInstance, "vkGetPhysicalDeviceSurfacePresentModesKHR");
+    disp.GetPhysicalDeviceMemoryProperties =
+        (PFN_vkGetPhysicalDeviceMemoryProperties)
+        next_gipa(*pInstance, "vkGetPhysicalDeviceMemoryProperties");
     /* Initialise subsystems once — must happen BEFORE storing the dispatch
      * table, because gpa_dispatch_init() zeroes the table. */
     static int g_inited = 0;
@@ -260,6 +358,19 @@ gpa_QueuePresentKHR(VkQueue                 queue,
     GpaDeviceDispatch *dev_disp =
         gpa_device_dispatch_get((VkDevice)queue);
 
+    /* Detect whether ALL presented swapchains are headless. If so we must
+     * NOT chain to the driver's QueuePresentKHR (it'd reject the synthetic
+     * VkSwapchainKHR handles). */
+    int all_headless = pPresentInfo->swapchainCount > 0;
+    int any_headless = 0;
+    for (uint32_t i = 0; i < pPresentInfo->swapchainCount; i++) {
+        pthread_mutex_lock(&g_headless_mutex);
+        int is_headless = find_headless_swapchain(pPresentInfo->pSwapchains[i]) != NULL;
+        pthread_mutex_unlock(&g_headless_mutex);
+        if (is_headless) any_headless = 1;
+        else all_headless = 0;
+    }
+
     if (dev_disp && gpa_vk_ipc_is_connected()) {
         /* Capture each swapchain being presented (usually just one) */
         for (uint32_t i = 0; i < pPresentInfo->swapchainCount; i++) {
@@ -280,6 +391,13 @@ gpa_QueuePresentKHR(VkQueue                 queue,
         }
     }
 
+    if (all_headless) return VK_SUCCESS;
+    if (any_headless) {
+        /* Mixed present (rare): set per-swapchain results and chain only
+         * the non-headless ones is non-trivial; just return success here.
+         * Real apps won't mix kinds. */
+        return VK_SUCCESS;
+    }
     if (!dev_disp || !dev_disp->QueuePresentKHR) return VK_ERROR_DEVICE_LOST;
     return dev_disp->QueuePresentKHR(queue, pPresentInfo);
 }
@@ -383,6 +501,25 @@ gpa_GetSwapchainImagesKHR(VkDevice       device,
                            VkSwapchainKHR swapchain,
                            uint32_t      *pSwapchainImageCount,
                            VkImage       *pSwapchainImages) {
+    /* Headless? Return our images. */
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    if (hsc) {
+        if (!pSwapchainImages) {
+            *pSwapchainImageCount = hsc->image_count;
+            pthread_mutex_unlock(&g_headless_mutex);
+            return VK_SUCCESS;
+        }
+        uint32_t copy = (*pSwapchainImageCount < hsc->image_count) ?
+                        *pSwapchainImageCount : hsc->image_count;
+        for (uint32_t i = 0; i < copy; i++) pSwapchainImages[i] = hsc->images[i];
+        *pSwapchainImageCount = copy;
+        VkResult r = (copy < hsc->image_count) ? VK_INCOMPLETE : VK_SUCCESS;
+        pthread_mutex_unlock(&g_headless_mutex);
+        return r;
+    }
+    pthread_mutex_unlock(&g_headless_mutex);
+
     GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
     if (!disp) return VK_ERROR_DEVICE_LOST;
 
@@ -427,6 +564,128 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
     GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
     if (!disp) return VK_ERROR_DEVICE_LOST;
 
+    /* Headless surface? Emulate the swapchain ourselves. */
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSurface *hsfc = find_headless_surface(pCreateInfo->surface);
+    pthread_mutex_unlock(&g_headless_mutex);
+    if (hsfc) {
+        pthread_mutex_lock(&g_headless_mutex);
+        GpaHeadlessSwapchain *slot = NULL;
+        for (int i = 0; i < GPA_MAX_HEADLESS_SWAPCHAINS; i++) {
+            if (!g_h_swapchains[i].in_use) { slot = &g_h_swapchains[i]; break; }
+        }
+        if (!slot) {
+            pthread_mutex_unlock(&g_headless_mutex);
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+        }
+        memset(slot, 0, sizeof(*slot));
+        slot->magic   = GPA_HEADLESS_SC_MAGIC;
+        slot->in_use  = 1;
+        slot->device  = device;
+        slot->surface = hsfc;
+        slot->format  = pCreateInfo->imageFormat;
+        slot->extent  = pCreateInfo->imageExtent;
+        slot->image_count = pCreateInfo->minImageCount;
+        if (slot->image_count < 2) slot->image_count = 2;
+        if (slot->image_count > GPA_MAX_HEADLESS_IMAGES) slot->image_count = GPA_MAX_HEADLESS_IMAGES;
+        pthread_mutex_unlock(&g_headless_mutex);
+
+        /* Resolve image management functions lazily */
+        PFN_vkCreateImage create_image = (PFN_vkCreateImage)
+            disp->GetDeviceProcAddr(device, "vkCreateImage");
+        PFN_vkGetImageMemoryRequirements get_reqs = (PFN_vkGetImageMemoryRequirements)
+            disp->GetDeviceProcAddr(device, "vkGetImageMemoryRequirements");
+        PFN_vkBindImageMemory bind_mem = (PFN_vkBindImageMemory)
+            disp->GetDeviceProcAddr(device, "vkBindImageMemory");
+        if (!create_image || !get_reqs || !bind_mem ||
+            !disp->AllocateMemory || !disp->FreeMemory) {
+            slot->in_use = 0;
+            return VK_ERROR_INITIALIZATION_FAILED;
+        }
+
+        /* Get memory properties via instance dispatch (physical_device shares
+         * dispatch_key with its instance — we cached the function at
+         * CreateInstance to avoid the recursion the loader trampoline causes
+         * when intercepted instance-level lookups go through us again). */
+        VkPhysicalDeviceMemoryProperties mem_props = {0};
+        if (disp->physical_device != VK_NULL_HANDLE) {
+            GpaInstanceDispatch *idisp =
+                gpa_instance_dispatch_get((VkInstance)disp->physical_device);
+            if (idisp && idisp->GetPhysicalDeviceMemoryProperties)
+                idisp->GetPhysicalDeviceMemoryProperties(disp->physical_device,
+                                                           &mem_props);
+        }
+
+        VkImageCreateInfo ici = {0};
+        ici.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        ici.imageType = VK_IMAGE_TYPE_2D;
+        ici.format = pCreateInfo->imageFormat;
+        ici.extent.width  = pCreateInfo->imageExtent.width;
+        ici.extent.height = pCreateInfo->imageExtent.height;
+        ici.extent.depth  = 1;
+        ici.mipLevels = 1;
+        ici.arrayLayers = 1;
+        ici.samples = VK_SAMPLE_COUNT_1_BIT;
+        ici.tiling = VK_IMAGE_TILING_OPTIMAL;
+        ici.usage = pCreateInfo->imageUsage;
+        ici.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+        for (uint32_t i = 0; i < slot->image_count; i++) {
+            if (create_image(device, &ici, NULL, &slot->images[i]) != VK_SUCCESS) {
+                slot->in_use = 0;
+                return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+            }
+            VkMemoryRequirements req = {0};
+            get_reqs(device, slot->images[i], &req);
+
+            int32_t mem_type = -1;
+            for (uint32_t t = 0; t < mem_props.memoryTypeCount; t++) {
+                if ((req.memoryTypeBits & (1u << t)) &&
+                    (mem_props.memoryTypes[t].propertyFlags &
+                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT)) {
+                    mem_type = (int32_t)t;
+                    break;
+                }
+            }
+            if (mem_type < 0) {
+                slot->in_use = 0;
+                return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+            }
+            VkMemoryAllocateInfo mai = {0};
+            mai.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+            mai.allocationSize  = req.size;
+            mai.memoryTypeIndex = (uint32_t)mem_type;
+            if (disp->AllocateMemory(device, &mai, NULL, &slot->memories[i]) != VK_SUCCESS) {
+                slot->in_use = 0;
+                return VK_ERROR_OUT_OF_DEVICE_MEMORY;
+            }
+            bind_mem(device, slot->images[i], slot->memories[i], 0);
+        }
+
+        *pSwapchain = (VkSwapchainKHR)(uintptr_t)slot;
+        fprintf(stderr,
+                "[OpenGPA-VK] emulated headless swapchain %p (%ux%u, %u images)\n",
+                (void*)slot, slot->extent.width, slot->extent.height,
+                slot->image_count);
+
+        /* Also register in legacy SwapchainInfo so QueuePresent capture path
+         * can find extent/format. */
+        if (g_swapchain_count < MAX_SWAPCHAINS) {
+            SwapchainInfo *sc_info = &g_swapchains[g_swapchain_count++];
+            memset(sc_info, 0, sizeof(*sc_info));
+            sc_info->swapchain = *pSwapchain;
+            sc_info->device    = device;
+            sc_info->extent    = slot->extent;
+            sc_info->format    = slot->format;
+            sc_info->image_count = slot->image_count;
+            for (uint32_t i = 0; i < slot->image_count; i++)
+                sc_info->images[i] = slot->images[i];
+        }
+        return VK_SUCCESS;
+    }
+
+    /* Real surface — chain down to the driver */
     PFN_vkCreateSwapchainKHR next_fn =
         (PFN_vkCreateSwapchainKHR)
         disp->GetDeviceProcAddr(device, "vkCreateSwapchainKHR");
@@ -434,7 +693,6 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
 
     VkResult res = next_fn(device, pCreateInfo, pAllocator, pSwapchain);
     if (res == VK_SUCCESS && pCreateInfo && pSwapchain) {
-        /* Register swapchain entry with extent + format */
         if (g_swapchain_count < MAX_SWAPCHAINS) {
             SwapchainInfo *sc_info = find_swapchain(*pSwapchain);
             if (!sc_info) {
@@ -450,6 +708,33 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
     return res;
 }
 
+/* vkAcquireNextImageKHR — for headless swapchains, rotate through our
+ * preallocated images. For real swapchains, chain down. */
+static VKAPI_ATTR VkResult VKAPI_CALL
+gpa_AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain,
+                         uint64_t timeout, VkSemaphore semaphore,
+                         VkFence fence, uint32_t *pImageIndex) {
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    if (hsc) {
+        *pImageIndex = hsc->next_acquire % hsc->image_count;
+        hsc->next_acquire++;
+        pthread_mutex_unlock(&g_headless_mutex);
+        /* Without a real present, semaphore/fence signaling is the user's
+         * responsibility upstream — chromium handles its own synchronisation
+         * around image acquire. We return success immediately. */
+        (void)timeout; (void)semaphore; (void)fence;
+        return VK_SUCCESS;
+    }
+    pthread_mutex_unlock(&g_headless_mutex);
+    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    if (!disp) return VK_ERROR_DEVICE_LOST;
+    PFN_vkAcquireNextImageKHR next_fn = (PFN_vkAcquireNextImageKHR)
+        disp->GetDeviceProcAddr(device, "vkAcquireNextImageKHR");
+    if (!next_fn) return VK_ERROR_EXTENSION_NOT_PRESENT;
+    return next_fn(device, swapchain, timeout, semaphore, fence, pImageIndex);
+}
+
 /* --------------------------------------------------------------------------
  * vkDestroySwapchainKHR — clean up tracking entry
  * -------------------------------------------------------------------------- */
@@ -458,7 +743,36 @@ static VKAPI_ATTR void VKAPI_CALL
 gpa_DestroySwapchainKHR(VkDevice                     device,
                           VkSwapchainKHR               swapchain,
                           const VkAllocationCallbacks *pAllocator) {
-    /* Remove from our tracking table */
+    /* Headless? Free our images and clear the slot. */
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    if (hsc) {
+        GpaDeviceDispatch *ddisp = gpa_device_dispatch_get(device);
+        PFN_vkDestroyImage destroy_image = NULL;
+        if (ddisp && ddisp->GetDeviceProcAddr)
+            destroy_image = (PFN_vkDestroyImage)
+                ddisp->GetDeviceProcAddr(device, "vkDestroyImage");
+        for (uint32_t i = 0; i < hsc->image_count; i++) {
+            if (destroy_image && hsc->images[i] != VK_NULL_HANDLE)
+                destroy_image(device, hsc->images[i], NULL);
+            if (ddisp && ddisp->FreeMemory && hsc->memories[i] != VK_NULL_HANDLE)
+                ddisp->FreeMemory(device, hsc->memories[i], NULL);
+        }
+        memset(hsc, 0, sizeof(*hsc));
+        pthread_mutex_unlock(&g_headless_mutex);
+        /* Also remove the legacy SwapchainInfo entry */
+        for (uint32_t i = 0; i < g_swapchain_count; i++) {
+            if (g_swapchains[i].swapchain == swapchain) {
+                g_swapchains[i] = g_swapchains[--g_swapchain_count];
+                break;
+            }
+        }
+        (void)pAllocator;
+        return;
+    }
+    pthread_mutex_unlock(&g_headless_mutex);
+
+    /* Remove from legacy tracking table */
     for (uint32_t i = 0; i < g_swapchain_count; i++) {
         if (g_swapchains[i].swapchain == swapchain) {
             g_swapchains[i] = g_swapchains[--g_swapchain_count];
@@ -498,6 +812,7 @@ gpa_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
     INTERCEPT(CreateSwapchainKHR);
     INTERCEPT(DestroySwapchainKHR);
     INTERCEPT(GetSwapchainImagesKHR);
+    INTERCEPT(AcquireNextImageKHR);
 #undef INTERCEPT
 
     if (device == VK_NULL_HANDLE) return NULL;
@@ -560,13 +875,160 @@ gpa_vkCreateHeadlessSurfaceEXT(VkInstance instance,
                                 const VkHeadlessSurfaceCreateInfoEXT *pCreateInfo,
                                 const VkAllocationCallbacks *pAllocator,
                                 VkSurfaceKHR *pSurface) {
+    (void)pCreateInfo; (void)pAllocator;
+
+    /* Try chaining down first — if some ICD or upstream layer implements
+     * VK_EXT_headless_surface, prefer that. */
     GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
-    if (!disp || !disp->GetInstanceProcAddr) return VK_ERROR_EXTENSION_NOT_PRESENT;
-    PFN_vkCreateHeadlessSurfaceEXT next_fn =
-        (PFN_vkCreateHeadlessSurfaceEXT)
-        disp->GetInstanceProcAddr(instance, "vkCreateHeadlessSurfaceEXT");
-    if (!next_fn) return VK_ERROR_EXTENSION_NOT_PRESENT;
-    return next_fn(instance, pCreateInfo, pAllocator, pSurface);
+    if (disp && disp->GetInstanceProcAddr) {
+        PFN_vkCreateHeadlessSurfaceEXT next_fn = (PFN_vkCreateHeadlessSurfaceEXT)
+            disp->GetInstanceProcAddr(instance, "vkCreateHeadlessSurfaceEXT");
+        if (next_fn) {
+            VkResult r = next_fn(instance, pCreateInfo, pAllocator, pSurface);
+            if (r == VK_SUCCESS) return r;
+            /* Fall through to in-layer emulation on failure */
+        }
+    }
+
+    /* In-layer emulation */
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSurface *slot = NULL;
+    for (int i = 0; i < GPA_MAX_HEADLESS_SURFACES; i++) {
+        if (!g_h_surfaces[i].in_use) { slot = &g_h_surfaces[i]; break; }
+    }
+    if (!slot) {
+        pthread_mutex_unlock(&g_headless_mutex);
+        return VK_ERROR_OUT_OF_HOST_MEMORY;
+    }
+    slot->magic    = GPA_HEADLESS_MAGIC;
+    slot->in_use   = 1;
+    slot->instance = instance;
+    *pSurface = (VkSurfaceKHR)(uintptr_t)slot;
+    pthread_mutex_unlock(&g_headless_mutex);
+    fprintf(stderr, "[OpenGPA-VK] emulated headless surface %p\n", (void*)slot);
+    return VK_SUCCESS;
+}
+
+static VKAPI_ATTR void VKAPI_CALL
+gpa_vkDestroySurfaceKHR(VkInstance instance,
+                         VkSurfaceKHR surface,
+                         const VkAllocationCallbacks *pAllocator) {
+    pthread_mutex_lock(&g_headless_mutex);
+    GpaHeadlessSurface *hsfc = find_headless_surface(surface);
+    if (hsfc) {
+        memset(hsfc, 0, sizeof(*hsfc));
+        pthread_mutex_unlock(&g_headless_mutex);
+        return;
+    }
+    pthread_mutex_unlock(&g_headless_mutex);
+    GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
+    if (disp && disp->DestroySurfaceKHR)
+        disp->DestroySurfaceKHR(instance, surface, pAllocator);
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL
+gpa_vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physDev,
+                                          uint32_t queueFamilyIndex,
+                                          VkSurfaceKHR surface,
+                                          VkBool32 *pSupported) {
+    (void)queueFamilyIndex;
+    pthread_mutex_lock(&g_headless_mutex);
+    int is_ours = find_headless_surface(surface) != NULL;
+    pthread_mutex_unlock(&g_headless_mutex);
+    if (is_ours) { *pSupported = VK_TRUE; return VK_SUCCESS; }
+    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    if (disp && disp->GetPhysicalDeviceSurfaceSupportKHR)
+        return disp->GetPhysicalDeviceSurfaceSupportKHR(physDev, queueFamilyIndex,
+                                                          surface, pSupported);
+    return VK_ERROR_SURFACE_LOST_KHR;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL
+gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physDev,
+                                               VkSurfaceKHR surface,
+                                               VkSurfaceCapabilitiesKHR *pCaps) {
+    pthread_mutex_lock(&g_headless_mutex);
+    int is_ours = find_headless_surface(surface) != NULL;
+    pthread_mutex_unlock(&g_headless_mutex);
+    if (is_ours) {
+        memset(pCaps, 0, sizeof(*pCaps));
+        pCaps->minImageCount = 2;
+        pCaps->maxImageCount = GPA_MAX_HEADLESS_IMAGES;
+        /* 0xFFFFFFFF means "match what the swapchain requests" */
+        pCaps->currentExtent.width  = 0xFFFFFFFFu;
+        pCaps->currentExtent.height = 0xFFFFFFFFu;
+        pCaps->minImageExtent.width  = 1;
+        pCaps->minImageExtent.height = 1;
+        pCaps->maxImageExtent.width  = 16384;
+        pCaps->maxImageExtent.height = 16384;
+        pCaps->maxImageArrayLayers = 1;
+        pCaps->supportedTransforms = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        pCaps->currentTransform    = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+        pCaps->supportedCompositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        pCaps->supportedUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                       VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                                       VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                       VK_IMAGE_USAGE_SAMPLED_BIT |
+                                       VK_IMAGE_USAGE_STORAGE_BIT;
+        return VK_SUCCESS;
+    }
+    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    if (disp && disp->GetPhysicalDeviceSurfaceCapabilitiesKHR)
+        return disp->GetPhysicalDeviceSurfaceCapabilitiesKHR(physDev, surface, pCaps);
+    return VK_ERROR_SURFACE_LOST_KHR;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL
+gpa_vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physDev,
+                                          VkSurfaceKHR surface,
+                                          uint32_t *pSurfaceFormatCount,
+                                          VkSurfaceFormatKHR *pSurfaceFormats) {
+    pthread_mutex_lock(&g_headless_mutex);
+    int is_ours = find_headless_surface(surface) != NULL;
+    pthread_mutex_unlock(&g_headless_mutex);
+    if (is_ours) {
+        static const VkSurfaceFormatKHR formats[] = {
+            { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
+            { VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
+        };
+        const uint32_t n = (uint32_t)(sizeof(formats) / sizeof(formats[0]));
+        if (!pSurfaceFormats) { *pSurfaceFormatCount = n; return VK_SUCCESS; }
+        uint32_t copy = (*pSurfaceFormatCount < n) ? *pSurfaceFormatCount : n;
+        if (copy) memcpy(pSurfaceFormats, formats, copy * sizeof(formats[0]));
+        *pSurfaceFormatCount = copy;
+        return (copy < n) ? VK_INCOMPLETE : VK_SUCCESS;
+    }
+    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    if (disp && disp->GetPhysicalDeviceSurfaceFormatsKHR)
+        return disp->GetPhysicalDeviceSurfaceFormatsKHR(physDev, surface,
+                                                          pSurfaceFormatCount,
+                                                          pSurfaceFormats);
+    return VK_ERROR_SURFACE_LOST_KHR;
+}
+
+static VKAPI_ATTR VkResult VKAPI_CALL
+gpa_vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physDev,
+                                                VkSurfaceKHR surface,
+                                                uint32_t *pPresentModeCount,
+                                                VkPresentModeKHR *pPresentModes) {
+    pthread_mutex_lock(&g_headless_mutex);
+    int is_ours = find_headless_surface(surface) != NULL;
+    pthread_mutex_unlock(&g_headless_mutex);
+    if (is_ours) {
+        static const VkPresentModeKHR modes[] = { VK_PRESENT_MODE_FIFO_KHR };
+        const uint32_t n = 1;
+        if (!pPresentModes) { *pPresentModeCount = n; return VK_SUCCESS; }
+        uint32_t copy = (*pPresentModeCount < n) ? *pPresentModeCount : n;
+        if (copy) memcpy(pPresentModes, modes, copy * sizeof(modes[0]));
+        *pPresentModeCount = copy;
+        return (copy < n) ? VK_INCOMPLETE : VK_SUCCESS;
+    }
+    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    if (disp && disp->GetPhysicalDeviceSurfacePresentModesKHR)
+        return disp->GetPhysicalDeviceSurfacePresentModesKHR(physDev, surface,
+                                                               pPresentModeCount,
+                                                               pPresentModes);
+    return VK_ERROR_SURFACE_LOST_KHR;
 }
 
 VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
@@ -582,6 +1044,16 @@ gpa_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
     /* Extension entrypoints we provide */
     if (strcmp(pName, "vkCreateHeadlessSurfaceEXT") == 0)
         return (PFN_vkVoidFunction)gpa_vkCreateHeadlessSurfaceEXT;
+    if (strcmp(pName, "vkDestroySurfaceKHR") == 0)
+        return (PFN_vkVoidFunction)gpa_vkDestroySurfaceKHR;
+    if (strcmp(pName, "vkGetPhysicalDeviceSurfaceSupportKHR") == 0)
+        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceSupportKHR;
+    if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0)
+        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+    if (strcmp(pName, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0)
+        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceFormatsKHR;
+    if (strcmp(pName, "vkGetPhysicalDeviceSurfacePresentModesKHR") == 0)
+        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfacePresentModesKHR;
 
     /* Instance-level intercepts */
 #define INTERCEPT(fn) \

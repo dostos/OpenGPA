@@ -27,6 +27,12 @@ typedef struct GpaInstanceDispatch {
     /* Dispatch key — must be first: pointer to the loader's dispatch table */
     void *dispatch_key;
 
+    /* Cached real handle — needed when chaining down instance-level commands
+     * (eg. vkGetPhysicalDeviceSurfaceCapabilitiesKHR) since the next-layer
+     * GetInstanceProcAddr returns NULL for them when called with
+     * VK_NULL_HANDLE. */
+    VkInstance                    instance;
+
     /* Next layer / driver function pointers */
     PFN_vkGetInstanceProcAddr     GetInstanceProcAddr;
     PFN_vkDestroyInstance         DestroyInstance;
@@ -34,6 +40,17 @@ typedef struct GpaInstanceDispatch {
 
     /* Used internally to enumerate physical devices (for completeness) */
     PFN_vkEnumeratePhysicalDevices EnumeratePhysicalDevices;
+
+    /* Surface queries — resolved at instance creation time so that chain-down
+     * does not have to call our own GetInstanceProcAddr again (which would
+     * recurse: the loader's trampoline routes extension-function lookups
+     * through every loaded layer including us). */
+    PFN_vkDestroySurfaceKHR                       DestroySurfaceKHR;
+    PFN_vkGetPhysicalDeviceSurfaceSupportKHR      GetPhysicalDeviceSurfaceSupportKHR;
+    PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR GetPhysicalDeviceSurfaceCapabilitiesKHR;
+    PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      GetPhysicalDeviceSurfaceFormatsKHR;
+    PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
+    PFN_vkGetPhysicalDeviceMemoryProperties       GetPhysicalDeviceMemoryProperties;
 } GpaInstanceDispatch;
 
 /* -------------------------------------------------------------------------

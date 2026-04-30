@@ -348,30 +348,20 @@ void gpa_capture_on_present(VkQueue        queue,
             goto write_metadata_only;
         }
 
-        /* Obtain GetPhysicalDeviceMemoryProperties fn via instance */
-        /* We stored it on the device dispatch as a placeholder; look up
-         * through a raw function pointer call to avoid dependency on instance
-         * tables here. Use the Vulkan global loader symbol directly. */
-        typedef void (VKAPI_PTR *PFN_GetPhysDevMemProps)(
-            VkPhysicalDevice, VkPhysicalDeviceMemoryProperties *);
-
-        /* Resolve via device's GetDeviceProcAddr chain won't work for phys-dev
-         * functions.  Use the dynamic linker's copy of the loader symbol. */
-        extern PFN_vkVoidFunction vkGetInstanceProcAddr(VkInstance, const char *);
-        /* We can't easily call instance-level functions here without storing the
-         * instance.  Use the simpler approach: cast to a raw function. */
-        /* FALLBACK: call through the vkGetPhysicalDeviceMemoryProperties that
-         * the loader exposes as a global weak symbol. */
-        PFN_GetPhysDevMemProps fn_get_props =
-            (PFN_GetPhysDevMemProps)(void(*)(void))
-            vkGetInstanceProcAddr(VK_NULL_HANDLE,
-                                  "vkGetPhysicalDeviceMemoryProperties");
-        if (!fn_get_props) {
+        /* Pull the function from our cached instance dispatch (resolved at
+         * vkCreateInstance time — we cannot resolve it here via
+         * vkGetInstanceProcAddr(VK_NULL_HANDLE, ...) because that returns NULL
+         * for instance-level commands per the Vulkan spec, and calling
+         * GetInstanceProcAddr with a real instance from inside our own
+         * intercept recurses through the loader's trampoline). */
+        GpaInstanceDispatch *idisp =
+            gpa_instance_dispatch_get((VkInstance)phys);
+        if (!idisp || !idisp->GetPhysicalDeviceMemoryProperties) {
             fprintf(stderr, "[OpenGPA-VK] cannot resolve GetPhysicalDeviceMemoryProperties\n");
             dev_disp->DestroyBuffer(device, staging_buf, NULL);
             goto write_metadata_only;
         }
-        fn_get_props(phys, &mem_props);
+        idisp->GetPhysicalDeviceMemoryProperties(phys, &mem_props);
     }
 
     /* Select memory type */
