@@ -69,6 +69,55 @@ Vulkan layer **works**. Proceeding to **Phase 2A (Bevy/wgpu mining)**.
 5 candidates drafted, each with a closed issue + merged fix PR + parent
 SHA pinned for reproducibility.
 
+## Update 2026-04-30 — chromium captures via headless emulation
+
+Implemented `VK_EXT_headless_surface` entirely inside the layer (no ICD
+support required, NVIDIA 595's ICD doesn't expose it). Layer maintains a
+small slot table of synthetic `VkSurfaceKHR` / `VkSwapchainKHR` handles
+and allocates real `VkImage` + device-local memory under each emulated
+swapchain. `vkAcquireNextImageKHR` rotates through the images;
+`vkQueuePresentKHR` short-circuits all-headless presents (driver would
+reject our synthetic handles).
+
+Key correctness fix uncovered while testing real swapchains:
+`disp->GetInstanceProcAddr(instance, "vkSomeExt")` from inside our own
+intercept causes infinite recursion because the loader trampoline routes
+extension-function lookups through every loaded layer (including us).
+The fix is to resolve all instance-level extension functions ONCE at
+`vkCreateInstance` time via `next_gipa` and store them on
+`GpaInstanceDispatch`. Same recursion was hiding the
+`vkGetPhysicalDeviceMemoryProperties` "cannot resolve" warning in
+`vk_capture.c`; that's now fixed via the same cached-pointer approach.
+
+**Verified end-to-end with real chromium**:
+
+```bash
+GPA_VULKAN_CAPTURE=1 \
+VK_LAYER_PATH=/tmp/gpa-vk-layer \
+chrome --headless=new --use-vulkan --use-angle=vulkan \
+  --no-sandbox --disable-gpu-sandbox \
+  --enable-features=Vulkan --enable-webgl --ignore-gpu-blocklist \
+  --enable-unsafe-swiftshader file:///tmp/p2-index.html
+```
+
+`curl localhost:18085/api/v1/frames` returned 10 captured frames per
+page-load with `framebuffer_width=500 framebuffer_height=300` (matches
+the chromium `--window-size`).
+
+**Pixel readback caveats**: chromium queues many in-flight submissions,
+and the readback's transitive `WaitForFences` exceeds 1s before the
+queue drains. The capture path falls back to "metadata-only" (extent,
+format, draw count) on the timeout — frame boundaries flow through
+cleanly but pixel content is unreliable for compositor-style apps. See
+`fix(vk): make headless readback robust for chromium-vulkan` in the
+git log.
+
+This unblocks any agent eval scenario that spawns a Vulkan-backed
+chromium GPU process (WebGL via ANGLE-Vulkan), which was previously
+blocked by ANGLE's handle-scoped `dlsym()` of libGL bypassing
+`LD_PRELOAD`. The Vulkan path takes a different layer-interposed
+codepath that ANGLE cannot opt out of.
+
 ## Files touched / created in this round
 
 - `docs/superpowers/eval/round13/vulkan-shim-status.md` (this file)
