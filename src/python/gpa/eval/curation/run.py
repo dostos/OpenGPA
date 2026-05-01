@@ -182,27 +182,30 @@ def build_discoverer(queries: dict, coverage_log: CoverageLog,
 
 
 def _validate_draft(draft: DraftResult, eval_dir: Path) -> Any:
-    """Default validator wrapper.
+    """Default validator: static field-presence check on the new DraftResult.
 
-    Tests monkeypatch this to return a stub ValidationResult-shaped object
-    so we don't need to instantiate the heavyweight Validator (which builds
-    and captures via xvfb). Production callers fall back to building a
-    Validator with a no-op runner that always raises (tests never reach
-    here without a stub since `--max-phase produce` is the test path).
+    The new strict-CLI DraftResult has a different field shape than the
+    LLM-era one Validator was built for (no scenario_id, no files dict).
+    For the deterministic mining path we only need to confirm the required
+    fields were extracted — build/capture verification belongs in --evaluate.
 
-    The plan deliberately keeps build/capture out of the orchestrator
-    happy-path: the Validator's framebuffer-capture flow requires xvfb +
-    the GL shim, neither of which are present in CI. The orchestrator's
-    happy path is the maintainer-framing static path (no .c file), which
-    Validator handles via static checks only.
+    Tests monkeypatch this seam to inject specific ValidationResult-shaped
+    return values for failure-path tests.
     """
-    class _NoRunner:
-        def build_and_capture(self, scenario_id):
-            raise RuntimeError(
-                "no runner configured; orchestrator runs static-only validation"
-            )
+    @dataclasses.dataclass
+    class _StaticResult:
+        ok: bool
+        reason: str = ""
 
-    return Validator(eval_dir, _NoRunner()).validate(draft)
+    if not draft.user_report:
+        return _StaticResult(ok=False, reason="empty user_report")
+    if not draft.expected_files:
+        return _StaticResult(ok=False, reason="no expected_files")
+    if not draft.fix_commit_sha or not draft.fix_pr_url:
+        return _StaticResult(ok=False, reason="missing fix-PR metadata")
+    if not draft.bug_signature_yaml or not draft.bug_signature_yaml.startswith("type:"):
+        return _StaticResult(ok=False, reason="malformed bug_signature_yaml")
+    return _StaticResult(ok=True, reason="static_ok")
 
 
 def run_eval(*, scenario_id: str, eval_dir: Path, backend: str) -> Any:
