@@ -1,0 +1,736 @@
+"""Single-path mining orchestrator (SELECT -> PRODUCE -> JUDGE).
+
+This is the unified CLI entry point for the OpenGPA mining pipeline. It
+discovers candidates, scores them via deterministic rules, optionally
+extracts a DraftResult + validates it, and (in JUDGE phase) commits the
+scenario into ``tests/eval/`` while writing a coverage-log entry.
+
+A single run produces one append-only ``journey.jsonl`` file with one
+row per candidate at its terminal phase. The journey row is the source
+of truth for both per-run reporting and cross-run analysis.
+
+Usage::
+
+    python -m gpa.eval.curation.run \\
+        --queries config/queries.yaml \\
+        --rules config/rules.yaml \\
+        --workdir .eval-pipeline \\
+        --max-phase judge
+
+By design there are NO LLM calls in this module. All decisions are
+driven by the YAML rules + deterministic extractors. Test seams are
+exposed at module scope so tests can stub network and filesystem
+dependencies (``build_discoverer``, ``fetch_thread``,
+``_fetch_fix_pr_metadata``, ``_validate_draft``, ``run_eval``,
+``commit_scenario``).
+"""
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import json
+import re
+import subprocess
+import sys
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Optional
+
+import yaml
+
+from gpa.eval.curation.classify import classify_observed_helps
+from gpa.eval.curation.commit import commit_scenario
+from gpa.eval.curation.coverage_log import CoverageLog
+from gpa.eval.curation.discover import (
+    Discoverer,
+    GitHubSearch,
+    StackExchangeSearch,
+)
+from gpa.eval.curation.extract_draft import (
+    DraftResult,
+    ExtractionFailure,
+    extract_draft,
+)
+from gpa.eval.curation.journey import (
+    JourneyRow,
+    JourneyWriter,
+    JudgeOutcome,
+    ProduceOutcome,
+    SelectOutcome,
+    TerminalReason,
+    TokenSpend,
+)
+from gpa.eval.curation.mine_hard_cases import (
+    MiningRules,
+    load_rules,
+    score_candidate,
+    select_stratified,
+)
+from gpa.eval.curation.run_dir import RunDir, generate_run_id
+from gpa.eval.curation.triage import IssueThread, fetch_thread
+from gpa.eval.curation.validate import Validator
+
+__all__ = [
+    "main",
+    "parse_args",
+    "build_discoverer",
+    "fetch_thread",
+    "commit_scenario",
+]
+
+
+# ---------------------------------------------------------------------------
+# CLI
+# ---------------------------------------------------------------------------
+
+
+def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
+    p = argparse.ArgumentParser(
+        prog="gpa.eval.curation.run",
+        description=(
+            "Single-path mining orchestrator: SELECT -> PRODUCE -> JUDGE. "
+            "Discovers candidates, scores them, optionally extracts and "
+            "validates a draft, and (in JUDGE phase) commits the scenario."
+        ),
+    )
+    p.add_argument("--queries", required=True, help="Path to queries.yaml.")
+    p.add_argument("--rules", required=True, help="Path to mining_rules.yaml.")
+    p.add_argument(
+        "--workdir", default=".eval-pipeline",
+        help="Per-run output directory root. Default: .eval-pipeline",
+    )
+    p.add_argument(
+        "--max-phase", default="judge",
+        choices=["select", "produce", "judge"],
+        help=(
+            "Phase to stop at. select=score+rank only; produce=also "
+            "extract+validate; judge=also commit (and optionally evaluate)."
+        ),
+    )
+    p.add_argument(
+        "--evaluate", action="store_true", default=False,
+        help="In JUDGE phase, run the eval harness before committing.",
+    )
+    p.add_argument(
+        "--budget-tokens", type=int, default=0,
+        help=(
+            "Total LLM token budget across the run. 0 = no cap. "
+            "(This module makes no LLM calls; flag reserved for future use.)"
+        ),
+    )
+    p.add_argument(
+        "--batch-quota", type=int, default=20,
+        help="Total candidates to discover. Default: 20",
+    )
+    p.add_argument(
+        "--eval-dir", default="tests/eval",
+        help="Directory to commit scenarios into. Default: tests/eval",
+    )
+    p.add_argument(
+        "--backend", default="auto",
+        help="LLM backend hint passed to RunEval (no effect without --evaluate).",
+    )
+    p.add_argument(
+        "--run-id", default=None,
+        help="Override the auto-generated run_id (for reproducible test runs).",
+    )
+    # Selection thresholds. Read from rules.yaml's `selection` block when
+    # present; otherwise default to mine_hard_cases CLI defaults.
+    p.add_argument(
+        "--min-score", type=int, default=None,
+        help="Override min_score (otherwise read from rules.yaml selection.min_score, default 4).",
+    )
+    p.add_argument(
+        "--per-cell-cap", type=int, default=None,
+        help="Override per_cell_cap (otherwise read from rules.yaml selection.per_cell_cap, default 4).",
+    )
+    p.add_argument(
+        "--coverage-log", default="docs/superpowers/eval/coverage-log.jsonl",
+        help="Coverage log path (read for dedup, written on commit).",
+    )
+    p.add_argument(
+        "--summary-path", default="docs/superpowers/eval/coverage-gaps.md",
+        help="Coverage-gaps summary path (regenerated on commit).",
+    )
+    return p.parse_args(argv)
+
+
+# ---------------------------------------------------------------------------
+# Test seams (module-level so monkeypatch.setattr(...) works).
+# ---------------------------------------------------------------------------
+
+
+def build_discoverer(queries: dict, coverage_log: CoverageLog,
+                      batch_quota: int) -> Discoverer:
+    """Construct the production Discoverer.
+
+    Tests monkeypatch this to return a stub. The signature matches what
+    the orchestrator passes in: queries dict, coverage log, batch quota.
+    """
+    return Discoverer(
+        search=GitHubSearch(),
+        coverage_log=coverage_log,
+        queries=queries,
+        batch_quota=batch_quota,
+        so_search=StackExchangeSearch(),
+    )
+
+
+def _validate_draft(draft: DraftResult, eval_dir: Path) -> Any:
+    """Default validator wrapper.
+
+    Tests monkeypatch this to return a stub ValidationResult-shaped object
+    so we don't need to instantiate the heavyweight Validator (which builds
+    and captures via xvfb). Production callers fall back to building a
+    Validator with a no-op runner that always raises (tests never reach
+    here without a stub since `--max-phase produce` is the test path).
+
+    The plan deliberately keeps build/capture out of the orchestrator
+    happy-path: the Validator's framebuffer-capture flow requires xvfb +
+    the GL shim, neither of which are present in CI. The orchestrator's
+    happy path is the maintainer-framing static path (no .c file), which
+    Validator handles via static checks only.
+    """
+    class _NoRunner:
+        def build_and_capture(self, scenario_id):
+            raise RuntimeError(
+                "no runner configured; orchestrator runs static-only validation"
+            )
+
+    return Validator(eval_dir, _NoRunner()).validate(draft)
+
+
+def run_eval(*, scenario_id: str, eval_dir: Path, backend: str) -> Any:
+    """Default eval-harness wrapper.
+
+    Tests monkeypatch this. Production callers should provide their own
+    harness; the default raises so missing wiring fails loudly rather than
+    silently committing a never-evaluated scenario.
+    """
+    raise NotImplementedError(
+        "run_eval requires a configured EvalHarness; pass --evaluate only "
+        "when the harness is available, or monkeypatch this seam in tests."
+    )
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+
+_SCENARIO_SLUG_RE = re.compile(r"[^a-z0-9]+")
+
+
+def _slugify(s: str, max_len: int = 30) -> str:
+    s = (s or "").lower()
+    s = _SCENARIO_SLUG_RE.sub("_", s).strip("_")
+    return s[:max_len].rstrip("_") or "scenario"
+
+
+def _make_scenario_id(rec: Any, cand: Any, *, run_id: str) -> str:
+    """Build a deterministic scenario id from candidate + run.
+
+    Format: ``r<short_run_id>_<taxonomy>_<title_slug>``. Both segments
+    of taxonomy_cell get joined with ``_`` (cell uses dots; ``r``-prefix
+    matches the ``rN_<slug>`` pattern that already exists in tests/eval/).
+    """
+    short = run_id.split("-")[-1][:6]
+    cell = (rec.taxonomy_cell or "unknown").replace(".", "_").replace("/", "_")
+    title_slug = _slugify(getattr(cand, "title", "") or "scenario")
+    return f"r{short}_{cell}_{title_slug}"
+
+
+def _fetch_fix_pr_metadata(thread: IssueThread, url: str) -> dict:
+    """Best-effort: parse the closing-PR ref from the thread and fetch its
+    metadata via ``gh api``.
+
+    Returns ``{"url": str, "commit_sha": str, "files_changed": list[str]}``
+    on success, or raises an exception which the caller catches and
+    records as ``terminal_reason=extraction_failed``.
+
+    Tests monkeypatch this seam.
+    """
+    body_text = thread.body or ""
+    comments_text = "\n".join(thread.comments or [])
+    full = body_text + "\n" + comments_text
+
+    # Owner/repo come from the issue URL; the PR refs we look for are
+    # short-form (#NNN) on the same repo, or fully-qualified pull URLs.
+    repo_m = re.search(r"github\.com/([^/]+)/([^/]+)/", url)
+    if not repo_m:
+        raise ValueError(f"not a github URL: {url}")
+    owner, repo = repo_m.group(1), repo_m.group(2)
+
+    # Prefer fully-qualified pull URLs (they're unambiguous).
+    pr_url_m = re.search(
+        r"https?://github\.com/([^/\s]+)/([^/\s]+)/pull/(\d+)", full
+    )
+    if pr_url_m:
+        owner_pr, repo_pr, num = pr_url_m.group(1), pr_url_m.group(2), pr_url_m.group(3)
+    else:
+        # Fall back to short-form refs introduced by closing-keyword phrases.
+        short_m = re.search(
+            r"(?i)(?:closed by|fixed (?:in|by)|resolved by)[^#]*#(\d+)", full
+        )
+        if not short_m:
+            short_m = re.search(r"#(\d+)", full)
+        if not short_m:
+            raise ValueError(f"no PR reference found in thread {url}")
+        owner_pr, repo_pr, num = owner, repo, short_m.group(1)
+
+    proc = subprocess.run(
+        ["gh", "api", f"repos/{owner_pr}/{repo_pr}/pulls/{num}"],
+        capture_output=True, text=True, check=True,
+    )
+    pr = json.loads(proc.stdout)
+
+    files_proc = subprocess.run(
+        ["gh", "api", f"repos/{owner_pr}/{repo_pr}/pulls/{num}/files"],
+        capture_output=True, text=True, check=True,
+    )
+    files = json.loads(files_proc.stdout)
+
+    return {
+        "url": pr.get("html_url") or f"https://github.com/{owner_pr}/{repo_pr}/pull/{num}",
+        "commit_sha": pr.get("merge_commit_sha") or pr.get("head", {}).get("sha", ""),
+        "files_changed": [f.get("filename") for f in files if f.get("filename")],
+    }
+
+
+def _make_row(
+    cand: Any, *,
+    run_id: str,
+    discovered_at: str,
+    select: SelectOutcome,
+    produce: Optional[ProduceOutcome] = None,
+    judge: Optional[JudgeOutcome] = None,
+    terminal_phase: str,
+    terminal_reason: str,
+    tokens: Optional[TokenSpend] = None,
+    cache_hit: bool = False,
+) -> JourneyRow:
+    """Single source of truth for building JourneyRow instances."""
+    # Pull the discovery query from candidate metadata if available.
+    md = getattr(cand, "metadata", None) or {}
+    discovery_query = md.get("source_query") or getattr(cand, "query", "") or ""
+    if not isinstance(discovery_query, str):
+        discovery_query = json.dumps(discovery_query)
+    return JourneyRow(
+        url=getattr(cand, "url", ""),
+        run_id=run_id,
+        discovered_at=discovered_at,
+        discovery_query=discovery_query,
+        select=select,
+        produce=produce,
+        judge=judge,
+        tokens=tokens or TokenSpend(),
+        cache_hit=cache_hit,
+        terminal_phase=terminal_phase,
+        terminal_reason=terminal_reason,
+    )
+
+
+def _thread_to_dict(thread: IssueThread) -> dict:
+    """Adapt the IssueThread dataclass to the dict shape extract_draft expects."""
+    return dataclasses.asdict(thread)
+
+
+def _draft_to_files(draft: DraftResult) -> dict[str, str]:
+    """Build the {filename: content} dict commit_scenario writes to disk.
+
+    For maintainer-framing scenarios (no .c source), commit only scenario.md
+    (the validator already enforced that the structural fields are present).
+    """
+    md_lines = [
+        "## User Report",
+        "",
+        draft.user_report.strip(),
+        "",
+    ]
+    if draft.expected_section:
+        md_lines += ["## Expected", "", draft.expected_section.strip(), ""]
+    if draft.actual_section:
+        md_lines += ["## Actual", "", draft.actual_section.strip(), ""]
+    md_lines += [
+        "## Ground Truth",
+        "",
+        f"See fix at {draft.fix_pr_url}.",
+        "",
+        "## Fix",
+        "",
+        "```yaml",
+        f"fix_pr_url: {draft.fix_pr_url}",
+        f"fix_sha: {draft.fix_commit_sha}",
+        f"bug_class: framework-internal",
+        f"files:",
+    ]
+    for f in draft.expected_files:
+        md_lines.append(f"  - {f}")
+    md_lines.append("```")
+    md_lines.append("")
+    return {"scenario.md": "\n".join(md_lines)}
+
+
+# ---------------------------------------------------------------------------
+# main
+# ---------------------------------------------------------------------------
+
+
+def _load_queries(queries_path: Path) -> dict:
+    """Normalise queries.yaml into the {issue, commit, stackoverflow} shape."""
+    raw = yaml.safe_load(queries_path.read_text(encoding="utf-8")) or {}
+    # Accept either a top-level dict {issue: [...], commit: [...], stackoverflow: [...]}
+    # or a wrapped form {queries: {...}}.
+    if "queries" in raw and isinstance(raw["queries"], dict):
+        raw = raw["queries"]
+    out: dict[str, list] = {"issue": [], "commit": [], "stackoverflow": []}
+    for key in out:
+        val = raw.get(key)
+        if isinstance(val, list):
+            out[key] = list(val)
+    return out
+
+
+def _resolve_selection_thresholds(
+    rules_path: Path, args: argparse.Namespace
+) -> tuple[int, int]:
+    """Resolve (min_score, per_cell_cap) from CLI flags or rules.yaml.
+
+    The plan keeps these in rules.yaml under a top-level ``selection``
+    block; if absent, fall back to the mine_hard_cases CLI defaults
+    (min_score=4, per_cell_cap=4) so old rules files keep working.
+    """
+    raw = yaml.safe_load(Path(rules_path).read_text(encoding="utf-8")) or {}
+    sel = raw.get("selection") or {}
+    min_score = (
+        args.min_score if args.min_score is not None
+        else int(sel.get("min_score", 4))
+    )
+    per_cell_cap = (
+        args.per_cell_cap if args.per_cell_cap is not None
+        else int(sel.get("per_cell_cap", 4))
+    )
+    return min_score, per_cell_cap
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    args = parse_args(argv)
+
+    queries_path = Path(args.queries)
+    rules_path = Path(args.rules)
+
+    cfg_payload = (
+        queries_path.read_text(encoding="utf-8")
+        + "\n# ---\n"
+        + rules_path.read_text(encoding="utf-8")
+    )
+    run_id = args.run_id or generate_run_id(config_text=cfg_payload)
+    rd = RunDir.create(
+        root=Path(args.workdir), run_id=run_id, config_payload=cfg_payload
+    )
+    writer = JourneyWriter(rd.journey_path)
+
+    queries = _load_queries(queries_path)
+    rules: MiningRules = load_rules(rules_path)
+    min_score, per_cell_cap = _resolve_selection_thresholds(rules_path, args)
+
+    coverage = CoverageLog(args.coverage_log)
+    discoverer = build_discoverer(queries, coverage, args.batch_quota)
+    candidates = list(discoverer.run())
+    discovered_at = datetime.now(timezone.utc).isoformat()
+
+    # ----------------------------- SELECT -----------------------------
+    # Per-candidate: dedup -> fetch -> score (with triage gates) -> rank.
+    selected_records: list[tuple[Any, IssueThread, Any]] = []
+    # Pending rows we may write later (so we can mark "selected" vs "not_selected"
+    # only after select_stratified runs).
+    eligible: list[tuple[Any, IssueThread, Any]] = []
+
+    for cand in candidates:
+        # 1. dedup by URL
+        if coverage.contains_url(cand.url):
+            select = SelectOutcome(
+                deduped=True, fetched=False, taxonomy_cell=None, score=0,
+                score_reasons=[], selected=False,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                terminal_phase="select",
+                terminal_reason=TerminalReason.DUPLICATE_URL.value,
+            ))
+            continue
+
+        # 2. fetch_thread (network call; tests stub this)
+        try:
+            thread = fetch_thread(cand.url)
+        except Exception:
+            select = SelectOutcome(
+                deduped=False, fetched=False, taxonomy_cell=None, score=0,
+                score_reasons=[], selected=False,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                terminal_phase="select",
+                terminal_reason=TerminalReason.FETCH_FAILED.value,
+            ))
+            continue
+
+        # 3. score (triage_required/triage_reject gates run inside).
+        rec = score_candidate(cand, thread=thread, rules=rules)
+        if rec.terminal_reason == "triage_rejected":
+            select = SelectOutcome(
+                deduped=False, fetched=True,
+                taxonomy_cell=rec.taxonomy_cell,
+                score=rec.score,
+                score_reasons=list(rec.score_reasons),
+                selected=False,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                terminal_phase="select",
+                terminal_reason=TerminalReason.TRIAGE_REJECTED.value,
+            ))
+            continue
+
+        # 4. min-score gate
+        if rec.score < min_score:
+            select = SelectOutcome(
+                deduped=False, fetched=True,
+                taxonomy_cell=rec.taxonomy_cell,
+                score=rec.score,
+                score_reasons=list(rec.score_reasons),
+                selected=False,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                terminal_phase="select",
+                terminal_reason=TerminalReason.BELOW_MIN_SCORE.value,
+            ))
+            continue
+
+        eligible.append((cand, thread, rec))
+
+    # 5. stratified selection across eligible records.
+    if eligible:
+        records_for_strat = [rec for (_c, _t, rec) in eligible]
+        selected_recs = select_stratified(
+            records_for_strat,
+            top_k=args.batch_quota,
+            min_score=min_score,
+            per_cell_cap=per_cell_cap,
+        )
+        selected_urls = {r.url for r in selected_recs}
+        for cand, thread, rec in eligible:
+            if rec.url in selected_urls:
+                selected_records.append((cand, thread, rec))
+            else:
+                # Ranked-out: write a NOT_SELECTED row at SELECT terminal.
+                select = SelectOutcome(
+                    deduped=False, fetched=True,
+                    taxonomy_cell=rec.taxonomy_cell,
+                    score=rec.score,
+                    score_reasons=list(rec.score_reasons),
+                    selected=False,
+                )
+                writer.append(_make_row(
+                    cand, run_id=run_id, discovered_at=discovered_at,
+                    select=select,
+                    terminal_phase="select",
+                    terminal_reason=TerminalReason.NOT_SELECTED.value,
+                ))
+
+    # If max-phase is select, write rows for selected candidates and stop.
+    if args.max_phase == "select":
+        for cand, _thread, rec in selected_records:
+            select = SelectOutcome(
+                deduped=False, fetched=True,
+                taxonomy_cell=rec.taxonomy_cell,
+                score=rec.score,
+                score_reasons=list(rec.score_reasons),
+                selected=True,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                terminal_phase="select",
+                terminal_reason=TerminalReason.NOT_SELECTED.value,
+            ))
+        return 0
+
+    # ----------------------------- PRODUCE -----------------------------
+    drafted: list[tuple[Any, IssueThread, Any, DraftResult, dict]] = []
+    for cand, thread, rec in selected_records:
+        select = SelectOutcome(
+            deduped=False, fetched=True,
+            taxonomy_cell=rec.taxonomy_cell,
+            score=rec.score,
+            score_reasons=list(rec.score_reasons),
+            selected=True,
+        )
+
+        # 1. Fetch fix-PR metadata
+        try:
+            fix_pr = _fetch_fix_pr_metadata(thread, cand.url)
+        except Exception:
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                produce=ProduceOutcome(extracted=False, validated=False),
+                terminal_phase="produce",
+                terminal_reason=TerminalReason.EXTRACTION_FAILED.value,
+            ))
+            continue
+
+        # 2. extract_draft
+        try:
+            draft = extract_draft(
+                thread=_thread_to_dict(thread),
+                fix_pr=fix_pr,
+                taxonomy_cell=rec.taxonomy_cell,
+            )
+        except ExtractionFailure:
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                produce=ProduceOutcome(extracted=False, validated=False),
+                terminal_phase="produce",
+                terminal_reason=TerminalReason.EXTRACTION_FAILED.value,
+            ))
+            continue
+
+        # 3. validate (test seam)
+        result = _validate_draft(draft, Path(args.eval_dir))
+        if not getattr(result, "ok", False):
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                produce=ProduceOutcome(extracted=True, validated=False),
+                terminal_phase="produce",
+                terminal_reason=TerminalReason.VALIDATION_FAILED.value,
+            ))
+            continue
+
+        drafted.append((cand, thread, rec, draft, fix_pr))
+
+    if args.max_phase == "produce":
+        for cand, _thread, rec, _draft, _fix_pr in drafted:
+            select = SelectOutcome(
+                deduped=False, fetched=True,
+                taxonomy_cell=rec.taxonomy_cell,
+                score=rec.score,
+                score_reasons=list(rec.score_reasons),
+                selected=True,
+            )
+            writer.append(_make_row(
+                cand, run_id=run_id, discovered_at=discovered_at,
+                select=select,
+                produce=ProduceOutcome(extracted=True, validated=True),
+                terminal_phase="produce",
+                terminal_reason=TerminalReason.PRODUCE_DONE.value,
+            ))
+        return 0
+
+    # ----------------------------- JUDGE -----------------------------
+    for cand, thread, rec, draft, fix_pr in drafted:
+        select = SelectOutcome(
+            deduped=False, fetched=True,
+            taxonomy_cell=rec.taxonomy_cell,
+            score=rec.score,
+            score_reasons=list(rec.score_reasons),
+            selected=True,
+        )
+        produce = ProduceOutcome(extracted=True, validated=True)
+        scenario_id = _make_scenario_id(rec, cand, run_id=run_id)
+        judge = JudgeOutcome()
+
+        with_gla_score: Optional[float] = None
+        code_only_score: Optional[float] = None
+        verdict: Optional[str] = None
+        eval_summary: Optional[dict] = None
+
+        if args.evaluate:
+            try:
+                ev = run_eval(
+                    scenario_id=scenario_id,
+                    eval_dir=Path(args.eval_dir),
+                    backend=args.backend,
+                )
+            except Exception:
+                writer.append(_make_row(
+                    cand, run_id=run_id, discovered_at=discovered_at,
+                    select=select, produce=produce,
+                    judge=judge,
+                    terminal_phase="judge",
+                    terminal_reason=TerminalReason.EVALUATE_ERROR.value,
+                ))
+                continue
+
+            with_gla = getattr(ev, "with_gla", None)
+            code_only = getattr(ev, "code_only", None)
+            with_gla_score = float(getattr(with_gla, "score", 0.0)) if with_gla else None
+            code_only_score = float(getattr(code_only, "score", 0.0)) if code_only else None
+
+            try:
+                obs = classify_observed_helps(with_gla, code_only)
+            except Exception:
+                obs = None
+            verdict = getattr(obs, "verdict", None) if obs else None
+            judge = JudgeOutcome(
+                with_gla_score=with_gla_score,
+                code_only_score=code_only_score,
+                helps_verdict=verdict,
+            )
+            if verdict == "no":
+                writer.append(_make_row(
+                    cand, run_id=run_id, discovered_at=discovered_at,
+                    select=select, produce=produce, judge=judge,
+                    terminal_phase="judge",
+                    terminal_reason=TerminalReason.NOT_HELPFUL.value,
+                ))
+                continue
+            eval_summary = {
+                "with_gla_score": with_gla_score,
+                "code_only_score": code_only_score,
+                "verdict": verdict,
+            }
+
+        # Commit the scenario into tests/eval/.
+        commit_scenario(
+            eval_dir=Path(args.eval_dir),
+            scenario_id=scenario_id,
+            files=_draft_to_files(draft),
+            coverage_log=coverage,
+            summary_path=Path(args.summary_path),
+            issue_url=cand.url,
+            source_type=getattr(cand, "source_type", "issue"),
+            triage_verdict="in_scope",
+            fingerprint=None,
+            tier=rec.taxonomy_cell or "unknown",
+            predicted_helps=None,
+            observed_helps=verdict,
+            failure_mode=None,
+            eval_summary=eval_summary,
+        )
+
+        judge = JudgeOutcome(
+            with_gla_score=with_gla_score,
+            code_only_score=code_only_score,
+            helps_verdict=verdict,
+            committed_as=scenario_id,
+        )
+        writer.append(_make_row(
+            cand, run_id=run_id, discovered_at=discovered_at,
+            select=select, produce=produce, judge=judge,
+            terminal_phase="judge",
+            terminal_reason=TerminalReason.COMMITTED.value,
+        ))
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

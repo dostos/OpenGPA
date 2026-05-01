@@ -22,6 +22,8 @@ class TerminalReason(str, Enum):
     # PRODUCE terminal reasons
     EXTRACTION_FAILED = "extraction_failed"
     VALIDATION_FAILED = "validation_failed"
+    # Used when --max-phase=produce stops the pipeline at a successful draft.
+    PRODUCE_DONE = "produce_done"
     # JUDGE terminal reasons
     EVALUATE_TIMEOUT = "evaluate_timeout"
     EVALUATE_ERROR = "evaluate_error"
