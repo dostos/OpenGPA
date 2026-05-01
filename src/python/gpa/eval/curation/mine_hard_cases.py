@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 import sys
+import warnings
 from collections import Counter, defaultdict
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -210,9 +211,11 @@ def load_rules(path: str | Path = DEFAULT_RULES_PATH) -> MiningRules:
                 out[key] = (str(val[0]), str(val[1]))
         return out
 
-    def _flatten_triage(raw: Any) -> Optional[dict[str, list[str]]]:
+    def _flatten_triage(raw: Any, *, section: str) -> Optional[dict[str, list[str]]]:
         # Accepts: {group_name: {patterns: [...]}} → {group_name: [...]}
         # or already-flat {group_name: [...]}. Returns None if absent.
+        # Validates every pattern by compiling at load time so a typo in
+        # mining_rules.yaml fails fast instead of silently breaking gates.
         if not raw or not isinstance(raw, dict):
             return None
         out: dict[str, list[str]] = {}
@@ -223,7 +226,18 @@ def load_rules(path: str | Path = DEFAULT_RULES_PATH) -> MiningRules:
                 pats = val
             else:
                 continue
-            out[str(group)] = [str(p) for p in pats]
+            compiled: list[str] = []
+            for p in pats:
+                p_str = str(p)
+                try:
+                    re.compile(p_str)
+                except re.error as exc:
+                    raise ValueError(
+                        f"mining_rules.yaml: invalid regex in {section}."
+                        f"{group}: {p_str!r}: {exc}"
+                    ) from exc
+                compiled.append(p_str)
+            out[str(group)] = compiled
         return out or None
 
     return MiningRules(
@@ -231,8 +245,12 @@ def load_rules(path: str | Path = DEFAULT_RULES_PATH) -> MiningRules:
         tag_frameworks=_tuple_map(taxonomy.get("tag_frameworks") or {}),
         patterns=data.get("patterns") or {},
         scoring={k: int(v) for k, v in (data.get("scoring") or {}).items()},
-        triage_required=_flatten_triage(data.get("triage_required")),
-        triage_reject=_flatten_triage(data.get("triage_reject")),
+        triage_required=_flatten_triage(
+            data.get("triage_required"), section="triage_required"
+        ),
+        triage_reject=_flatten_triage(
+            data.get("triage_reject"), section="triage_reject"
+        ),
     )
 
 
@@ -334,82 +352,102 @@ def _match_any_pattern(patterns: list[str], text: str) -> bool:
 
     Patterns are full Python regex strings; case-insensitive flag is encoded
     inline (``(?i)``) in the rules file rather than passed here.
+
+    ``load_rules`` validates patterns at load time, so re.error here means
+    a caller bypassed load_rules with a hand-built MiningRules. We surface
+    such cases via warnings.warn — failing the gate open is the wrong
+    default (it would let every candidate through reject gates and reject
+    every candidate at required gates).
     """
     for pat in patterns or []:
         try:
             if re.search(pat, text):
                 return True
-        except re.error:
-            # Bad pattern in rules file — skip silently rather than crash mining.
+        except re.error as exc:
+            warnings.warn(
+                f"invalid regex in mining rules: {pat!r}: {exc}",
+                stacklevel=2,
+            )
             continue
     return False
 
 
+def _candidate_body(cand: DiscoveryCandidate, thread: Optional[IssueThread]) -> str:
+    """Return the joined body+comments text for triage-gate matching.
+
+    Prefers the live ``IssueThread`` (3-arg call) and falls back to
+    ``cand.metadata["body"]`` (2-arg call from the orchestrator or tests
+    that only have a synthetic candidate without a fetched thread).
+    """
+    if thread is not None:
+        comments = "\n".join(thread.comments) if thread.comments else ""
+        return _norm_text(thread.body or "", comments)
+    return str((cand.metadata or {}).get("body") or "")
+
+
+def _triage_rejected_record(
+    cand: DiscoveryCandidate, reason_code: str, text: str
+) -> MiningPlanRecord:
+    """Build a uniform triage_rejected record. Single source of truth so
+    the required-gate and reject-gate paths cannot drift apart."""
+    return MiningPlanRecord(
+        url=cand.url,
+        source_type=cand.source_type,
+        title=cand.title,
+        taxonomy_cell="unknown.unknown",
+        category="unknown",
+        subcategory="unknown",
+        framework=None,
+        bug_class_guess="unknown",
+        score=0,
+        reason_codes=[reason_code],
+        stage="scored",
+        source_query_kind=(cand.metadata or {}).get("source_query_kind"),
+        source_query=(cand.metadata or {}).get("source_query"),
+        thread_chars=len(text),
+        terminal_reason="triage_rejected",
+    )
+
+
+def _run_triage_gates(
+    cand: DiscoveryCandidate,
+    thread: Optional[IssueThread],
+    rules: MiningRules,
+) -> Optional[MiningPlanRecord]:
+    """Return a triage_rejected record if any gate fails, else None.
+
+    Required gates run first: every required group must match at least
+    one pattern, otherwise the candidate is dropped with reason
+    ``missing_<group>``. Then reject gates: any matched reject group
+    drops the candidate with reason ``<group>``.
+    """
+    text = _norm_text(getattr(cand, "title", "") or "", _candidate_body(cand, thread))
+    for group_name, patterns in (rules.triage_required or {}).items():
+        if not _match_any_pattern(patterns, text):
+            return _triage_rejected_record(cand, f"missing_{group_name}", text)
+    for group_name, patterns in (rules.triage_reject or {}).items():
+        if _match_any_pattern(patterns, text):
+            return _triage_rejected_record(cand, group_name, text)
+    return None
+
+
 def score_candidate(
     cand: DiscoveryCandidate,
-    thread: Optional[IssueThread] | MiningRules,
+    thread: Optional[IssueThread],
     rules: Optional[MiningRules] = None,
 ) -> MiningPlanRecord:
-    # Two-arg form: ``score_candidate(cand, rules)`` — used by triage-gate
-    # tests and the new SELECT-phase orchestrator. The body is taken from
-    # ``cand.metadata["body"]`` since there is no full thread fetch.
-    if isinstance(thread, MiningRules):
-        rules = thread
-        thread = None
-        body = str((cand.metadata or {}).get("body") or "")
-        comments = ""
-        triage_gate = True
-    else:
-        rules = rules or load_rules()
-        body = thread.body if thread else ""
-        comments = "\n".join(thread.comments) if thread else ""
-        triage_gate = False
+    rules = rules or load_rules()
 
+    # Triage gates run before the existing scorer. If any required group is
+    # unmet or any reject group matches, the candidate is dropped here with
+    # terminal_reason="triage_rejected" (subsumes the deleted LLM triage step).
+    triage_dropped = _run_triage_gates(cand, thread, rules)
+    if triage_dropped is not None:
+        return triage_dropped
+
+    body = thread.body if thread else ""
+    comments = "\n".join(thread.comments) if thread else ""
     text = _norm_text(cand.title, body, comments)
-
-    if triage_gate:
-        # Required: every required group must match at least one pattern.
-        for group_name, patterns in (rules.triage_required or {}).items():
-            if not _match_any_pattern(patterns, text):
-                rec = MiningPlanRecord(
-                    url=cand.url,
-                    source_type=cand.source_type,
-                    title=cand.title,
-                    taxonomy_cell="unknown.unknown",
-                    category="unknown",
-                    subcategory="unknown",
-                    framework=None,
-                    bug_class_guess="unknown",
-                    score=0,
-                    reason_codes=[f"missing_{group_name}"],
-                    stage="scored",
-                    source_query_kind=(cand.metadata or {}).get("source_query_kind"),
-                    source_query=(cand.metadata or {}).get("source_query"),
-                    thread_chars=len(text),
-                    terminal_reason="triage_rejected",
-                )
-                return rec
-        # Reject: any matched reject group drops the candidate.
-        for group_name, patterns in (rules.triage_reject or {}).items():
-            if _match_any_pattern(patterns, text):
-                rec = MiningPlanRecord(
-                    url=cand.url,
-                    source_type=cand.source_type,
-                    title=cand.title,
-                    taxonomy_cell="unknown.unknown",
-                    category="unknown",
-                    subcategory="unknown",
-                    framework=None,
-                    bug_class_guess="unknown",
-                    score=0,
-                    reason_codes=[group_name],
-                    stage="scored",
-                    source_query_kind=(cand.metadata or {}).get("source_query_kind"),
-                    source_query=(cand.metadata or {}).get("source_query"),
-                    thread_chars=len(text),
-                    terminal_reason="triage_rejected",
-                )
-                return rec
 
     category, subcategory, framework = infer_taxonomy(cand, text, rules)
     bug_class = infer_bug_class(category, cand.source_type, text, cand.url, rules)

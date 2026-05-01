@@ -31,11 +31,13 @@ def test_score_stackoverflow_threejs_user_config():
     thread = IssueThread(
         url=cand.url,
         title=cand.title,
-        body="Transparent points overlap incorrectly and look solid.",
+        # "wrong" satisfies the visual_keyword_present triage_required group;
+        # "Closed by #4242" satisfies fix_pr_linked.
+        body="Transparent points overlap incorrectly and look wrong.",
         comments=[
             "=== Accepted Answer (score: 61) ===\n"
             "Use depthWrite false for transparent points; depth and blending "
-            "do not work together in this case."
+            "do not work together in this case.\n\nClosed by #4242"
         ],
     )
 
@@ -60,8 +62,12 @@ def test_score_framework_repo_not_planned_can_be_app_dev():
     thread = IssueThread(
         url=cand.url,
         title=cand.title,
-        body="WebGPU and WebGL render the same PNG texture with different colors.",
-        comments=["The workaround is colorSpaceConversion none and premultiplyAlpha none."],
+        # "wrong" satisfies visual_keyword_present; "Closed by" satisfies fix_pr_linked.
+        body="WebGPU and WebGL render the same PNG texture with wrong, different colors.",
+        comments=[
+            "The workaround is colorSpaceConversion none and premultiplyAlpha none.\n\n"
+            "Closed by #31200"
+        ],
     )
 
     rec = score_candidate(cand, thread)
@@ -86,7 +92,10 @@ def test_select_stratified_caps_per_taxonomy_cell():
             url=cand.url,
             title=cand.title,
             body="Transparent wrong output with depthWrite.",
-            comments=["=== Accepted Answer (score: 2) ===\nset depthWrite false"],
+            comments=[
+                "=== Accepted Answer (score: 2) ===\nset depthWrite false\n\n"
+                "Closed by #1"
+            ],
         )))
     for i in range(3):
         cand = DiscoveryCandidate(
@@ -98,8 +107,12 @@ def test_select_stratified_caps_per_taxonomy_cell():
         records.append(score_candidate(cand, IssueThread(
             url=cand.url,
             title=cand.title,
-            body="Shadows are cropped in a rectangular region.",
-            comments=["=== Accepted Answer (score: 2) ===\nset shadow-camera-left"],
+            # "missing" satisfies visual_keyword_present.
+            body="Shadows are cropped in a rectangular region; corners look missing.",
+            comments=[
+                "=== Accepted Answer (score: 2) ===\nset shadow-camera-left\n\n"
+                "Closed by #1"
+            ],
         )))
 
     selected = select_stratified(records, top_k=4, min_score=1, per_cell_cap=2)
@@ -120,7 +133,7 @@ def test_classify_score_drops_when_triage_required_unmet():
         url="https://github.com/x/y/issues/99",
         has_fix_pr_linked=False,
     )
-    rec = score_candidate(cand, rules)
+    rec = score_candidate(cand, thread=None, rules=rules)
     assert rec.terminal_reason == "triage_rejected"
     assert "missing_fix_pr_linked" in rec.score_reasons
 
@@ -136,6 +149,6 @@ def test_classify_score_drops_feature_request_via_reject_rule():
         url="https://github.com/x/y/issues/100",
         has_fix_pr_linked=True,
     )
-    rec = score_candidate(cand, rules)
+    rec = score_candidate(cand, thread=None, rules=rules)
     assert rec.terminal_reason == "triage_rejected"
     assert "feature_request" in rec.score_reasons
