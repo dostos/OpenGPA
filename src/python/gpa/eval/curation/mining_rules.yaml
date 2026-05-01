@@ -1,0 +1,128 @@
+# Default taxonomy + scoring rules for taxonomy-aware mining.
+#
+# The planner treats sources generically: source adapters yield candidates,
+# this rules file classifies and scores them. Add new source types by adding a
+# fetch adapter in Python and matching tags/repos/text here.
+
+taxonomy:
+  framework_repos:
+    mrdoob/three.js: [web-3d, three.js]
+    BabylonJS/Babylon.js: [web-3d, babylon.js]
+    playcanvas/engine: [web-3d, playcanvas]
+    aframevr/aframe: [web-3d, a-frame]
+    pmndrs/react-three-fiber: [web-3d, react-three-fiber]
+    pmndrs/drei: [web-3d, drei]
+    pmndrs/postprocessing: [web-3d, postprocessing]
+    pixijs/pixijs: [web-2d, pixijs]
+    konvajs/konva: [web-2d, konva]
+    fabricjs/fabric.js: [web-2d, fabric.js]
+    processing/p5.js: [web-2d, p5.js]
+    mapbox/mapbox-gl-js: [web-map, mapbox-gl-js]
+    maplibre/maplibre-gl-js: [web-map, maplibre-gl-js]
+    openlayers/openlayers: [web-map, openlayers]
+    Leaflet/Leaflet: [web-map, leaflet]
+    visgl/deck.gl: [web-map, deck.gl]
+    CesiumGS/cesium: [web-map, cesium]
+    godotengine/godot: [native-engine, godot]
+    godotengine/godot-docs: [native-engine, godot]
+    Kitware/vtk-js: [scientific, vtk-js]
+    bokeh/bokeh: [scientific, bokeh]
+    KhronosGroup/glTF-Sample-Viewer: [scientific, gltf-sample-viewer]
+
+  tag_frameworks:
+    three.js: [web-3d, three.js]
+    react-three-fiber: [web-3d, react-three-fiber]
+    babylon.js: [web-3d, babylon.js]
+    pixi.js: [web-2d, pixijs]
+    konvajs: [web-2d, konva]
+    p5.js: [web-2d, p5.js]
+    mapbox-gl-js: [web-map, mapbox-gl-js]
+    openlayers: [web-map, openlayers]
+    leaflet: [web-map, leaflet]
+    godot: [native-engine, godot]
+    godot4: [native-engine, godot]
+    bokeh: [scientific, bokeh]
+    open3d: [scientific, open3d]
+    webgl: [graphics-lib, webgl]
+    opengl: [graphics-lib, opengl]
+    vulkan: [graphics-lib, vulkan]
+
+patterns:
+  visual:
+    wrong_color: "\\bwrong color|too bright|too dark|washed|grey|gray|sRGB|gamma|colorSpace|toneMapping\\b"
+    invisible_or_black: "\\binvisible|not showing|missing|black screen|blank|transparent background\\b"
+    flicker_or_temporal: "\\bflicker|flickering|one frame|previous frame|trail|ghost|smear\\b"
+    depth_or_order: "\\bdepth|z-fighting|behind|in front|order|sorting|overlap|below|above\\b"
+    shadow: "\\bshadow|shadow.camera|shadow-camera|cropped\\b"
+    artifact_geometry: "\\bartifact|extra polygon|hole|triangulation|seam|bleed|clipped\\b"
+
+  gpu_state:
+    depth_blend_state: "\\bdepthWrite|depth write|depthTest|depth test|blend|alpha|transparent|premultiplied\\b"
+    color_pipeline: "\\bsRGBEncoding|outputEncoding|colorSpace|toneMapping|gamma|linear|premultiplyAlpha|colorSpaceConversion\\b"
+    render_target_clear: "\\bEffectComposer|RenderPass|renderTarget|WebGLRenderTarget|autoClear|clearAlpha|clearColor|preserveDrawingBuffer\\b"
+    texture_upload: "\\btexture|sampler|mipmap|ImageBitmap|TextureLoader|canvas texture|PNG|gAMA|cHRM\\b"
+    draw_order: "\\blayer order|draw order|rendered below|rendered above|sorting|beforeId|z-index\\b"
+    shadow_config: "\\bshadow.camera|shadow-camera|castShadow|receiveShadow|DirectionalLightShadow|shadow map\\b"
+    shader_uniform: "\\bshader|uniform|WGSL|GLSL|TSL|node material|compile\\b"
+
+  resolution:
+    accepted_answer: "=== Accepted Answer"
+    maintainer_resolution: "\\bclosing|fixed by|duplicate of|workaround|try|use|set|enable|disable|configure|not a bug|works as expected\\b"
+    fix_reference: "github\\.com/.+/(pull|commit)/|#[0-9]+"
+
+  reject:
+    host_build_or_types: "\\bTypeScript|typings|type error|build error|npm install|vite|webpack|rollup|CI\\b"
+    docs_or_question_only: "\\bdocumentation|docs|tutorial|readme|how to\\b"
+    dom_event_css: "\\bCSS|DOM|pointer event|mouse event|keyboard|focus|lifecycle|useEffect\\b"
+    performance_only: "\\bperformance|fps|slow|memory leak|benchmark\\b"
+
+  repro_artifact: "\\b(jsfiddle|codepen|codesandbox|reproduction|steps to|minimal|live example)\\b"
+  expected_actual: "\\bexpected behavior|actual behavior|expected output|actual output\\b"
+  app_resolution: "\\baccepted answer|use |set |enable |disable |configure |workaround|not a bug|works as expected|by design\\b"
+  config_terms: "\\bautoClear|depthWrite|depthTest|toneMapping|colorSpace|encoding|shadow.camera|clearAlpha|renderTarget|premultiplyAlpha\\b"
+  not_planned: "\\bnot_planned|won't fix|wontfix|help \\(please use the forum\\)|browser issue\\b"
+
+scoring:
+  visual_base: 1
+  visual_max: 4
+  gpu_state_each: 2
+  gpu_state_max: 6
+  resolution_base: 1
+  resolution_max: 4
+  repro_artifact: 2
+  expected_actual: 2
+  app_dev_bonus: 2
+  framework_repo_bonus: 1
+  reject_each: -2
+  reject_max_abs: 6
+  weak_visual: -2
+  weak_resolution: -2
+
+# Triage replacement: rules folded in from the deleted LLM triage step.
+# An unmet "required" or matched "reject" pattern drops the candidate
+# at SELECT phase with terminal_reason="triage_rejected".
+
+triage_required:
+  fix_pr_linked:
+    patterns:
+      - "(?i)closed by .*?#\\d+"
+      - "(?i)fixed (in|by) .*?#\\d+"
+      - "(?i)pull/\\d+"
+  visual_keyword_present:
+    patterns:
+      - "(?i)\\b(invisible|disappear|flicker|glitch|black|wrong|missing|leak)\\b"
+
+triage_reject:
+  feature_request:
+    patterns:
+      - "(?i)^feature request"
+      - "(?i)please add"
+      - "(?i)would be nice if"
+  documentation_only:
+    patterns:
+      - "(?i)\\bdocs?\\b.*\\bmissing\\b"
+      - "(?i)broken link"
+  installation_issue:
+    patterns:
+      - "(?i)cargo (build|install) (fail|error)"
+      - "(?i)cannot find package"
