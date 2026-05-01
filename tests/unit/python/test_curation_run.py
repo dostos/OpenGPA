@@ -14,6 +14,7 @@ hermetic stubs.
 """
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
@@ -270,6 +271,125 @@ def test_run_judge_commits_without_evaluate_when_flag_not_set(
     kwargs = commit_calls[0]
     assert kwargs["scenario_id"] == row["judge"]["committed_as"]
     assert kwargs["issue_url"] == "https://github.com/x/y/issues/1"
+
+
+# ---------------------------------------------------------------------------
+# JUDGE-phase --evaluate branches: verdict=yes (commits) and verdict=no
+# (NOT_HELPFUL terminal_reason, no commit).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "verdict, expected_terminal, expect_commit",
+    [
+        ("yes",       "committed",   True),
+        ("no",        "not_helpful", False),
+        ("ambiguous", "committed",   True),  # only verdict=="no" gates the commit
+    ],
+    ids=["verdict_yes", "verdict_no", "verdict_ambiguous"],
+)
+def test_run_judge_evaluate_branches(
+    verdict, expected_terminal, expect_commit,
+    tmp_path, queries_path, rules_path, patch_select_seams, monkeypatch,
+):
+    """When --evaluate is set, verdict=='no' halts at NOT_HELPFUL while
+    verdict=='yes' / 'ambiguous' commit normally with eval scores."""
+    from gpa.eval.curation import run as run_mod
+
+    monkeypatch.setattr(
+        run_mod, "_fetch_fix_pr_metadata",
+        lambda thread, url: {
+            "url": "https://github.com/x/y/pull/2",
+            "commit_sha": "abc1234",
+            "files_changed": ["src/lib.rs"],
+        },
+    )
+    monkeypatch.setattr(
+        run_mod, "_validate_draft",
+        lambda draft, eval_dir: _FakeValidationResult(ok=True),
+    )
+
+    @dataclasses.dataclass
+    class _FakeScore:
+        score: float
+
+    @dataclasses.dataclass
+    class _FakeEvalResult:
+        with_gla: _FakeScore
+        code_only: _FakeScore
+
+    @dataclasses.dataclass
+    class _FakeObservedClassification:
+        verdict: str
+
+    def _stub_run_eval(*, scenario_id, eval_dir, backend):
+        return _FakeEvalResult(
+            with_gla=_FakeScore(score=0.9),
+            code_only=_FakeScore(score=0.4),
+        )
+    _stub_run_eval._is_default = False  # mark seam as configured
+
+    monkeypatch.setattr(run_mod, "run_eval", _stub_run_eval)
+    monkeypatch.setattr(
+        run_mod, "classify_observed_helps",
+        lambda with_gla, code_only: _FakeObservedClassification(verdict=verdict),
+    )
+
+    commit_calls: list[dict] = []
+    monkeypatch.setattr(
+        run_mod, "commit_scenario",
+        lambda **kwargs: commit_calls.append(kwargs),
+    )
+
+    rc = run_mod.main([
+        "--queries", str(queries_path),
+        "--rules", str(rules_path),
+        "--workdir", str(tmp_path / "wd"),
+        "--evaluate",
+    ])
+    assert rc == 0
+
+    runs = list((tmp_path / "wd" / "runs").iterdir())
+    journey_lines = (runs[0] / "journey.jsonl").read_text().splitlines()
+    assert len(journey_lines) == 1
+    row = json.loads(journey_lines[0])
+
+    assert row["terminal_phase"] == "judge"
+    assert row["terminal_reason"] == expected_terminal
+    assert row["judge"]["with_gla_score"] == 0.9
+    assert row["judge"]["code_only_score"] == 0.4
+    assert row["judge"]["helps_verdict"] == verdict
+
+    if expect_commit:
+        assert row["judge"]["committed_as"] is not None
+        assert len(commit_calls) == 1
+        assert commit_calls[0]["observed_helps"] == verdict
+        assert commit_calls[0]["eval_summary"] == {
+            "with_gla_score": 0.9,
+            "code_only_score": 0.4,
+            "verdict": verdict,
+        }
+    else:
+        assert row["judge"]["committed_as"] is None
+        assert commit_calls == []
+
+
+def test_run_judge_evaluate_friendly_error_when_harness_unconfigured(
+    tmp_path, queries_path, rules_path,
+):
+    """--evaluate without a configured harness exits 2 with a clear stderr
+    message instead of running the whole pipeline only to bury the error."""
+    from gpa.eval.curation import run as run_mod
+
+    rc = run_mod.main([
+        "--queries", str(queries_path),
+        "--rules", str(rules_path),
+        "--workdir", str(tmp_path / "wd"),
+        "--evaluate",
+    ])
+    assert rc == 2
+    # No run dir should have been created.
+    assert not (tmp_path / "wd" / "runs").exists()
 
 
 # ---------------------------------------------------------------------------
