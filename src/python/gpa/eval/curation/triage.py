@@ -233,8 +233,8 @@ def fetch_pr_thread(url: str) -> IssueThread:
     PR body are pulled via the existing ``_fetch_linked_context`` helper so the
     drafter still sees the originating bug report when one is referenced.
 
-    Mirrors :func:`fetch_issue_thread` shape so callers (Triage, measure_yield)
-    don't need to special-case PR URLs.
+    Mirrors :func:`fetch_issue_thread` shape so callers don't need to
+    special-case PR URLs.
     """
     m = re.search(r"github\.com/([^/]+)/([^/]+)/pull/(\d+)", url)
     if not m:

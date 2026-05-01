@@ -1,5 +1,14 @@
 # Mining Yield Baseline
 
+> **Historical record.** The CLIs referenced below
+> (`gpa.eval.curation.measure_yield`, `gpa.eval.curation.pipeline`)
+> were retired on 2026-05-01 by the single-path mining migration
+> (`feat/single-path-mining`). The current mining entry point is
+> `python -m gpa.eval.curation.run` — see
+> `docs/superpowers/eval/framework-app-dev-hard-cases.md` for the
+> new invocation. This document is preserved for the prompt-tuning
+> iteration history (2026-04-26) it captures.
+
 _Generated: 2026-04-26T04:34:01.496222+00:00_
 _Config: `/tmp/yield_baseline_queries.yaml` (8 queries, batch_quota=8)_
 _Coverage log at run time: 648 prior URLs, 94 committed scenarios_

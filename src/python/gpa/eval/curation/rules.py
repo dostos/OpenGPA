@@ -1,35 +1,31 @@
-"""Taxonomy-aware mining planner.
+"""Rule-based candidate scoring used by run.py — no CLI.
 
-This is a cheap front-end to the curation pipeline. It discovers candidates,
-fetches enough thread text for non-LLM feature extraction, ranks candidates by
-taxonomy cell and evidence quality, and writes auditable JSONL/Markdown reports.
+This module contains the pure rules engine that drives the SELECT phase
+of the single-path mining pipeline:
 
-It does not draft, validate, commit, or mutate the production coverage log.
+- :class:`MiningRules` and :func:`load_rules` parse ``mining_rules.yaml``.
+- :func:`infer_taxonomy` and :func:`infer_bug_class` classify a candidate.
+- :func:`score_candidate` runs the triage gates (subsuming the deleted
+  LLM triage step) and applies the scoring rules.
+- :func:`select_stratified` picks a balanced top-k across taxonomy cells.
+
+Everything here is deterministic and side-effect-free — no network,
+no LLM, no filesystem writes. The orchestrator in
+:mod:`gpa.eval.curation.run` is the only consumer.
 """
 from __future__ import annotations
 
-import argparse
-import json
 import re
-import sys
 import warnings
-from collections import Counter, defaultdict
-from dataclasses import asdict, dataclass, field
+from collections import defaultdict
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Optional
 
 import yaml
 
-from gpa.eval.curation.coverage_log import CoverageLog
-from gpa.eval.curation.discover import (
-    DEFAULT_QUERIES,
-    Discoverer,
-    DiscoveryCandidate,
-    GitHubSearch,
-    StackExchangeSearch,
-)
-from gpa.eval.curation.measure_yield import _NoOpCoverageLog
-from gpa.eval.curation.triage import IssueThread, fetch_thread
+from gpa.eval.curation.discover import DiscoveryCandidate
+from gpa.eval.curation.triage import IssueThread
 
 
 DEFAULT_RULES_PATH = Path(__file__).with_name("mining_rules.yaml")
@@ -559,216 +555,3 @@ def select_stratified(
     for rec in records:
         rec.selected = rec.url in selected_urls
     return selected
-
-
-def load_configs(paths: list[str]) -> tuple[dict, int]:
-    if not paths:
-        return DEFAULT_QUERIES, 20
-
-    merged = {"issue": [], "commit": [], "stackoverflow": []}
-    batch_quota = 0
-    for path in paths:
-        with open(path, encoding="utf-8") as f:
-            cfg = yaml.safe_load(f) or {}
-        queries = cfg.get("queries", {})
-        for key in merged:
-            merged[key].extend(queries.get(key, []))
-        batch_quota += int(cfg.get("batch_quota") or 0)
-    return merged, batch_quota or 20
-
-
-def write_jsonl(records: list[MiningPlanRecord], path: str | Path) -> None:
-    p = Path(path)
-    p.parent.mkdir(parents=True, exist_ok=True)
-    with p.open("w", encoding="utf-8") as f:
-        for rec in records:
-            f.write(json.dumps(rec.to_dict()) + "\n")
-
-
-def render_report(records: list[MiningPlanRecord], selected: list[MiningPlanRecord]) -> str:
-    counts = Counter(r.taxonomy_cell for r in records if r.stage == "scored")
-    selected_counts = Counter(r.taxonomy_cell for r in selected)
-    rejection_counts = Counter(r.rejection_reason for r in records if r.rejection_reason)
-
-    lines: list[str] = []
-    lines.append("# Taxonomy-Aware Mining Plan")
-    lines.append("")
-    lines.append("## Summary")
-    lines.append(f"- Candidates scored: {sum(1 for r in records if r.stage == 'scored')}")
-    lines.append(f"- Candidates selected: {len(selected)}")
-    if rejection_counts:
-        lines.append(f"- Candidates skipped: {sum(rejection_counts.values())}")
-    lines.append("")
-
-    if selected:
-        lines.append("## Selected Candidates")
-        lines.append("| Score | Cell | Bug Class | URL | Reason Codes |")
-        lines.append("| ---: | --- | --- | --- | --- |")
-        for rec in sorted(selected, key=lambda r: r.score, reverse=True):
-            reasons = ", ".join(rec.reason_codes[:6])
-            lines.append(
-                f"| {rec.score} | `{rec.taxonomy_cell}` | `{rec.bug_class_guess}` | "
-                f"{rec.url} | {reasons} |"
-            )
-        lines.append("")
-
-    if counts:
-        lines.append("## Taxonomy Coverage")
-        lines.append("| Cell | Scored | Selected |")
-        lines.append("| --- | ---: | ---: |")
-        for cell, count in counts.most_common():
-            lines.append(f"| `{cell}` | {count} | {selected_counts.get(cell, 0)} |")
-        lines.append("")
-
-    if rejection_counts:
-        lines.append("## Skipped")
-        for reason, count in rejection_counts.most_common():
-            lines.append(f"- `{reason}`: {count}")
-        lines.append("")
-
-    lines.append("## Next Step")
-    lines.append(
-        "Feed selected URLs into the existing triage/draft pipeline, or review "
-        "the JSONL reason codes to tune query packs before spending LLM budget."
-    )
-    return "\n".join(lines) + "\n"
-
-
-def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Discover and rank mining candidates by taxonomy cell.",
-    )
-    parser.add_argument(
-        "--config",
-        action="append",
-        default=[],
-        help="YAML query pack. May be passed multiple times.",
-    )
-    parser.add_argument(
-        "--coverage-log",
-        default="docs/superpowers/eval/coverage-log.jsonl",
-        help="Coverage log used for read-only URL dedup.",
-    )
-    parser.add_argument(
-        "--rules",
-        default=str(DEFAULT_RULES_PATH),
-        help="YAML taxonomy/scoring rules file.",
-    )
-    parser.add_argument(
-        "--batch-quota",
-        type=int,
-        default=None,
-        help="Override combined config batch_quota.",
-    )
-    parser.add_argument("--top-k", type=int, default=20)
-    parser.add_argument("--min-score", type=int, default=4)
-    parser.add_argument("--per-cell-cap", type=int, default=4)
-    parser.add_argument(
-        "--jsonl",
-        default="/tmp/mining-candidates.jsonl",
-        help="Path for scored candidate JSONL.",
-    )
-    parser.add_argument(
-        "--report",
-        default="/tmp/mining-ranked.md",
-        help="Path for Markdown report.",
-    )
-    parser.add_argument(
-        "--no-fetch",
-        action="store_true",
-        help="Score title/query metadata only. Faster but less accurate.",
-    )
-    return parser.parse_args(argv)
-
-
-def main(argv: Optional[list[str]] = None) -> int:
-    args = parse_args(argv)
-    queries, config_quota = load_configs(args.config)
-    batch_quota = args.batch_quota or config_quota
-    rules = load_rules(args.rules)
-
-    discoverer = Discoverer(
-        search=GitHubSearch(),
-        so_search=StackExchangeSearch(),
-        coverage_log=_NoOpCoverageLog(),
-        queries=queries,
-        batch_quota=batch_quota,
-    )
-    coverage = CoverageLog(args.coverage_log)
-    known_urls = {entry.issue_url for entry in coverage.read_all()}
-
-    records: list[MiningPlanRecord] = []
-    candidates = discoverer.run()
-    for i, cand in enumerate(candidates, 1):
-        if cand.url in known_urls:
-            records.append(
-                MiningPlanRecord(
-                    url=cand.url,
-                    source_type=cand.source_type,
-                    title=cand.title,
-                    taxonomy_cell="unknown.unknown",
-                    category="unknown",
-                    subcategory="unknown",
-                    framework=None,
-                    bug_class_guess="unknown",
-                    score=0,
-                    reason_codes=[],
-                    stage="skipped",
-                    rejection_reason="url_dedup",
-                    source_query_kind=cand.metadata.get("source_query_kind"),
-                    source_query=cand.metadata.get("source_query"),
-                )
-            )
-            continue
-
-        thread: Optional[IssueThread] = None
-        if not args.no_fetch:
-            try:
-                thread = fetch_thread(cand.url)
-            except Exception as exc:
-                records.append(
-                    MiningPlanRecord(
-                        url=cand.url,
-                        source_type=cand.source_type,
-                        title=cand.title,
-                        taxonomy_cell="unknown.unknown",
-                        category="unknown",
-                        subcategory="unknown",
-                        framework=None,
-                        bug_class_guess="unknown",
-                        score=0,
-                        reason_codes=[],
-                        stage="skipped",
-                        rejection_reason="fetch_failed",
-                        source_query_kind=cand.metadata.get("source_query_kind"),
-                        source_query=cand.metadata.get("source_query"),
-                        notes=type(exc).__name__,
-                    )
-                )
-                continue
-        rec = score_candidate(cand, thread, rules)
-        records.append(rec)
-        print(
-            f"[mine] {i}/{len(candidates)} score={rec.score} "
-            f"cell={rec.taxonomy_cell} {rec.url}",
-            flush=True,
-        )
-
-    selected = select_stratified(
-        records,
-        top_k=args.top_k,
-        min_score=args.min_score,
-        per_cell_cap=args.per_cell_cap,
-    )
-    write_jsonl(records, args.jsonl)
-    report = render_report(records, selected)
-    Path(args.report).parent.mkdir(parents=True, exist_ok=True)
-    Path(args.report).write_text(report)
-    print(report)
-    print(f"[mine] Wrote JSONL: {args.jsonl}", file=sys.stderr)
-    print(f"[mine] Wrote report: {args.report}", file=sys.stderr)
-    return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

@@ -61,7 +61,7 @@ from gpa.eval.curation.journey import (
     TerminalReason,
     TokenSpend,
 )
-from gpa.eval.curation.mine_hard_cases import (
+from gpa.eval.curation.rules import (
     MiningRules,
     load_rules,
     score_candidate,
@@ -140,7 +140,7 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         help="Override the auto-generated run_id (for reproducible test runs).",
     )
     # Selection thresholds. Read from rules.yaml's `selection` block when
-    # present; otherwise default to mine_hard_cases CLI defaults.
+    # present; otherwise default to (min_score=4, per_cell_cap=4).
     p.add_argument(
         "--min-score", type=int, default=None,
         help="Override min_score (otherwise read from rules.yaml selection.min_score, default 4).",
@@ -426,8 +426,8 @@ def _resolve_selection_thresholds(
     """Resolve (min_score, per_cell_cap) from CLI flags or rules.yaml.
 
     The plan keeps these in rules.yaml under a top-level ``selection``
-    block; if absent, fall back to the mine_hard_cases CLI defaults
-    (min_score=4, per_cell_cap=4) so old rules files keep working.
+    block; if absent, fall back to (min_score=4, per_cell_cap=4) so
+    old rules files keep working.
     """
     raw = yaml.safe_load(Path(rules_path).read_text(encoding="utf-8")) or {}
     sel = raw.get("selection") or {}

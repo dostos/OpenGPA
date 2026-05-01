@@ -1,5 +1,5 @@
 from gpa.eval.curation.discover import DiscoveryCandidate
-from gpa.eval.curation.mine_hard_cases import score_candidate, select_stratified
+from gpa.eval.curation.rules import score_candidate, select_stratified
 from gpa.eval.curation.triage import IssueThread
 
 
@@ -126,7 +126,7 @@ def test_select_stratified_caps_per_taxonomy_cell():
 
 
 def test_classify_score_drops_when_triage_required_unmet():
-    from gpa.eval.curation.mine_hard_cases import score_candidate, load_rules
+    from gpa.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()  # default rules file
     cand = make_synthetic_candidate(
         body="Cubes flicker on Vulkan. Repro: ...",
@@ -139,7 +139,7 @@ def test_classify_score_drops_when_triage_required_unmet():
 
 
 def test_classify_score_drops_feature_request_via_reject_rule():
-    from gpa.eval.curation.mine_hard_cases import score_candidate, load_rules
+    from gpa.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()
     cand = make_synthetic_candidate(
         body=(
