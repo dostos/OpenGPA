@@ -1,0 +1,63 @@
+# Cat 2 hard-case scout — framework-app-dev bugs where the fix is in user
+# code/config, not framework source.
+#
+# Why this is separate from generalization_queries.yaml:
+# - broad framework mining already yields ~30% and is mostly
+#   framework-maintenance;
+# - prior Cat-2 expansion found only ~10% yield outside web-3d;
+# - app-dev bugs are useful only when the bad app setting/API usage reaches
+#   GPU-visible state (draw order, depth/blend state, color encoding,
+#   render-target clears, shadow-camera bounds).
+#
+# StackOverflow entries use the extended form:
+#   {tags: [...], query: "..."}
+# where tags are ANDed and query narrows title/body text.
+
+batch_quota: 24
+queries:
+  issue:
+    # Browser / asset metadata config: wrong sampled texture values caused by
+    # PNG gAMA/cHRM + premultiply/colorSpace conversion choices.
+    - 'repo:mrdoob/three.js is:issue is:closed reason:not_planned "color-specific metadata" OR "premultiplyAlpha" OR "colorSpaceConversion"'
+
+    # R3F + WebGPU adapter boundary: app provides a custom renderer and gets
+    # wrong lighting/no console error. Useful as an adapter-hard case even if
+    # the final answer redirects to three.js/browser behavior.
+    - 'repo:pmndrs/react-three-fiber is:issue is:closed reason:not_planned "WebGPURenderer" "not working" OR "bad visual output"'
+
+    # Web-map layer ordering where the app-level dynamic-source update changes
+    # which draw appears on top.
+    - 'repo:mapbox/mapbox-gl-js is:issue is:closed reason:not_planned "rendered in the wrong order" OR "rendered below"'
+
+    # Web-map geometry artifacts with visible zoom-dependent fill output.
+    - 'repo:mapbox/mapbox-gl-js is:issue is:closed reason:not_planned "extra polygon" OR "displayed wrong"'
+
+  commit: []
+
+  stackoverflow:
+    # Transparent sprites/particles: answer is depthWrite/depthTest/material
+    # usage, but capture reveals the actual depth/write/blend state.
+    - tags: ["three.js"]
+      query: "depthWrite transparent"
+
+    # EffectComposer output encoding: user config omits final gamma/sRGB pass.
+    - tags: ["three.js"]
+      query: "sRGBEncoding EffectComposer"
+
+    # Texture color-space mismatch from generated PNG/canvas texture.
+    - tags: ["three.js"]
+      query: "sRGB wrong colors texture"
+
+    # Tone-mapped background/skybox: user expects UI/background color to be
+    # exempt from material tone mapping.
+    - tags: ["three.js"]
+      query: "toneMapping background grey"
+
+    # Post-processing alpha: transparent canvas breaks through pass chain.
+    - tags: ["three.js"]
+      query: "post effects transparent background"
+
+    # R3F shadow-camera bounds: cropped shadows are app-level light-shadow
+    # configuration, not a renderer bug.
+    - tags: ["react-three-fiber"]
+      query: "shadow cropped"
