@@ -70,7 +70,6 @@ from gpa.eval.curation.rules import (
 from gpa.eval.curation.run_dir import RunDir, generate_run_id
 from gpa.eval.curation.summary import write_summary
 from gpa.eval.curation.triage import IssueThread, fetch_thread
-from gpa.eval.curation.validate import Validator
 
 __all__ = [
     "main",
