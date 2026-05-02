@@ -21,8 +21,7 @@ for the full design.
     ├── web-3d/                     # mined: three.js, babylon.js, ...
     ├── web-2d/                     # mined: pixijs, p5.js
     ├── web-map/                    # mined: mapbox-gl-js, itowns, qwc2
-    ├── graphics-lib/               # mined: webgl
-    └── _legacy/                    # source URL not recoverable (empty after migration)
+    └── graphics-lib/               # mined: webgl
 
 ## Per-Scenario Files
 
@@ -41,7 +40,6 @@ for the full design.
 | GitHub PR | `<repo>_pull_<num>_<slug>` |
 | StackOverflow | `so_<question-id>_<slug>` |
 | Synthetic | `e{N}_<slug>` |
-| Legacy fallback | `legacy_r{N}_<slug>` (under `_legacy/`) |
 
 `<repo>` is the basename, normalized to lowercase + alphanum
 (`three.js` → `threejs`, `mapbox-gl-js` → `mapbox_gl_js`).

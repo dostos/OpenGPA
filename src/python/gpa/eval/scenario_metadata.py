@@ -187,6 +187,22 @@ def validate_all(root: Path) -> list[str]:
             continue
         if s.slug != leaf.name:
             errors.append(f"{leaf}: slug={s.slug!r} but folder name={leaf.name!r}")
+        # Path must match <root>/<category>/<framework>/<slug>.
+        # Synthetic scenarios use <synthetic>/<topic>/<slug>/ as a sub-bucket
+        # scheme; their yaml records category/framework as "synthetic" for both,
+        # so the path parts[1] will be a topic name, not the framework value.
+        # Only enforce the path-equals-taxonomy invariant for non-synthetic scenarios.
+        rel = leaf.relative_to(root)
+        parts = rel.parts
+        if len(parts) != 3:
+            errors.append(
+                f"{leaf}: expected <category>/<framework>/<slug> (3 parts), got {parts}"
+            )
+        elif s.taxonomy.category != "synthetic" and (parts[0], parts[1]) != (s.taxonomy.category, s.taxonomy.framework):
+            errors.append(
+                f"{leaf}: path says <{parts[0]}>/<{parts[1]}> but yaml says "
+                f"<{s.taxonomy.category}>/<{s.taxonomy.framework}>"
+            )
         if not (leaf / "scenario.md").exists():
             errors.append(f"{leaf}: missing scenario.md")
         for e in validate_scenario(s):

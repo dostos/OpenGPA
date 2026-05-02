@@ -126,3 +126,30 @@ def test_validate_all_reports_slug_mismatch(tmp_path):
                       "but_yaml_says_this", "synthetic", "synthetic")
     errors = validate_all(tmp_path)
     assert any("slug" in e.lower() for e in errors)
+
+
+def test_validate_all_flags_path_taxonomy_mismatch(tmp_path):
+    """yaml says category=web-3d but it lives under native-engine/godot/."""
+    from gpa.eval.scenario_metadata import validate_all
+    _make_scenario_at(tmp_path / "native-engine" / "godot" / "x1",
+                      "x1", "web-3d", "synthetic")
+    errors = validate_all(tmp_path)
+    assert len(errors) >= 1
+    assert any("native-engine" in e or "web-3d" in e for e in errors)
+
+
+def test_validate_all_flags_wrong_depth(tmp_path):
+    """scenario placed only 1 level deep instead of 3."""
+    from gpa.eval.scenario_metadata import validate_all
+    _make_scenario_at(tmp_path / "x1", "x1", "synthetic", "synthetic")
+    errors = validate_all(tmp_path)
+    assert any("3 parts" in e or "parts" in e.lower() for e in errors)
+
+
+def test_validate_all_passes_well_formed(tmp_path):
+    """Well-formed scenario with matching path produces zero errors."""
+    from gpa.eval.scenario_metadata import validate_all
+    _make_scenario_at(tmp_path / "synthetic" / "synthetic" / "e1_x",
+                      "e1_x", "synthetic", "synthetic")
+    errors = validate_all(tmp_path)
+    assert errors == []

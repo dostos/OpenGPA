@@ -125,7 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
             "  gpa run -- ./my_gl_app                          # 1) simplest\n"
             "  gpa run --timeout 5 -- ./my_gl_app              # 2) auto-kill after 5s\n"
             "  gpa run --port 0 -- ./my_gl_app                 # 3) ephemeral port\n"
-            "  gpa run -- bazel-bin/tests/eval/r4_3d_map       # 4) eval scenario\n"
+            "  gpa run -- bazel-bin/tests/eval/synthetic/state-leak/e1_state_leak/e1_state_leak  # 4) eval scenario\n"
         ),
     )
     _add_session_arg(p_run)
