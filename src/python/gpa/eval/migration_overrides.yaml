@@ -1,1 +1,45 @@
-{}
+# Operator overrides for migrate_layout when automatic taxonomy resolution
+# fails. Format: original_folder_name -> {category, framework, bug_class}.
+# See docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md.
+
+# StackOverflow three.js questions — no repo for resolver to look up. All
+# describe consumer-side misuse of three.js APIs.
+r11_three_js_effectcomposer_browser_window_r:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r11_transparent_objects_in_three_js:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r20_three_js_meshdepthmaterial_depth_map_not:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r22_point_sprite_rendering_issues_with_three:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r24_artifacts_when_rendering_both_sides_of_a:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r25_three_js_transparency_disparition:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r3_material_shines_through_when_zooming_out:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+r8_three_js_resizing_canvas:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
+
+# Single GitHub issue scenarios in repos not in mining_rules.yaml.
+# agent-cockpit uses three.js with UnrealBloomPass — consumer-side bug.
+r15_unrealbloompass_produces_no_visible_outp:
+  category: web-3d
+  framework: three.js
+  bug_class: consumer-misuse
