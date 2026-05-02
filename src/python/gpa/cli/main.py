@@ -28,6 +28,7 @@ from gpa.cli.commands import diff as diff_cmd
 from gpa.cli.commands import diff_draws as diff_draws_cmd
 from gpa.cli.commands import drawcalls as drawcalls_cmd
 from gpa.cli.commands import dump as dump_cmd
+from gpa.cli.commands import passes as passes_cmd
 from gpa.cli.commands import pixel as pixel_cmd
 from gpa.cli.commands import scene as scene_cmd
 from gpa.cli.commands import env as env_cmd
@@ -260,6 +261,9 @@ def build_parser() -> argparse.ArgumentParser:
     # ---- drawcalls --------------------------------------------------------
     drawcalls_cmd.add_subparser(sub)
 
+    # ---- passes -----------------------------------------------------------
+    passes_cmd.add_subparser(sub)
+
     # ---- pixel ------------------------------------------------------------
     pixel_cmd.add_subparser(sub)
 
@@ -408,6 +412,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return frames_cmd.run(args)
     if args.cmd == "drawcalls":
         return drawcalls_cmd.run(args)
+    if args.cmd == "passes":
+        return passes_cmd.run(args)
     if args.cmd == "pixel":
         return pixel_cmd.run(args)
     if args.cmd == "scene":
