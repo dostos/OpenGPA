@@ -75,6 +75,34 @@ def add_subparser(subparsers) -> None:
         help="Frame id (default: GPA_FRAME_ID env or latest)",
     )
 
+    # ---- metadata (sub-sub-noun) ----
+    p_metadata = sub.add_parser(
+        "metadata",
+        help="Frame metadata sidecar (get/set)",
+    )
+    metadata_sub = p_metadata.add_subparsers(dest="metadata_cmd", required=True)
+
+    m_get = metadata_sub.add_parser("get", help="Get metadata summary for a frame (JSON)")
+    m_get.add_argument(
+        "--frame", default=None,
+        help="Frame id (default: GPA_FRAME_ID env or latest)",
+    )
+
+    m_set = metadata_sub.add_parser("set", help="Post metadata JSON for a frame")
+    m_set.add_argument(
+        "--frame", default=None,
+        help="Frame id (default: GPA_FRAME_ID env or latest)",
+    )
+    m_body_group = m_set.add_mutually_exclusive_group(required=True)
+    m_body_group.add_argument(
+        "--file", dest="file_path", default=None, metavar="PATH",
+        help="Path to a JSON file to POST as the body",
+    )
+    m_body_group.add_argument(
+        "--body-json", dest="body_json", default=None, metavar="TEXT",
+        help="Inline JSON string to POST as the body",
+    )
+
     # ---- check-config ----
     p_cc = sub.add_parser(
         "check-config",
@@ -222,6 +250,98 @@ def run_overview(
     return 0
 
 
+def run_metadata_get(
+    *,
+    session_dir: Optional[Path] = None,
+    client: Optional[RestClient] = None,
+    print_stream=None,
+    frame: Optional[str] = None,
+) -> int:
+    """Implement ``gpa frames metadata get [--frame N]``."""
+    if print_stream is None:
+        print_stream = sys.stdout
+
+    if client is None:
+        sess, client = _get_session_and_client(session_dir, client)
+        if sess is None:
+            print("[gpa] no active session found", file=sys.stderr)
+            return 2
+        if client is None:
+            return 1
+
+    try:
+        fid = resolve_frame(client=client, explicit=frame)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[gpa] could not resolve frame: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        data = client.get_json(f"/api/v1/frames/{fid}/metadata")
+    except RestError as exc:
+        print(f"[gpa] {exc}", file=sys.stderr)
+        return 1
+
+    print_stream.write(json.dumps(data) + "\n")
+    print_stream.flush()
+    return 0
+
+
+def run_metadata_set(
+    *,
+    session_dir: Optional[Path] = None,
+    client: Optional[RestClient] = None,
+    print_stream=None,
+    frame: Optional[str] = None,
+    body_json: Optional[str] = None,
+    file_path: Optional[str] = None,
+) -> int:
+    """Implement ``gpa frames metadata set [--frame N] (--file PATH | --body-json TEXT)``."""
+    if print_stream is None:
+        print_stream = sys.stdout
+
+    # Resolve body.
+    if body_json is not None:
+        try:
+            body = json.loads(body_json)
+        except json.JSONDecodeError as exc:
+            print(f"[gpa] invalid JSON in --body-json: {exc}", file=sys.stderr)
+            return 2
+    elif file_path is not None:
+        try:
+            with open(file_path) as fh:
+                body = json.load(fh)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"[gpa] could not read --file {file_path!r}: {exc}", file=sys.stderr)
+            return 2
+    else:
+        print("[gpa] one of --file or --body-json is required", file=sys.stderr)
+        return 2
+
+    if client is None:
+        sess, client = _get_session_and_client(session_dir, client)
+        if sess is None:
+            print("[gpa] no active session found", file=sys.stderr)
+            return 2
+        if client is None:
+            return 1
+
+    try:
+        fid = resolve_frame(client=client, explicit=frame)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[gpa] could not resolve frame: {exc}", file=sys.stderr)
+        return 1
+
+    try:
+        data = client.post_json(f"/api/v1/frames/{fid}/metadata", body)
+    except RestError as exc:
+        print(f"[gpa] {exc}", file=sys.stderr)
+        return 1
+
+    print_stream.write(json.dumps(data) + "\n")
+    print_stream.flush()
+    return 0
+
+
 def run_check_config(
     *,
     session_dir: Optional[Path] = None,
@@ -301,6 +421,27 @@ def run(args, *, client: Optional[RestClient] = None, print_stream=None) -> int:
             rule=getattr(args, "rule", None),
             json_output=getattr(args, "json_output", False),
         )
+
+    if frames_cmd == "metadata":
+        metadata_cmd = getattr(args, "metadata_cmd", None)
+        if metadata_cmd == "get":
+            return run_metadata_get(
+                session_dir=session_dir,
+                client=client,
+                print_stream=print_stream,
+                frame=getattr(args, "frame", None),
+            )
+        if metadata_cmd == "set":
+            return run_metadata_set(
+                session_dir=session_dir,
+                client=client,
+                print_stream=print_stream,
+                frame=getattr(args, "frame", None),
+                body_json=getattr(args, "body_json", None),
+                file_path=getattr(args, "file_path", None),
+            )
+        print(f"[gpa] unknown metadata subcommand: {metadata_cmd!r}", file=sys.stderr)
+        return 1
 
     # Should not be reached since argparse validates choices.
     print(f"[gpa] unknown frames subcommand: {frames_cmd!r}", file=sys.stderr)

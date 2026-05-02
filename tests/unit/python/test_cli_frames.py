@@ -1,5 +1,7 @@
 """Tests for the ``gpa frames`` CLI command.
 
+Also covers the ``frames metadata get/set`` sub-subverb (Task 14).
+
 Exercises the updated command end-to-end against an in-process REST app
 (no real engine).  Verifies plain output, --json output, empty session,
 and the missing-session exit code (2).
@@ -371,3 +373,75 @@ class TestBareFramesAlias:
         # Default is JSON now.
         data = json.loads(buf.getvalue())
         assert data["count"] == 2
+
+
+# --------------------------------------------------------------------------- #
+# frames metadata — lightweight unit tests (injected _CapturingClient)
+# --------------------------------------------------------------------------- #
+
+
+class _CapturingClient:
+    """Records REST calls and returns canned responses."""
+
+    def __init__(self, responses=None):
+        self._responses = responses or {}
+        self.calls: list = []
+
+    def get_json(self, path: str):
+        self.calls.append(("GET", path))
+        return self._responses.get(path, {"ok": True})
+
+    def post_json(self, path: str, body):
+        self.calls.append(("POST", path, body))
+        return self._responses.get(path, {"ok": True})
+
+
+_CAP_FID = 7
+_CAP_OV_PATH = "/api/v1/frames/current/overview"
+
+
+def _cap_client(**extra):
+    resp = {_CAP_OV_PATH: {"frame_id": _CAP_FID}}
+    resp.update(extra)
+    return _CapturingClient(resp)
+
+
+class TestFramesMetadata:
+    def test_metadata_get_hits_correct_url(self, monkeypatch):
+        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        client = _cap_client()
+        buf = io.StringIO()
+        rc = frames_cmd.run_metadata_get(client=client, frame=None, print_stream=buf)
+        assert rc == 0
+        assert ("GET", f"/api/v1/frames/{_CAP_FID}/metadata") in client.calls
+
+    def test_metadata_set_via_body_json(self, monkeypatch):
+        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        client = _cap_client()
+        buf = io.StringIO()
+        rc = frames_cmd.run_metadata_set(
+            client=client, frame=None,
+            body_json='{"framework": "three.js"}',
+            print_stream=buf,
+        )
+        assert rc == 0
+        path = f"/api/v1/frames/{_CAP_FID}/metadata"
+        assert any(c[0] == "POST" and c[1] == path and c[2] == {"framework": "three.js"}
+                   for c in client.calls)
+
+    def test_metadata_set_via_file(self, monkeypatch, tmp_path):
+        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        data = {"framework": "unity"}
+        json_file = tmp_path / "meta.json"
+        json_file.write_text(json.dumps(data))
+        client = _cap_client()
+        buf = io.StringIO()
+        rc = frames_cmd.run_metadata_set(
+            client=client, frame=None,
+            file_path=str(json_file),
+            print_stream=buf,
+        )
+        assert rc == 0
+        path = f"/api/v1/frames/{_CAP_FID}/metadata"
+        assert any(c[0] == "POST" and c[1] == path and c[2] == data
+                   for c in client.calls)
