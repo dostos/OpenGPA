@@ -28,6 +28,7 @@ from gpa.cli.commands import diff_draws as diff_draws_cmd
 from gpa.cli.commands import drawcalls as drawcalls_cmd
 from gpa.cli.commands import dump as dump_cmd
 from gpa.cli.commands import pixel as pixel_cmd
+from gpa.cli.commands import scene as scene_cmd
 from gpa.cli.commands import env as env_cmd
 from gpa.cli.commands import explain_draw as explain_draw_cmd
 from gpa.cli.commands import frames as frames_cmd
@@ -261,6 +262,9 @@ def build_parser() -> argparse.ArgumentParser:
     # ---- pixel ------------------------------------------------------------
     pixel_cmd.add_subparser(sub)
 
+    # ---- scene ------------------------------------------------------------
+    scene_cmd.add_subparser(sub)
+
     # ---- source -----------------------------------------------------------
     source_cmd.add_subparser(sub)
 
@@ -400,6 +404,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return drawcalls_cmd.run(args)
     if args.cmd == "pixel":
         return pixel_cmd.run(args)
+    if args.cmd == "scene":
+        return scene_cmd.run(args)
     if args.cmd == "check-config":
         import sys as _sys
         print(
@@ -441,6 +447,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             json_output=args.json_output,
         )
     if args.cmd == "scene-find":
+        print(
+            "warning: 'gpa scene-find' is deprecated; use 'gpa scene find'",
+            file=sys.stderr,
+        )
         return scene_find_cmd.run(
             predicates=args.predicates,
             session_dir=args.session,
@@ -449,6 +459,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             json_output=args.json_output,
         )
     if args.cmd == "scene-explain":
+        print(
+            "warning: 'gpa scene-explain' is deprecated; use 'gpa scene explain'",
+            file=sys.stderr,
+        )
         return scene_explain_cmd.run(
             pixel=args.pixel,
             session_dir=args.session,
