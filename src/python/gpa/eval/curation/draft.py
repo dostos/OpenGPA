@@ -1,5 +1,6 @@
 from __future__ import annotations
 import re
+from pathlib import Path
 from typing import Optional
 
 import yaml
@@ -29,6 +30,23 @@ _ALLOWED_EXTENSIONS = {".c", ".h", ".md", ".glsl", ".vert", ".frag"}
 _MAINTAINER_FRAMING_BUG_CLASSES = frozenset(
     {"framework-internal", "consumer-misuse", "user-config"}
 )
+
+
+def compute_scenario_dir(
+    eval_root: Path,
+    category: str,
+    framework: str,
+    slug: str,
+) -> Path:
+    """Compute the destination directory for a new mined scenario in the
+    taxonomy-tree layout (see spec 2026-05-02-eval-scenario-taxonomy-layout)."""
+    if category == "synthetic":
+        # Synthetic scenarios are bucketed by topic.
+        from gpa.eval.migrate_layout import synthetic_topic
+        # Drop the e{N}_ prefix from slug to derive the topic suffix.
+        suffix = slug.split("_", 1)[1] if "_" in slug else slug
+        return eval_root / "synthetic" / synthetic_topic(suffix) / slug
+    return eval_root / category / framework / slug
 
 
 class DraftRejectedByModel(ValueError):

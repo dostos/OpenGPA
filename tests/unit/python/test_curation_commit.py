@@ -27,10 +27,13 @@ def test_commit_appends_log_and_writes_summary(tmp_path):
         observed_helps="yes",
         failure_mode=None,
         eval_summary={"with_gla": {"correct_diagnosis": True, "total_tokens": 100}},
+        category="native-engine",
+        framework="godot",
     )
 
-    assert (eval_dir / "r1_test" / "main.c").read_text() == "int main(){}"
-    assert (eval_dir / "r1_test" / "scenario.md").exists()
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r1_test"
+    assert (scenario_dir / "main.c").read_text() == "int main(){}"
+    assert (scenario_dir / "scenario.md").exists()
     entries = log.read_all()
     assert len(entries) == 1
     assert entries[0].scenario_id == "r1_test"
@@ -60,17 +63,23 @@ def test_commit_creates_eval_dir_if_missing(tmp_path):
         observed_helps="no",
         failure_mode="shader_compile_not_exposed",
         eval_summary=None,
+        category="native-engine",
+        framework="godot",
     )
 
-    assert (eval_dir / "r2_missing_dir" / "main.c").read_text() == "void f(){}"
-    assert (eval_dir / "r2_missing_dir" / "scenario.md").read_text() == "# R2\n"
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r2_missing_dir"
+    assert (scenario_dir / "main.c").read_text() == "void f(){}"
+    assert (scenario_dir / "scenario.md").read_text() == "# R2\n"
     entries = log.read_all()
     assert entries[0].outcome == "scenario_committed"
     assert entries[0].failure_mode == "shader_compile_not_exposed"
 
 
 def test_commit_leaves_build_bazel_untouched(tmp_path):
-    """BUILD.bazel is now glob-driven: commit_scenario must not modify it."""
+    """Top-level BUILD.bazel is glob-driven: commit_scenario must not modify it.
+
+    A per-leaf BUILD.bazel is written into the scenario directory itself.
+    """
     eval_dir = tmp_path / "eval"
     eval_dir.mkdir()
     original = (
@@ -90,14 +99,17 @@ def test_commit_leaves_build_bazel_untouched(tmp_path):
         triage_verdict="in_scope", fingerprint="state_leak:x",
         tier="core", predicted_helps="yes", observed_helps="yes",
         failure_mode=None, eval_summary=None,
+        category="native-engine", framework="godot",
     )
-    # BUILD.bazel is auto-discovering scenarios — commit_scenario must not
-    # edit it at all.
+    # Top-level BUILD.bazel must be untouched.
     assert (eval_dir / "BUILD.bazel").read_text() == original
+    # Per-leaf BUILD.bazel should have been written into the scenario dir.
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r1_test"
+    assert (scenario_dir / "BUILD.bazel").exists()
 
 
 def test_commit_without_build_bazel_is_fine(tmp_path):
-    """If BUILD.bazel doesn't exist, commit_scenario is still fine."""
+    """If top-level BUILD.bazel doesn't exist, commit_scenario is still fine."""
     eval_dir = tmp_path / "eval"
     eval_dir.mkdir()
     log = CoverageLog(tmp_path / "log.jsonl")
@@ -109,12 +121,16 @@ def test_commit_without_build_bazel_is_fine(tmp_path):
         triage_verdict="in_scope", fingerprint="state_leak:y",
         tier="core", predicted_helps="yes", observed_helps="yes",
         failure_mode=None, eval_summary=None,
+        category="native-engine", framework="godot",
     )
-    # no exception; no build file created
+    # No top-level BUILD.bazel should be created.
     assert not (eval_dir / "BUILD.bazel").exists()
-    # Scenario is written to its directory
-    assert (eval_dir / "r2_nobuild" / "main.c").exists()
-    assert (eval_dir / "r2_nobuild" / "scenario.md").exists()
+    # Scenario is written to its taxonomy-tree directory.
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r2_nobuild"
+    assert (scenario_dir / "main.c").exists()
+    assert (scenario_dir / "scenario.md").exists()
+    # Per-leaf BUILD.bazel should be present (C source exists).
+    assert (scenario_dir / "BUILD.bazel").exists()
 
 
 def test_commit_scenario_writes_multiple_files(tmp_path):
@@ -143,12 +159,15 @@ def test_commit_scenario_writes_multiple_files(tmp_path):
         observed_helps="yes",
         failure_mode=None,
         eval_summary=None,
+        category="native-engine",
+        framework="godot",
     )
 
-    assert (eval_dir / "r1_test" / "main.c").read_text() == "int main(){}"
-    assert (eval_dir / "r1_test" / "helper.c").read_text() == "void helper(void) {}"
-    assert (eval_dir / "r1_test" / "shader.glsl").read_text().startswith("#version 330")
-    assert (eval_dir / "r1_test" / "scenario.md").read_text() == "# R1_TEST"
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r1_test"
+    assert (scenario_dir / "main.c").read_text() == "int main(){}"
+    assert (scenario_dir / "helper.c").read_text() == "void helper(void) {}"
+    assert (scenario_dir / "shader.glsl").read_text().startswith("#version 330")
+    assert (scenario_dir / "scenario.md").read_text() == "# R1_TEST"
 
 
 def test_commit_scenario_writes_nested_upstream_snapshot(tmp_path):
@@ -175,8 +194,11 @@ def test_commit_scenario_writes_nested_upstream_snapshot(tmp_path):
         observed_helps="yes",
         failure_mode=None,
         eval_summary=None,
+        category="native-engine",
+        framework="godot",
     )
-    snapshot_path = eval_dir / "r2_test" / "upstream_snapshot" / "original.c"
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r2_test"
+    snapshot_path = scenario_dir / "upstream_snapshot" / "original.c"
     assert snapshot_path.exists()
     assert "verbatim upstream" in snapshot_path.read_text()
 
@@ -202,9 +224,12 @@ def test_commit_scenario_legacy_kwargs_still_work(tmp_path):
         observed_helps="yes",
         failure_mode=None,
         eval_summary=None,
+        category="native-engine",
+        framework="godot",
     )
-    assert (eval_dir / "r3_legacy" / "main.c").exists()
-    assert (eval_dir / "r3_legacy" / "scenario.md").exists()
+    scenario_dir = eval_dir / "native-engine" / "godot" / "r3_legacy"
+    assert (scenario_dir / "main.c").exists()
+    assert (scenario_dir / "scenario.md").exists()
 
 
 def test_log_rejection_appends_rejected_entry_and_writes_summary(tmp_path):

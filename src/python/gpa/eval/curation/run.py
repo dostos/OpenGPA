@@ -686,6 +686,11 @@ def _run_judge(
             }
 
         # Commit the scenario into tests/eval/.
+        cell = rec.taxonomy_cell or ""
+        if "." in cell:
+            cat, fw = cell.split(".", 1)
+        else:
+            cat = fw = cell  # fallback for legacy cells without dot
         commit_scenario(
             eval_dir=eval_dir,
             scenario_id=scenario_id,
@@ -701,6 +706,8 @@ def _run_judge(
             observed_helps=verdict,
             failure_mode=None,
             eval_summary=eval_summary,
+            category=cat,
+            framework=fw,
         )
 
         writer.append(_make_row(
