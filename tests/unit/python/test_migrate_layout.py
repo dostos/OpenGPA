@@ -291,7 +291,7 @@ def test_plan_unresolved_emits_review(tmp_path):
     assert any("_legacy" in str(e.new_relative) for e in plan.entries)
 
 
-def test_apply_plan_moves_files_and_writes_yaml(tmp_path, monkeypatch):
+def test_apply_plan_moves_files_and_writes_yaml(tmp_path):
     from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
     (tmp_path / "e1_state_leak").mkdir()
     (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
@@ -341,3 +341,17 @@ def test_apply_plan_no_build_for_md_only(tmp_path):
     assert (new_dir / "scenario.md").exists()
     assert (new_dir / "scenario.yaml").exists()
     assert not (new_dir / "BUILD.bazel").exists()
+
+
+def test_apply_plan_works_with_relative_root(tmp_path, monkeypatch):
+    """Regression: apply_plan must accept relative roots without git mv breaking."""
+    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    (tmp_path / "e1_state_leak").mkdir()
+    (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
+    ctx = ResolveContext(rules={}, overrides={})
+    monkeypatch.chdir(tmp_path.parent)
+    rel_root = tmp_path.relative_to(tmp_path.parent)
+    plan = build_plan(rel_root, ctx)
+    apply_plan(plan, rel_root, use_git=False, write_yaml=False, write_build_files=False)
+    new_dir = tmp_path / "synthetic" / "state-leak" / "e1_state_leak"
+    assert (new_dir / "scenario.md").exists()

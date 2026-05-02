@@ -205,6 +205,7 @@ class MigrationPlan:
 
 
 def build_plan(root: Path, ctx: ResolveContext) -> MigrationPlan:
+    root = root.resolve()
     entries: list[PlanEntry] = []
     review: list[dict] = []
     conflicts: list[dict] = []
@@ -320,6 +321,7 @@ def apply_plan(
     commits, so the move-only commit uses write_yaml=False
     write_build_files=False.
     """
+    root = root.resolve()
     for entry in plan.entries:
         new_path = root / entry.new_relative
         new_path.parent.mkdir(parents=True, exist_ok=True)
