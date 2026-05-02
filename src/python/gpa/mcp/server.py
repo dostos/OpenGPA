@@ -1,5 +1,13 @@
 """Minimal stdio-based MCP tool server for OpenGPA.
 
+.. deprecated:: 0.x
+   The OpenGPA MCP server is deprecated in favor of the ``gpa`` CLI,
+   which agents call via their built-in shell tool with much lower
+   per-turn token cost. See ``docs/cli/agent-integration.md`` (Task 29)
+   for the recommended integration. The MCP server remains importable
+   but is no longer the recommended agent integration. Physical removal
+   scheduled in ~4 weeks (2026-05-30 target).
+
 Implements the Model Context Protocol (MCP) tool-call protocol over stdin/stdout
 using JSON-RPC 2.0.  The `mcp` Python SDK is not required.
 
