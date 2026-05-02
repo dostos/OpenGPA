@@ -179,6 +179,91 @@ def build_slug(parsed: ParsedName, source: Source) -> str:
     return f"{repo_norm}_{source.issue_id}_{parsed.suffix}"
 
 
+from datetime import date
+from gpa.eval.scenario_metadata import (
+    Scenario, Source, Taxonomy, Backend,
+)
+
+
+@dataclass
+class PlanEntry:
+    old_path: Path
+    new_relative: Path                  # relative to root
+    scenario: Scenario
+
+
+@dataclass
+class MigrationPlan:
+    entries: list[PlanEntry]
+    review_rows: list[dict]
+    conflicts: list[dict]
+
+
+def build_plan(root: Path, ctx: ResolveContext) -> MigrationPlan:
+    entries: list[PlanEntry] = []
+    review: list[dict] = []
+    conflicts: list[dict] = []
+    seen_slugs: dict[str, Path] = {}    # slug -> first old_path that claimed it
+    today = date.today().isoformat()
+
+    for child in sorted(root.iterdir()):
+        if not child.is_dir() or not (child / "scenario.md").exists():
+            continue
+        original_name = child.name
+        parsed = parse_existing_folder_name(original_name)
+        source = extract_source(child / "scenario.md")
+        # Synthetic kind always overrides source type for older e* dirs that
+        # don't link to issues.
+        if parsed.kind == "synthetic":
+            source = Source(type="synthetic")
+        cat, fw, bc = resolve_taxonomy(parsed, source, ctx, original_name=original_name)
+
+        slug = build_slug(parsed, source)
+        # Conflict resolution: append _02, _03, ...
+        if slug in seen_slugs:
+            i = 2
+            while f"{slug}_{i:02d}" in seen_slugs:
+                i += 1
+            new_slug = f"{slug}_{i:02d}"
+            conflicts.append({
+                "original_name": original_name,
+                "first_claimed_by": str(seen_slugs[slug]),
+                "resolved_to": new_slug,
+            })
+            slug = new_slug
+        seen_slugs[slug] = child
+
+        if cat is None or fw is None:
+            review.append({
+                "original_name": original_name,
+                "kind": parsed.kind,
+                "source_type": source.type,
+                "repo": source.repo or "",
+                "suggested_slug": f"legacy_{parsed.round}_{parsed.suffix}",
+            })
+            cat, fw = "synthetic", "synthetic"  # placeholder; real path is _legacy
+            new_rel = Path("_legacy") / f"legacy_{parsed.round}_{parsed.suffix}"
+            slug = new_rel.name
+        elif cat == "synthetic":
+            new_rel = Path("synthetic") / synthetic_topic(parsed.suffix) / slug
+        else:
+            new_rel = Path(cat) / fw / slug
+
+        scenario = Scenario(
+            path=root / new_rel,
+            slug=slug,
+            round=parsed.round,
+            mined_at=today,
+            source=source,
+            taxonomy=Taxonomy(category=cat, framework=fw, bug_class=bc),
+            backend=Backend(),
+            status="drafted",
+        )
+        entries.append(PlanEntry(old_path=child, new_relative=new_rel, scenario=scenario))
+
+    return MigrationPlan(entries=entries, review_rows=review, conflicts=conflicts)
+
+
 _SYNTHETIC_BUCKETS = [
     ("state-leak", ("state_leak", "state-leak")),
     ("uniform", ("uniform_",)),

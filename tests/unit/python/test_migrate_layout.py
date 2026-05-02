@@ -248,3 +248,44 @@ def test_parse_synthetic_topic_buckets_misc_safely():
     # only true if the rule splits on '_'; misc bucket otherwise.
     assert synthetic_topic("compensating_vp") == "misc"
     assert synthetic_topic("scissor_not_reset") == "misc"
+
+
+def test_plan_one_synthetic(tmp_path):
+    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    from pathlib import Path
+    (tmp_path / "e1_state_leak").mkdir()
+    (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
+    (tmp_path / "e1_state_leak" / "main.c").write_text("int main(){}")
+    ctx = ResolveContext(rules={}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    assert len(plan.entries) == 1
+    e = plan.entries[0]
+    assert e.new_relative == Path("synthetic/state-leak/e1_state_leak")
+    assert e.scenario.taxonomy.category == "synthetic"
+
+
+def test_plan_resolves_conflict_with_suffix(tmp_path):
+    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    # Two early-mined that would collide on slug
+    (tmp_path / "r10_polygon_xxx").mkdir()
+    (tmp_path / "r10_polygon_xxx" / "scenario.md").write_text("https://github.com/x/y/issues/1")
+    (tmp_path / "r12_polygon_xxx").mkdir()
+    (tmp_path / "r12_polygon_xxx" / "scenario.md").write_text("https://github.com/x/y/issues/1")
+    ctx = ResolveContext(rules={"x/y": ("web-3d", "three.js")}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    leaves = sorted(e.new_relative.name for e in plan.entries)
+    # Both rooted under same fw; second one gets _02 appended
+    assert leaves[0].startswith("y_1_polygon_xxx")
+    assert leaves[1] == leaves[0] + "_02" or leaves[0].endswith("_02")
+
+
+def test_plan_unresolved_emits_review(tmp_path):
+    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    (tmp_path / "r99_mystery").mkdir()
+    (tmp_path / "r99_mystery" / "scenario.md").write_text("no urls here")
+    ctx = ResolveContext(rules={}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    assert len(plan.review_rows) == 1
+    assert "r99_mystery" in plan.review_rows[0]["original_name"]
+    # Unresolved scenarios still get a plan entry, under _legacy/
+    assert any("_legacy" in str(e.new_relative) for e in plan.entries)
