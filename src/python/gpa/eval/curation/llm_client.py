@@ -60,22 +60,13 @@ class LLMClient:
         return cls(sdk=anthropic.Anthropic(), model=model)
 
 
-class ClaudeCodeLLMClient:
-    """LLM client that shells out to the `claude` CLI (Claude Code headless mode).
+class _CliLLMClient:
+    """Base for CLI-shelling LLM clients (claude/codex). Token counts always 0."""
 
-    Duck-typed to match LLMClient.complete(). Token counts are always 0 since
-    we can't retrieve them from the CLI output; cache behavior is managed by
-    Claude Code itself (not us).
-    """
-
-    def __init__(self, claude_bin: str = "claude", timeout: int = 300,
-                 extra_args: Optional[list[str]] = None):
-        self._bin = claude_bin
+    def __init__(self, *, binary: str, extra_args: list[str], timeout: int = 300):
+        self._bin = binary
+        self._extra = list(extra_args)
         self._timeout = timeout
-        # Default extra args: empty. Don't use --bare by default — it disables
-        # OAuth/keychain auth and would force ANTHROPIC_API_KEY, which is exactly
-        # what this backend is designed to avoid.
-        self._extra = extra_args if extra_args is not None else []
 
     def complete(
         self,
@@ -84,7 +75,6 @@ class ClaudeCodeLLMClient:
         cache_system: bool = True,
         max_tokens: Optional[int] = None,
     ) -> LLMResponse:
-        # Claude Code's -p mode accepts a single prompt; combine system + user content.
         user_parts: list[str] = []
         for msg in messages:
             content = msg.get("content", "")
@@ -96,10 +86,9 @@ class ClaudeCodeLLMClient:
                     if isinstance(block, dict) and block.get("type") == "text":
                         user_parts.append(block.get("text", ""))
         user_text = "\n\n".join(user_parts)
-
         combined = f"{system}\n\n---\n\n{user_text}" if system else user_text
 
-        argv = [self._bin, "-p", "--output-format", "text"] + self._extra
+        argv = [self._bin, *self._extra]
         try:
             result = subprocess.run(
                 argv,
@@ -111,7 +100,7 @@ class ClaudeCodeLLMClient:
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError(
-                f"claude CLI failed (exit {e.returncode}): {e.stderr[:500]}"
+                f"{self._bin} CLI failed (exit {e.returncode}): {e.stderr[:500]}"
             ) from e
 
         return LLMResponse(
@@ -124,6 +113,43 @@ class ClaudeCodeLLMClient:
         )
 
     @classmethod
+    def from_env(cls, model: str = "") -> "_CliLLMClient":
+        return cls()  # type: ignore[call-arg]
+
+
+class ClaudeCodeLLMClient(_CliLLMClient):
+    """Shells out to the `claude` CLI (Claude Code headless mode)."""
+
+    def __init__(self, claude_bin: str = "claude", timeout: int = 300,
+                 extra_args: Optional[list[str]] = None):
+        # Default args: -p --output-format text. Don't use --bare (forces API key).
+        base = ["-p", "--output-format", "text"]
+        if extra_args is not None:
+            base = base + list(extra_args)
+        super().__init__(binary=claude_bin, extra_args=base, timeout=timeout)
+
+    @classmethod
     def from_env(cls, model: str = "claude-opus-4-7") -> "ClaudeCodeLLMClient":
         # model arg is ignored — claude CLI picks its own model.
         return cls()
+
+
+class CodexCliLLMClient(_CliLLMClient):
+    """Shells out to the `codex` CLI in non-interactive mode.
+
+    Codex `exec` mode runs a single prompt and exits. We use it as a
+    text-completion backend identical in behavior to ClaudeCodeLLMClient.
+    """
+
+    def __init__(self, codex_bin: str = "codex", timeout: int = 300,
+                 extra_args: Optional[list[str]] = None):
+        # Default args: exec --skip-git-repo-check -s read-only.
+        # read-only is fine for text completion (no file IO needed by the model).
+        base = [
+            "exec",
+            "--skip-git-repo-check",
+            "-s", "read-only",
+        ]
+        if extra_args is not None:
+            base = base + list(extra_args)
+        super().__init__(binary=codex_bin, extra_args=base, timeout=timeout)

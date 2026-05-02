@@ -1,5 +1,7 @@
+import subprocess
 from unittest.mock import patch, MagicMock
-from gpa.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, LLMResponse
+import pytest
+from gpa.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, CodexCliLLMClient, LLMResponse
 
 def test_llm_client_calls_anthropic_with_cache_control():
     fake_sdk = MagicMock()
@@ -63,3 +65,32 @@ def test_claude_code_client_handles_multi_block_user_content():
         stdin = kwargs.get("input", "")
         assert "t1" in stdin and "t2" in stdin
         assert "base64" not in stdin
+
+
+def test_codex_cli_client_shells_out(monkeypatch):
+    captured = {}
+    def fake_run(argv, *, input, capture_output, text, timeout, check):
+        captured["argv"] = argv
+        captured["input"] = input
+        return subprocess.CompletedProcess(argv, 0, "hello world\n", "")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    client = CodexCliLLMClient()
+    resp = client.complete(
+        system="be brief",
+        messages=[{"role": "user", "content": "say hi"}],
+    )
+    assert resp.text == "hello world"
+    assert captured["argv"][0] == "codex"
+    assert "exec" in captured["argv"]
+    assert "--skip-git-repo-check" in captured["argv"]
+    assert "be brief" in captured["input"]
+    assert "say hi" in captured["input"]
+
+
+def test_codex_cli_client_propagates_failure(monkeypatch):
+    def fake_run(*a, **kw):
+        raise subprocess.CalledProcessError(2, ["codex"], stderr="boom")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    client = CodexCliLLMClient()
+    with pytest.raises(RuntimeError, match="codex CLI failed"):
+        client.complete(system="", messages=[{"role": "user", "content": "x"}])
