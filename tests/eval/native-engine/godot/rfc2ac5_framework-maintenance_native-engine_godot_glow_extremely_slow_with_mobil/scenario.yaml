@@ -1,0 +1,19 @@
+schema_version: 1
+slug: rfc2ac5_framework-maintenance_native-engine_godot_glow_extremely_slow_with_mobil
+round: rfc2ac5
+mined_at: '2026-05-02T07:05:59.275810+00:00'
+source:
+  type: github_issue
+  url: https://github.com/godotengine/godot/issues/98531
+  repo: godotengine/godot
+  issue_id: 98531
+taxonomy:
+  category: native-engine
+  framework: godot
+  bug_class: unknown
+backend:
+  api: unknown
+  status: not-yet-reproduced
+status: drafted
+tags: []
+notes: ''

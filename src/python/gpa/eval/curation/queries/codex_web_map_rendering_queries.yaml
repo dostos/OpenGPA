@@ -1,0 +1,23 @@
+# Codex-authored web-map rendering query pack.
+#
+# Goal: mine map rendering framework bugs in MapLibre, Mapbox GL JS, deck.gl,
+# and Cesium, covering layer ordering, transparency, tile seams, misalignment,
+# and depth/translucency regressions.
+
+batch_quota: 20
+queries:
+  issue:
+    - 'repo:maplibre/maplibre-gl-js is:issue is:closed reason:completed transparent wrong OR disappear'
+    - 'repo:maplibre/maplibre-gl-js is:issue is:closed reason:completed render wrong'
+    - 'repo:maplibre/maplibre-gl-js is:issue is:closed reason:completed artifact tile boundary'
+    - 'repo:mapbox/mapbox-gl-js is:issue is:closed reason:completed symbol disappear'
+    - 'repo:mapbox/mapbox-gl-js is:issue is:closed reason:completed layer wrong'
+    - 'repo:mapbox/mapbox-gl-js is:issue is:closed reason:completed color wrong'
+    - 'repo:visgl/deck.gl is:issue is:closed reason:completed layer misalign'
+    - 'repo:visgl/deck.gl is:issue is:closed reason:completed rendering wrong'
+    - 'repo:CesiumGS/cesium is:issue is:closed reason:completed translucent wrong OR disappear'
+    - 'repo:CesiumGS/cesium is:issue is:closed reason:completed depth test regression'
+    - 'repo:CesiumGS/cesium is:issue is:closed reason:completed texture wrong'
+
+  commit: []
+  stackoverflow: []

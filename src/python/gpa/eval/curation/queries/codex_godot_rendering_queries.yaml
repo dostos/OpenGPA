@@ -1,0 +1,27 @@
+# Codex-authored Godot mining query pack.
+#
+# Goal: mine Godot rendering bugs across framework-maintenance and
+# framework-app-dev/plugin repos, prioritizing visible GPU-state symptoms and
+# completed issues likely to have closing PR metadata.
+
+batch_quota: 18
+queries:
+  issue:
+    # framework-maintenance: Godot engine rendering bugs.
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" shader wrong'
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" transparent wrong'
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" texture wrong'
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" black artifact'
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" depth wrong'
+    - 'repo:godotengine/godot is:issue is:closed reason:completed label:"topic:rendering" glow wrong'
+
+    # framework-app-dev/plugin: projects using Godot or Godot rendering plugins.
+    - '"godot" "shader" "wrong" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+    - '"godot" "transparent shaders" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+    - '"godot" "material artifact" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+    - '"godot" "rendering glitches" "transparent" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+    - '"godot" "black screen" "shader" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+    - '"godot" "wrong color" "shader" is:issue is:closed reason:completed -repo:godotengine/godot -repo:godotengine/godot-docs'
+
+  commit: []
+  stackoverflow: []

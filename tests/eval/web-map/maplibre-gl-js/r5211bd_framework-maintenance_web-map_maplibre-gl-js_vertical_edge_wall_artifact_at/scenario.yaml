@@ -1,0 +1,19 @@
+schema_version: 1
+slug: r5211bd_framework-maintenance_web-map_maplibre-gl-js_vertical_edge_wall_artifact_at
+round: r5211bd
+mined_at: '2026-05-02T07:07:27.559231+00:00'
+source:
+  type: github_issue
+  url: https://github.com/maplibre/maplibre-gl-js/issues/6920
+  repo: maplibre/maplibre-gl-js
+  issue_id: 6920
+taxonomy:
+  category: web-map
+  framework: maplibre-gl-js
+  bug_class: unknown
+backend:
+  api: unknown
+  status: not-yet-reproduced
+status: drafted
+tags: []
+notes: ''

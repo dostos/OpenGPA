@@ -1,0 +1,19 @@
+schema_version: 1
+slug: r5211bd_framework-maintenance_web-map_deck_gl_bug_googlemapsoverlay_misalign
+round: r5211bd
+mined_at: '2026-05-02T07:07:27.577259+00:00'
+source:
+  type: github_issue
+  url: https://github.com/visgl/deck.gl/issues/8891
+  repo: visgl/deck.gl
+  issue_id: 8891
+taxonomy:
+  category: web-map
+  framework: deck.gl
+  bug_class: unknown
+backend:
+  api: unknown
+  status: not-yet-reproduced
+status: drafted
+tags: []
+notes: ''
