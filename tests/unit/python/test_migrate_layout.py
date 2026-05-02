@@ -88,3 +88,86 @@ def test_extract_no_url_returns_legacy(tmp_path):
     md.write_text("plain text with no urls\n")
     src = extract_source(md)
     assert src.type == "legacy"
+
+
+def test_resolve_taxonomy_from_parsed_hints():
+    from gpa.eval.migrate_layout import (
+        ParsedName, resolve_taxonomy, ResolveContext,
+    )
+    from gpa.eval.scenario_metadata import Source
+    p = ParsedName(round="r96fdc7", category_hint="native-engine",
+                   framework_hint="godot", bug_class_hint="framework-maintenance",
+                   suffix="x", kind="recent-mined")
+    src = Source(type="github_issue", repo="godotengine/godot", issue_id=86493)
+    ctx = ResolveContext(rules={}, overrides={})
+    cat, fw, bc = resolve_taxonomy(p, src, ctx)
+    assert cat == "native-engine"
+    assert fw == "godot"
+    assert bc == "framework-internal"  # framework-maintenance => framework-internal
+
+
+def test_resolve_taxonomy_from_repo_lookup():
+    from gpa.eval.migrate_layout import (
+        ParsedName, resolve_taxonomy, ResolveContext,
+    )
+    from gpa.eval.scenario_metadata import Source
+    p = ParsedName(round="r14", category_hint=None, framework_hint=None,
+                   bug_class_hint=None, suffix="bevy_child_text_invisible",
+                   kind="early-mined")
+    src = Source(type="github_issue", repo="bevyengine/bevy", issue_id=14732)
+    ctx = ResolveContext(
+        rules={"bevyengine/bevy": ("native-engine", "bevy")},
+        overrides={},
+    )
+    cat, fw, bc = resolve_taxonomy(p, src, ctx)
+    assert cat == "native-engine"
+    assert fw == "bevy"
+    assert bc == "framework-internal"
+
+
+def test_resolve_taxonomy_synthetic():
+    from gpa.eval.migrate_layout import (
+        ParsedName, resolve_taxonomy, ResolveContext,
+    )
+    from gpa.eval.scenario_metadata import Source
+    p = ParsedName(round="e1", category_hint=None, framework_hint=None,
+                   bug_class_hint=None, suffix="state_leak", kind="synthetic")
+    src = Source(type="synthetic")
+    ctx = ResolveContext(rules={}, overrides={})
+    cat, fw, bc = resolve_taxonomy(p, src, ctx)
+    assert cat == "synthetic"
+    assert fw == "synthetic"
+    assert bc == "synthetic"
+
+
+def test_resolve_taxonomy_overrides_win():
+    from gpa.eval.migrate_layout import (
+        ParsedName, resolve_taxonomy, ResolveContext,
+    )
+    from gpa.eval.scenario_metadata import Source
+    p = ParsedName(round="r2", category_hint=None, framework_hint=None,
+                   bug_class_hint=None, suffix="weird_thing", kind="early-mined")
+    src = Source(type="legacy")
+    ctx = ResolveContext(
+        rules={},
+        overrides={"r2_weird_thing": {"category": "web-3d", "framework": "three.js",
+                                       "bug_class": "consumer-misuse"}},
+    )
+    cat, fw, bc = resolve_taxonomy(p, src, ctx, original_name="r2_weird_thing")
+    assert cat == "web-3d"
+    assert fw == "three.js"
+    assert bc == "consumer-misuse"
+
+
+def test_resolve_taxonomy_unresolved():
+    from gpa.eval.migrate_layout import (
+        ParsedName, resolve_taxonomy, ResolveContext,
+    )
+    from gpa.eval.scenario_metadata import Source
+    p = ParsedName(round="r3", category_hint=None, framework_hint=None,
+                   bug_class_hint=None, suffix="nothing", kind="early-mined")
+    src = Source(type="legacy")
+    ctx = ResolveContext(rules={}, overrides={})
+    cat, fw, bc = resolve_taxonomy(p, src, ctx, original_name="r3_nothing")
+    assert cat is None
+    assert fw is None

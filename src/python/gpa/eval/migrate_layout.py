@@ -89,3 +89,65 @@ def extract_source(scenario_md_path: Path) -> Source:
             issue_id=qid,
         )
     return Source(type="legacy")
+
+
+@dataclass
+class ResolveContext:
+    rules: dict           # repo (str) → (category, framework)
+    overrides: dict       # original_folder_name → {category, framework, bug_class}
+
+
+# Mining-side bug_class -> stored bug_class
+_BUG_CLASS_MAP = {
+    "framework-maintenance": "framework-internal",
+    "framework-app-dev": "consumer-misuse",
+    "graphics-lib-dev": "framework-internal",
+}
+
+
+def resolve_taxonomy(
+    parsed: ParsedName,
+    source: Source,
+    ctx: ResolveContext,
+    original_name: str = "",
+) -> tuple[Optional[str], Optional[str], str]:
+    """Return (category, framework, bug_class). Either of cat/fw may be None
+    when unresolved; bug_class falls back to 'unknown'."""
+    # 1. Override wins.
+    if (override := ctx.overrides.get(original_name)) is not None:
+        return (
+            override.get("category"),
+            override.get("framework"),
+            override.get("bug_class", "unknown"),
+        )
+    # 2. Synthetic short-circuit.
+    if parsed.kind == "synthetic" or source.type == "synthetic":
+        return ("synthetic", "synthetic", "synthetic")
+    # 3. Parsed-name hints (recent-mined).
+    if parsed.category_hint and parsed.framework_hint:
+        bc = _BUG_CLASS_MAP.get(parsed.bug_class_hint or "", "unknown")
+        return (parsed.category_hint, parsed.framework_hint, bc)
+    # 4. Repo lookup in mining_rules.
+    if source.repo and source.repo in ctx.rules:
+        cat, fw = ctx.rules[source.repo]
+        return (cat, fw, "framework-internal" if "issue" in source.type else "unknown")
+    # 5. Unresolved.
+    return (None, None, "unknown")
+
+
+def load_resolve_context(
+    rules_yaml: Path, overrides_yaml: Optional[Path] = None,
+) -> ResolveContext:
+    import yaml as _yaml
+    with open(rules_yaml) as f:
+        d = _yaml.safe_load(f)
+    rules: dict = {}
+    repos = d.get("taxonomy", {}).get("framework_repos", {})
+    for repo, cf in repos.items():
+        if isinstance(cf, list) and len(cf) == 2:
+            rules[repo] = (cf[0], cf[1])
+    overrides: dict = {}
+    if overrides_yaml and overrides_yaml.exists():
+        with open(overrides_yaml) as f:
+            overrides = _yaml.safe_load(f) or {}
+    return ResolveContext(rules=rules, overrides=overrides)
