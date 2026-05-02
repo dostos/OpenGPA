@@ -34,6 +34,7 @@ from gpa.cli.commands import run as run_cmd
 from gpa.cli.commands import run_browser as run_browser_cmd
 from gpa.cli.commands import scene_explain as scene_explain_cmd
 from gpa.cli.commands import scene_find as scene_find_cmd
+from gpa.cli.commands import source as source_cmd
 from gpa.cli.commands import start as start_cmd
 from gpa.cli.commands import stop as stop_cmd
 from gpa.cli.commands import trace as trace_cmd
@@ -267,6 +268,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Emit JSON ({\"frames\":[…]}) instead of one id per line",
     )
 
+    # ---- source -----------------------------------------------------------
+    source_cmd.add_subparser(sub)
+
     # ---- check-config -----------------------------------------------------
     check_config_cmd.add_subparser(sub)
 
@@ -441,6 +445,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             frame=args.frame,
             json_output=args.json_output,
         )
+    if args.cmd == "source":
+        return source_cmd.run(args)
     if args.cmd == "trace":
         if args.trace_cmd == "uniform":
             target = args.name
