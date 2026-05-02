@@ -83,7 +83,7 @@ def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
             r.time_seconds = 0.0
             return r
 
-    monkeypatch.setattr("gpa.eval.llm_agent.EvalAgent", StubAgent)
+    monkeypatch.setattr("gpa.eval.agents.api_agent.ApiAgent", StubAgent)
 
     factory = build_agent_fn(model="x", api_key="k")
     tools = {

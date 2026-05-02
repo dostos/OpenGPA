@@ -1,4 +1,4 @@
-"""Tests for gpa.eval.llm_agent."""
+"""Tests for gpa.eval.agents.api_agent (and the gpa.eval.llm_agent shim)."""
 
 import json
 import unittest
@@ -71,7 +71,7 @@ class TestGpaToolExecutorQueryFrame(unittest.TestCase):
             frame_id=42,
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_frame_overview_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{"frame_id": 42}')
         self.executor._query_frame({"query_type": "overview"})
@@ -80,7 +80,7 @@ class TestGpaToolExecutorQueryFrame(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_frame_drawcalls_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{"items": []}')
         self.executor._query_frame({"query_type": "drawcalls", "limit": 10, "offset": 5})
@@ -90,14 +90,14 @@ class TestGpaToolExecutorQueryFrame(unittest.TestCase):
             headers={"Authorization": "Bearer test-token"},
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_frame_unknown_type_returns_error(self, mock_get):
         result = self.executor._query_frame({"query_type": "unknown"})
         mock_get.assert_not_called()
         data = json.loads(result)
         self.assertIn("error", data)
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_frame_drawcalls_default_pagination(self, mock_get):
         mock_get.return_value = MagicMock(text='{"items": []}')
         self.executor._query_frame({"query_type": "drawcalls"})
@@ -114,7 +114,7 @@ class TestGpaToolExecutorInspectDrawcall(unittest.TestCase):
             frame_id=1,
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_inspect_drawcall_url(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._inspect_drawcall({"drawcall_id": 7})
@@ -132,7 +132,7 @@ class TestGpaToolExecutorQueryPixel(unittest.TestCase):
             frame_id=3,
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_pixel_uses_path_params(self, mock_get):
         mock_get.return_value = MagicMock(text='{"r":255}')
         self.executor._query_pixel({"x": 100, "y": 200})
@@ -150,7 +150,7 @@ class TestGpaToolExecutorQueryScene(unittest.TestCase):
             frame_id=5,
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_scene_camera(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "camera"})
@@ -159,7 +159,7 @@ class TestGpaToolExecutorQueryScene(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_scene_objects(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "objects"})
@@ -168,7 +168,7 @@ class TestGpaToolExecutorQueryScene(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_query_scene_full_falls_through_to_scene(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._query_scene({"query_type": "full"})
@@ -186,7 +186,7 @@ class TestGpaToolExecutorCompareFrames(unittest.TestCase):
             frame_id=1,
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_compare_frames_url_and_params(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._compare_frames({"frame_id_a": 10, "frame_id_b": 20, "depth": "drawcalls"})
@@ -196,7 +196,7 @@ class TestGpaToolExecutorCompareFrames(unittest.TestCase):
             headers={"Authorization": "Bearer tok"},
         )
 
-    @patch("gpa.eval.llm_agent.requests.get")
+    @patch("gpa.eval.agents.api_agent.requests.get")
     def test_compare_frames_default_depth(self, mock_get):
         mock_get.return_value = MagicMock(text='{}')
         self.executor._compare_frames({"frame_id_a": 1, "frame_id_b": 2})
@@ -225,7 +225,7 @@ class TestGpaToolExecutorExecuteDispatch(unittest.TestCase):
 
 class TestEvalAgentSystemPrompt(unittest.TestCase):
     def setUp(self):
-        with patch("gpa.eval.llm_agent.Anthropic"):
+        with patch("gpa.eval.agents.api_agent.Anthropic"):
             self.agent = EvalAgent(api_key="fake-key")
 
     def test_with_gpa_prompt_mentions_tools(self):
@@ -262,7 +262,7 @@ class TestEvalAgentSystemPrompt(unittest.TestCase):
 
 class TestEvalAgentUserMessage(unittest.TestCase):
     def setUp(self):
-        with patch("gpa.eval.llm_agent.Anthropic"):
+        with patch("gpa.eval.agents.api_agent.Anthropic"):
             self.agent = EvalAgent(api_key="fake-key")
 
     def test_user_message_contains_scenario_description(self):
@@ -320,7 +320,7 @@ def _make_response(content, stop_reason="end_turn", input_tokens=10, output_toke
 
 class TestEvalAgentRunCodeOnly(unittest.TestCase):
     def setUp(self):
-        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.agents.api_agent.Anthropic") as MockAnthropic:
             self.mock_client = MagicMock()
             MockAnthropic.return_value = self.mock_client
             self.agent = EvalAgent(api_key="fake-key", max_turns=5)
@@ -386,7 +386,7 @@ class TestEvalAgentRunCodeOnly(unittest.TestCase):
 
 class TestEvalAgentRunWithGla(unittest.TestCase):
     def setUp(self):
-        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.agents.api_agent.Anthropic") as MockAnthropic:
             self.mock_client = MagicMock()
             MockAnthropic.return_value = self.mock_client
             self.agent = EvalAgent(api_key="fake-key", max_turns=5)
@@ -436,7 +436,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
 
 class TestEvalAgentTokenAccumulation(unittest.TestCase):
     def test_tokens_accumulate_across_turns(self):
-        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.agents.api_agent.Anthropic") as MockAnthropic:
             mock_client = MagicMock()
             MockAnthropic.return_value = mock_client
             agent = EvalAgent(api_key="fake-key", max_turns=10)
@@ -458,7 +458,7 @@ class TestEvalAgentTokenAccumulation(unittest.TestCase):
 
 class TestEvalAgentMaxTurns(unittest.TestCase):
     def test_stops_at_max_turns(self):
-        with patch("gpa.eval.llm_agent.Anthropic") as MockAnthropic:
+        with patch("gpa.eval.agents.api_agent.Anthropic") as MockAnthropic:
             mock_client = MagicMock()
             MockAnthropic.return_value = mock_client
             agent = EvalAgent(api_key="fake-key", max_turns=3)
