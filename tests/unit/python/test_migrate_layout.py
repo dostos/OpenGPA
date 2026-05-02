@@ -289,3 +289,55 @@ def test_plan_unresolved_emits_review(tmp_path):
     assert "r99_mystery" in plan.review_rows[0]["original_name"]
     # Unresolved scenarios still get a plan entry, under _legacy/
     assert any("_legacy" in str(e.new_relative) for e in plan.entries)
+
+
+def test_apply_plan_moves_files_and_writes_yaml(tmp_path, monkeypatch):
+    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    (tmp_path / "e1_state_leak").mkdir()
+    (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
+    (tmp_path / "e1_state_leak" / "main.c").write_text("int main(){}")
+    ctx = ResolveContext(rules={}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    apply_plan(plan, tmp_path, use_git=False,
+               write_yaml=True, write_build_files=True)
+    new_dir = tmp_path / "synthetic" / "state-leak" / "e1_state_leak"
+    assert (new_dir / "scenario.md").exists()
+    assert (new_dir / "scenario.yaml").exists()
+    assert (new_dir / "main.c").exists()
+    assert (new_dir / "BUILD.bazel").exists()
+    assert not (tmp_path / "e1_state_leak").exists()
+    # BUILD content sanity check
+    build_text = (new_dir / "BUILD.bazel").read_text()
+    assert 'name = "e1_state_leak"' in build_text
+
+
+def test_apply_plan_no_yaml_no_build_move_only(tmp_path):
+    """The move-only commit per spec rollout: no yaml, no BUILD."""
+    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    (tmp_path / "e1_state_leak").mkdir()
+    (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
+    (tmp_path / "e1_state_leak" / "main.c").write_text("int main(){}")
+    ctx = ResolveContext(rules={}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    apply_plan(plan, tmp_path, use_git=False,
+               write_yaml=False, write_build_files=False)
+    new_dir = tmp_path / "synthetic" / "state-leak" / "e1_state_leak"
+    assert (new_dir / "scenario.md").exists()
+    assert not (new_dir / "scenario.yaml").exists()
+    assert not (new_dir / "BUILD.bazel").exists()
+
+
+def test_apply_plan_no_build_for_md_only(tmp_path):
+    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    (tmp_path / "r96fdc7_framework-maintenance_native-engine_godot_x").mkdir()
+    (tmp_path / "r96fdc7_framework-maintenance_native-engine_godot_x" / "scenario.md").write_text(
+        "https://github.com/godotengine/godot/issues/1"
+    )
+    ctx = ResolveContext(rules={"godotengine/godot": ("native-engine", "godot")}, overrides={})
+    plan = build_plan(tmp_path, ctx)
+    apply_plan(plan, tmp_path, use_git=False,
+               write_yaml=True, write_build_files=True)
+    new_dir = tmp_path / "native-engine" / "godot" / "godot_1_x"
+    assert (new_dir / "scenario.md").exists()
+    assert (new_dir / "scenario.yaml").exists()
+    assert not (new_dir / "BUILD.bazel").exists()

@@ -4,7 +4,12 @@ See docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md.
 """
 from __future__ import annotations
 
+import argparse
+import csv
 import re
+import shutil
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
@@ -181,7 +186,7 @@ def build_slug(parsed: ParsedName, source: Source) -> str:
 
 from datetime import date
 from gpa.eval.scenario_metadata import (
-    Scenario, Source, Taxonomy, Backend,
+    Scenario, Source, Taxonomy, Backend, dump_scenario_yaml,
 )
 
 
@@ -280,3 +285,107 @@ def synthetic_topic(suffix: str) -> str:
             if suffix.startswith(p) or p in suffix.split("_"):
                 return topic
     return "misc"
+
+
+_BUILD_BAZEL_TEMPLATE = '''load("@rules_cc//cc:defs.bzl", "cc_binary")
+
+cc_binary(
+    name = "{name}",
+    srcs = glob(["*.c"]),
+    copts = [
+        "-g",
+        "-gdwarf-4",
+        "-fno-omit-frame-pointer",
+        "-O0",
+    ],
+    linkopts = ["-lGL", "-lX11", "-lm"],
+    visibility = ["//visibility:public"],
+)
+'''
+
+
+def apply_plan(
+    plan: MigrationPlan,
+    root: Path,
+    use_git: bool = True,
+    write_yaml: bool = True,
+    write_build_files: bool = True,
+) -> None:
+    """Move each scenario to its new location.
+
+    With use_git=True, runs `git mv` (preserves history). Otherwise uses
+    shutil.move (used in tests). write_yaml and write_build_files
+    independently control whether scenario.yaml and BUILD.bazel are
+    generated alongside the moves; the spec rolls these out in separate
+    commits, so the move-only commit uses write_yaml=False
+    write_build_files=False.
+    """
+    for entry in plan.entries:
+        new_path = root / entry.new_relative
+        new_path.parent.mkdir(parents=True, exist_ok=True)
+        if use_git:
+            subprocess.run(
+                ["git", "mv", str(entry.old_path), str(new_path)],
+                check=True, cwd=root,
+            )
+        else:
+            shutil.move(str(entry.old_path), str(new_path))
+        if write_yaml:
+            dump_scenario_yaml(entry.scenario, new_path / "scenario.yaml")
+        if write_build_files and any(new_path.glob("*.c")):
+            (new_path / "BUILD.bazel").write_text(
+                _BUILD_BAZEL_TEMPLATE.format(name=entry.scenario.slug)
+            )
+
+
+def write_review_csv(plan: MigrationPlan, path: Path) -> None:
+    if not plan.review_rows:
+        return
+    with open(path, "w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=list(plan.review_rows[0].keys()))
+        w.writeheader()
+        w.writerows(plan.review_rows)
+
+
+def main(argv: Optional[list[str]] = None) -> int:
+    p = argparse.ArgumentParser(prog="migrate_layout")
+    p.add_argument("--root", type=Path, required=True,
+                   help="Path to tests/eval/")
+    p.add_argument("--rules", type=Path,
+                   default=Path("src/python/gpa/eval/curation/mining_rules.yaml"))
+    p.add_argument("--overrides", type=Path,
+                   default=Path("src/python/gpa/eval/migration_overrides.yaml"))
+    p.add_argument("--review-csv", type=Path, default=Path("/tmp/migration_review.csv"))
+    p.add_argument("--apply", action="store_true",
+                   help="Actually move files. Default is dry-run.")
+    p.add_argument("--no-yaml", action="store_true",
+                   help="Skip scenario.yaml writes (move-only commit per spec rollout)")
+    p.add_argument("--no-build-files", action="store_true",
+                   help="Skip BUILD.bazel codegen (useful when staging in two commits)")
+    args = p.parse_args(argv)
+
+    ctx = load_resolve_context(args.rules, args.overrides)
+    plan = build_plan(args.root, ctx)
+
+    print(f"Planned moves: {len(plan.entries)}")
+    print(f"Review rows:   {len(plan.review_rows)}")
+    print(f"Conflicts:     {len(plan.conflicts)}")
+
+    write_review_csv(plan, args.review_csv)
+    print(f"Review CSV:    {args.review_csv}")
+
+    if args.apply:
+        apply_plan(plan, args.root, use_git=True,
+                   write_yaml=not args.no_yaml,
+                   write_build_files=not args.no_build_files)
+        print("Applied.")
+    else:
+        for e in plan.entries[:10]:
+            print(f"  {e.old_path.name} -> {e.new_relative}")
+        if len(plan.entries) > 10:
+            print(f"  ... ({len(plan.entries) - 10} more)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
