@@ -126,7 +126,12 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
     )
     p.add_argument(
         "--backend", default="auto",
-        help="LLM backend hint passed to RunEval (no effect without --evaluate).",
+        choices=["auto", "api", "claude-cli", "codex-cli"],
+        help=(
+            "Agent backend for --evaluate. 'auto' picks 'api' when "
+            "ANTHROPIC_API_KEY is set, otherwise 'claude-cli'. "
+            "Requires --evaluate to have any effect."
+        ),
     )
     p.add_argument(
         "--run-id", default=None,
@@ -785,13 +790,52 @@ def main(argv: Optional[list[str]] = None) -> int:
     args = parse_args(argv)
 
     if args.evaluate and getattr(run_eval, "_is_default", False):
-        sys.stderr.write(
-            "error: --evaluate requires an eval harness, but the default\n"
-            "       gpa.eval.curation.run.run_eval seam is unconfigured.\n"
-            "       Either drop --evaluate to commit without scoring, or\n"
-            "       wire a harness by replacing run.run_eval before calling main().\n"
-        )
-        return 2
+        # Resolve 'auto' backend before importing factory.
+        backend = args.backend
+        if backend == "auto":
+            import os as _os
+            if _os.environ.get("ANTHROPIC_API_KEY"):
+                backend = "api"
+            else:
+                backend = "claude-cli"
+        from gpa.eval.agents.factory import build_agent_fn
+        agent_fn = build_agent_fn(backend=backend)
+
+        def _factory_run_eval(*, scenario_id: str, eval_dir: Any, backend: str) -> Any:
+            """run_eval wrapper built from factory.build_agent_fn."""
+            from gpa.eval.harness import EvalHarness
+            harness = EvalHarness(config={})
+            results = harness.run_all(
+                agent_fn=agent_fn,
+                scenarios=[scenario_id],
+                modes=["with_gla", "code_only"],
+            )
+            if not results:
+                raise RuntimeError(f"EvalHarness returned no results for {scenario_id}")
+
+            @dataclasses.dataclass
+            class _Score:
+                score: float = 0.0
+
+            @dataclasses.dataclass
+            class _EvalResult:
+                with_gla: _Score = dataclasses.field(default_factory=_Score)
+                code_only: _Score = dataclasses.field(default_factory=_Score)
+
+            ev = _EvalResult()
+            for r in results:
+                mode = getattr(r, "mode", None)
+                score = float(getattr(r, "score", 0.0))
+                if mode == "with_gla":
+                    ev.with_gla = _Score(score=score)
+                elif mode == "code_only":
+                    ev.code_only = _Score(score=score)
+            return ev
+
+        _factory_run_eval._is_default = False
+        # Replace the module-level seam so _run_judge picks it up.
+        import gpa.eval.curation.run as _self
+        _self.run_eval = _factory_run_eval
 
     queries_path = Path(args.queries)
     rules_path = Path(args.rules)
