@@ -60,3 +60,35 @@ def test_validate_required_fields_complete(tmp_path):
     )
     errors = validate_scenario(s)
     assert errors == []
+
+
+def test_scenario_yaml_round_trip(tmp_path):
+    from gpa.eval.scenario_metadata import (
+        Scenario, Source, Taxonomy, Backend,
+        dump_scenario_yaml, load_scenario_yaml,
+    )
+    original = Scenario(
+        path=tmp_path, slug="godot_1_x", round="r1", mined_at="2026-01-01",
+        source=Source(type="github_issue", url="https://github.com/x/y/issues/1",
+                      repo="x/y", issue_id=1),
+        taxonomy=Taxonomy(category="native-engine", framework="godot",
+                          bug_class="framework-internal"),
+        backend=Backend(api="vulkan", status="reproduced"),
+        status="drafted",
+        tags=["postprocess"],
+        notes="hello",
+    )
+    yaml_path = tmp_path / "scenario.yaml"
+    dump_scenario_yaml(original, yaml_path)
+    loaded = load_scenario_yaml(yaml_path)
+    assert loaded.slug == original.slug
+    assert loaded.source.url == original.source.url
+    assert loaded.taxonomy.category == original.taxonomy.category
+    assert loaded.tags == ["postprocess"]
+
+
+def test_scenario_yaml_load_missing_file_raises(tmp_path):
+    from gpa.eval.scenario_metadata import load_scenario_yaml
+    import pytest
+    with pytest.raises(FileNotFoundError):
+        load_scenario_yaml(tmp_path / "nope.yaml")

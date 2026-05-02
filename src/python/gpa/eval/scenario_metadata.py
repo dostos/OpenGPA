@@ -129,3 +129,41 @@ def validate_scenario(s: Scenario) -> list[str]:
     if not s.round:
         errors.append("round is required")
     return errors
+
+
+def dump_scenario_yaml(s: Scenario, path: Path) -> None:
+    """Write scenario as YAML to the given path."""
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "slug": s.slug,
+        "round": s.round,
+        "mined_at": s.mined_at,
+        "source": {k: v for k, v in asdict(s.source).items() if v is not None},
+        "taxonomy": asdict(s.taxonomy),
+        "backend": asdict(s.backend),
+        "status": s.status,
+        "tags": list(s.tags),
+        "notes": s.notes,
+    }
+    with open(path, "w") as f:
+        yaml.safe_dump(payload, f, sort_keys=False, default_flow_style=False)
+
+
+def load_scenario_yaml(path: Path) -> Scenario:
+    """Read a scenario.yaml and return a Scenario. Path is the yaml file path."""
+    with open(path) as f:
+        d = yaml.safe_load(f)
+    if d.get("schema_version") != SCHEMA_VERSION:
+        raise ValueError(f"unsupported schema_version {d.get('schema_version')!r}")
+    return Scenario(
+        path=path.parent,
+        slug=d["slug"],
+        round=d["round"],
+        mined_at=d.get("mined_at", ""),
+        source=Source(**d["source"]),
+        taxonomy=Taxonomy(**d["taxonomy"]),
+        backend=Backend(**d.get("backend", {})),
+        status=d["status"],
+        tags=list(d.get("tags") or []),
+        notes=d.get("notes", "") or "",
+    )
