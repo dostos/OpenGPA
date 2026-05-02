@@ -255,6 +255,28 @@ def test_dump_drawcalls_via_full_cli_parses_format(session_dir, monkeypatch):
 
 
 # --------------------------------------------------------------------------- #
+# deprecation warning
+# --------------------------------------------------------------------------- #
+
+
+def test_dump_prints_deprecation_warning(session_dir, monkeypatch, capsys):
+    """`gpa dump frame` still works but warns to stderr."""
+    from gpa.cli import main as cli_main_mod
+
+    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+
+    def fake_run(**kwargs):
+        return 0
+
+    monkeypatch.setattr(cli_main_mod.dump_cmd, "run", fake_run)
+    rc = cli_main_mod.main(["dump", "frame"])
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "deprecated" in err
+    assert "gpa frames overview" in err
+
+
+# --------------------------------------------------------------------------- #
 # frames
 # --------------------------------------------------------------------------- #
 

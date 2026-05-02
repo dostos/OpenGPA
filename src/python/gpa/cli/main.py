@@ -406,6 +406,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             json_output=args.json_output,
         )
     if args.cmd == "dump":
+        print(
+            "warning: 'gpa dump' is deprecated; use 'gpa frames overview', "
+            "'gpa drawcalls list', or 'gpa pixel get'.",
+            file=sys.stderr,
+        )
         return dump_cmd.run(
             what=args.what,
             session_dir=args.session,

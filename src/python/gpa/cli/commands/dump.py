@@ -1,4 +1,6 @@
-"""``gpa dump <what>`` — raw REST data printed in text/json/compact form."""
+"""``gpa dump <what>`` — DEPRECATED: use ``gpa frames overview``, ``gpa drawcalls list``, or ``gpa pixel get``.
+
+Raw REST data printed in text/json/compact form."""
 
 from __future__ import annotations
 
