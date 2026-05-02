@@ -220,7 +220,7 @@ def test_diff_hits_correct_url_default_scope(monkeypatch):
     buf = io.StringIO()
     rc = dc_mod.run_diff(client=client, frame=None, a=0, b=1, print_stream=buf)
     assert rc == 0
-    assert ("GET", f"/api/v1/frames/{_CURRENT_FID}/draws/diff?a=0&b=1&scope=all") in client.calls
+    assert ("GET", f"/api/v1/frames/{_CURRENT_FID}/draws/diff?a=0&b=1&scope=state") in client.calls
 
 
 def test_diff_with_explicit_scope(monkeypatch):

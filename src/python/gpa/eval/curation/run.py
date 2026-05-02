@@ -244,6 +244,31 @@ def _make_scenario_id(rec: Any, cand: Any, *, run_id: str) -> str:
     return f"r{short}_{cell}_{title_slug}"
 
 
+def _layout_category_framework(taxonomy_cell: str) -> tuple[str, str]:
+    """Map scorer taxonomy cells onto eval layout category/framework.
+
+    Scorer cells are shaped like:
+      - framework-maintenance.<category>.<framework>
+      - framework-app-dev.<category>.<framework>
+      - graphics-lib-dev.<api>.<framework>
+
+    The eval tree intentionally drops the bug-class prefix and stores
+    scenarios under ``<category>/<framework>/<slug>``.
+    """
+    parts = (taxonomy_cell or "").split(".")
+    if len(parts) >= 3 and parts[0] in {
+        "framework-maintenance",
+        "framework-app-dev",
+    }:
+        return parts[1], ".".join(parts[2:])
+    if len(parts) >= 3 and parts[0] == "graphics-lib-dev":
+        return "graphics-lib", ".".join(parts[2:])
+    if len(parts) >= 2:
+        return parts[0], ".".join(parts[1:])
+    cell = taxonomy_cell or "unknown"
+    return cell, cell
+
+
 def _fetch_fix_pr_metadata(thread: IssueThread, url: str) -> dict:
     """Best-effort: parse the closing-PR ref from the thread and fetch its
     metadata via ``gh api``.
@@ -686,11 +711,7 @@ def _run_judge(
             }
 
         # Commit the scenario into tests/eval/.
-        cell = rec.taxonomy_cell or ""
-        if "." in cell:
-            cat, fw = cell.split(".", 1)
-        else:
-            cat = fw = cell  # fallback for legacy cells without dot
+        cat, fw = _layout_category_framework(rec.taxonomy_cell or "")
         commit_scenario(
             eval_dir=eval_dir,
             scenario_id=scenario_id,

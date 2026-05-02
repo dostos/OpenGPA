@@ -292,6 +292,23 @@ def test_draft_to_files_preserves_maintainer_bug_class():
     assert "bug_class: user-config" in files["scenario.md"]
 
 
+def test_layout_category_framework_drops_bug_class_prefix():
+    from gpa.eval.curation.run import _layout_category_framework
+
+    assert _layout_category_framework(
+        "framework-maintenance.native-engine.godot"
+    ) == ("native-engine", "godot")
+    assert _layout_category_framework(
+        "framework-maintenance.web-map.maplibre-gl-js"
+    ) == ("web-map", "maplibre-gl-js")
+    assert _layout_category_framework(
+        "framework-app-dev.web-3d.three.js"
+    ) == ("web-3d", "three.js")
+    assert _layout_category_framework(
+        "graphics-lib-dev.webgl.webgl"
+    ) == ("graphics-lib", "webgl")
+
+
 # ---------------------------------------------------------------------------
 # JUDGE-phase --evaluate branches: verdict=yes (commits) and verdict=no
 # (NOT_HELPFUL terminal_reason, no commit).

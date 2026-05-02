@@ -148,9 +148,9 @@ def add_subparser(subparsers) -> None:
                         help="Second draw call id")
     p_diff.add_argument(
         "--scope",
-        default="all",
+        default="state",
         choices=("state", "uniforms", "textures", "all"),
-        help="What to diff (default: all)",
+        help="What to diff (default: state)",
     )
 
     # ---- sources (sub-sub-noun) ----
@@ -486,12 +486,12 @@ def run_diff(
     frame: Optional[str] = None,
     a: int,
     b: int,
-    scope: str = "all",
+    scope: str = "state",
 ) -> int:
     """Implement ``gpa drawcalls diff --a N --b N``.
 
     Note: uses /draws/diff (not /drawcalls/diff) — API quirk.
-    Default scope is 'all' (broader than the legacy diff-draws default of 'state').
+    Default scope is 'state' (matches the legacy diff-draws default).
     """
     if print_stream is None:
         print_stream = sys.stdout
