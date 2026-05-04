@@ -80,6 +80,10 @@ class ScenarioMetadata:
     upstream_snapshot_repo: Optional[str] = None
     upstream_snapshot_sha: Optional[str] = None
     upstream_snapshot_relevant_files: list[str] = field(default_factory=list)
+    # When True, the snapshot fetcher should check out <sha>^ (the parent
+    # of the recorded SHA) — set when the loader had to fall back to fix_sha
+    # because no fix_parent_sha was recorded; the parent is the bug state.
+    upstream_snapshot_resolve_parent: bool = False
     # --- Maintainer-framing Fix metadata (R10+) ---
     # None for legacy scenarios authored before the maintainer-framing spec.
     # See docs/superpowers/specs/2026-04-21-maintainer-framing-design.md.
@@ -499,6 +503,7 @@ class ScenarioLoader:
         # `## Upstream Snapshot` section. Without backfill the harness can't
         # clone the upstream repo and the agent gets no `gpa upstream` tools.
         yaml_data = _load_scenario_yaml(scenario_dir)
+        upstream_resolve_parent = False
         if framework is None or framework == "":
             tax_fw = ((yaml_data.get("taxonomy") or {}).get("framework"))
             if isinstance(tax_fw, str) and tax_fw:
@@ -508,18 +513,16 @@ class ScenarioLoader:
             if isinstance(src_repo, str) and "/" in src_repo:
                 upstream_repo = f"https://github.com/{src_repo}"
         if upstream_sha is None and fix_meta is not None:
-            # Prefer parent (= bug state). Fall back to fix_sha; this shows
-            # the post-fix tree to the agent and weakens eval signal — flag
-            # for the mining pipeline to start populating fix_parent_sha.
+            # Prefer parent (= bug state). Fall back to fix_sha + the
+            # resolve_parent flag, so the snapshot fetcher computes parent
+            # at clone time (depth=2 + reset to <sha>^). Both branches
+            # serve the bug state to the agent; the difference is only
+            # *when* the parent SHA is determined.
             if fix_meta.fix_parent_sha:
                 upstream_sha = fix_meta.fix_parent_sha
             elif fix_meta.fix_sha:
                 upstream_sha = fix_meta.fix_sha
-                _log.info(
-                    "scenario %s: using fix_sha as upstream snapshot "
-                    "(no fix_parent_sha recorded; agent will see post-fix tree)",
-                    scenario_id,
-                )
+                upstream_resolve_parent = True
 
         return ScenarioMetadata(
             id=scenario_id,
@@ -556,6 +559,7 @@ class ScenarioLoader:
             upstream_snapshot_repo=upstream_repo,
             upstream_snapshot_sha=upstream_sha,
             upstream_snapshot_relevant_files=upstream_files_list,
+            upstream_snapshot_resolve_parent=upstream_resolve_parent,
             fix=fix_meta,
         )
 

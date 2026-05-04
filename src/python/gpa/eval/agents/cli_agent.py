@@ -40,8 +40,10 @@ class CliAgent(AgentBackend):
         source_path = getattr(scenario, "source_path", None)
         if source_path:
             env["GPA_SOURCE_ROOT"] = str(Path(source_path).parent)
-        # Upstream snapshot root (passed via tools dict by the harness)
-        snap = tools.get("snapshot_root") if tools else None
+        # Upstream snapshot root (passed via tools dict by the harness as a
+        # callable: returns Path on success, None on fetch error).
+        snap_provider = tools.get("snapshot_root") if tools else None
+        snap = snap_provider() if callable(snap_provider) else snap_provider
         if snap:
             env["GPA_UPSTREAM_ROOT"] = str(snap)
 

@@ -32,26 +32,31 @@ class SnapshotRef:
     """Canonical identifier for an upstream snapshot."""
     repo_url: str      # e.g. "https://github.com/mrdoob/three.js"
     sha: str           # full or short hex SHA
+    resolve_parent: bool = False  # When True, check out <sha>^ instead of <sha>
 
     def cache_key(self) -> str:
         """Produce a filesystem-safe unique key.
 
-        Format: <host>__<owner>__<repo>__<sha>
+        Format: <host>__<owner>__<repo>__<sha>[__parent]
         - host: github.com becomes github_com (dots replaced)
         - owner/repo: lowercase, non-[a-z0-9_-] replaced with _
         - sha: lowercased, truncated to first 12 hex chars if longer
           (12 is enough for uniqueness within any practical repo)
+        - When resolve_parent=True, "__parent" is appended so the parent
+          tree caches separately from the SHA's own tree.
         """
         m = re.match(r"https?://([^/]+)/([^/]+)/([^/]+?)(?:\.[a-z]+)?/?$", self.repo_url)
         if not m:
             # Fallback: hash the whole URL
             h = hashlib.sha1(self.repo_url.encode()).hexdigest()[:16]
-            return f"url_{h}__{self._short_sha()}"
-        host, owner, repo = m.group(1), m.group(2), m.group(3)
-        host = re.sub(r"[^a-zA-Z0-9_-]", "_", host).lower()
-        owner = re.sub(r"[^a-zA-Z0-9_-]", "_", owner).lower()
-        repo = re.sub(r"[^a-zA-Z0-9_-]", "_", repo).lower()
-        return f"{host}__{owner}__{repo}__{self._short_sha()}"
+            base = f"url_{h}__{self._short_sha()}"
+        else:
+            host, owner, repo = m.group(1), m.group(2), m.group(3)
+            host = re.sub(r"[^a-zA-Z0-9_-]", "_", host).lower()
+            owner = re.sub(r"[^a-zA-Z0-9_-]", "_", owner).lower()
+            repo = re.sub(r"[^a-zA-Z0-9_-]", "_", repo).lower()
+            base = f"{host}__{owner}__{repo}__{self._short_sha()}"
+        return f"{base}__parent" if self.resolve_parent else base
 
     def _short_sha(self) -> str:
         sha = self.sha.lower().strip()
@@ -143,10 +148,15 @@ class SnapshotFetcher:
 
         run([self._git, "init", "-q"])
         run([self._git, "remote", "add", "origin", ref.repo_url])
-        # Try to fetch the SHA directly (fast, minimal bandwidth).
+
+        # When resolve_parent is requested we need the SHA's parent in the
+        # local history too — fetch with depth=2 instead of 1.
+        primary_depth = "2" if ref.resolve_parent else "1"
+        reset_target = f"{ref.sha}^" if ref.resolve_parent else ref.sha
+
         fetched = False
         try:
-            run([self._git, "fetch", "--depth", "1", "origin", ref.sha])
+            run([self._git, "fetch", "--depth", primary_depth, "origin", ref.sha])
             fetched = True
         except SnapshotError:
             pass
@@ -163,14 +173,15 @@ class SnapshotFetcher:
             # Fallback 2: full unshallow fetch. Slow but always works.
             run([self._git, "fetch", "--unshallow", "origin"])
 
-        # Try reset to the target SHA. If it's a merge commit SHA,
-        # it should be in the fetched history now.
+        # Try reset to the target. If it's a merge commit SHA, it should be
+        # in the fetched history now. ref.resolve_parent uses <sha>^ so the
+        # checked-out tree is the buggy state, not the post-fix state.
         try:
-            run([self._git, "reset", "--hard", ref.sha])
+            run([self._git, "reset", "--hard", reset_target])
         except SnapshotError:
             # Last resort: fetch ALL refs and retry
             run([self._git, "fetch", "origin", "+refs/heads/*:refs/remotes/origin/*"])
-            run([self._git, "reset", "--hard", ref.sha])
+            run([self._git, "reset", "--hard", reset_target])
 
     def is_cached(self, ref: SnapshotRef) -> bool:
         """True iff the snapshot is already fully in the cache."""

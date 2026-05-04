@@ -47,6 +47,46 @@ def test_run_with_gla_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     assert "--model" in captured["argv"]
 
 
+def test_snapshot_root_callable_pins_gpa_upstream_root(monkeypatch, tmp_path):
+    """The cli_agent resolves tools["snapshot_root"] (a callable) and pins
+    GPA_UPSTREAM_ROOT so `gpa upstream read/grep` shell calls work."""
+    captured = {}
+    def fake_run(argv, *, input, capture_output, text, env, timeout):
+        captured["env"] = env
+        return subprocess.CompletedProcess(argv, 0, "", "")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    snap_dir = tmp_path / "fake_snap"
+    snap_dir.mkdir()
+    agent = CliAgent(spec=_SPEC)
+    scenario = _Scenario(source_path=str(tmp_path / "main.c"))
+    (tmp_path / "main.c").write_text("")
+    tools = {
+        "run_with_capture": lambda: 7,
+        "snapshot_root": lambda: snap_dir,
+    }
+    agent.run(scenario, "with_gla", tools)
+    assert captured["env"]["GPA_UPSTREAM_ROOT"] == str(snap_dir)
+
+
+def test_snapshot_root_none_skips_gpa_upstream_root(monkeypatch, tmp_path):
+    """When the snapshot fetch failed, the callable returns None and the
+    agent must skip pinning GPA_UPSTREAM_ROOT (no env var set)."""
+    captured = {}
+    def fake_run(argv, *, input, capture_output, text, env, timeout):
+        captured["env"] = env
+        return subprocess.CompletedProcess(argv, 0, "", "")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    agent = CliAgent(spec=_SPEC)
+    scenario = _Scenario(source_path=str(tmp_path / "main.c"))
+    (tmp_path / "main.c").write_text("")
+    tools = {
+        "run_with_capture": lambda: 7,
+        "snapshot_root": lambda: None,
+    }
+    agent.run(scenario, "with_gla", tools)
+    assert "GPA_UPSTREAM_ROOT" not in captured["env"]
+
+
 def test_run_with_gla_graceful_when_capture_returns_none(monkeypatch, tmp_path):
     """When run_with_capture returns None (e.g. no Bazel target / build
     failure), the agent should still run the with_gla prompt but skip

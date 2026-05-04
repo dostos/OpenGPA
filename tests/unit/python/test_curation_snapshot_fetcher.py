@@ -171,3 +171,51 @@ def test_default_cache_root_is_data3():
     """When no cache_root passed, default is /data3/opengpa-snapshots."""
     f = SnapshotFetcher()
     assert str(f.cache_root) == "/data3/opengpa-snapshots"
+
+
+def test_resolve_parent_changes_cache_key():
+    """Caching `parent of <sha>` separately from `<sha>` itself avoids
+    collisions when one scenario asks for the fix-applied tree and another
+    asks for its parent (the buggy tree)."""
+    direct = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123def456")
+    parent = SnapshotRef(
+        repo_url="https://github.com/o/r", sha="abc123def456",
+        resolve_parent=True,
+    )
+    assert direct.cache_key() != parent.cache_key()
+    assert parent.cache_key().endswith("__parent")
+
+
+def test_fetch_resolve_parent_uses_depth_2_and_resets_to_caret(tmp_path):
+    """When resolve_parent is True, the fetcher needs to see <sha>'s parent
+    too — fetch with depth=2 and reset --hard to <sha>^."""
+    cache = tmp_path / "cache"
+    ref = SnapshotRef(
+        repo_url="https://github.com/o/r", sha="abc123",
+        resolve_parent=True,
+    )
+    fetcher = SnapshotFetcher(cache_root=cache)
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        fetcher.fetch(ref)
+    argvs = [c.args[0] for c in mock_run.call_args_list]
+    fetch_calls = [a for a in argvs if a[1] == "fetch"]
+    reset_calls = [a for a in argvs if a[1] == "reset"]
+    # Direct fetch should use --depth 2 (not 1) to include the parent commit.
+    assert any("--depth" in a and "2" in a for a in fetch_calls), fetch_calls
+    # Reset target should be <sha>^, not <sha> alone.
+    assert any(arg.endswith("^") for argv in reset_calls for arg in argv), reset_calls
+
+
+def test_fetch_resolve_parent_false_unchanged(tmp_path):
+    """Default behavior (resolve_parent=False) must not change."""
+    cache = tmp_path / "cache"
+    ref = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123")
+    fetcher = SnapshotFetcher(cache_root=cache)
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        fetcher.fetch(ref)
+    argvs = [c.args[0] for c in mock_run.call_args_list]
+    reset_calls = [a for a in argvs if a[1] == "reset"]
+    assert reset_calls
+    assert all(not arg.endswith("^") for argv in reset_calls for arg in argv)

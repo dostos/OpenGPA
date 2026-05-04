@@ -270,6 +270,21 @@ class EvalHarness:
                                     glob=glob, max_matches=max_matches)
             )
 
+            # Lazy resolver for the cli_agent: returns the snapshot
+            # working-tree Path (cloning if needed) or None on fetch error.
+            # Triggered the first time the agent reads tools["snapshot_root"]().
+            def _snapshot_root():
+                try:
+                    return self._ensure_snapshot(scenario)
+                except Exception as exc:
+                    _log.warning(
+                        "scenario %s: snapshot fetch failed (%s); "
+                        "GPA_UPSTREAM_ROOT will not be set",
+                        scenario.id, exc,
+                    )
+                    return None
+            tools["snapshot_root"] = _snapshot_root
+
         # Maintainer-framing metadata (Phase 4).  Agents that want to
         # honour bug-class-aware prompting read these two keys; the
         # default ``build_agent_fn`` does exactly that.  Legacy agents
@@ -433,6 +448,7 @@ class EvalHarness:
         ref = SnapshotRef(
             repo_url=scenario.upstream_snapshot_repo,  # type: ignore[arg-type]
             sha=scenario.upstream_snapshot_sha,  # type: ignore[arg-type]
+            resolve_parent=scenario.upstream_snapshot_resolve_parent,
         )
         return self._snapshot_fetcher.fetch(ref)
 

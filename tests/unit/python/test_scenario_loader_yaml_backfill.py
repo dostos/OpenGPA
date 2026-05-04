@@ -133,6 +133,49 @@ def test_md_upstream_section_takes_priority_over_yaml_backfill(tmp_path):
     assert s.upstream_snapshot_sha == "cafebabe"
 
 
+def test_resolve_parent_set_when_falling_back_to_fix_sha(tmp_path):
+    """fix_sha is the post-fix tree; the agent should see the parent
+    (bug state). Loader signals this with upstream_snapshot_resolve_parent."""
+    _make_scenario_dir(tmp_path, slug="rfc2ac5_resolve_parent_flag")
+    loader = ScenarioLoader(str(tmp_path / "tests-eval"))
+    s = loader.load("rfc2ac5_resolve_parent_flag")
+    assert s.upstream_snapshot_sha == "ec62f12862c4cfc76526eaf99afa0a24249f8288"
+    assert s.upstream_snapshot_resolve_parent is True
+
+
+def test_resolve_parent_unset_when_explicit_fix_parent_sha(tmp_path):
+    """When fix_parent_sha is recorded, that's already the bug state — no
+    need for the fetcher to compute parent."""
+    fix_parent_block = "fix_parent_sha: deadbeef00deadbeef00deadbeef00deadbeef0000\n"
+    _make_scenario_dir(
+        tmp_path, slug="rfc2ac5_explicit_parent",
+        fix_parent=fix_parent_block,
+    )
+    loader = ScenarioLoader(str(tmp_path / "tests-eval"))
+    s = loader.load("rfc2ac5_explicit_parent")
+    assert s.upstream_snapshot_sha == "deadbeef00deadbeef00deadbeef00deadbeef0000"
+    assert s.upstream_snapshot_resolve_parent is False
+
+
+def test_resolve_parent_unset_when_explicit_md_upstream_section(tmp_path):
+    """When the md author wrote the snapshot section explicitly, trust it."""
+    md = (
+        "## Bug Description\n\nx\n\n"
+        "## Upstream Snapshot\n\n"
+        "- **Repo**: https://github.com/explicit/repo\n"
+        "- **SHA**: cafebabe\n\n"
+        "## Difficulty\n\n3\n"
+    )
+    yaml_text = _BASE_YAML.format(slug="rfc2ac5_md_priority_no_parent")
+    d = tmp_path / "tests-eval" / "x" / "rfc2ac5_md_priority_no_parent"
+    d.mkdir(parents=True)
+    (d / "scenario.md").write_text(md)
+    (d / "scenario.yaml").write_text(yaml_text)
+    loader = ScenarioLoader(str(tmp_path / "tests-eval"))
+    s = loader.load("rfc2ac5_md_priority_no_parent")
+    assert s.upstream_snapshot_resolve_parent is False
+
+
 def test_md_framework_section_takes_priority_over_yaml_backfill(tmp_path):
     md = (
         "## Bug Description\n\nx\n\n"
