@@ -1847,33 +1847,43 @@ never fires).
 
 Fed the 4 with_gla + 2 code_only `needs_review` rows through
 `judge_residual` against the fix-PR diff in
-`/data3/opengpa-snapshots/`. Wall: ~50s for 6 calls (cached at
+`/data3/opengpa-snapshots/`. Wall: ~46s for 6 calls (cached at
 `/tmp/judge_cache_r12c/`).
 
-| mode      | scenario                              | judge   | flips? |
-|-----------|---------------------------------------|---------|--------|
-| with_gla  | godot glow_extremely_slow             | full    | ✓ → solved |
-| with_gla  | godot weird_shadow_on_mobile          | none    |   stays ✗ |
-| with_gla  | cesium camera_jumps                   | none    |   stays ✗ (see below) |
-| with_gla  | maplibre 3d_terrain                   | full    | ✓ → solved |
-| code_only | godot 4_2_world_environment_glow      | partial |   stays needs_review |
-| code_only | godot glow_extremely_slow             | full    | ✓ → solved |
+**First pass (terse rubric, `git show --stat` only): 3 full / 1 partial / 2 none.**
+Cesium camera_jumps with_gla was borderline — the judge said `none`
+even though the agent had identified a real-looking cause. Without
+diff hunks, the judge could only see file counts.
+
+**Refined prompt + diff-hunk-aware fetcher: 4 full / 0 partial / 2 none.**
+
+Two judge.py changes (commit pending):
+- `_JUDGE_SYSTEM_PROMPT` rewritten to admit "matching ONE causal
+  file in a multi-file refactor PR" as `full`, with worked examples.
+- `fetch_pr_diff_summary` now includes actual `git show` hunks (not
+  just `--stat`), giving the judge concrete diff content to compare
+  against the agent's prose.
+
+| mode      | scenario                              | refined judge | flips? |
+|-----------|---------------------------------------|---------------|--------|
+| with_gla  | godot glow_extremely_slow             | full          | ✓ → solved |
+| with_gla  | godot weird_shadow_on_mobile          | none          |   stays ✗ |
+| with_gla  | cesium camera_jumps                   | none          |   stays ✗ |
+| with_gla  | maplibre 3d_terrain                   | full          | ✓ → solved |
+| code_only | godot 4_2_world_environment_glow      | full          | ✓ → solved |
+| code_only | godot glow_extremely_slow             | full          | ✓ → solved |
 
 **Post-judge with_gla:** 6/14 solved (was 4), 2 needs_review.
-**Post-judge code_only:** 7/14 solved (was 6), 1 needs_review,
-1 partial. Net: **+3 solved across the cohort** from the residual
-band, no false-positives on manual eyeball.
+**Post-judge code_only:** 8/14 solved (was 6), 0 needs_review.
+Net: **+4 solved across the cohort**, no false-positives.
 
-**Manual agreement: 5/6** (passes the ≥5/8 bar from
-lessons-scoring §5). Borderline: cesium camera_jumps with_gla.
-The agent identified the actual bug (`Picking.update()` never
-called → stale `_pickPositionCache`), but the gt PR (#12983) is a
-12-file refactor spanning `Renderer/Buffer.js`, `Sync.js`,
-`PickFramebuffer.js`, etc. The judge's terse "no meaningful
-overlap" verdict reflects scope mismatch, not a wrong diagnosis —
-arguably should be `partial`, not `none`. Future refinement:
-re-prompt the judge when the agent's prose contains a sharp
-single-cause claim and gt is a multi-file refactor.
+**Manual agreement: 6/6** (was 5/6 with the terse prompt). The
+cesium camera_jumps `none` is correct after diff inspection — the
+gt PR (#12983) is a Sync/Renderer refactor introducing `Sync.js`
++ rebuild of `PickFramebuffer.js`, not the cache-invalidation fix
+the agent proposed. The agent's "Picking.update() never called"
+theory was a plausible-but-wrong diagnosis. Diff hunks let the
+judge see this directly; the terse-stat prompt couldn't.
 
 ### What this confirms
 
@@ -1883,8 +1893,9 @@ single-cause claim and gt is a multi-file refactor.
 2. **Prose extractor recall floor works** — 17/28 prose-leg verdicts,
    none erroneously `solved=True` from shotgun-listing every file
    (precision floor active).
-3. **Judge tier resolves the residual band** — flipped 3/6 to ✓,
-   1/6 to partial, 2/6 stayed ✗. Cost: ~50s wall, ≤1 min budget hit.
+3. **Judge tier resolves the residual band** — refined prompt +
+   diff hunks flipped 4/6 to ✓, 0 partial, 2/6 stayed ✗ correctly.
+   Cost: ~46s wall, ≤1 min budget hit.
 4. **Existing committed scenarios still carry pre-filter gt** —
    cesium gt has 5 `*Spec.js` files that survived the old filter; new
    `_filter_source_files` (commit `0bf4cb9`) drops them on future
@@ -1897,13 +1908,9 @@ single-cause claim and gt is a multi-file refactor.
   to confirm `bug_class` distribution shifts toward
   `framework-internal` and `fix.files` cardinality drops to ~3 from
   the current ~10 average.
-- **Refine judge prompt** for the "single-cause vs multi-file
-  refactor" mismatch (cesium edge case) — add an explicit instruction
-  that a sharp single-cause diagnosis can match a multi-file gt PR
-  when the cause is one of the changed files.
 - **Defer**: `gpa report` UX surfacing `verdict.scorer` /
   `needs_review` count; legacy `DiagnosisScorer` removal (keep one
   more round for v1↔v2 comparison telemetry).
 
-COMMIT: 9eb3612 + 0ee84d7 (judge-tier validation, no code change)
+COMMIT: 9eb3612 + 0ee84d7 + (refined judge prompt — see commit log)
 

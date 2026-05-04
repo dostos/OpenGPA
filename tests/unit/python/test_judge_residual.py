@@ -42,9 +42,16 @@ def test_fetch_pr_diff_summary_runs_git_commands(tmp_path, monkeypatch):
                 argv, returncode=0,
                 stdout="commit message\n\nbody line\n", stderr="",
             )
+        if "--shortstat" in argv:
+            return subprocess.CompletedProcess(
+                argv, returncode=0,
+                stdout=" 1 file changed, 2 insertions(+), 2 deletions(-)\n",
+                stderr="",
+            )
+        # full git show
         return subprocess.CompletedProcess(
             argv, returncode=0,
-            stdout=" file.ts | 4 ++--\n 1 file changed, 2 insertions(+), 2 deletions(-)\n",
+            stdout="diff --git a/file.ts b/file.ts\n@@ -10,3 +10,3 @@\n-old\n+new\n",
             stderr="",
         )
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -53,8 +60,12 @@ def test_fetch_pr_diff_summary_runs_git_commands(tmp_path, monkeypatch):
     )
     assert "commit message" in out
     assert "1 file changed" in out
-    # Both commands ran in the snapshot dir
+    # Diff hunks are now part of the summary (R12c refinement)
+    assert "diff --git" in out
+    assert "@@ -10,3 +10,3 @@" in out
+    # All three subprocesses ran in the snapshot dir
     assert all(c[1] == tmp_path for c in calls)
+    assert len(calls) == 3
 
 
 def test_fetch_pr_diff_summary_truncates(tmp_path, monkeypatch):

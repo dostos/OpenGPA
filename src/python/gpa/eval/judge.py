@@ -13,21 +13,37 @@ from pathlib import Path
 from typing import Any, Optional
 
 
-# The judge prompt.  Intentionally terse — the judge is asked to produce
-# a single lowercase token on the last line.  Any prose above that token
-# is ignored by the post-processor.
+# The judge prompt. Refined after R12c surfaced that a terse rubric
+# collapses "sharp single-cause diagnosis vs multi-file refactor PR"
+# into `none`, missing real solves. The new prompt explicitly admits
+# matching one causal file in a multi-file refactor as `full`.
 _JUDGE_SYSTEM_PROMPT = """\
-You are judging whether two patch descriptions address the same bug.
+You are judging whether an agent's bug diagnosis matches a maintainer's fix.
 
-Compare two patch descriptions. Do they address the same root cause and
-produce the same behavioral effect?
+You will be shown:
+  - PROPOSED CHANGE: the agent's free-form diagnosis + suggested fix.
+  - GROUND-TRUTH CHANGE: the maintainer's commit message + diff hunks
+    from the merged fix-PR.
 
-Answer with exactly one word on the last line:
-  - full    — same root cause, same behavioral effect
-  - partial — related root cause or effect overlaps but is not equivalent
-  - none    — different bug or no meaningful overlap
+Decision rubric (output exactly one of full | partial | none):
 
-Do not output anything after the verdict word.
+  full    — the agent identifies the actual root cause AND points at
+    code site(s) (file, function, or symbol) that appear in the
+    ground-truth diff. This applies even when:
+    - the gt PR is a multi-file refactor bundling unrelated changes;
+      naming ONE causal file with the right reasoning counts as full
+    - the agent names methods/classes rather than file paths, as long
+      as those symbols appear in the diff hunks
+
+  partial — agent points at the right component or symptom but a
+    different root cause or fix site than the gt; or names a
+    contributing factor but misses the primary cause.
+
+  none    — different bug entirely, or pure speculation with no
+    overlap to the gt diff.
+
+Output format: a single word (full|partial|none) on the last line.
+Do not output anything after the verdict.
 """
 
 
@@ -100,36 +116,57 @@ def fetch_pr_diff_summary(
     *,
     max_bytes: int = 6000,
 ) -> str:
-    """Return a compact string summarising the fix-PR's diff.
+    """Return a compact string summarising the fix-PR for the LLM judge.
 
-    Combines `git log -1 --format=%B <sha>` (commit message) with
-    `git show --stat <sha>` (per-file change counts). Truncated to
-    `max_bytes`. Best-effort: any subprocess failure or missing
-    snapshot returns empty string — the judge tier degrades gracefully
-    when ground-truth summary can't be assembled.
+    Layout (in order, each truncated to fit `max_bytes` total):
+      1. Commit message (`git log -1 --format=%B`).
+      2. Short stat (`git diff --shortstat <sha>^..<sha>`).
+      3. Diff hunks (`git show --no-color --no-prefix <sha>`).
+
+    The diff hunks are the primary signal — without them the judge
+    only sees file counts and tends to call sharp single-cause
+    diagnoses against multi-file refactor PRs `none` (R12c finding).
+    Best-effort: any subprocess failure or missing snapshot returns
+    empty string.
     """
     if not snapshot_root or not Path(snapshot_root).is_dir() or not fix_sha:
         return ""
     parts: list[str] = []
-    try:
-        log = subprocess.run(
-            ["git", "log", "-1", "--format=%B", fix_sha],
-            cwd=Path(snapshot_root), capture_output=True, text=True,
-            timeout=10, check=True,
+    cwd = Path(snapshot_root)
+
+    def _run(argv):
+        return subprocess.run(
+            argv, cwd=cwd, capture_output=True, text=True,
+            timeout=15, check=True,
         )
-        parts.append(log.stdout.strip())
+
+    try:
+        log = _run(["git", "log", "-1", "--format=%B", fix_sha])
+        msg = log.stdout.strip()
+        if msg:
+            parts.append(f"=== Commit message ===\n{msg}")
     except (subprocess.SubprocessError, OSError):
         pass
     try:
-        stat = subprocess.run(
-            ["git", "show", "--stat", "--format=", fix_sha],
-            cwd=Path(snapshot_root), capture_output=True, text=True,
-            timeout=10, check=True,
+        shortstat = _run(
+            ["git", "show", "--shortstat", "--format=", fix_sha]
         )
-        parts.append(stat.stdout.strip())
+        ss = shortstat.stdout.strip()
+        if ss:
+            parts.append(f"=== Short stat ===\n{ss}")
     except (subprocess.SubprocessError, OSError):
         pass
-    out = "\n\n".join(p for p in parts if p)
+    try:
+        diff = _run(
+            ["git", "show", "--no-color", "--no-prefix", "--format=", fix_sha]
+        )
+        hunks = diff.stdout
+        if hunks:
+            parts.append(f"=== Diff hunks ===\n{hunks}")
+    except (subprocess.SubprocessError, OSError):
+        pass
+
+    out = "\n\n".join(parts)
     if len(out) > max_bytes:
         out = out[:max_bytes] + "\n... [truncated]"
     return out
