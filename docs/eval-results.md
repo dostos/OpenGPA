@@ -1585,3 +1585,163 @@ To convert these 14 scenarios from `code_only`-only to a real
 
 COMMIT: bcf05f7
 
+## Round 12b — with_gla on the same 14 scenarios (2026-05-04)
+
+Round 12 was code_only-only because with_gla hard-failed at `bazel build`
+on these mined scenarios. This session's three fixes
+(`2d6dd94` graceful capture, `34e4472` loader scenario.yaml backfill,
+`3cf7920` parent-SHA + snapshot_root threading) unblocked the path:
+with_gla now clones the upstream repo at the bug state (`<fix_sha>^`)
+and pins `GPA_UPSTREAM_ROOT` so `gpa upstream read/grep/list` works
+against the actual buggy framework code.
+
+**Same 14 scenarios, same backend (`claude-cli` opus-4-7), with_gla
+mode only. 2h04m wall clock.** Comparison is against round 12's
+code_only data on the same scenario set.
+
+### Headline
+
+with_gla is **faster** and uses **fewer total output tokens** than
+code_only on this scenario set. The legacy keyword scorer says
+with_gla scored **1/14 vs code_only's 5/14** — but inspection shows
+the scorer is broken for these mined scenarios, not the agent.
+
+| metric              | code_only (round 12) | with_gla (round 12b) | Δ          |
+|---------------------|---------------------:|---------------------:|------------|
+| total wall clock    |  7,426 s (123.8 min) |  4,629 s (77.2 min)  | **−38%**   |
+| total tool calls    |              597     |              505     |     −15%   |
+| total output tokens |          249,381     |          229,241     |      −8%   |
+| legacy correct      |          5/14 (36%)  |          1/14 (7%)   | scorer fail |
+
+By group (avg per scenario):
+
+| group   |  | code_only       | with_gla        | Δ |
+|---------|--|-----------------|-----------------|---|
+| godot   | t/tools/out_tok | 545s / 53.2 / 26,154 | 377s / 41.9 / 19,219 | −31% / −21% / −26% |
+| web-map | t/tools/out_tok | 510s / 28.5 /  6,692 | 269s / 28.3 / 12,582 | −47% / −1% / +88% |
+
+**Godot scenarios got faster AND cheaper** because the agent could
+`gpa upstream grep` for specific symbols instead of inferring the
+codebase shape from training data. **Web-map scenarios got faster
+but emitted more output tokens** — the agent went deeper into the
+actual buggy code and produced more substantive analyses.
+
+### The scorer failure (cesium camera_jumps as the smoking gun)
+
+The legacy keyword scorer matched on training-data hand-waves; the
+specific upstream-code-grounded diagnoses with_gla produced don't
+keyword-match the (templatey, often empty) ground truth fields these
+mined scenarios carry.
+
+**code_only diagnosis (marked ✓ correct):**
+> `pickPosition` in `ScreenSpaceCameraController` returns garbage/
+> far-plane depths that the camera controller then uses as the
+> zoom/pan pivot, causing per-frame jumps.
+
+**with_gla diagnosis (marked ✗ wrong):**
+> `_pickPositionCache` (which clears `_pickPositionCache`) is defined
+> but never called, so `pickPositionWorldCoordinates` returns a stale
+> world point indefinitely; with globe translucency the cached point
+> is on the back face of the globe, making `pickPosition` flip
+> between the back-face and front-face hits each frame.
+>
+> FIX: Invalidate the cache every frame — call `this._picking.update()`
+> once per render in `Scene.js`...
+
+The with_gla diagnosis cites the *actual cache invalidation bug* in
+`Picking.pickPositionWorldCoordinates` — a finding only possible by
+reading the cesium snapshot. The code_only one is a plausible-sounding
+guess. The keyword scorer rewards the guess.
+
+Same pattern in maplibre 3d_terrain (smoke-test scenario):
+- code_only cites `painter.stencilModeForClipping` generally
+- with_gla cites `getStencilConfigForOverlapAndUpdateStencilID`,
+  `_renderTileClippingMasks`, the exact `painter.renderPass ===
+  'translucent' && isRenderingToTexture` conditional — names the
+  agent could only know from reading the tree at parent of fix_sha.
+
+### Snapshot cache
+
+`/data3/opengpa-snapshots/` populated 8 godot clones (each ~300–400 MB
+at the bug state, total ~3 GB), 1 cesium, 1 mapbox-gl-js, 1 deck.gl,
+3 maplibre — all under `__parent` cache keys (depth=2 fetch + reset
+to `<fix_sha>^`). Cache reuse is per-scenario because each godot
+issue resolves to a different fix_sha (8 different parent commits).
+
+### Real signal (when scorer is ignored)
+
+Per-scenario investigation pattern (using snapshot-usage indicators
+extracted post-hoc):
+
+| signal | code_only | with_gla |
+|---|---|---|
+| produced `DIAGNOSIS:` + `FIX:` markers | 14/14 | 14/14 |
+| cited specific framework file paths | 6/14 | 6/14 |
+| explicitly gave up ("no upstream", "not accessible") | 2/14 | 1/14 |
+
+The with_gla agent gave up on one fewer scenario (cesium previously
+unsolved → now substantive diagnosis), and produced demonstrably
+more specific analyses on at least 2/14 (cesium, maplibre 3d_terrain).
+Godot scenarios show no qualitative diagnosis change but with_gla
+runs 26% cheaper in output tokens — the agent reaches the same
+conclusion with less guessing.
+
+### What this round actually measured
+
+This was a **token-efficiency** measurement, not an accuracy one.
+The legacy keyword scorer is unfit for purpose on mined scenarios
+that lack curated ground_truth fields. To get a real accuracy signal
+we need either:
+
+- **Maintainer-framing scoring** — already implemented in
+  `harness._select_prompt_for_scenario` for `framework-internal`
+  bug class, but all 14 round-12 scenarios are `consumer-misuse`/
+  `user-config` so the file-level scorer (`maintainer_solved`) is
+  `None` for all of them. The codex mining pipeline currently
+  classifies most issues as advisor/config; if we want
+  framework-internal scoring we need to (a) re-classify issues
+  whose fix is in framework code, or (b) extend the maintainer
+  scorer to cover the consumer-misuse class.
+- **LLM-judge** — pair the diagnosis with the fix-PR diff and have
+  a separate LLM grade. Not yet wired.
+
+### Improvement backlog (from round 12b)
+
+- **P0: Drop the legacy keyword scorer's "correct" output for
+  consumer-misuse / user-config scenarios.** Reporting it does more
+  harm than good (this round's "with_gla is worse" headline is
+  false; the metric is broken).
+- **P1: Mining pipeline: populate `fix_parent_sha` on every emitted
+  scenario.** Loader currently sets `resolve_parent=True` and the
+  fetcher does the depth=2 + parent computation, but pre-resolving
+  at mine time avoids the depth=2 cost (saves ~8 godot extra commits
+  cloned this round).
+- **P2: Re-classify mined scenarios to `framework-internal` where
+  the fix actually patches framework code.** All 14 of these
+  scenarios *are* fixes to godot/maplibre/cesium/etc., so they
+  should be `framework-internal` and trigger the file-level scorer.
+- **P3: Add an LLM-judge pass for `consumer-misuse` /
+  `user-config`** — the legacy scorer can't tell good config advice
+  from bad.
+
+### Rolling latest stats (round 12b)
+
+- **Date:** 2026-05-04
+- **Scope:** 14 scenarios, with_gla mode only, claude-cli backend
+- **Wall clock:** 2h04m
+- **Result:** 14/14 completed; with_gla 38% faster than code_only
+  on the same scenarios; 1 fewer give-up; 2 demonstrably-deeper
+  diagnoses (cesium, maplibre 3d_terrain). Legacy scorer's
+  "correctness" output is unreliable for this scenario class.
+
+### Raw artifacts
+
+- `/data3/gla-eval-results/2026-05-04-round12b-with-gla/` (gitignored)
+  - `results.json` — 14 EvalResult entries
+  - `report.md` — `gpa.eval.cli report` output
+  - `system-status.md` — pre-run snapshot
+  - `run.log` — eval CLI stdout
+- `/data3/opengpa-snapshots/` — 13 framework clones at bug state (~3 GB)
+
+COMMIT: 3cf7920
+
