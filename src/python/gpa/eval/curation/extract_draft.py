@@ -104,6 +104,9 @@ def _build_bug_signature(*, expected_files: list[str], fix_commit_sha: str) -> s
     )
 
 
+_JASMINE_SPEC_BASENAME_RE = re.compile(r"spec\.(?:js|ts|tsx)$", re.IGNORECASE)
+
+
 def _filter_source_files(files: list[str]) -> list[str]:
     """Drop test, doc, example, and changelog files from fix-PR's files_changed.
 
@@ -111,14 +114,9 @@ def _filter_source_files(files: list[str]) -> list[str]:
     and a basename heuristic catches inline test files such as
     `mesh_test.rs` or `test_foo.py` that don't sit under a /tests/ dir.
 
-    Note (plan deviation): the plan's reference filter only checked path
-    substrings ("/tests/", "/test/", ...). That alone wouldn't drop
-    `crates/bevy_pbr/src/render/mesh_test.rs`, nor `tests/integration/...`
-    when given as a leading-segment path with no leading slash. The plan's
-    Step 3.6 assertion requires both to be dropped, so we additionally
-    (a) check leading-segment matches (e.g. `tests/...`, `examples/...`)
-    by splitting on '/', and (b) inspect the basename for `_test.<ext>` /
-    `test_*.<ext>` patterns. All checks are case-insensitive.
+    Cesium-style Jasmine convention (`Specs/Foo.js`, `BufferSpec.js`) is
+    handled by adding `specs` to the excluded segments and a basename
+    regex that catches `Spec.{js,ts,tsx}` (no leading dot, case-insensitive).
     """
     excluded_segments = {
         "tests",
@@ -129,6 +127,7 @@ def _filter_source_files(files: list[str]) -> list[str]:
         "example",
         "fixtures",
         "fixture",
+        "specs",
     }
     excluded_basenames = {
         "package.json",
@@ -141,15 +140,11 @@ def _filter_source_files(files: list[str]) -> list[str]:
     keep: list[str] = []
     for f in files:
         low = f.lower()
-        # Path-segment exclusions: any path segment that matches an excluded
-        # name (e.g. `crates/.../tests/foo.rs` or `tests/integration/...`).
         segments = low.split("/")
         if any(seg in excluded_segments for seg in segments):
             continue
-        # Substring exclusions: changelog & markdown documentation.
         if "changelog" in low or low.endswith(".md"):
             continue
-        # Basename-level test heuristics: `mesh_test.rs`, `test_foo.py`, etc.
         base = os.path.basename(low)
         if base in excluded_basenames:
             continue
@@ -161,8 +156,42 @@ def _filter_source_files(files: list[str]) -> list[str]:
             or ".spec." in base
         ):
             continue
+        if _JASMINE_SPEC_BASENAME_RE.search(base):
+            continue
         keep.append(f)
     return keep
+
+
+def _filter_and_rank_source_files(
+    items: list[dict],
+    top_n: int = 5,
+) -> list[str]:
+    """Filter `_filter_source_files`-style + rank by `additions+deletions`.
+
+    `items` is the GitHub PR-files endpoint shape: each entry has
+    `filename`, `additions`, `deletions`. Filtered survivors sort by
+    diff size (desc), with zero/missing-diff entries pinned to the
+    bottom in input order. The result is capped at `top_n` unless the
+    filtered list has ≤3 entries — short PRs are unlikely to contain
+    refactor collateral, so we keep them whole.
+
+    Used by `extract_draft` when the orchestrator threaded the file
+    metadata through (preferred path). The legacy filename-only path
+    falls back to `_filter_source_files`.
+    """
+    if not items:
+        return []
+    names = [it.get("filename") for it in items if it.get("filename")]
+    kept_names = set(_filter_source_files(names))
+    survivors = [it for it in items if it.get("filename") in kept_names]
+    survivors.sort(
+        key=lambda it: (it.get("additions") or 0) + (it.get("deletions") or 0),
+        reverse=True,
+    )
+    out = [it["filename"] for it in survivors]
+    if len(out) <= 3:
+        return out
+    return out[:top_n]
 
 
 def extract_draft(
@@ -193,7 +222,11 @@ def extract_draft(
                 "section structure, too long to use raw"
             )
 
-    expected_files = _filter_source_files(fix_pr.get("files_changed") or [])
+    files_meta = fix_pr.get("files_meta")
+    if files_meta:
+        expected_files = _filter_and_rank_source_files(files_meta)
+    else:
+        expected_files = _filter_source_files(fix_pr.get("files_changed") or [])
     if not expected_files:
         raise ExtractionFailure(
             "fix-PR files_changed had no source files after filtering"

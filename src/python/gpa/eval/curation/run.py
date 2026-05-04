@@ -445,6 +445,16 @@ def _fetch_fix_pr_metadata(thread: IssueThread, url: str) -> dict:
         "url": pr.get("html_url") or f"https://github.com/{owner_pr}/{repo_pr}/pull/{num}",
         "commit_sha": pr.get("merge_commit_sha") or pr.get("head", {}).get("sha", ""),
         "files_changed": [f.get("filename") for f in files if f.get("filename")],
+        # Full file objects for the rank-by-diff-size path in extract_draft.
+        # Each entry: {filename, additions, deletions} (others ignored).
+        "files_meta": [
+            {
+                "filename": f.get("filename"),
+                "additions": int(f.get("additions") or 0),
+                "deletions": int(f.get("deletions") or 0),
+            }
+            for f in files if f.get("filename")
+        ],
     }
 
 

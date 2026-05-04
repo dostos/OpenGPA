@@ -276,10 +276,11 @@ def test_run_produce_applies_framework_path_fallback(monkeypatch, tmp_path):
 
 
 def test_run_produce_keeps_rec_guess_when_no_override_fires(monkeypatch, tmp_path):
-    """Cesium case: existing `_filter_source_files` doesn't exclude
-    `Specs/` (Jasmine convention), so `BufferSpec.js` survives. But our
-    framework-path check does — the file isn't framework source, so the
-    fallback doesn't fire and `rec.bug_class_guess` is preserved."""
+    """Demo/sample paths: `_filter_source_files` doesn't filter them
+    (a fix-PR can legitimately add a demo as the fix), but our
+    framework-path check does. The file survives extract_draft and
+    arrives at _finalize_bug_class, which leaves rec.bug_class_guess
+    intact because `_is_framework_source_path` returns False."""
     from gpa.eval.curation import run as run_mod
     from gpa.eval.curation.journey import JourneyWriter
 
@@ -288,7 +289,7 @@ def test_run_produce_keeps_rec_guess_when_no_override_fires(monkeypatch, tmp_pat
         lambda thread, url: {
             "url": "https://github.com/o/r/pull/2",
             "commit_sha": "abc1234",
-            "files_changed": ["packages/engine/Specs/Renderer/BufferSpec.js"],
+            "files_changed": ["demos/usage_demo.cpp"],
         },
     )
     monkeypatch.setattr(run_mod, "_validate_draft", lambda d, e: _FakeOk())
