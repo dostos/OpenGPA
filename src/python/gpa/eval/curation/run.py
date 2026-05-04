@@ -155,6 +155,23 @@ def parse_args(argv: Optional[list[str]] = None) -> argparse.Namespace:
         "--summary-path", default="docs/superpowers/eval/coverage-gaps.md",
         help="Coverage-gaps summary path (regenerated on commit).",
     )
+    p.add_argument(
+        "--llm-triage", action="store_true", default=False,
+        help=(
+            "Call the LLM `Triage` class on each drafted candidate's "
+            "issue thread and override the regex `bug_class` guess. "
+            "Off by default — preserves the no-LLM PRODUCE invariant; "
+            "framework-path fallback handles most mis-labels deterministically."
+        ),
+    )
+    p.add_argument(
+        "--llm-backend", default="claude-cli",
+        choices=["api", "claude-cli", "codex-cli"],
+        help=(
+            "LLM backend used for --llm-triage. Mirrors the gen_queries "
+            "backend choice. Ignored when --llm-triage is off."
+        ),
+    )
     return p.parse_args(argv)
 
 
@@ -272,6 +289,79 @@ def _layout_category_framework(taxonomy_cell: str) -> tuple[str, str]:
         return parts[0], ".".join(parts[1:])
     cell = taxonomy_cell or "unknown"
     return cell, cell
+
+
+_NON_SOURCE_SEGMENTS = (
+    "/examples/", "/example/", "/demo/", "/demos/",
+    "/docs/", "/doc/", "/documentation/", "/website/",
+    "/tests/", "/test/", "/__tests__/",
+    "/specs/", "/spec/",
+    "/fixtures/", "/fixture/",
+    "/sample/", "/samples/",
+    "/benchmarks/", "/benchmark/",
+)
+_NON_SOURCE_BASENAMES = frozenset({
+    "package.json", "package-lock.json", "yarn.lock",
+    "pnpm-lock.yaml", "bun.lockb", "npm-shrinkwrap.json",
+})
+_TEST_BASENAME_RE = re.compile(
+    r"(?:_test|\.test|\.spec|spec)\.(?:js|ts|tsx|py|go|cpp|cc|c|rs)$",
+    re.IGNORECASE,
+)
+
+
+def _is_framework_source_path(path: str) -> bool:
+    """True if `path` looks like framework source code, not examples /
+    docs / tests / fixtures / build config / Jasmine specs.
+
+    Used by `_finalize_bug_class` to override the body-text regex guess
+    when every fix-PR file is framework source — the R12 codex-mined
+    cohort surfaced that "use" / "enable" in issue prose tricks
+    `infer_bug_class` into `consumer-misuse` even when the fix patches
+    framework code.
+    """
+    if not path:
+        return False
+    p = path.lower().replace("\\", "/")
+    haystack = "/" + p + "/"
+    if any(seg in haystack for seg in _NON_SOURCE_SEGMENTS):
+        return False
+    base = p.rsplit("/", 1)[-1]
+    if base in _NON_SOURCE_BASENAMES:
+        return False
+    if base.endswith(".md") or base.endswith(".rst"):
+        return False
+    if _TEST_BASENAME_RE.search(base):
+        return False
+    return True
+
+
+def _finalize_bug_class(
+    rec_guess: str,
+    expected_files: list[str],
+    triage_bug_class: Optional[str] = None,
+) -> str:
+    """Combine signals into the final `bug_class`, in priority order:
+
+    1. `graphics-lib-dev` is preserved untouched — it gates the drafter
+       routing (C-repro vs maintainer framing) and overriding it would
+       silently swap drafters.
+    2. LLM Triage result (when `--llm-triage` is on and the triager
+       produced a verdict) wins over the regex guess.
+    3. Framework-path fallback: every entry in `expected_files` looks
+       like framework source → force `framework-internal`. Catches the
+       R12 mis-labels that the regex (`use`/`enable`) produced.
+    4. Otherwise, the deterministic `rec.bug_class_guess`.
+    """
+    if rec_guess == "graphics-lib-dev":
+        return rec_guess
+    if triage_bug_class:
+        return triage_bug_class
+    if expected_files and all(
+        _is_framework_source_path(f) for f in expected_files
+    ):
+        return "framework-internal"
+    return rec_guess
 
 
 def _fetch_fix_pr_metadata(thread: IssueThread, url: str) -> dict:
@@ -585,10 +675,39 @@ def _run_select(
     return selected_records
 
 
+def _build_triage_fn(args: argparse.Namespace) -> Any:
+    """Lazily build the LLM triage callable used by `_run_produce`.
+
+    Imports `Triage` + LLM client only when the user opted in via
+    `--llm-triage`, so the no-LLM PRODUCE invariant holds for the
+    default path.
+    """
+    from gpa.eval.curation.triage import Triage
+    backend = args.llm_backend
+    if backend == "api":
+        from gpa.eval.curation.llm_client import LLMClient
+        client = LLMClient.from_env()
+    elif backend == "claude-cli":
+        from gpa.eval.curation.llm_client import ClaudeCodeLLMClient
+        client = ClaudeCodeLLMClient.from_env()
+    elif backend == "codex-cli":
+        from gpa.eval.curation.llm_client import CodexCliLLMClient
+        client = CodexCliLLMClient.from_env()
+    else:
+        raise ValueError(f"unknown --llm-backend: {backend}")
+    triager = Triage(client)
+
+    def _fn(thread: IssueThread) -> Optional[str]:
+        return triager.triage(thread).bug_class
+
+    return _fn
+
+
 def _run_produce(
     *, selected: list[tuple[Any, IssueThread, Any]],
     eval_dir: Path,
     run_id: str, discovered_at: str, writer: JourneyWriter,
+    triage_fn: Optional[Any] = None,
 ) -> list[tuple[Any, IssueThread, Any, DraftResult, dict]]:
     """Run extract_draft + validate on each selected candidate.
 
@@ -596,6 +715,11 @@ def _run_produce(
     (EXTRACTION_FAILED on fix-PR fetch, EXTRACTION_FAILED on extract
     raise, VALIDATION_FAILED on validator ok=False). Returns the list of
     successfully drafted ``(cand, thread, rec, draft, fix_pr)`` tuples.
+
+    `triage_fn` (when provided) is called as `triage_fn(thread)` and may
+    return a `bug_class` string to override `rec.bug_class_guess`. Off
+    by default — preserves the no-LLM PRODUCE invariant. The caller
+    builds it from `--llm-triage` + `--llm-backend`.
     """
     drafted: list[tuple[Any, IssueThread, Any, DraftResult, dict]] = []
     for cand, thread, rec in selected:
@@ -621,7 +745,21 @@ def _run_produce(
                 fix_pr=fix_pr,
                 taxonomy_cell=rec.taxonomy_cell,
             )
-            draft.extras["bug_class"] = rec.bug_class_guess
+            triage_bug_class: Optional[str] = None
+            if triage_fn is not None:
+                try:
+                    triage_bug_class = triage_fn(thread)
+                except Exception:  # noqa: BLE001 — triage is best-effort
+                    _LOG.warning(
+                        "llm-triage failed on %s; falling back to "
+                        "deterministic guess", cand.url, exc_info=True,
+                    )
+                    triage_bug_class = None
+            draft.extras["bug_class"] = _finalize_bug_class(
+                rec_guess=rec.bug_class_guess,
+                expected_files=list(draft.expected_files or []),
+                triage_bug_class=triage_bug_class,
+            )
         except ExtractionFailure:
             writer.append(_make_row(
                 cand, run_id=run_id, discovered_at=discovered_at,
@@ -870,9 +1008,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             selected, run_id=run_id, discovered_at=discovered_at, writer=writer,
         )
     else:
+        triage_fn = _build_triage_fn(args) if args.llm_triage else None
         drafted = _run_produce(
             selected=selected, eval_dir=Path(args.eval_dir),
             run_id=run_id, discovered_at=discovered_at, writer=writer,
+            triage_fn=triage_fn,
         )
         if args.max_phase == "produce":
             _write_produce_terminal_rows(
