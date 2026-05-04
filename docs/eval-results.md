@@ -1843,19 +1843,67 @@ never fires).
    mines but doesn't retroactively rewrite committed scenarios.
    Re-mining R11–R12 will fix it.
 
+### Judge-tier upgrade run (claude-opus-4-7, 6 needs_review rows)
+
+Fed the 4 with_gla + 2 code_only `needs_review` rows through
+`judge_residual` against the fix-PR diff in
+`/data3/opengpa-snapshots/`. Wall: ~50s for 6 calls (cached at
+`/tmp/judge_cache_r12c/`).
+
+| mode      | scenario                              | judge   | flips? |
+|-----------|---------------------------------------|---------|--------|
+| with_gla  | godot glow_extremely_slow             | full    | ✓ → solved |
+| with_gla  | godot weird_shadow_on_mobile          | none    |   stays ✗ |
+| with_gla  | cesium camera_jumps                   | none    |   stays ✗ (see below) |
+| with_gla  | maplibre 3d_terrain                   | full    | ✓ → solved |
+| code_only | godot 4_2_world_environment_glow      | partial |   stays needs_review |
+| code_only | godot glow_extremely_slow             | full    | ✓ → solved |
+
+**Post-judge with_gla:** 6/14 solved (was 4), 2 needs_review.
+**Post-judge code_only:** 7/14 solved (was 6), 1 needs_review,
+1 partial. Net: **+3 solved across the cohort** from the residual
+band, no false-positives on manual eyeball.
+
+**Manual agreement: 5/6** (passes the ≥5/8 bar from
+lessons-scoring §5). Borderline: cesium camera_jumps with_gla.
+The agent identified the actual bug (`Picking.update()` never
+called → stale `_pickPositionCache`), but the gt PR (#12983) is a
+12-file refactor spanning `Renderer/Buffer.js`, `Sync.js`,
+`PickFramebuffer.js`, etc. The judge's terse "no meaningful
+overlap" verdict reflects scope mismatch, not a wrong diagnosis —
+arguably should be `partial`, not `none`. Future refinement:
+re-prompt the judge when the agent's prose contains a sharp
+single-cause claim and gt is a multi-file refactor.
+
+### What this confirms
+
+1. **Gave-up veto fires correctly** — none of the 28 archived
+   diagnoses match the bail-out patterns; sample inspection confirms
+   all are substantive prose attempts (including the wrong ones).
+2. **Prose extractor recall floor works** — 17/28 prose-leg verdicts,
+   none erroneously `solved=True` from shotgun-listing every file
+   (precision floor active).
+3. **Judge tier resolves the residual band** — flipped 3/6 to ✓,
+   1/6 to partial, 2/6 stayed ✗. Cost: ~50s wall, ≤1 min budget hit.
+4. **Existing committed scenarios still carry pre-filter gt** —
+   cesium gt has 5 `*Spec.js` files that survived the old filter; new
+   `_filter_source_files` (commit `0bf4cb9`) drops them on future
+   mines but doesn't retroactively rewrite committed scenarios.
+   Re-mining R11–R12 will fix it.
+
 ### Next steps
 
-- **Enable `--llm-judge` on the 4 with_gla `needs_review` rows** —
-  expect cesium camera_jumps and maplibre 3d_terrain to flip to
-  `solved=True` (semantic match against fix-PR diff).
-  Acceptance bar: ≥ 5/8 manual agreement per lessons-scoring §5.
 - **Re-mine R12 cohort** with the new pipeline (P0-1 + P1-4 + P1-5)
   to confirm `bug_class` distribution shifts toward
   `framework-internal` and `fix.files` cardinality drops to ~3 from
-  the current ~10 average. Affects scoring downstream.
+  the current ~10 average.
+- **Refine judge prompt** for the "single-cause vs multi-file
+  refactor" mismatch (cesium edge case) — add an explicit instruction
+  that a sharp single-cause diagnosis can match a multi-file gt PR
+  when the cause is one of the changed files.
 - **Defer**: `gpa report` UX surfacing `verdict.scorer` /
   `needs_review` count; legacy `DiagnosisScorer` removal (keep one
   more round for v1↔v2 comparison telemetry).
 
-COMMIT: 9eb3612 (validation only — no code change)
+COMMIT: 9eb3612 + 0ee84d7 (judge-tier validation, no code change)
 
