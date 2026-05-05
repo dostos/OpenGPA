@@ -72,5 +72,27 @@ Scenarios that already have upstream snapshot references:
 - [x] Scenario verifier (`gpa.eval.curation.verify`) with static /
       network / build tiers; failed scenarios moved to
       `tests/eval-quarantine/`
-- [ ] Re-run R12-style cohort with capture working + verified scenarios
-- [ ] Measure token reduction from OpenGPA on the cleaned cohort
+- [x] Re-run R12-style cohort with capture working + verified scenarios
+      (R12c, 2026-05-05): 5/14 with_gla, 7/14 code_only — was 1/14 with
+      stale snapshots. Real signal restored.
+- [x] Measure token reduction from OpenGPA on the cleaned cohort:
+      with_gla 147k vs code_only 163k total (≈10% reduction overall).
+      Native godot tied 2/8; web-map widened gap (3/6 vs 5/6) because
+      the GL shim doesn't intercept browser WebGL — see
+      `docs/eval-results.md` "R12c Re-evaluation".
+
+## Open question for next iteration
+
+OpenGPA loses to code-only on JS/WebGL scenarios (2 maplibre bugs in
+R12c). The shim only intercepts native GL/Vulkan, so browser-side
+WebGL surfaces no useful frame state — yet the agent still pays the
+prompt overhead enumerating empty overviews. Two paths forward:
+
+1. **Gate at the harness**: detect WebGL-tier scenarios from
+   `framework_kind` / source language and skip GPA tool injection
+   entirely. Cheap, immediate.
+2. **Add a WebGL backend**: extend `src/shims/webgl/` to surface
+   frame state via the same FrameProvider ABC. Higher payoff but
+   a real engineering investment.
+
+Option 1 is the ratchet — pick it up before the next eval round.
