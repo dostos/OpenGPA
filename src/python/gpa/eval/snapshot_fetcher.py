@@ -11,6 +11,7 @@ with a `.complete` sentinel file marking successful fetches.
 """
 from __future__ import annotations
 
+import fcntl
 import hashlib
 import os
 import re
@@ -90,37 +91,54 @@ class SnapshotFetcher:
         """Return a Path to a working tree checked out at the given SHA.
 
         If the cache already has a complete clone for this (repo, sha),
-        return its path immediately. Otherwise clone into place.
+        return its path immediately. Otherwise clone into place under an
+        exclusive per-cache-key file lock so that concurrent fetchers
+        don't race each other (one would otherwise rmtree the other's
+        in-progress clone).
 
         Raises SnapshotError if the clone fails.
         """
         target = self.cache_root / ref.cache_key()
 
-        # Fast path: already complete
+        # Fast path before acquiring lock
         if (target / ".complete").exists():
             return target
 
-        # Stale path: partial clone from a previous crash. Remove and retry.
-        if target.exists():
+        # Ensure cache root exists for the lock file
+        self.cache_root.mkdir(parents=True, exist_ok=True)
+        lock_path = self.cache_root / f"{ref.cache_key()}.lock"
+
+        # Serialize concurrent fetches of the same cache_key
+        with open(lock_path, "w") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+
+            # Re-check fast path: another process may have completed
+            # the clone while we were waiting on the lock.
+            if (target / ".complete").exists():
+                return target
+
+            # Stale path: partial clone from a previous crash. Remove
+            # and retry. Safe under the lock.
+            if target.exists():
+                try:
+                    shutil.rmtree(target)
+                except OSError as e:
+                    raise SnapshotError(
+                        f"cannot remove stale cache dir {target}: {e}"
+                    ) from e
+
+            target.mkdir(parents=True)
+
             try:
-                shutil.rmtree(target)
-            except OSError as e:
-                raise SnapshotError(f"cannot remove stale cache dir {target}: {e}") from e
+                self._clone_at_sha(ref, target)
+            except SnapshotError:
+                # Leave no half-complete dir behind
+                shutil.rmtree(target, ignore_errors=True)
+                raise
 
-        # Ensure cache root exists
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.mkdir(parents=True)
-
-        try:
-            self._clone_at_sha(ref, target)
-        except SnapshotError:
-            # Leave no half-complete dir behind
-            shutil.rmtree(target, ignore_errors=True)
-            raise
-
-        # Mark complete
-        (target / ".complete").write_text("")
-        return target
+            # Mark complete
+            (target / ".complete").write_text("")
+            return target
 
     def _clone_at_sha(self, ref: SnapshotRef, target: Path) -> None:
         """Fetch a single commit at ref.sha into target/ using the minimum
@@ -171,7 +189,14 @@ class SnapshotFetcher:
 
         if not fetched:
             # Fallback 2: full unshallow fetch. Slow but always works.
-            run([self._git, "fetch", "--unshallow", "origin"])
+            # Skip --unshallow if the repo isn't shallow anymore
+            # (fallback 1 may have fetched everything if the history is
+            # smaller than 500 commits, leaving the repo complete) —
+            # `git fetch --unshallow` on a complete repo errors out.
+            if (target / ".git" / "shallow").exists():
+                run([self._git, "fetch", "--unshallow", "origin"])
+            else:
+                run([self._git, "fetch", "origin"])
 
         # Try reset to the target. If it's a merge commit SHA, it should be
         # in the fetched history now. ref.resolve_parent uses <sha>^ so the

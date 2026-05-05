@@ -219,3 +219,116 @@ def test_fetch_resolve_parent_false_unchanged(tmp_path):
     reset_calls = [a for a in argvs if a[1] == "reset"]
     assert reset_calls
     assert all(not arg.endswith("^") for argv in reset_calls for arg in argv)
+
+
+def test_fetch_skips_unshallow_when_repo_is_complete(tmp_path):
+    """When fallback 1 (--depth 500 origin) raises but the resulting repo
+    is already complete (no .git/shallow), the fetcher must NOT try
+    `git fetch --unshallow` — git fatals on that with
+    "--unshallow on a complete repository does not make sense"."""
+    cache = tmp_path / "cache"
+    ref = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123")
+    fetcher = SnapshotFetcher(cache_root=cache)
+
+    target = cache / ref.cache_key()
+
+    def run_mock(argv, **kwargs):
+        # Both the SHA fetch and the --depth 500 fallback fail
+        if argv[:2] == ["git", "fetch"] and "abc123" in argv:
+            return MagicMock(returncode=1, stderr="rejected", stdout="")
+        if argv[:2] == ["git", "fetch"] and "500" in argv:
+            return MagicMock(returncode=1, stderr="timeout", stdout="")
+        # When the unshallow-or-plain fetch happens, simulate
+        # complete-repo state by NOT having .git/shallow
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=run_mock) as mock_run:
+        # Make sure target/.git exists but .git/shallow doesn't, so the
+        # branch decides "repo is complete, skip --unshallow"
+        result = fetcher.fetch(ref)
+
+    assert (result / ".complete").exists()
+    fetch_argvs = [c.args[0] for c in mock_run.call_args_list
+                   if c.args[0][1] == "fetch"]
+    # When .git/shallow is absent, the fetcher must use plain
+    # `git fetch origin`, never `--unshallow`.
+    unshallow_calls = [a for a in fetch_argvs if "--unshallow" in a]
+    assert unshallow_calls == [], unshallow_calls
+
+
+def test_fetch_uses_unshallow_when_repo_is_shallow(tmp_path):
+    """Conversely, when .git/shallow IS present after the depth fetches,
+    --unshallow is the correct command."""
+    cache = tmp_path / "cache"
+    ref = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123")
+    fetcher = SnapshotFetcher(cache_root=cache)
+
+    target = cache / ref.cache_key()
+    call_count = {"n": 0}
+
+    def run_mock(argv, **kwargs):
+        call_count["n"] += 1
+        # Both depth fetches fail
+        if argv[:2] == ["git", "fetch"] and "abc123" in argv:
+            return MagicMock(returncode=1, stderr="rejected", stdout="")
+        if argv[:2] == ["git", "fetch"] and "500" in argv:
+            # Simulate a shallow repo state: create .git/shallow before
+            # returning failure (mimicking git's behavior when --depth
+            # creates shallow markers even on partial fetches)
+            git_dir = target / ".git"
+            git_dir.mkdir(parents=True, exist_ok=True)
+            (git_dir / "shallow").write_text("deadbeef\n")
+            return MagicMock(returncode=1, stderr="timeout", stdout="")
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    with patch("subprocess.run", side_effect=run_mock) as mock_run:
+        result = fetcher.fetch(ref)
+
+    assert (result / ".complete").exists()
+    fetch_argvs = [c.args[0] for c in mock_run.call_args_list
+                   if c.args[0][1] == "fetch"]
+    # When .git/shallow exists, --unshallow IS the right call
+    unshallow_calls = [a for a in fetch_argvs if "--unshallow" in a]
+    assert len(unshallow_calls) == 1, unshallow_calls
+
+
+def test_fetch_holds_lock_across_concurrent_calls(tmp_path):
+    """Two threads calling fetch() on the same SnapshotRef must not race.
+    Without per-cache-key locking, one thread's `target.exists()` check
+    sees the other's in-progress dir and rmtrees it, killing the in-flight
+    clone (subprocess.run then fails with FileNotFoundError on cwd).
+    The lock serializes them: the second call returns the first's cache."""
+    import threading
+
+    cache = tmp_path / "cache"
+    ref = SnapshotRef(repo_url="https://github.com/o/r", sha="abc123")
+    fetcher = SnapshotFetcher(cache_root=cache)
+
+    barrier = threading.Barrier(2)
+    results = {}
+    errors = {}
+
+    # Slow down the clone so the second caller is forced to wait on the
+    # lock instead of finishing its own racing clone.
+    def run_mock(argv, **kwargs):
+        if argv[:2] == ["git", "fetch"]:
+            import time
+            time.sleep(0.05)
+        return MagicMock(returncode=0, stdout="", stderr="")
+
+    def worker(name):
+        try:
+            barrier.wait()
+            with patch("subprocess.run", side_effect=run_mock):
+                results[name] = fetcher.fetch(ref)
+        except Exception as exc:
+            errors[name] = exc
+
+    t1 = threading.Thread(target=worker, args=("a",))
+    t2 = threading.Thread(target=worker, args=("b",))
+    t1.start(); t2.start()
+    t1.join(); t2.join()
+
+    assert errors == {}, errors
+    assert results["a"] == results["b"]
+    assert (results["a"] / ".complete").exists()
