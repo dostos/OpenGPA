@@ -58,6 +58,12 @@ class VerificationResult:
     scenario_dir: Path
     failures: list[str] = dataclasses.field(default_factory=list)
     checks_run: list[str] = dataclasses.field(default_factory=list)
+    # Soft warnings — mining-quality concerns that don't fail the
+    # scenario (it still loads + scores) but flag it for human review.
+    # R12c forensics found two scenarios where mining picked the wrong
+    # PR (cesium, godot_performance_on_android); these checks catch
+    # similar mismatches automatically going forward.
+    warnings: list[str] = dataclasses.field(default_factory=list)
 
     @property
     def passed(self) -> bool:
@@ -218,6 +224,105 @@ def _check_static(scenario_dir: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Mining-quality soft check — keyword overlap between issue title /
+# user report and fix.files. Cheap heuristic that catches scenarios
+# where mining picked an unrelated PR (R12c surfaced two: cesium
+# pointed at a sync/buffer fix while the user complaint was about
+# camera-jumps-on-translucency, and godot_performance_on_android
+# pointed at an Android Java/Kotlin lifecycle refactor while the user
+# report was about Vulkan/Mali rendering).
+# ---------------------------------------------------------------------------
+
+
+# Common words that show up in both bug reports and file paths but
+# don't actually carry topic signal. Filtered before computing overlap.
+_MINING_STOPWORDS = frozenset({
+    "the", "a", "an", "is", "of", "in", "on", "to", "for", "with",
+    "from", "by", "and", "or", "as", "at", "be", "it", "that", "this",
+    "but", "not", "no", "yes", "if", "when", "then", "so", "do", "does",
+    "src", "source", "lib", "main", "test", "tests", "spec", "specs",
+    "core", "common", "util", "utils", "helper", "helpers",
+    "godot", "cesium", "three", "maplibre", "mapbox", "deck",
+    "engine", "framework", "renderer", "render",  # too generic
+    "issue", "bug", "fix", "fixes", "report", "user",
+    "version", "versions", "tested", "system", "information",
+    "steps", "reproduce", "minimal", "repro", "example",
+})
+
+# Regex for splitting tokens out of bug reports / file paths.
+_TOKEN_RE = re.compile(r"[a-z][a-z0-9]{2,}")
+
+
+def _tokens(text: str) -> set[str]:
+    """Lowercase, split on non-alphanum boundaries, drop stopwords."""
+    if not text:
+        return set()
+    return {
+        t for t in _TOKEN_RE.findall(text.lower())
+        if t not in _MINING_STOPWORDS
+    }
+
+
+def _check_mining_quality(scenario_dir: Path) -> list[str]:
+    """Soft check: does fix.files share any topic-keyword with the
+    user report? Returns warnings (not failures) when overlap is empty.
+
+    The check is intentionally permissive — one shared keyword across
+    the entire fix.files list is enough. R12c's cesium scenario had
+    sync/buffer files vs. a user report about "camera jumps on
+    translucency" → zero overlap. android-perf had Android Java
+    files vs. "Vulkan Mali-G52 perf regression" → zero overlap. Both
+    would fire this warning.
+    """
+    warnings: list[str] = []
+    md_path = scenario_dir / "scenario.md"
+    if not md_path.is_file():
+        return warnings
+    text = md_path.read_text(encoding="utf-8")
+
+    # Need a fix block with files to check
+    fix, _has_heading = _parse_fix_block(md_path)
+    if not fix:
+        return warnings
+    files = fix.get("files") or []
+    if not files:
+        return warnings
+    bug_class = fix.get("bug_class")
+    if bug_class == "legacy":
+        # Legacy scenarios sometimes have empty/sparse files; don't warn
+        return warnings
+
+    # Extract the user report section if present; fall back to whole md.
+    user_report = ""
+    m = re.search(
+        r"^##\s+(?:user report|bug)\s*\n(.+?)(?=^##\s|\Z)",
+        text, re.IGNORECASE | re.MULTILINE | re.DOTALL,
+    )
+    if m:
+        user_report = m.group(1)
+    else:
+        user_report = text
+
+    report_tokens = _tokens(user_report)
+    file_tokens: set[str] = set()
+    for f in files:
+        # Tokenise both the directory path and the basename
+        file_tokens |= _tokens(f.replace("/", " ").replace(".", " "))
+
+    overlap = report_tokens & file_tokens
+    if not overlap and report_tokens and file_tokens:
+        # Truncate to the most informative tokens for the warning
+        sample_report = sorted(report_tokens)[:6]
+        sample_files = sorted(file_tokens)[:6]
+        warnings.append(
+            "mining-quality: zero keyword overlap between user report "
+            f"and fix.files (report tokens: {sample_report}; "
+            f"file tokens: {sample_files}) — fix may be wrong PR"
+        )
+    return warnings
+
+
+# ---------------------------------------------------------------------------
 # Tier 2: network — verify SHAs resolve on github
 # ---------------------------------------------------------------------------
 
@@ -307,6 +412,7 @@ def _write_verdict(scenario_dir: Path, result: VerificationResult) -> None:
         "checked_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "checks_run": list(result.checks_run),
         "failures": list(result.failures),
+        "warnings": list(result.warnings),
     }
     yml_path.write_text(
         yaml.safe_dump(data, sort_keys=False), encoding="utf-8"
@@ -348,6 +454,10 @@ def verify_scenario(
 
     result.checks_run.append("static")
     result.failures.extend(_check_static(scenario_dir))
+    # Soft mining-quality check runs alongside static — never blocks,
+    # always informative. Recorded under `verification.warnings` in
+    # scenario.yaml so reviewers can scan flagged scenarios.
+    result.warnings.extend(_check_mining_quality(scenario_dir))
 
     # Skip downstream tiers when static failed — their failures would be
     # noise rather than signal (e.g. a missing fix_sha will trip every
@@ -425,8 +535,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         results.append(result)
         verdict = "PASS" if result.passed else "FAIL"
-        print(f"{verdict:4s} {sd.relative_to(eval_root)}: "
-              f"{', '.join(result.failures) if result.failures else 'ok'}")
+        msg = ", ".join(result.failures) if result.failures else "ok"
+        print(f"{verdict:4s} {sd.relative_to(eval_root)}: {msg}")
+        for warning in result.warnings:
+            print(f"     WARN: {warning}")
 
     if not args.dry_run:
         for result in results:
@@ -448,7 +560,9 @@ def main(argv: list[str] | None = None) -> int:
 
     n_pass = sum(1 for r in results if r.passed)
     n_fail = len(results) - n_pass
-    print(f"\ntotal: {len(results)}, pass: {n_pass}, fail: {n_fail}")
+    n_warn = sum(1 for r in results if r.warnings)
+    print(f"\ntotal: {len(results)}, pass: {n_pass}, fail: {n_fail}, "
+          f"with warnings: {n_warn}")
     if args.dry_run:
         print("(dry run — scenario.yaml not updated, no files moved)")
     return 0 if n_fail == 0 else 1

@@ -16,6 +16,7 @@ import yaml
 from gpa.eval.curation.verify import (
     verify_scenario,
     _check_static,
+    _check_mining_quality,
     _quarantine,
     _write_verdict,
 )
@@ -378,3 +379,136 @@ def test_loader_load_one_does_not_filter(tmp_path):
     loader = ScenarioLoader(eval_dir=str(eval_root))
     s = loader.load("bad")
     assert s.id == "bad"
+
+
+# ---------------------------------------------------------------------------
+# Mining-quality soft check — keyword overlap between report + fix.files
+# R12c surfaced two scenarios where mining picked unrelated PRs (cesium
+# camera-jumps + sync/buffer files; godot Vulkan perf + Android Java
+# files). The soft check warns without failing.
+# ---------------------------------------------------------------------------
+
+
+def _make_md(report: str, files: list[str]) -> str:
+    files_yaml = "\n".join(f"  - {f}" for f in files) if files else " []"
+    return (
+        f"## User Report\n\n{report}\n\n"
+        "## Fix\n\n"
+        "```yaml\n"
+        "fix_pr_url: https://github.com/o/r/pull/1\n"
+        "fix_sha: abc123def456789012345678901234567890aaaa\n"
+        "fix_parent_sha: 0000aaaa11112222333344445555666677778888\n"
+        "bug_class: framework-internal\n"
+        f"files:\n{files_yaml}\n"
+        "```\n"
+    )
+
+
+def test_mining_quality_passes_when_keywords_match(tmp_path):
+    """Camera-jump bug → camera-related files → no warning."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Camera jumps when zooming with translucency enabled.",
+        ["packages/engine/Source/Scene/Camera.js",
+         "packages/engine/Source/Scene/CameraController.js"],
+    ))
+    assert _check_mining_quality(sd) == []
+
+
+def test_mining_quality_warns_when_no_overlap(tmp_path):
+    """R12c android-perf style: Vulkan perf complaint, Android Java
+    fix files. Zero topic-keyword overlap → soft warning."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Vulkan Mali-G52 fps regression on simple 3D scene.",
+        ["platform/android/java/lib/Activity.kt",
+         "platform/android/java/editor/build.gradle"],
+    ))
+    warnings = _check_mining_quality(sd)
+    assert len(warnings) == 1
+    assert "mining-quality" in warnings[0]
+    assert "zero keyword overlap" in warnings[0]
+
+
+def test_mining_quality_silent_for_legacy_bug_class(tmp_path):
+    """legacy bug_class scenarios often have empty/sparse files; the
+    check should not warn on them (escape hatch is intentional)."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    md = (
+        "## User Report\n\nWhatever.\n\n## Fix\n\n"
+        "```yaml\n"
+        "fix_pr_url: (none)\nfix_sha: (none)\nfix_parent_sha: (none)\n"
+        "bug_class: legacy\nfiles: []\n"
+        "```\n"
+    )
+    (sd / "scenario.md").write_text(md)
+    assert _check_mining_quality(sd) == []
+
+
+def test_mining_quality_silent_when_no_fix_block(tmp_path):
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text("## Bug Description\n\nA bug.\n")
+    assert _check_mining_quality(sd) == []
+
+
+def test_mining_quality_real_cesium_pattern(tmp_path):
+    """The real R12c cesium failure: report is about camera jumps with
+    translucency; fix.files are about sync/buffer/picking. Some
+    overlap (picking) so check passes — but this is the borderline
+    case showing the heuristic is permissive, which is the design."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Camera jumps when globe translucency enabled. Picking position drifts.",
+        ["packages/engine/Source/Renderer/Buffer.js",
+         "packages/engine/Source/Renderer/Sync.js",
+         "packages/engine/Source/Scene/Picking.js"],
+    ))
+    # "picking" is in both, so no warning. Heuristic is permissive by design.
+    assert _check_mining_quality(sd) == []
+
+
+def test_mining_quality_warning_persists_to_yaml(tmp_path):
+    """End-to-end: a warning surfaces in scenario.yaml under
+    `verification.warnings` after verify_scenario runs."""
+    sd = _seed_scenario(
+        tmp_path / "tests" / "eval" / "x/y/bad",
+        pkg=".",
+        fix_block=(
+            "fix_pr_url: https://github.com/o/r/pull/1\n"
+            "fix_sha: abc123def456789012345678901234567890aaaa\n"
+            "fix_parent_sha: 0000aaaa11112222333344445555666677778888\n"
+            "bug_class: framework-internal\n"
+            "files:\n"
+            "  - platform/totally/unrelated/path.kt\n"
+        ),
+    )
+    # Overwrite the user-report section with mismatched topic keywords
+    md = sd / "scenario.md"
+    md.write_text(
+        "## User Report\n\nVulkan rendering regression on Mali GPU.\n\n"
+        + md.read_text().split("## Fix", 1)[1].join(["## Fix", ""])[len("## Fix"):]
+    )
+    # Keep it simple: re-write cleanly
+    md.write_text(
+        "## User Report\n\nVulkan rendering regression on Mali GPU.\n\n"
+        "## Fix\n\n```yaml\n"
+        "fix_pr_url: https://github.com/o/r/pull/1\n"
+        "fix_sha: abc123def456789012345678901234567890aaaa\n"
+        "fix_parent_sha: 0000aaaa11112222333344445555666677778888\n"
+        "bug_class: framework-internal\n"
+        "files:\n  - platform/totally/unrelated/path.kt\n"
+        "```\n"
+    )
+    eval_root = sd.parent.parent.parent  # tests/eval
+    result = verify_scenario(
+        sd, eval_root=eval_root, repo_root=tmp_path,
+        network=False, build=False,
+    )
+    assert result.passed  # static still passes (warnings don't fail)
+    assert any("mining-quality" in w for w in result.warnings)
+
+    _write_verdict(sd, result)
+    yml = yaml.safe_load((sd / "scenario.yaml").read_text())
+    assert yml["status"] == "verified"  # not quarantined
+    warnings = yml["verification"].get("warnings") or []
+    assert any("mining-quality" in w for w in warnings)
