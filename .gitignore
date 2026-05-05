@@ -1,6 +1,7 @@
 bazel-bin
 bazel-out
 bazel-gpa
+bazel-gla
 bazel-testlogs
 __pycache__/
 *.egg-info/

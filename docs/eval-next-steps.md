@@ -64,6 +64,13 @@ Scenarios that already have upstream snapshot references:
 - [x] Curation pipeline discovers real issues
 - [x] SnapshotFetcher clones upstream repos
 - [x] Scenarios have upstream_snapshot metadata
-- [ ] Eval harness passes snapshot path to agents
-- [ ] Run multi-file eval with upstream source
-- [ ] Measure token reduction from OpenGPA
+- [x] Eval harness passes snapshot path to agents (upstream tools wired)
+- [x] Live capture unblocked: `runner.py` derives nested-taxonomy Bazel
+      target paths so `run_with_capture` actually emits frames
+- [x] `fix_parent_sha` populated end-to-end so the snapshot serves the
+      buggy parent state, not the post-fix state
+- [x] Scenario verifier (`gpa.eval.curation.verify`) with static /
+      network / build tiers; failed scenarios moved to
+      `tests/eval-quarantine/`
+- [ ] Re-run R12-style cohort with capture working + verified scenarios
+- [ ] Measure token reduction from OpenGPA on the cleaned cohort

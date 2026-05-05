@@ -1914,3 +1914,39 @@ judge see this directly; the terse-stat prompt couldn't.
 
 COMMIT: 9eb3612 + 0ee84d7 + (refined judge prompt — see commit log)
 
+## Cohort Verification (post-R12c)
+
+Inspecting the archived 14×2 R12 results revealed **all 14 with_gla
+scenarios fell back to "live capture unavailable"** — the harness had a
+Bazel target path bug (`//tests/eval:<slug>` instead of the nested
+`//tests/eval/<cat>/<fw>/<slug>:<slug>`) and could never emit frames.
+Worse, `_fetch_fix_pr_metadata` only stored `fix_sha` (the merge commit
+= post-fix state), so the upstream snapshot served already-fixed code
+to the agent. Both modes were measuring degraded prompts on the wrong
+upstream state.
+
+What shipped to unblock a meaningful re-run:
+
+1. **Bazel target derivation fixed.** `runner._bazel_target_for(scenario)`
+   computes the package from `source_path.parent.relative_to(repo_root)`.
+   End-to-end verified: `e1_state_leak` now emits frames against the
+   running engine (frame_id increments, `draw_call_count > 0`).
+2. **`fix_parent_sha` populated end-to-end.** `_fetch_fix_pr_metadata`
+   calls `gh api repos/<o>/<r>/commits/<merge_sha>` and stores
+   `parents[0].sha`. New scenarios get it automatically; existing ones
+   were backfilled by `gpa.eval.curation.backfill_parent_sha`
+   (18 scenarios patched, 1 lookup failure on a force-pushed PR).
+3. **Scenario verifier** (`gpa.eval.curation.verify`) with tiered
+   checks (static / network / build) and a quarantine path. Run on the
+   full cohort: **189 pass, 9 fail** out of 198. Quarantined to
+   `tests/eval-quarantine/`:
+   - 1 stale fix_sha (`godot_pull_117986` — force-pushed)
+   - 8 source contamination (hint comments like `// Expected: 180,180,180`
+     in main.c leaking ground truth)
+   `ScenarioLoader.load_all()` skips `status: quarantined` by default,
+   so the harness can't accidentally serve them. See
+   `docs/eval-scenario-format.md` for the verifier UX.
+
+The cohort is now in a known-good state. Future mining + verification
+runs will keep the `tests/eval/` tree clean automatically.
+
