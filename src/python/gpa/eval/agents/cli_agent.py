@@ -147,7 +147,12 @@ class CliAgent(AgentBackend):
         # framework / repo it's looking at, but the system prompt drives
         # the task framing and final-output format.
         system_prompt = (tools or {}).get("system_prompt") or ""
-        block = self._tool_block(mode, have_frame, have_snapshot)
+        # Effective mode: harness sets this to "code_only" for
+        # browser-tier scenarios in with_gla, so the GPA tool block is
+        # dropped from the prompt (it can't help — native shim doesn't
+        # see browser WebGL). Falls back to the requested mode.
+        effective_mode = (tools or {}).get("effective_mode") or mode
+        block = self._tool_block(effective_mode, have_frame, have_snapshot)
         blurb = self._scenario_blurb(scenario, tools)
 
         if system_prompt:

@@ -32,6 +32,13 @@ to the maintainer schema (`bug_class:"framework-internal"`,
 `proposed_patches:[{repo,file,change_summary}]`) instead — mining
 sometimes mis-classifies these.
 
+# Stopping condition
+
+If you exceed ~20 tool calls without a clear hypothesis, stop
+investigating and emit your best-effort JSON with
+``confidence: "low"``. Grinding past that point rarely produces a
+better diagnosis and burns tokens.
+
 # Output (REQUIRED — last line)
 
 End with a SINGLE JSON object on the LAST line. No markdown around it.

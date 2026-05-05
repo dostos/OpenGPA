@@ -303,26 +303,37 @@ class EvalHarness:
             "list_scenario_files": lambda: self._list_scenario_files(scenario),
             "read_scenario_file": lambda path: self._read_scenario_file(scenario, path),
         }
-        if mode == "with_gla":
-            # Tier mismatch: scenarios under web-2d / web-3d / web-map /
-            # graphics-lib run in a browser. The native LD_PRELOAD shim
-            # can't intercept their GL calls, so with_gla here surfaces
-            # only the (unhelpful) "Advisor mode" preamble vs the
-            # equivalent code_only setup. R12c (2026-05-05) showed
-            # with_gla *underperforming* code_only by 2/6 on web-map
-            # for exactly this reason. Log a clear warning so users can
-            # filter the cohort or interpret the result correctly.
-            if is_browser_tier_scenario(scenario):
-                _log.warning(
-                    "scenario %s: browser-tier (web-* / graphics-lib) "
-                    "scenario in with_gla mode — the native shim does "
-                    "not intercept browser WebGL, so GPA tools provide "
-                    "no useful frame state. Result will be comparable "
-                    "to code_only but with extra prompt overhead.",
-                    scenario.id,
-                )
+        # Effective mode: for browser-tier scenarios in with_gla, the
+        # GPA tool block is dead weight (the native LD_PRELOAD shim
+        # can't intercept browser WebGL). R13 (2026-05-05) confirmed
+        # the cost: with_gla=9/14 vs code_only=12/14 on the same
+        # cohort, with the gap entirely on web-map. Degrade to
+        # code_only for prompt construction so the agent isn't told
+        # to use endpoints that don't help. Result is still recorded
+        # under `mode == "with_gla"` for analysis comparison; only
+        # the prompt + tool block change.
+        effective_mode = mode
+        is_browser_tier_with_gla = (
+            mode == "with_gla" and is_browser_tier_scenario(scenario)
+        )
+        if is_browser_tier_with_gla:
+            _log.warning(
+                "scenario %s: browser-tier (web-* / graphics-lib) "
+                "in with_gla mode — degrading to code_only prompt "
+                "construction (no GPA tool block). The native shim "
+                "does not intercept browser WebGL; including the "
+                "block costs tokens for no value.",
+                scenario.id,
+            )
+            effective_mode = "code_only"
+        tools["effective_mode"] = effective_mode
 
+        if mode == "with_gla":
             def _safe_run_with_capture():
+                if is_browser_tier_with_gla:
+                    # No point attempting a Bazel build + capture for a
+                    # browser-tier scenario; no source_path, no frame.
+                    return None
                 try:
                     return self.runner.run_with_capture(scenario)
                 except (RuntimeError, FileNotFoundError, OSError) as exc:
@@ -367,7 +378,7 @@ class EvalHarness:
         bug_class = self._resolve_bug_class(scenario)
         tools["bug_class"] = bug_class
         tools["system_prompt"] = self._select_prompt_for_scenario(
-            scenario, bug_class=bug_class, mode=mode,
+            scenario, bug_class=bug_class, mode=effective_mode,
         )
         # Free signal that helps the agent skip "where am I?" turns.
         # cli_agent reads these into a one-line scenario blurb.
