@@ -51,6 +51,34 @@ paste into this round file.
 - Scenarios quarantined: <N> (reason)
 - ...
 
+## System-improvement audit (Musk 5-step)
+
+Walked in this order — each round must produce at least one System
+change. If audit yields none, the eval pipeline is saturating and
+the flywheel is spinning without making the product better.
+
+**1. Requirements less dumb.**
+- <Requirement X> — owner: <person>; still load-bearing? <yes/no>; if no: deleted in <commit>
+- ...
+
+**2. Deletions.**
+- <Thing> — removed because <specific failure mode that would have
+  required it, or "no caller found / not invoked since <commit>">
+- ...
+
+**3. Simplifications.** (only after 1-2)
+- <Component> — was <complexity>, now <simpler>; rationale: <data point>
+
+**4. Cycle-time improvements.** (only after 1-3)
+- <Process> — was <slow path>, now <fast path>
+
+**5. Automation.** (only after 1-4)
+- <Manual step> — replaced by <automated path>
+
+If a section is empty, write "(none this round)" and explain why
+in the next round's "Findings" — persistent emptiness flags a
+process gap.
+
 ## Numbers
 
 | Run | Solved | Tokens | vs prior |

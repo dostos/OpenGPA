@@ -226,6 +226,81 @@ The missing data directly becomes the improvement backlog:
 - "r5 needs FBO attachment info" → P3: track glFramebufferTexture2D
 - "vec3 uniforms garbled" → P0: fix serialization
 
+### Run the system-improvement audit (Musk 5-step) — load-bearing
+
+Before writing the round log, walk these five steps in this exact
+order. Skipping or reordering skips the highest-leverage wins. Most
+engineers (and most prior rounds) jump to step 3; that's the trap.
+
+Each round must produce **at least one system change** —
+shipped under `src/{shims,core,bindings}/` or `src/python/gpa/{api,backends,mcp,framework,cli}/`.
+If three consecutive rounds ship zero system changes, the eval
+pipeline has saturated its own lift potential and the flywheel is
+spinning without making the product better.
+
+**1. Make the requirements less dumb.**
+
+Question every requirement *especially* if a smart person specified
+it — those are the most dangerous. For each input/constraint the
+round depended on, ask:
+
+- Why does this requirement exist? Who owns it (a *person*, not a
+  department)?
+- Has the original reason expired? Is the problem it solves still
+  real?
+- What would happen if this requirement didn't exist?
+- Did any forensic finding this round invalidate a requirement?
+  (R12c invalidated "with_gla measures GPA's value" for mined
+  scenarios with no source_path — the whole comparison was theater.)
+
+Write the answers in the round log. If you can't name the owner of
+a requirement, that's a strong signal to delete it.
+
+**2. Delete the part or process.**
+
+"If you're not adding things back in at least 10% of the time,
+you're clearly not deleting enough." Default action: delete. Argue
+to add it back if you must.
+
+For each piece of code/config/process touched this round:
+
+- Could this be removed entirely? What breaks if it is?
+- Is there an "in case" argument keeping it alive? "In case" is not
+  a reason — name a *specific* failure mode.
+- Has it been used since it was added? Grep for callers.
+- For tests/scaffolding/abstractions: is the indirection load-bearing
+  or just convenient?
+
+Delete first. Optimization comes after. **Do not skip to step 3.**
+
+**3. Simplify or optimise the design.**
+
+Only after steps 1 and 2. "The most common error of a smart engineer
+is to optimise a thing that should not exist."
+
+Take a holistic view: optimizing one component while a co-equal
+problem goes unaddressed is wasted work. (R12c spent rounds tuning
+the file scorer; the actual lift came from fixing the snapshot
+pipeline — a different layer entirely.)
+
+**4. Accelerate cycle time.**
+
+Faster iteration only after 1-3 are right. "If you're digging your
+grave, don't dig faster." Going faster in the wrong direction
+compounds the wrong direction.
+
+**5. Automate.**
+
+Last. Don't automate something that shouldn't exist (step 1-2) or
+is poorly designed (step 3). The Tesla battery-mat story: weeks
+spent automating a process that turned out to be unnecessary.
+
+For OpenGPA: automation candidates only after the eval-pipeline +
+system surface have been audited for steps 1-2. Examples that earn
+their place: snapshot pipeline (replaced manual cloning with
+`SnapshotFetcher`), verifier (replaced manual review with
+`gpa.eval.curation.verify`).
+
 ### Write the round log (load-bearing — do not skip)
 
 After analysis, create `docs/eval-rounds/YYYY-MM-DD-<round>.md` with
