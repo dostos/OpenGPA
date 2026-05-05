@@ -39,16 +39,10 @@ Write your reasoning in prose with concrete file paths inline like
 ``servers/rendering/foo.cpp:621``. Then end your response with the
 output JSON below.
 
-# Stopping condition (read carefully)
-
-Empirically, agents that solve scenarios in this harness use 8-15
-tool calls. Agents that *fail* burn 25-50 tool calls grinding —
-re-grepping the same area, re-reading the same files, never reaching
-a confident hypothesis. If you find yourself past ~20 tool calls
-without a clear hypothesis, you are probably going down the wrong
-path. Stop investigating, write up your best-effort guess with
-``confidence: "low"``, and emit the JSON. Cheaper to produce a low-
-confidence answer than to keep grinding.
+(Maintainer-class scenarios genuinely need extensive investigation —
+13-file refactor PRs are normal in this domain. Don't artificially
+short-circuit; do enough work to identify every file that should be
+touched.)
 
 # Output (REQUIRED — last line)
 

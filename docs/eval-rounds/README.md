@@ -87,6 +87,7 @@ paste into this round file.
 | [R12c](2026-05-05-r12c.md) | 2026-05-05 | 1/14 → 10/14 from infra fixes (snapshot + scoring + judge) |
 | [R12d](2026-05-05-r12d.md) | 2026-05-05 | Heavy "READ FIRST" prompt collapsed investigation 5×; reverted |
 | [R13](2026-05-05-r13.md)   | 2026-05-05 | Scope-hint validated: file_solved 0→6, tokens −25% to −48%, +2 code_only |
+| [R14](2026-05-05-r14.md)   | 2026-05-05 | Browser-tier gate closes web-map gap (+0); budget hint over-throttled (-6 solves); revert in R15 |
 
 Older rounds (R1–R12b) predate this convention; their narrative lives
 in `docs/eval-results.md` as legacy reference.
