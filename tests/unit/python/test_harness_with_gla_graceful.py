@@ -173,3 +173,77 @@ def _make_native_scenario(tmp_path):
             bug_class="framework-internal", files=["src/foo.cpp"],
         ),
     )
+
+
+# ---------------------------------------------------------------------------
+# R16 P0: source-less scenarios skip with_gla mode entirely (deletion).
+# Pre-R16 the harness ran both modes for every scenario, but for mined-
+# without-source scenarios the comparison is theater — GPA_FRAME_ID is
+# never set so `gpa frames overview` returns empty. Net result: 2x cohort
+# cost for zero signal. R16 deletes the with_gla run for source-less.
+# ---------------------------------------------------------------------------
+
+
+def test_run_all_skips_with_gla_for_source_less_scenarios(tmp_path, monkeypatch):
+    """When a scenario has no source_path, run_all should skip its
+    with_gla run entirely — the comparison is meaningless."""
+    from gpa.eval.harness import EvalHarness
+    from gpa.eval.scenario import ScenarioMetadata, FixMetadata
+
+    h = EvalHarness()
+
+    # Stub: source-less mined scenario
+    mined = ScenarioMetadata(
+        id="mined-slug", title="t", bug_description="bug",
+        expected_output="", actual_output="",
+        ground_truth_diagnosis="", ground_truth_fix="",
+        difficulty=2, adversarial_principles=[],
+        gpa_advantage="", source_path="",  # the key — source-less
+        binary_name="", scenario_dir=str(tmp_path / "scn"),
+        fix=FixMetadata(
+            fix_pr_url="https://github.com/o/r/pull/1",
+            fix_sha="abc", fix_parent_sha="dead",
+            bug_class="framework-internal", files=["src/foo.cpp"],
+        ),
+    )
+    # Stub: source-having synthetic scenario
+    src_path = tmp_path / "main.c"
+    src_path.write_text("int main(void){return 0;}\n")
+    synth = ScenarioMetadata(
+        id="synth-slug", title="t", bug_description="bug",
+        expected_output="", actual_output="",
+        ground_truth_diagnosis="", ground_truth_fix="",
+        difficulty=2, adversarial_principles=[],
+        gpa_advantage="", source_path=str(src_path),
+        binary_name="synth-slug", scenario_dir=str(tmp_path),
+        fix=None,  # legacy
+    )
+
+    # Wire the loader to return our two scenarios
+    monkeypatch.setattr(h.loader, "load",
+                        lambda sid: {"mined-slug": mined, "synth-slug": synth}[sid])
+
+    # Track which (sid, mode) pairs run_scenario actually receives
+    invocations = []
+    def fake_run_scenario(sid, mode, agent_fn):
+        invocations.append((sid, mode))
+        # Return a minimal result so the loop continues
+        from gpa.eval.metrics import EvalResult
+        return EvalResult(scenario_id=sid, mode=mode,
+                          correct_diagnosis=False, correct_fix=False,
+                          diagnosis_text="", input_tokens=0, output_tokens=0,
+                          total_tokens=0, tool_calls=0, num_turns=0,
+                          time_seconds=0.0, model="x",
+                          timestamp="2026-05-05T00:00:00")
+    monkeypatch.setattr(h, "run_scenario", fake_run_scenario)
+
+    h.run_all(agent_fn=lambda *a, **kw: None,
+              scenarios=["mined-slug", "synth-slug"],
+              modes=["with_gla", "code_only"])
+
+    # mined-slug: only code_only should run (with_gla skipped)
+    assert ("mined-slug", "with_gla") not in invocations
+    assert ("mined-slug", "code_only") in invocations
+    # synth-slug: BOTH modes run (real comparison)
+    assert ("synth-slug", "with_gla") in invocations
+    assert ("synth-slug", "code_only") in invocations

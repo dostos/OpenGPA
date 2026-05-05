@@ -247,7 +247,26 @@ class EvalHarness:
 
         new_results: list[EvalResult] = []
         for sid in scenarios:
+            # Source-less scenarios (mined without a synthetic
+            # reproducer) cannot run live capture, so `with_gla`
+            # collapses to `code_only` at the prompt level (R14
+            # browser-tier gate generalised — applies to ALL
+            # source-less scenarios, not just web-*). Skip the
+            # duplicate run entirely. Pre-R16 we paid 2x cohort
+            # cost for a measurement that had no signal.
+            try:
+                scen = self.loader.load(sid)
+                has_source = bool(scen.source_path)
+            except Exception:
+                has_source = True  # be conservative on loader errors
             for mode in modes:
+                if mode == "with_gla" and not has_source:
+                    _log.info(
+                        "scenario %s: skipping with_gla — no source_path "
+                        "(can't capture; collapses to code_only)",
+                        sid,
+                    )
+                    continue
                 result = self.run_scenario(sid, mode, agent_fn)
                 new_results.append(result)
         return new_results
