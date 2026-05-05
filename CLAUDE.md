@@ -59,9 +59,9 @@ curl -H "Authorization: Bearer TOKEN" localhost:18080/api/v1/frames/current/over
 2. **Verify** — `python -m gpa.eval.curation.verify tests/eval [--network --build]`. Quarantine broken scenarios to `tests/eval-quarantine/`. Skipping this stage = silent signal degradation.
 3. **Capture** — Run native scenarios under the GL/Vulkan shim. **Skip for WebGL/JS** — the native shim doesn't intercept browser GL calls.
 4. **Evaluate** — Run with/without OpenGPA across model tiers, compare accuracy × token cost.
-5. **Improve** — Fix capture bugs or add new capabilities based on eval gaps. Re-run eval to verify.
+5. **Improve** — Fix capture bugs or add new capabilities based on eval gaps. Re-run eval to verify. Write `docs/eval-rounds/YYYY-MM-DD-<round>.md` with Ran / Findings / Added / Removed / Numbers / Open backlog. Append-only — don't rewrite prior rounds.
 
-The full skill: `~/.claude/skills/eval-driven-improvement/SKILL.md` (reference: `docs/skills/eval-driven-improvement.md`).
+The full skill: `~/.claude/skills/eval-driven-improvement/SKILL.md` (reference: `docs/skills/eval-driven-improvement.md`). Round-log template: `docs/eval-rounds/README.md`.
 
 Eval scenarios live in `tests/eval/<category>/<framework>/<slug>/`. See `docs/eval-scenario-format.md` for the schema. Source files must NOT contain hint comments (// BUG, // should be, etc.) — the verifier rejects them.
 

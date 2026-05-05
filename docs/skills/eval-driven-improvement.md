@@ -202,7 +202,7 @@ The new scoring stack writes a `verdict` block per scenario:
 
 Confidence is `low`/`medium`/`high`. Treat `prose` `low` as failure.
 
-## Stage 5: Analyze Gaps
+## Stage 5: Analyze Gaps + Write Round Log
 
 After the eval, ask in order:
 
@@ -216,14 +216,39 @@ After the eval, ask in order:
    Check the rendering tier — if it's WebGL/JS, that's expected (the
    shim doesn't see browser GL calls and the agent gets distracted by
    empty overviews).
+6. **Token-spend forensics**: solved scenarios typically use about
+   half the tokens of failed ones. If a scenario burned >2× the
+   cohort median tokens and didn't solve, it's a stuck-grind. Note
+   it as a candidate for tool-call budgeting.
 
 The missing data directly becomes the improvement backlog:
 - "r31 needs glClear tracking" → P2: intercept glClear
 - "r5 needs FBO attachment info" → P3: track glFramebufferTexture2D
 - "vec3 uniforms garbled" → P0: fix serialization
 
-Update `docs/eval-results.md` with the per-cohort numbers and the
-investigation behind each delta.
+### Write the round log (load-bearing — do not skip)
+
+After analysis, create `docs/eval-rounds/YYYY-MM-DD-<round>.md` with
+the fixed shape (template in `docs/eval-rounds/README.md`):
+
+- **Ran**: cohort, modes, model, output dir
+- **Findings**: bullet points, what we learned that we didn't know
+  before. Reference the per-scenario forensics if non-trivial.
+- **Added**: commits shipped, backlog items added, scenarios mined
+- **Removed / closed**: backlog items resolved, scenarios quarantined
+- **Numbers**: per-mode solved + tokens + delta vs prior round
+- **Open backlog**: ranked items carried forward to next round, each
+  with expected lift × inverse cost rationale
+
+Append-only: don't rewrite prior rounds. If a finding turns out wrong
+in a later round, note it in *that* round's "Findings" with a
+back-reference, never edit the original. The R12c→R12d sequence is
+the canonical example — R12d's regression is documented in its own
+file, not stitched into R12c.
+
+Skipping the round log defeats the flywheel: future-you can't tell
+which interventions paid off without it. The backlog rots, the same
+findings get re-discovered, and eval signal drifts.
 
 ## Snapshot pipeline invariants
 
