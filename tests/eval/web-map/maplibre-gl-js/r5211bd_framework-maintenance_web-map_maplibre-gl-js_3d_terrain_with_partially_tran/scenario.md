@@ -167,6 +167,7 @@ See fix at https://github.com/maplibre/maplibre-gl-js/pull/5746.
 ```yaml
 fix_pr_url: https://github.com/maplibre/maplibre-gl-js/pull/5746
 fix_sha: 71f44f9d98c6acb28a9e5aa86757321b5c7b1ea1
+fix_parent_sha: b6cd3b555e14a6b4a013439233853b958eeefc3b
 bug_class: consumer-misuse
 files:
   - src/render/draw_fill.ts

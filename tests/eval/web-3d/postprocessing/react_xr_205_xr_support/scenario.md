@@ -13,6 +13,7 @@ See fix at https://github.com/mrdoob/three.js/pull/26160.
 ```yaml
 fix_pr_url: https://github.com/mrdoob/three.js/pull/26160
 fix_sha: afdfa33b357027b3ad545b179ee8b8bb698a4889
+fix_parent_sha: 79ea10830dfc97b6c0a7e29d217c7ff04c081095
 bug_class: framework-internal
 files:
   - src/renderers/WebGLRenderer.js

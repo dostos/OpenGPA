@@ -80,6 +80,7 @@ See fix at https://github.com/godotengine/godot/pull/115292.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/115292
 fix_sha: b268b1013de7e7f17fed4186c0884bb00ad480d6
+fix_parent_sha: 4738ce72e3af500ee3bd23506c04879f983ec98f
 bug_class: consumer-misuse
 files:
   - servers/rendering/renderer_rd/environment/sky.cpp

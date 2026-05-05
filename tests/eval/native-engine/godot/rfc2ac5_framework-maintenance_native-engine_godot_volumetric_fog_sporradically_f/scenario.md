@@ -67,6 +67,7 @@ See fix at https://github.com/godotengine/godot/pull/118198.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/118198
 fix_sha: 179899680b588fcd64c7a8c5dce14ef663c6ff42
+fix_parent_sha: 0b41f26b9b8b3bebce5417c3809d12c78502f05d
 bug_class: consumer-misuse
 files:
   - servers/rendering/renderer_rd/shaders/environment/volumetric_fog_process.glsl

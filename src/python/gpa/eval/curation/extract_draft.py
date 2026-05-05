@@ -61,6 +61,7 @@ class DraftResult:
     fix_pr_url: str
     expected_files: list[str]
     bug_signature_yaml: str
+    fix_parent_sha: str = ""
     extras: dict[str, Any] = field(default_factory=dict)
 
 
@@ -123,6 +124,7 @@ def _filter_source_files(files: list[str]) -> list[str]:
         "test",
         "__tests__",
         "docs",
+        "doc",
         "examples",
         "example",
         "fixtures",
@@ -249,5 +251,6 @@ def extract_draft(
         fix_pr_url=fix_url,
         expected_files=expected_files,
         bug_signature_yaml=sig,
+        fix_parent_sha=fix_pr.get("parent_sha") or "",
         extras={"taxonomy_cell": taxonomy_cell},
     )

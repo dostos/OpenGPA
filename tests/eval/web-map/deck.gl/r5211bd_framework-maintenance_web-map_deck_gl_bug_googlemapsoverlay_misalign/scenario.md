@@ -112,6 +112,7 @@ See fix at https://github.com/visgl/deck.gl/pull/8892.
 ```yaml
 fix_pr_url: https://github.com/visgl/deck.gl/pull/8892
 fix_sha: d504327e80ac9f83ecf1db094c9975c553cf2c6b
+fix_parent_sha: b5a631371354757254b2fd16c6524ee258eb091e
 bug_class: consumer-misuse
 files:
   - modules/google-maps/src/google-maps-overlay.ts

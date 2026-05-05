@@ -17,6 +17,7 @@ See fix at https://github.com/BabylonJS/Babylon.js/pull/16459.
 ```yaml
 fix_pr_url: https://github.com/BabylonJS/Babylon.js/pull/16459
 fix_sha: 99f2f4f024ea8154739f401118cb63750dddb5c8
+fix_parent_sha: a0f9b0107584dc7e440ed11f175a39f0087c4031
 bug_class: framework-internal
 files:
   - package-lock.json

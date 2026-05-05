@@ -114,6 +114,7 @@ def test_filter_source_files_drops_tests_docs_examples():
         "__tests__/render.ts",
         "examples/3d/repro.rs",
         "docs/changelog.md",
+        "doc/classes/RenderingServer.xml",
         "CHANGELOG.md",
         "package.json",
         "package-lock.json",

@@ -47,6 +47,7 @@ See fix at https://github.com/godotengine/godot/pull/109971.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/109971
 fix_sha: ec62f12862c4cfc76526eaf99afa0a24249f8288
+fix_parent_sha: 70f07467bed9cb7952b5523a720fba33bc7abf0e
 bug_class: user-config
 files:
   - servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp

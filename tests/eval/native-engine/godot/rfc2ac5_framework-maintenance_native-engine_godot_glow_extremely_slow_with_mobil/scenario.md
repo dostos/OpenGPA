@@ -69,6 +69,7 @@ See fix at https://github.com/godotengine/godot/pull/110077.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/110077
 fix_sha: 3c1e4792909fbaff63e2437f1c06029bd1aa507f
+fix_parent_sha: c2c7bf6b01906677a681f6042a36cd3e835ecfb6
 bug_class: consumer-misuse
 files:
   - doc/classes/Environment.xml

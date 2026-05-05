@@ -39,6 +39,7 @@ See fix at https://github.com/godotengine/godot/pull/104590.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/104590
 fix_sha: e3063f5675f7952765b4aa7a9a0ec8c1a08cc184
+fix_parent_sha: ab5a3521f9b1dce4ce1a454e5d156111f909d458
 bug_class: consumer-misuse
 files:
   - core/io/image.cpp

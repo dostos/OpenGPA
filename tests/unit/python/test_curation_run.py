@@ -692,6 +692,11 @@ def test_fetch_fix_pr_metadata_uses_pr_self_for_pr_candidates(monkeypatch):
             })
         elif cmd[-1].endswith("/pulls/118968/files"):
             stdout = json.dumps([{"filename": "servers/rendering/foo.cpp"}])
+        elif cmd[-1].endswith("/commits/f059d64e3d0388583e877d3e13c8cd25bd884421"):
+            stdout = json.dumps({
+                "sha": "f059d64e",
+                "parents": [{"sha": "70f07467be0000000000000000000000000000aa"}],
+            })
         else:
             raise AssertionError(f"unexpected gh call: {cmd}")
         return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
@@ -712,10 +717,12 @@ def test_fetch_fix_pr_metadata_uses_pr_self_for_pr_candidates(monkeypatch):
     )
     assert md["url"] == "https://github.com/godotengine/godot/pull/118968"
     assert md["commit_sha"].startswith("f059d64e")
+    assert md["parent_sha"] == "70f07467be0000000000000000000000000000aa"
     assert md["files_changed"] == ["servers/rendering/foo.cpp"]
-    # Critically: the gh calls used the PR's own number (118968), not the
-    # issue number (118930) referenced in the body.
-    assert all("/pulls/118968" in cmd[-1] for cmd in captured), captured
+    # Critically: the PR-related gh calls used the PR's own number (118968),
+    # not the issue number (118930) referenced in the body.
+    pr_calls = [c for c in captured if "/pulls/" in c[-1]]
+    assert all("/pulls/118968" in cmd[-1] for cmd in pr_calls), pr_calls
 
 
 # ---------------------------------------------------------------------------

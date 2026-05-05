@@ -41,6 +41,7 @@ See fix at https://github.com/maplibre/maplibre-gl-js/pull/7523.
 ```yaml
 fix_pr_url: https://github.com/maplibre/maplibre-gl-js/pull/7523
 fix_sha: 15638c89ac024583e8dc5a0ad8c82b280cc0bc20
+fix_parent_sha: 039f43a4c2f3d4d9476097446d7ee98a75d6bd9c
 bug_class: consumer-misuse
 files:
   - src/render/terrain.ts

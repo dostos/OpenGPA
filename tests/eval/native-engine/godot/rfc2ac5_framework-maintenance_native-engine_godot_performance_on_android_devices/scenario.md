@@ -81,6 +81,7 @@ See fix at https://github.com/godotengine/godot/pull/93933.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/93933
 fix_sha: 8455b3343e723dbcaf4365e311371a80c448f121
+fix_parent_sha: f9a58be51bfc596ac94de58e5e03fa28b53f765a
 bug_class: user-config
 files:
   - doc/classes/ProjectSettings.xml

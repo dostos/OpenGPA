@@ -48,6 +48,7 @@ See fix at https://github.com/godotengine/godot/pull/119038.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/119038
 fix_sha: b81c232f043371f35407c69d26fa136daded385d
+fix_parent_sha: c434c4528ad1aeaefbda80816b397bfb51f466cd
 bug_class: consumer-misuse
 files:
   - servers/rendering/renderer_rd/shaders/effects/cubemap_roughness_inc.glsl

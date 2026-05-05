@@ -43,6 +43,7 @@ See fix at https://github.com/CesiumGS/cesium/pull/12983.
 ```yaml
 fix_pr_url: https://github.com/CesiumGS/cesium/pull/12983
 fix_sha: 644c18332b0a6991868176f358c84d7d7724b292
+fix_parent_sha: a6e02269689225d85fa0a6edefcbdafcf9cd40a9
 bug_class: consumer-misuse
 files:
   - packages/engine/Source/Renderer/Buffer.js

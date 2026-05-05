@@ -50,6 +50,7 @@ See fix at https://github.com/godotengine/godot/pull/109084.
 ```yaml
 fix_pr_url: https://github.com/godotengine/godot/pull/109084
 fix_sha: 91a179847437c3bc58501aa337ce3bbe94b6df6b
+fix_parent_sha: aa88eb2a759c2f67228cf22d0b0f8fdf336fa1fb
 bug_class: consumer-misuse
 files:
   - doc/classes/ProjectSettings.xml

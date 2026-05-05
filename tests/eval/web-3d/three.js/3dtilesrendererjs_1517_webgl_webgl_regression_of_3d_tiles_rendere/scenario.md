@@ -31,6 +31,7 @@ See fix at https://github.com/iTowns/itowns/pull/2702.
 ```yaml
 fix_pr_url: https://github.com/iTowns/itowns/pull/2702
 fix_sha: c66b942f6363bd622b132fc168209269a1603fa2
+fix_parent_sha: 117b2782ab3f5d878062a5d275db898c25774e65
 bug_class: framework-internal
 files:
   - config/prepare.mjs

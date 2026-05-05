@@ -441,9 +441,31 @@ def _fetch_fix_pr_metadata(thread: IssueThread, url: str) -> dict:
         )
         raise
 
+    fix_sha = pr.get("merge_commit_sha") or pr.get("head", {}).get("sha", "")
+    # parents[0] of the merge commit is master pre-merge — i.e. the buggy
+    # state. Without this the upstream snapshot defaults to fix_sha and
+    # agents investigate already-fixed code.
+    parent_sha = ""
+    if fix_sha:
+        try:
+            commit_proc = subprocess.run(
+                ["gh", "api", f"repos/{owner_pr}/{repo_pr}/commits/{fix_sha}"],
+                capture_output=True, text=True, check=True,
+            )
+            commit = json.loads(commit_proc.stdout)
+            parents = commit.get("parents") or []
+            if parents:
+                parent_sha = parents[0].get("sha") or ""
+        except subprocess.CalledProcessError as exc:
+            _LOG.warning(
+                "gh api commits failed for %s (sha %s): %s",
+                url, fix_sha, (exc.stderr or "").strip(),
+            )
+
     return {
         "url": pr.get("html_url") or f"https://github.com/{owner_pr}/{repo_pr}/pull/{num}",
-        "commit_sha": pr.get("merge_commit_sha") or pr.get("head", {}).get("sha", ""),
+        "commit_sha": fix_sha,
+        "parent_sha": parent_sha,
         "files_changed": [f.get("filename") for f in files if f.get("filename")],
         # Full file objects for the rank-by-diff-size path in extract_draft.
         # Each entry: {filename, additions, deletions} (others ignored).
@@ -537,6 +559,10 @@ def _draft_to_files(draft: DraftResult) -> dict[str, str]:
         "```yaml",
         f"fix_pr_url: {draft.fix_pr_url}",
         f"fix_sha: {draft.fix_commit_sha}",
+    ]
+    if draft.fix_parent_sha:
+        md_lines.append(f"fix_parent_sha: {draft.fix_parent_sha}")
+    md_lines += [
         f"bug_class: {bug_class}",
         f"files:",
     ]

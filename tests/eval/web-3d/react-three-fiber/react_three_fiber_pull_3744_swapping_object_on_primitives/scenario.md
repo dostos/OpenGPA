@@ -24,6 +24,7 @@ See fix at https://github.com/pmndrs/react-three-fiber/pull/3744.
 ```yaml
 fix_pr_url: https://github.com/pmndrs/react-three-fiber/pull/3744
 fix_sha: 119668f9f3ee31b28485c9706407f22272fe059c
+fix_parent_sha: 943a37e66415d9a0e4bf4252b6fbb977e566788a
 bug_class: framework-internal
 files:
   - packages/fiber/src/core/events.ts

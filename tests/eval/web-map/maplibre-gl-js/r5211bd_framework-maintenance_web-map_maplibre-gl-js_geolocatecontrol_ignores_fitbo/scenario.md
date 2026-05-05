@@ -206,6 +206,7 @@ See fix at https://github.com/maplibre/maplibre-gl-js/pull/7372.
 ```yaml
 fix_pr_url: https://github.com/maplibre/maplibre-gl-js/pull/7372
 fix_sha: 6de93359410aae6f32654f8b3521206147d2fd71
+fix_parent_sha: d0dacde8f155bb1b6aaabd69a439896ede5ed581
 bug_class: consumer-misuse
 files:
   - src/geo/projection/vertical_perspective_camera_helper.ts
