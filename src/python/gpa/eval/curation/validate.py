@@ -204,7 +204,7 @@ class Validator:
     def __init__(self, eval_dir: Path | str, runner: Any, llm_fallback: Any = None):
         self.eval_dir = Path(eval_dir)
         self.eval_dir.mkdir(parents=True, exist_ok=True)
-        self._runner = runner  # must expose build_and_capture(scenario_id) -> dict
+        self._runner = runner  # must expose build_and_capture(scenario) -> dict
         self._llm_fallback = llm_fallback
 
     def validate(self, draft: DraftResult) -> ValidationResult:
@@ -263,7 +263,7 @@ class Validator:
 
         # Build and run
         try:
-            capture = self._runner.build_and_capture(draft.scenario_id)
+            capture = self._runner.build_and_capture(scenario)
         except Exception as e:
             return ValidationResult(ok=False, reason=f"build/run failed: {e}")
 

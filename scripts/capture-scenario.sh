@@ -13,11 +13,20 @@ fi
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SOCKET_PATH="${GPA_SOCKET_PATH:-/tmp/gpa_eval.sock}"
 SHM_NAME="${GPA_SHM_NAME:-/gpa_eval}"
-BINARY="${REPO_ROOT}/bazel-bin/tests/eval/${SCENARIO}"
+
+# Scenarios live under nested taxonomy packages (tests/eval/<cat>/<fw>/<slug>/);
+# resolve the package via the source layout rather than assuming a flat package.
+SRC_DIR=$(find "${REPO_ROOT}/tests/eval" -mindepth 2 -type d -name "${SCENARIO}" -print -quit)
+if [ -z "$SRC_DIR" ]; then
+    echo "ERROR: scenario directory not found under tests/eval for '${SCENARIO}'"
+    exit 1
+fi
+PKG_REL="${SRC_DIR#${REPO_ROOT}/}"
+BINARY="${REPO_ROOT}/bazel-bin/${PKG_REL}/${SCENARIO}"
 
 if [ ! -f "$BINARY" ]; then
     echo "Building ${SCENARIO}..."
-    bazel build "//tests/eval:${SCENARIO}"
+    bazel build "//${PKG_REL}:${SCENARIO}"
 fi
 
 echo "Running ${SCENARIO} under OpenGPA capture..."

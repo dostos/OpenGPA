@@ -96,9 +96,34 @@ class ScenarioRunner:
     # Public API
     # ------------------------------------------------------------------
 
+    def _bazel_target_for(self, scenario: ScenarioMetadata) -> tuple[str, Path]:
+        """Resolve the Bazel package + target for `scenario`.
+
+        Scenarios live under nested taxonomy packages
+        (``tests/eval/<cat>/<fw>/<slug>/``), so the package is computed
+        from ``scenario.source_path``'s parent directory rather than
+        being a flat ``tests/eval`` package.
+        """
+        if not scenario.source_path:
+            raise FileNotFoundError(
+                f"scenario {scenario.id} has no source_path — likely a "
+                f"mined scenario without a synthetic reproducer; cannot build"
+            )
+        src = Path(scenario.source_path)
+        try:
+            pkg = src.parent.relative_to(self._repo_root)
+        except ValueError as exc:
+            raise FileNotFoundError(
+                f"scenario {scenario.id} source_path {src} is not under "
+                f"repo_root {self._repo_root}"
+            ) from exc
+        target = f"//{pkg.as_posix()}:{scenario.binary_name}"
+        binary = self._repo_root / "bazel-bin" / pkg / scenario.binary_name
+        return target, binary
+
     def build_scenario(self, scenario: ScenarioMetadata) -> str:
         """Build the scenario binary via Bazel. Returns absolute binary path."""
-        target = f"//tests/eval:{scenario.binary_name}"
+        target, binary = self._bazel_target_for(scenario)
         result = subprocess.run(
             [self._bazel, "build", target],
             cwd=str(self._repo_root),
@@ -112,8 +137,6 @@ class ScenarioRunner:
                 f"stderr: {result.stderr}"
             )
 
-        # Bazel places binaries at bazel-bin/tests/eval/<name>
-        binary = self._repo_root / "bazel-bin" / "tests" / "eval" / scenario.binary_name
         if not binary.exists():
             raise FileNotFoundError(f"Built binary not found at: {binary}")
         return str(binary)
@@ -162,7 +185,7 @@ class ScenarioRunner:
         """Read and return the scenario C source code."""
         return Path(scenario.source_path).read_text(encoding="utf-8")
 
-    def build_and_capture(self, scenario_id: str) -> dict:
+    def build_and_capture(self, scenario: ScenarioMetadata) -> dict:
         """Build the scenario via Bazel, run it under Xvfb with OpenGPA shim, capture frame.
 
         Returns a dict with keys:
@@ -170,15 +193,13 @@ class ScenarioRunner:
             backend; metadata-only signature matchers tolerate this)
           - metadata: dict with draw_call_count and draw_calls
         """
+        target, bin_path = self._bazel_target_for(scenario)
         # 1. Build
         subprocess.run(
-            [self._bazel, "build", f"//tests/eval:{scenario_id}"],
+            [self._bazel, "build", target],
             cwd=str(self._repo_root),
             check=True,
         )
-
-        # 2. Run under Xvfb with the shim
-        bin_path = Path(self._repo_root) / "bazel-bin" / "tests" / "eval" / scenario_id
         env = {
             "DISPLAY": ":99",
             "LD_PRELOAD": str(self._shim_path),
