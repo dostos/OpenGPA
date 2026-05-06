@@ -531,3 +531,73 @@ def test_cli_agent_does_not_raise_on_legit_short_response(monkeypatch, tmp_path)
     # Should NOT raise — this is a real (terse) response with non-zero tokens
     result = agent.run(scenario, "with_gla", tools)
     assert "proposed_patches" in result.diagnosis
+
+
+def test_cli_agent_raises_on_mid_session_rate_limit(monkeypatch, tmp_path):
+    """R17 observed: rate-limit can hit AFTER the agent has already
+    emitted some tool calls. The metrics show non-zero tool_calls /
+    output_tokens but the final diagnosis is still the rate-limit
+    message. Pre-fix the original heuristic (tokens==0 only) missed
+    this case and recorded the rate-limit message as a real failure."""
+    from gpa.eval.agents.cli_agent import CliRateLimitError
+
+    def fake_run(*a, **kw):
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    def parse_mid_session_rl(stdout, stderr):
+        # R17 saw exactly this shape: short rate-limit response after
+        # the agent had begun its run.
+        return CliRunMetrics(
+            diagnosis="You've hit your limit · resets 4:10am (Asia/Seoul)",
+            input_tokens=10, output_tokens=885, tool_calls=1, num_turns=2,
+        )
+
+    spec = CliBackendSpec(
+        name="fake", binary="/bin/true", base_args=("-q",),
+        parse_run=parse_mid_session_rl, timeout_sec=10,
+    )
+    agent = CliAgent(spec=spec)
+    scenario = _Scenario(source_path=str(tmp_path / "main.c"))
+    (tmp_path / "main.c").write_text("// hi")
+    tools = {"run_with_capture": lambda: None}
+
+    import pytest
+    with pytest.raises(CliRateLimitError):
+        agent.run(scenario, "with_gla", tools)
+
+
+def test_cli_agent_does_not_raise_on_long_diagnosis_mentioning_limit(monkeypatch, tmp_path):
+    """A long diagnosis that happens to contain "rate limit" as part of
+    real reasoning (e.g. discussing API rate limiting in the bug) must
+    NOT trigger the bail. Only short diagnoses count."""
+    def fake_run(*a, **kw):
+        return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    long_diag = (
+        "The bug is in the rate limit handling code path: when the API "
+        "rate limit kicks in, the request is retried but the retry uses "
+        "the same idempotency key, causing duplicate side effects. "
+        "Looking at server/api.cpp line 142, the rate limit check is..."
+        + "x" * 600  # padding to make it >300 chars
+    )
+
+    def parse_long(stdout, stderr):
+        return CliRunMetrics(
+            diagnosis=long_diag, input_tokens=100, output_tokens=200,
+            tool_calls=5, num_turns=3,
+        )
+
+    spec = CliBackendSpec(
+        name="fake", binary="/bin/true", base_args=("-q",),
+        parse_run=parse_long, timeout_sec=10,
+    )
+    agent = CliAgent(spec=spec)
+    scenario = _Scenario(source_path=str(tmp_path / "main.c"))
+    (tmp_path / "main.c").write_text("// hi")
+    tools = {"run_with_capture": lambda: None}
+
+    # Should NOT raise — long diagnosis with non-zero tool count is real
+    result = agent.run(scenario, "with_gla", tools)
+    assert "rate limit handling" in result.diagnosis

@@ -139,13 +139,31 @@ class CliAgent(AgentBackend):
         # legitimate (terrible) diagnosis. Cohorts then record N
         # identical garbage failures. Better to stop the run, surface
         # the actual error, and resume after the cap resets.
-        if (metrics.tool_calls == 0
-                and metrics.input_tokens == 0
-                and metrics.output_tokens == 0
-                and _looks_like_rate_limit(metrics.diagnosis)):
+        #
+        # Two cases caught:
+        #  (1) cap hit before agent loop started — tokens == 0
+        #  (2) cap hit mid-session — agent did some work, then the
+        #      final response replaced by the rate-limit message
+        #      (R17 observed: tool_calls=1, output_tokens=885,
+        #      diagnosis="You've hit your limit · resets 4:10am ...").
+        # Heuristic: trigger when the diagnosis is short (rate-limit
+        # messages are ~50 chars) AND matches a rate-limit signature.
+        # Real diagnoses run 500+ chars even on the worst agent runs.
+        diag = (metrics.diagnosis or "").strip()
+        if (_looks_like_rate_limit(diag)
+                and len(diag) < 300
+                and (
+                    # case (1): zero metrics
+                    (metrics.tool_calls == 0
+                     and metrics.input_tokens == 0
+                     and metrics.output_tokens == 0)
+                    # case (2): non-zero metrics but the final response
+                    # is just the rate-limit message
+                    or len(diag) < 200
+                )):
             raise CliRateLimitError(
                 f"CLI returned rate-limit message: "
-                f"{metrics.diagnosis.strip()[:200]!r} — "
+                f"{diag[:200]!r} — "
                 "stop the cohort, resume after the cap resets."
             )
 
