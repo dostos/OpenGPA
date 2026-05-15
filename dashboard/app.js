@@ -130,7 +130,159 @@
     return { x, y, n };
   }
 
-  // Stubs for substep 1c
-  function renderGrid() {}
-  function renderCards() {}
+  /* ===== Scenario × round grid ===== */
+
+  function renderGrid() {
+    const container = document.getElementById("grid-container");
+    container.innerHTML = "";
+    const table = document.createElement("table");
+    table.className = "timeline";
+
+    // Group scenarios by latest scenario_type
+    const byScenario = new Map(); // sid -> { type, byRound: { round_id|mode: row } }
+    for (const round of state.data.rounds) {
+      for (const r of round.results) {
+        if (state.tier !== "all" && r.tier !== state.tier) continue;
+        let s = byScenario.get(r.scenario_id);
+        if (!s) {
+          s = { type: r.scenario_type, byRound: {}, isStable: false };
+          byScenario.set(r.scenario_id, s);
+        }
+        // Latest seen wins for type
+        s.type = r.scenario_type;
+        if (r.expected_failure) s.isStable = true;
+        const key = `${round.id}|${r.mode}`;
+        s.byRound[key] = r;
+      }
+    }
+
+    // Header: scenario column + one column per (round, mode) that has data
+    const thead = document.createElement("thead");
+    const trMode = document.createElement("tr");
+    trMode.appendChild(elem("th", "scenario"));
+    const roundColumns = []; // [{round_id, mode}]
+    for (const round of state.data.rounds) {
+      for (const mode of ["code_only", "with_gla"]) {
+        const anyRow = round.results.some(r =>
+          r.mode === mode && (state.tier === "all" || r.tier === state.tier)
+        );
+        if (!anyRow) continue;
+        roundColumns.push({ round_id: round.id, mode });
+        trMode.appendChild(elem("th", `${round.id} · ${mode === "code_only" ? "CO" : "GLA"}`));
+      }
+    }
+    thead.appendChild(trMode);
+    table.appendChild(thead);
+
+    // Body, grouped by type
+    const tbody = document.createElement("tbody");
+    const byType = new Map();
+    for (const [sid, s] of byScenario.entries()) {
+      if (!byType.has(s.type)) byType.set(s.type, []);
+      byType.get(s.type).push({ sid, ...s });
+    }
+    for (const [type, scenarios] of [...byType.entries()].sort()) {
+      const tr = document.createElement("tr");
+      tr.className = "type-header";
+      const td = elem("td", type);
+      td.colSpan = roundColumns.length + 1;
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      for (const s of scenarios.sort((a, b) => a.sid.localeCompare(b.sid))) {
+        const tr = document.createElement("tr");
+        if (s.isStable) tr.className = "stable";
+        const sidCell = elem("td", shortenSid(s.sid));
+        sidCell.style.textAlign = "left";
+        sidCell.title = s.sid;
+        tr.appendChild(sidCell);
+        for (const col of roundColumns) {
+          const cell = document.createElement("td");
+          cell.className = "cell";
+          const r = s.byRound[`${col.round_id}|${col.mode}`];
+          if (!r) {
+            cell.textContent = "";
+            cell.classList.add("cell-skipped");
+          } else if (r.solved && r.scorer === "file_level" && r.confidence === "high") {
+            cell.textContent = "✓";
+            cell.classList.add("cell-hi");
+            attachTooltip(cell, r);
+          } else if (r.solved) {
+            cell.textContent = "✓";
+            cell.classList.add("cell-mid");
+            attachTooltip(cell, r);
+          } else {
+            cell.textContent = "✗";
+            cell.classList.add("cell-lo");
+            attachTooltip(cell, r);
+          }
+          tr.appendChild(cell);
+        }
+        tbody.appendChild(tr);
+      }
+    }
+    table.appendChild(tbody);
+    container.appendChild(table);
+  }
+
+  function shortenSid(sid) {
+    const parts = sid.split("_");
+    return parts.slice(-3).join("_");
+  }
+
+  function attachTooltip(el, r) {
+    el.addEventListener("mouseenter", e => {
+      const tt = document.getElementById("tooltip");
+      tt.innerHTML =
+        `<b>${r.scenario_id}</b><br>` +
+        `mode=${r.mode} tier=${r.tier}<br>` +
+        `verdict=${r.scorer}/${r.confidence}<br>` +
+        `tok=${r.output_tokens} tools=${r.tool_calls}` +
+        (r.expected_failure ? `<br>⊘ ${r.expected_failure.reason || ""}` : "");
+      tt.hidden = false;
+      tt.style.left = (e.pageX + 12) + "px";
+      tt.style.top = (e.pageY + 12) + "px";
+    });
+    el.addEventListener("mouseleave", () => {
+      document.getElementById("tooltip").hidden = true;
+    });
+  }
+
+  function elem(tag, text) {
+    const e = document.createElement(tag);
+    e.textContent = text;
+    return e;
+  }
+
+  /* ===== Per-round narrative cards ===== */
+
+  function renderCards() {
+    const container = document.getElementById("card-container");
+    container.innerHTML = "";
+    // Reverse: newest round first
+    const ordered = [...state.data.rounds].reverse();
+    for (let i = 0; i < ordered.length; i++) {
+      const round = ordered[i];
+      const card = document.createElement("div");
+      card.className = "card";
+      const header = document.createElement("div");
+      header.className = "card-header";
+      header.innerHTML =
+        `<span class="id">${round.id}</span>` +
+        `<span class="date">${round.date || ""}</span>` +
+        `<span class="headline">${round.headline}</span>` +
+        `<span class="toggle">▼</span>`;
+      const body = document.createElement("div");
+      body.className = "card-body";
+      if (round.narrative_md) {
+        body.innerHTML = marked.parse(round.narrative_md);
+      } else {
+        body.innerHTML = "<p>(no round log)</p>";
+      }
+      if (i === 0) body.classList.add("expanded");
+      header.addEventListener("click", () => body.classList.toggle("expanded"));
+      card.appendChild(header);
+      card.appendChild(body);
+      container.appendChild(card);
+    }
+  }
 })();
