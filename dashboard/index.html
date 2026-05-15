@@ -1,0 +1,54 @@
+<!-- dashboard/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>OpenGPA Eval Dashboard</title>
+  <link rel="stylesheet" href="index.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>OpenGPA Eval Dashboard</h1>
+    <div id="meta">
+      <span id="built-at">—</span>
+      <label>Metric
+        <select id="metric-select">
+          <option value="solve_pct" selected>solve %</option>
+          <option value="tok_per_solve">tok / ✓</option>
+        </select>
+      </label>
+      <label>Tier
+        <select id="tier-select">
+          <option value="all" selected>all</option>
+          <option value="haiku">haiku</option>
+          <option value="sonnet">sonnet</option>
+          <option value="opus">opus</option>
+        </select>
+      </label>
+      <label><input type="checkbox" id="include-stable"> include expected_failure</label>
+    </div>
+  </header>
+
+  <main>
+    <section id="panels">
+      <h2>Per-type comparison</h2>
+      <div id="panel-grid"></div>
+    </section>
+
+    <section id="grid">
+      <h2>Scenario × round timeline</h2>
+      <div id="grid-container"></div>
+    </section>
+
+    <section id="cards">
+      <h2>Round narrative</h2>
+      <div id="card-container"></div>
+    </section>
+  </main>
+
+  <div id="tooltip" hidden></div>
+</body>
+</html>
