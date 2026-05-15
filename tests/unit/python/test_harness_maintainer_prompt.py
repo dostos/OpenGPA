@@ -101,13 +101,16 @@ def test_framework_internal_uses_maintainer_prompt():
     assert "tests/" in prompt
 
 
-def test_consumer_misuse_uses_advisor_prompt():
-    """`bug_class: consumer-misuse` → advisor prompt (user code change).
+def test_consumer_misuse_uses_maintainer_prompt():
+    """R18-P2: consumer-misuse routes to maintainer_framing.
 
-    The advisor prompt's PRIMARY schema is user_code_change, but it
-    documents `proposed_patches` as an escape hatch — when the agent
-    discovers the bug is actually framework-internal (mining sometimes
-    mis-classifies). The primary schema must still be user_code_change.
+    Pre-R18 this routed to advisor.md (asking for user_code_change JSON).
+    But R17 cohort forensics showed mining mis-classifies framework bugs
+    as consumer-misuse 100% of the time — the agent rebels and emits
+    proposed_patches anyway, and file_level scoring confirms it (5 of
+    R17's 10 solves came through proposed_patches despite the advisor
+    prompt). Per audit step 2, deleted the per-class dispatch; all non-
+    legacy bug_classes render the maintainer prompt.
     """
     harness = _make_harness()
     scenario = _make_scenario(fix=_fix("consumer-misuse"))
@@ -115,30 +118,25 @@ def test_consumer_misuse_uses_advisor_prompt():
     assert tools["bug_class"] == "consumer-misuse"
     prompt = tools["system_prompt"]
     assert prompt is not None
-    # The advisor prompt's primary schema is user_code_change.
-    assert "user_code_change" in prompt
+    # Maintainer prompt asks for proposed_patches.
+    assert "proposed_patches" in prompt
+    assert "maintainer" in prompt.lower()
     # Must carry the user report.
     assert "VERBATIM_ISSUE_BODY_SENTINEL" in prompt
 
 
-def test_user_config_uses_config_advice_prompt():
-    """`bug_class: user-config` → config-advice prompt.
-
-    The config-advice prompt is allowed to mention `proposed_patches`
-    as an escape hatch — when the agent reads the framework source and
-    discovers the bug is actually framework-internal, mining sometimes
-    mis-classified it. The PRIMARY schema is still setting_change.
-    """
+def test_user_config_uses_maintainer_prompt():
+    """R18-P2: user-config also routes to maintainer_framing. See
+    :func:`test_consumer_misuse_uses_maintainer_prompt` for the
+    forensic rationale — same finding applies."""
     harness = _make_harness()
     scenario = _make_scenario(fix=_fix("user-config"))
     tools = harness._build_tools(scenario, mode="code_only")
     assert tools["bug_class"] == "user-config"
     prompt = tools["system_prompt"]
     assert prompt is not None
-    # The config-advice prompt's primary schema is setting_change.
-    assert "setting_change" in prompt
-    # Must NOT use the advisor schema (consumer-misuse / user_code_change).
-    assert "user_code_change" not in prompt
+    assert "proposed_patches" in prompt
+    assert "maintainer" in prompt.lower()
 
 
 def test_legacy_uses_existing_diagnosis_prompt():

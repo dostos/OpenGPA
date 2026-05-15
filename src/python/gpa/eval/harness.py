@@ -30,6 +30,28 @@ AgentFn = Callable[
 
 _ALL_MODES = ["with_gla", "code_only"]
 
+
+# All non-legacy scenarios use the maintainer_framing prompt. Legacy /
+# unknown classes map to None so the agent falls back to its built-in
+# diagnosis prompt.
+#
+# R18-P2 (2026-05-14): collapsed the per-class dispatch into a single
+# template. The R17 cohort showed mining mis-classifies 100% of mined
+# scenarios as consumer-misuse / user-config, but their fix.files
+# contain framework code (1-22 framework source files each). The agent
+# already ignored the per-class schema guidance and emitted maintainer-
+# style JSON; the file_level scorer (which only parses
+# ``proposed_patches``) confirms this — 5 of R17's 10 solves came
+# through file_level despite the prompt asking for ``user_code_change``
+# or ``setting_change`` schemas that nothing parses. Per audit step 2,
+# deleted the dispatch in favour of one prompt that asks for what the
+# scorer reads.
+_PROMPT_BY_BUG_CLASS: dict[str, Optional[str]] = {
+    "framework-internal": "maintainer_framing",
+    "consumer-misuse": "maintainer_framing",
+    "user-config": "maintainer_framing",
+}
+
 _SNAPSHOT_MAX_BYTES = 512 * 1024  # 512 KB — godot files run 369–402 KB
 
 
@@ -424,78 +446,29 @@ class EvalHarness:
         # Import lazily so harness has no startup dependency on the
         # prompts package (keeps import times cheap for callers that
         # don't need prompts, e.g. analytics scripts).
-        from gpa.eval.prompts import load_prompt, render_maintainer_prompt
+        from gpa.eval.prompts import render_prompt
         from gpa.eval.scope_hint import compute_scope_hint
 
-        # Pre-compute the scope hint once for the scenario; passed to
-        # whichever bug-class prompt fires. Pulls from the curated
-        # fix.files list — this is "size and area" only, never the
+        template_name = _PROMPT_BY_BUG_CLASS.get(bug_class)
+        if template_name is None:
+            # "legacy" or unknown — fall back to the agent's default prompt.
+            return None
+
+        # Pre-compute the scope hint once for the scenario. Pulls from the
+        # curated fix.files list — this is "size and area" only, never the
         # filenames themselves (the hint helper enforces this).
         scope_hint = None
         if scenario.fix is not None and scenario.fix.files:
             scope_hint = compute_scope_hint(scenario.fix.files)
 
-        if bug_class == "framework-internal":
-            return render_maintainer_prompt(
-                framework=scenario.framework or "the framework",
-                user_report=scenario.bug_description or "",
-                upstream_snapshot_repo=scenario.upstream_snapshot_repo,
-                upstream_snapshot_sha=scenario.upstream_snapshot_sha,
-                mode=mode,
-                scope_hint=scope_hint,
-            )
-        if bug_class == "consumer-misuse":
-            return self._render_class_prompt(
-                "advisor", scenario, mode=mode, scope_hint=scope_hint,
-            )
-        if bug_class == "user-config":
-            return self._render_class_prompt(
-                "config_advice", scenario, mode=mode, scope_hint=scope_hint,
-            )
-        # "legacy" or unknown — fall back to the agent's default prompt.
-        return None
-
-    @staticmethod
-    def _render_class_prompt(
-        template_name: str,
-        scenario: ScenarioMetadata,
-        mode: str,
-        scope_hint: Optional[str] = None,
-    ) -> str:
-        """Render an advisor / config_advice prompt with the same
-        substitution rules as the maintainer prompt."""
-        import re as _re
-        from gpa.eval.prompts import load_prompt, _build_scope_hint_block
-
-        template = load_prompt(template_name)
-        if mode == "with_gla":
-            template = template.replace("<!-- WITH_GPA_ONLY -->", "").replace(
-                "<!-- END_WITH_GPA_ONLY -->", ""
-            )
-        else:
-            template = _re.sub(
-                r"<!-- WITH_GPA_ONLY -->.*?<!-- END_WITH_GPA_ONLY -->\n?",
-                "",
-                template,
-                flags=_re.DOTALL,
-            )
-        fw = scenario.framework or "the framework"
-        return (
-            template
-            .replace("{framework}", fw)
-            .replace("{user_report}", (scenario.bug_description or "").strip())
-            .replace(
-                "{upstream_snapshot.repo}",
-                scenario.upstream_snapshot_repo or "(no snapshot)",
-            )
-            .replace(
-                "{upstream_snapshot.sha}",
-                scenario.upstream_snapshot_sha or "HEAD",
-            )
-            .replace(
-                "{scope_hint_block}",
-                _build_scope_hint_block(scope_hint),
-            )
+        return render_prompt(
+            template_name,
+            framework=scenario.framework or "the framework",
+            user_report=scenario.bug_description or "",
+            upstream_snapshot_repo=scenario.upstream_snapshot_repo,
+            upstream_snapshot_sha=scenario.upstream_snapshot_sha,
+            mode=mode,
+            scope_hint=scope_hint,
         )
 
     # ------------------------------------------------------------------

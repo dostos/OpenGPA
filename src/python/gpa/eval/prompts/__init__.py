@@ -19,7 +19,8 @@ def load_prompt(name: str) -> str:
     return (_DIR / f"{name}.md").read_text(encoding="utf-8")
 
 
-def render_maintainer_prompt(
+def render_prompt(
+    template_name: str,
     framework: str,
     user_report: str,
     upstream_snapshot_repo: Optional[str],
@@ -27,9 +28,18 @@ def render_maintainer_prompt(
     mode: str = "code_only",
     scope_hint: Optional[str] = None,
 ) -> str:
-    """Render the maintainer-framing prompt for a scenario.
+    """Render a bug-class prompt template for a scenario.
+
+    R18-P1 (2026-05-14): unified what used to be three near-identical
+    rendering helpers (maintainer / advisor / config_advice). All three
+    templates share the same ``{framework}`` / ``{user_report}`` /
+    ``{upstream_snapshot.*}`` / ``{scope_hint_block}`` placeholders and
+    the same ``<!-- WITH_GPA_ONLY -->`` gating block; the differences
+    live entirely in the role intro, task body, and output JSON schema.
 
     Args:
+      template_name: Bare name of the .md file under this package, e.g.
+        ``"maintainer_framing"``, ``"advisor"``, ``"config_advice"``.
       framework: e.g. ``"three.js"`` or the scenario's framework field.
         Falls back to ``"the framework"`` when empty or unknown.
       user_report: The verbatim issue body from the scenario.
@@ -46,21 +56,19 @@ def render_maintainer_prompt(
     Returns:
       The fully-rendered prompt text.
     """
-    template = load_prompt("maintainer_framing")
+    template = load_prompt(template_name)
     fw = framework or "the framework"
     repo = upstream_snapshot_repo or "(no snapshot repo configured)"
     sha = upstream_snapshot_sha or "HEAD"
 
-    # Strip the ``[with_gpa only: ...]`` gated block for code_only mode.
-    # The template uses square-bracket HTML comments so we can handle the
-    # substitution deterministically without a full templating engine.
+    # Strip the ``<!-- WITH_GPA_ONLY -->`` gated block for code_only mode.
+    # The template uses HTML comments so we can handle the substitution
+    # deterministically without a full templating engine.
     if mode == "with_gla":
-        # Remove the markers but keep the content.
         template = template.replace("<!-- WITH_GPA_ONLY -->", "").replace(
             "<!-- END_WITH_GPA_ONLY -->", ""
         )
     else:
-        # Drop the entire block including markers.
         import re as _re
         template = _re.sub(
             r"<!-- WITH_GPA_ONLY -->.*?<!-- END_WITH_GPA_ONLY -->\n?",
@@ -76,6 +84,26 @@ def render_maintainer_prompt(
         .replace("{upstream_snapshot.repo}", repo)
         .replace("{upstream_snapshot.sha}", sha)
         .replace("{scope_hint_block}", _build_scope_hint_block(scope_hint))
+    )
+
+
+def render_maintainer_prompt(
+    framework: str,
+    user_report: str,
+    upstream_snapshot_repo: Optional[str],
+    upstream_snapshot_sha: Optional[str],
+    mode: str = "code_only",
+    scope_hint: Optional[str] = None,
+) -> str:
+    """Render the maintainer-framing prompt. Thin alias over :func:`render_prompt`."""
+    return render_prompt(
+        "maintainer_framing",
+        framework=framework,
+        user_report=user_report,
+        upstream_snapshot_repo=upstream_snapshot_repo,
+        upstream_snapshot_sha=upstream_snapshot_sha,
+        mode=mode,
+        scope_hint=scope_hint,
     )
 
 
@@ -100,5 +128,6 @@ def _build_scope_hint_block(scope_hint: Optional[str]) -> str:
 
 __all__ = [
     "load_prompt",
+    "render_prompt",
     "render_maintainer_prompt",
 ]
