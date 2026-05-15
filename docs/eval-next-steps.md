@@ -88,3 +88,13 @@ explicit:
 | Verifier runs before every eval round | Hint-comment leaks bias the agent; stale SHAs fail mid-run; no source means no Bazel target |
 | `runner._bazel_target_for(scenario)` derives the nested package | Old `//tests/eval:<slug>` targets don't exist after the taxonomy migration; live capture silently disabled |
 | Judge fetches the actual fix-PR diff (depth ≥ 2 from fix_sha) | `git show <fix_sha>` against depth-1 reports the merge as additive-from-nothing; judge sees garbage |
+
+## Tooling: local eval dashboard
+
+`scripts/build-eval-dashboard.sh` aggregates
+`/data3/gla-eval-results/*` + `docs/eval-rounds/*.md` into
+`dashboard/index.json`, then open `dashboard/index.html` in a
+browser. Primary view: per-scenario-type Plotly panels comparing
+`code_only` vs `with_gla` across rounds. Scope: R12c+ (rounds with
+`verdict` field). Pre-R12 legacy rounds excluded — see
+`docs/superpowers/specs/2026-05-15-eval-dashboard-design.md`.
