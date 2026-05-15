@@ -24,3 +24,4 @@ core.*
 
 # Per-agent / superpowers git worktrees
 .claude/worktrees/
+.superpowers/
