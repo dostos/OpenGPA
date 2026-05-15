@@ -1222,14 +1222,202 @@ git commit -m "feat(dashboard): static HTML + dark-theme CSS"
 
 ---
 
-## Task 7: Dashboard JS rendering (`app.js`)
+## Task 7: Test fixture for offline HTML dev
+
+*(Renumbered: done before the JS task so app.js can be developed against this fixture instead of rebuilding from `/data3` each iteration.)*
+
+**Files:**
+- Create: `tests/fixtures/dashboard/sample-index.json`
+
+Just enough rows that opening `dashboard/index.html` against this fixture exercises each cell state.
+
+- [ ] **Step 1: Write the fixture**
+
+```json
+{
+  "built_at": "2026-05-15T02:13:00+00:00",
+  "scenario_types": ["native-engine/godot", "web-map/cesium"],
+  "rounds": [
+    {
+      "id": "r17",
+      "date": "2026-05-05",
+      "results_path": "/data3/gla-eval-results/2026-05-05-r17/",
+      "aux_paths": ["/data3/gla-eval-results/2026-05-05-r17-resume/"],
+      "narrative_path": "docs/eval-rounds/2026-05-05-r17.md",
+      "narrative_md": "# Round R17 (test)\n\nFixture round.\n",
+      "headline": "Fixture round.",
+      "results": [
+        {
+          "scenario_id": "sample_godot_solved",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 6116,
+          "tool_calls": 13,
+          "expected_failure": null
+        },
+        {
+          "scenario_id": "sample_godot_stable_failure",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": false,
+          "scorer": "no_signal",
+          "confidence": "low",
+          "output_tokens": 48117,
+          "tool_calls": 45,
+          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
+        },
+        {
+          "scenario_id": "sample_cesium_judge",
+          "scenario_type": "web-map/cesium",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "judge",
+          "confidence": "medium",
+          "output_tokens": 30030,
+          "tool_calls": 61,
+          "expected_failure": null
+        }
+      ]
+    },
+    {
+      "id": "r18",
+      "date": "2026-05-14",
+      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
+      "aux_paths": [],
+      "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
+      "narrative_md": "# Round R18 (test)\n\nSecond fixture round. bug_class dispatch deleted.\n",
+      "headline": "Second fixture round. bug_class dispatch deleted.",
+      "results": [
+        {
+          "scenario_id": "sample_godot_solved",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 6116,
+          "tool_calls": 13,
+          "expected_failure": null
+        },
+        {
+          "scenario_id": "sample_godot_stable_failure",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": false,
+          "scorer": "no_signal",
+          "confidence": "low",
+          "output_tokens": 50000,
+          "tool_calls": 45,
+          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
+        },
+        {
+          "scenario_id": "sample_cesium_judge",
+          "scenario_type": "web-map/cesium",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 12000,
+          "tool_calls": 8,
+          "expected_failure": null
+        }
+      ]
+    }
+  ]
+}
+```
+
+- [ ] **Step 2: Add a README hint**
+
+Create `tests/fixtures/dashboard/README.md`:
+
+```markdown
+# Dashboard fixture
+
+To verify `dashboard/index.html` without rebuilding from `/data3`,
+symlink this file to `dashboard/index.json`:
+
+```bash
+ln -sf $(pwd)/tests/fixtures/dashboard/sample-index.json dashboard/index.json
+```
+
+Then open `dashboard/index.html` in a browser.
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add tests/fixtures/dashboard/
+git commit -m "test(dashboard): sample index.json fixture for HTML dev"
+```
+
+---
+
+## Task 8: Dashboard JS rendering (`app.js`)
+
+*(Renumbered: do the fixture (Task 7 above) first so app.js can be developed against `sample-index.json` without rebuilding from `/data3` each iteration.)*
+
+**Setup**: before starting, symlink the fixture so the browser has data to render:
+
+```bash
+ln -sf $(pwd)/tests/fixtures/dashboard/sample-index.json dashboard/index.json
+```
+
+This file is gitignored — the symlink isn't checked in. After all three substeps land, replace it by running `scripts/build-eval-dashboard.sh` (Task 9 covers this).
+
+The full file is shown in one block below for reference; **implement it in three substeps** (Steps 1a, 1b, 1c) with a browser check between each so issues surface incrementally.
 
 **Files:**
 - Create: `dashboard/app.js`
 
 The script fetches `index.json`, then renders panels (Plotly), grid (plain table), cards (marked.js). Controls re-render on change.
 
-- [ ] **Step 1: Write app.js**
+- [ ] **Step 1a: Skeleton + fetch + control wiring (no rendering yet)**
+
+Write only the IIFE wrapper, `state`, the `fetch` of `index.json`, the
+control-event wiring, and stubs `renderPanels = renderGrid = renderCards = () => {}`.
+Open `dashboard/index.html` in a browser; verify the header timestamp
+appears and the dropdowns are wired (open devtools, change selects,
+nothing crashes). Commit:
+
+```bash
+git add dashboard/app.js
+git commit -m "feat(dashboard): app.js skeleton + control wiring"
+```
+
+- [ ] **Step 1b: Plotly per-type panels (`renderPanels` + helpers)**
+
+Implement `renderPanels`, `buildTraces`, `perRoundMetric` from the
+reference code below. Browser-check: panels render with at least one
+trace per type. Switch the metric dropdown; chart updates. Commit:
+
+```bash
+git add dashboard/app.js
+git commit -m "feat(dashboard): per-type Plotly chart panels"
+```
+
+- [ ] **Step 1c: Grid + narrative cards (`renderGrid` + `renderCards` + tooltip)**
+
+Implement `renderGrid` (incl. `shortenSid`, `attachTooltip`, `elem`) and
+`renderCards`. Browser-check: scenario × round table appears with
+colored cells; hover shows tooltip; newest round's card expands by
+default; clicking other headers toggles them. Commit:
+
+```bash
+git add dashboard/app.js
+git commit -m "feat(dashboard): scenario grid + narrative cards"
+```
+
+**Reference (the full file, for context across the three substeps above):**
 
 ```javascript
 // dashboard/app.js
@@ -1527,159 +1715,18 @@ The script fetches `index.json`, then renders panels (Plotly), grid (plain table
 })();
 ```
 
-- [ ] **Step 2: Sanity-check by opening the dashboard**
+- [ ] **Step 2: Final cross-check against real /data3 data**
 
-Re-run the build (from Task 5) so `index.json` exists, then open
-`dashboard/index.html` in a browser. Verify:
-- Header shows "built …" timestamp
-- Per-type panels render with at least one trace each
-- Grid renders with R12c..R18 columns
-- Newest round's card is expanded; clicking other headers expands/collapses
-
-- [ ] **Step 3: Commit**
+Drop the fixture symlink and rebuild from the real source:
 
 ```bash
-git add dashboard/app.js
-git commit -m "feat(dashboard): JS rendering (panels, grid, cards)"
+rm dashboard/index.json
+scripts/build-eval-dashboard.sh
 ```
 
----
-
-## Task 8: Test fixture for offline HTML dev
-
-**Files:**
-- Create: `tests/fixtures/dashboard/sample-index.json`
-
-Just enough rows that opening `dashboard/index.html` against this fixture exercises each cell state.
-
-- [ ] **Step 1: Write the fixture**
-
-```json
-{
-  "built_at": "2026-05-15T02:13:00+00:00",
-  "scenario_types": ["native-engine/godot", "web-map/cesium"],
-  "rounds": [
-    {
-      "id": "r17",
-      "date": "2026-05-05",
-      "results_path": "/data3/gla-eval-results/2026-05-05-r17/",
-      "aux_paths": ["/data3/gla-eval-results/2026-05-05-r17-resume/"],
-      "narrative_path": "docs/eval-rounds/2026-05-05-r17.md",
-      "narrative_md": "# Round R17 (test)\n\nFixture round.\n",
-      "headline": "Fixture round.",
-      "results": [
-        {
-          "scenario_id": "sample_godot_solved",
-          "scenario_type": "native-engine/godot",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": true,
-          "scorer": "file_level",
-          "confidence": "high",
-          "output_tokens": 6116,
-          "tool_calls": 13,
-          "expected_failure": null
-        },
-        {
-          "scenario_id": "sample_godot_stable_failure",
-          "scenario_type": "native-engine/godot",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": false,
-          "scorer": "no_signal",
-          "confidence": "low",
-          "output_tokens": 48117,
-          "tool_calls": 45,
-          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
-        },
-        {
-          "scenario_id": "sample_cesium_judge",
-          "scenario_type": "web-map/cesium",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": true,
-          "scorer": "judge",
-          "confidence": "medium",
-          "output_tokens": 30030,
-          "tool_calls": 61,
-          "expected_failure": null
-        }
-      ]
-    },
-    {
-      "id": "r18",
-      "date": "2026-05-14",
-      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
-      "aux_paths": [],
-      "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
-      "narrative_md": "# Round R18 (test)\n\nSecond fixture round. bug_class dispatch deleted.\n",
-      "headline": "Second fixture round. bug_class dispatch deleted.",
-      "results": [
-        {
-          "scenario_id": "sample_godot_solved",
-          "scenario_type": "native-engine/godot",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": true,
-          "scorer": "file_level",
-          "confidence": "high",
-          "output_tokens": 6116,
-          "tool_calls": 13,
-          "expected_failure": null
-        },
-        {
-          "scenario_id": "sample_godot_stable_failure",
-          "scenario_type": "native-engine/godot",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": false,
-          "scorer": "no_signal",
-          "confidence": "low",
-          "output_tokens": 50000,
-          "tool_calls": 45,
-          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
-        },
-        {
-          "scenario_id": "sample_cesium_judge",
-          "scenario_type": "web-map/cesium",
-          "mode": "code_only",
-          "tier": "opus",
-          "solved": true,
-          "scorer": "file_level",
-          "confidence": "high",
-          "output_tokens": 12000,
-          "tool_calls": 8,
-          "expected_failure": null
-        }
-      ]
-    }
-  ]
-}
-```
-
-- [ ] **Step 2: Add a README hint**
-
-Create `tests/fixtures/dashboard/README.md`:
-
-```markdown
-# Dashboard fixture
-
-To verify `dashboard/index.html` without rebuilding from `/data3`,
-symlink this file to `dashboard/index.json`:
-
-```bash
-ln -sf $(pwd)/tests/fixtures/dashboard/sample-index.json dashboard/index.json
-```
-
-Then open `dashboard/index.html` in a browser.
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add tests/fixtures/dashboard/
-git commit -m "test(dashboard): sample index.json fixture for HTML dev"
-```
+Reload `dashboard/index.html` in the browser. Verify R12c..R18 render
+with no console errors. Each substep's commit covers its own diff; no
+additional commit needed here unless final tweaks were made.
 
 ---
 
@@ -1708,7 +1755,20 @@ Verify the live R12c..R18 data renders without console errors.
 
 - [ ] **Step 4: Update eval-next-steps.md**
 
-Append a short section under "What we learned" or as a new "Tooling" section in `docs/eval-next-steps.md` describing the dashboard and its build command. Keep to 4-6 lines.
+Append the following section to `docs/eval-next-steps.md` (after the
+"## Snapshot pipeline invariants" block, near the end):
+
+```markdown
+## Tooling: local eval dashboard
+
+`scripts/build-eval-dashboard.sh` aggregates
+`/data3/gla-eval-results/*` + `docs/eval-rounds/*.md` into
+`dashboard/index.json`, then open `dashboard/index.html` in a
+browser. Primary view: per-scenario-type Plotly panels comparing
+`code_only` vs `with_gla` across rounds. Scope: R12c+ (rounds with
+`verdict` field). Pre-R12 legacy rounds excluded — see
+`docs/superpowers/specs/2026-05-15-eval-dashboard-design.md`.
+```
 
 - [ ] **Step 5: Commit doc updates**
 
