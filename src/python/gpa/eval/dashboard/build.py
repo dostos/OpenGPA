@@ -15,7 +15,7 @@ from gpa.eval.dashboard._layout import (
 )
 from gpa.eval.dashboard._narrative import extract_headline, find_narrative
 from gpa.eval.dashboard._results import (
-    enrich_results, load_and_merge_results, load_tier_meta,
+    enrich_results, load_and_merge_results, load_or_seed_tier_meta,
 )
 from gpa.eval.scenario import ScenarioLoader
 
@@ -57,7 +57,7 @@ def build_index(
         if not results:
             # Round had no chartable data — skip entirely.
             continue
-        tier, _model = load_tier_meta(primary)
+        tier, _model = load_or_seed_tier_meta(primary)
         enriched = list(enrich_results(
             results, tier=tier, scenario_loader=scenario_loader,
         ))

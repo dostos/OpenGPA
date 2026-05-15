@@ -7,8 +7,10 @@ from typing import Optional
 
 
 # Match `r12c`, `r13`, ..., `r18` (lowercase r + digits + optional letter).
-# Also matches `round4` / `round12b` legacy form by alternation.
-_ROUND_ID_RE = re.compile(r"(?:r|round)(\d+[a-z]?)")
+# Also matches `round4` / `round12b` legacy form by alternation. Anchored to
+# a `-`/`_` delimiter (or string boundary) on both sides so we don't
+# accidentally pick up `iteration5` as `r5` or `dryrun18` as `r18`.
+_ROUND_ID_RE = re.compile(r"(?:^|[-_])(?:r|round)(\d+[a-z]?)(?=[-_]|$)")
 
 
 def extract_round_id(dirname: str) -> Optional[str]:

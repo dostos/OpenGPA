@@ -232,12 +232,22 @@
   function attachTooltip(el, r) {
     el.addEventListener("mouseenter", e => {
       const tt = document.getElementById("tooltip");
-      tt.innerHTML =
-        `<b>${r.scenario_id}</b><br>` +
-        `mode=${r.mode} tier=${r.tier}<br>` +
-        `verdict=${r.scorer}/${r.confidence}<br>` +
-        `tok=${r.output_tokens} tools=${r.tool_calls}` +
-        (r.expected_failure ? `<br>⊘ ${r.expected_failure.reason || ""}` : "");
+      // Build via DOM nodes; scenario_id / expected_failure.reason are
+      // dev-authored but textContent removes the HTML-injection footgun.
+      tt.textContent = "";
+      const b = document.createElement("b");
+      b.textContent = r.scenario_id;
+      tt.appendChild(b);
+      tt.appendChild(document.createElement("br"));
+      tt.appendChild(document.createTextNode(`mode=${r.mode} tier=${r.tier}`));
+      tt.appendChild(document.createElement("br"));
+      tt.appendChild(document.createTextNode(`verdict=${r.scorer}/${r.confidence}`));
+      tt.appendChild(document.createElement("br"));
+      tt.appendChild(document.createTextNode(`tok=${r.output_tokens} tools=${r.tool_calls}`));
+      if (r.expected_failure) {
+        tt.appendChild(document.createElement("br"));
+        tt.appendChild(document.createTextNode(`⊘ ${r.expected_failure.reason || ""}`));
+      }
       tt.hidden = false;
       tt.style.left = (e.pageX + 12) + "px";
       tt.style.top = (e.pageY + 12) + "px";
@@ -266,17 +276,26 @@
       card.className = "card";
       const header = document.createElement("div");
       header.className = "card-header";
-      header.innerHTML =
-        `<span class="id">${round.id}</span>` +
-        `<span class="date">${round.date || ""}</span>` +
-        `<span class="headline">${round.headline}</span>` +
-        `<span class="toggle">▼</span>`;
+      // Use textContent for the dynamic fields (id, date, headline come
+      // from developer-authored data but textContent costs nothing and
+      // removes a class of footgun if a headline ever contains "<" or "&").
+      const idSpan = elem("span", round.id);
+      idSpan.className = "id";
+      const dateSpan = elem("span", round.date || "");
+      dateSpan.className = "date";
+      const headlineSpan = elem("span", round.headline);
+      headlineSpan.className = "headline";
+      const toggleSpan = elem("span", "▼");
+      toggleSpan.className = "toggle";
+      header.append(idSpan, dateSpan, headlineSpan, toggleSpan);
       const body = document.createElement("div");
       body.className = "card-body";
       if (round.narrative_md) {
+        // marked output is HTML by design — the narrative IS the round log.
         body.innerHTML = marked.parse(round.narrative_md);
       } else {
-        body.innerHTML = "<p>(no round log)</p>";
+        const empty = elem("p", "(no round log)");
+        body.appendChild(empty);
       }
       if (i === 0) body.classList.add("expanded");
       header.addEventListener("click", () => body.classList.toggle("expanded"));

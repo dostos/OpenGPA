@@ -15,6 +15,16 @@ from gpa.eval.dashboard._layout import extract_round_id
     ("2026-05-04-round12b-smoke", "r12b"),
     ("2026-05-04-round12b-with-gla", "r12b"),
     ("malformed", None),
+    # Adversarial: round id must be preceded by a delimiter, not embedded
+    # in another word. Prevents `iteration5` → `r5`, `dryrun18` → `r18`,
+    # `myround42-test` → r42 should match, etc.
+    ("2026-05-14-iteration5", None),
+    ("2026-05-14-dryrun18", None),
+    ("recovery1", None),
+    ("ar17b", None),
+    # ... but a delimited match still wins:
+    ("myround-r42-test", "r42"),
+    ("foo_r17_bar", "r17"),
 ])
 def test_extract_round_id(dirname, expected):
     assert extract_round_id(dirname) == expected

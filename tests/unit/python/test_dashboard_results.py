@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from gpa.eval.dashboard._results import (
-    load_and_merge_results, load_tier_meta, derive_scenario_type,
+    load_and_merge_results, load_or_seed_tier_meta, derive_scenario_type,
     enrich_results,
 )
 from gpa.eval.metrics import EvalResult
@@ -60,17 +60,17 @@ def test_merge_empty_paths_returns_empty():
     assert load_and_merge_results([]) == []
 
 
-def test_load_tier_meta_reads_existing(tmp_path):
+def test_load_or_seed_tier_meta_reads_existing(tmp_path):
     (tmp_path / "meta.json").write_text(json.dumps({
         "tier": "sonnet", "model": "claude-sonnet-4-6",
     }))
-    tier, model = load_tier_meta(tmp_path)
+    tier, model = load_or_seed_tier_meta(tmp_path)
     assert tier == "sonnet"
     assert model == "claude-sonnet-4-6"
 
 
-def test_load_tier_meta_seeds_opus_when_absent(tmp_path):
-    tier, model = load_tier_meta(tmp_path)
+def test_load_or_seed_tier_meta_seeds_opus_when_absent(tmp_path):
+    tier, model = load_or_seed_tier_meta(tmp_path)
     assert tier == "opus"
     assert "opus" in model
     # And the file is now seeded on disk
@@ -78,9 +78,9 @@ def test_load_tier_meta_seeds_opus_when_absent(tmp_path):
     assert written == {"tier": "opus", "model": "claude-opus-4-7[1m]"}
 
 
-def test_load_tier_meta_handles_malformed(tmp_path):
+def test_load_or_seed_tier_meta_handles_malformed(tmp_path):
     (tmp_path / "meta.json").write_text("not json")
-    tier, model = load_tier_meta(tmp_path)
+    tier, model = load_or_seed_tier_meta(tmp_path)
     # Malformed → treat as missing; re-seed opus
     assert tier == "opus"
 

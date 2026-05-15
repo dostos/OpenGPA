@@ -38,14 +38,17 @@ _DEFAULT_TIER = "opus"
 _DEFAULT_MODEL = "claude-opus-4-7[1m]"
 
 
-def load_tier_meta(round_dir: Path) -> tuple[str, str]:
-    """Read (or seed) ``round_dir/meta.json``. Returns (tier, model).
+def load_or_seed_tier_meta(round_dir: Path) -> tuple[str, str]:
+    """Read ``round_dir/meta.json`` if present; otherwise seed it with the
+    opus defaults and write it to disk. Returns (tier, model).
 
-    Every existing eval JSON carries ``model: "unknown"`` because the
-    claude-cli backend doesn't capture the model identifier; the per-
-    round meta is the authoritative source. Seeded as opus for the
-    current cohort the first time the build runs; future multi-tier
-    eval rounds (R19+) populate this from the eval CLI itself.
+    The function name signals the write side-effect — callers should not
+    treat this as a pure read. Every existing eval JSON carries
+    ``model: "unknown"`` because the claude-cli backend doesn't capture
+    the model identifier; the per-round meta is the authoritative source.
+    Seeded as opus for the current cohort the first time the build runs;
+    future multi-tier eval rounds (R19+) populate this from the eval CLI
+    itself.
     """
     meta_path = round_dir / "meta.json"
     if meta_path.exists():
