@@ -17,6 +17,12 @@ backend:
 status: verified
 tags: []
 notes: ''
+expected_failure:
+  reason: 'mining-quality: issue #13092 was closed by two PRs (#12983 + #13098);
+    mining picked #12983 but the agent consistently diagnoses #13098. Not
+    a product gap. Quarantine candidate once mining-quality bar (R18+ backlog)
+    flags multi-PR closures.'
+  first_observed_round: r13
 verification:
   checked_at: '2026-05-05T04:25:53.372185+00:00'
   checks_run:

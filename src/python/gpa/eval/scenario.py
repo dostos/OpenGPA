@@ -120,6 +120,15 @@ class ScenarioMetadata:
     # None for legacy scenarios authored before the maintainer-framing spec.
     # See docs/superpowers/specs/2026-04-21-maintainer-framing-design.md.
     fix: Optional[FixMetadata] = None
+    # --- Stable-failure marker (R18) ---
+    # When set, this scenario is a known stable failure at the current model
+    # tier for a *non-product* reason (e.g. reasoning-shallow, mining picked
+    # wrong PR). Reports should still run it (it costs the same tokens) but
+    # break it out from regression-trackable scenarios so the signal-to-noise
+    # of round-over-round comparisons stays visible. Populated from a top-
+    # level ``expected_failure`` block in scenario.yaml; the block carries
+    # at minimum a ``reason:`` string.
+    expected_failure: Optional[dict] = None
 
 
 # Section heading aliases — maps canonical name -> list of accepted headings
@@ -556,6 +565,12 @@ class ScenarioLoader:
                 upstream_sha = fix_meta.fix_sha
                 upstream_resolve_parent = True
 
+        expected_failure_block = yaml_data.get("expected_failure")
+        if isinstance(expected_failure_block, dict) and expected_failure_block.get("reason"):
+            expected_failure = dict(expected_failure_block)
+        else:
+            expected_failure = None
+
         return ScenarioMetadata(
             id=scenario_id,
             title=sections.get("_title", scenario_id),
@@ -593,6 +608,7 @@ class ScenarioLoader:
             upstream_snapshot_relevant_files=upstream_files_list,
             upstream_snapshot_resolve_parent=upstream_resolve_parent,
             fix=fix_meta,
+            expected_failure=expected_failure,
         )
 
     def load_all(self, *, include_quarantined: bool = False) -> list[ScenarioMetadata]:

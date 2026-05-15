@@ -144,10 +144,24 @@ def _cmd_report(args: argparse.Namespace) -> int:
     """Generate a report from a saved results JSON file."""
     from gpa.eval.harness import EvalHarness
     from gpa.eval.metrics import ReportGenerator
+    from gpa.eval.scenario import ScenarioLoader
 
     results = EvalHarness.load_results(args.results_file)
+
+    # R18-P0: discover stable-failure scenarios so the markdown report
+    # can break them out from regression-trackable ones. Loader failures
+    # are non-fatal — fall back to empty set so reports still generate.
+    stable_ids: set[str] = set()
+    try:
+        loader = ScenarioLoader()
+        for meta in loader.load_all():
+            if meta.expected_failure is not None:
+                stable_ids.add(meta.id)
+    except Exception:
+        pass
+
     gen = ReportGenerator()
-    md = gen.generate_markdown(results)
+    md = gen.generate_markdown(results, stable_failure_ids=stable_ids)
 
     if args.output:
         Path(args.output).write_text(md, encoding="utf-8")

@@ -71,14 +71,29 @@ class EvalResult:
 class ReportGenerator:
     """Generates comparison reports from a list of EvalResult objects."""
 
-    def generate_summary(self, results: list[EvalResult]) -> dict:
+    def generate_summary(
+        self,
+        results: list[EvalResult],
+        stable_failure_ids: Optional[set[str]] = None,
+    ) -> dict:
         """Aggregate metrics by scenario and mode.
+
+        ``stable_failure_ids`` (R18-P0): scenario IDs whose ``scenario.yaml``
+        carries an ``expected_failure`` block. Those scenarios are still
+        scored, but the per-mode overall block gets an extra
+        ``solved_rate_regression_only`` figure that excludes them, so
+        round-over-round comparisons aren't dominated by known-stable
+        failures. ``None`` (default) preserves pre-R18 behavior.
 
         Returns a dict with keys:
             scenarios: dict[scenario_id -> dict[mode -> aggregated_metrics]]
             overall: overall aggregate statistics
+            stable_failure_ids: sorted list of stable-failure scenario IDs
+                included in the run (subset of ``stable_failure_ids``).
         """
         from collections import defaultdict
+
+        stable = set(stable_failure_ids or ())
 
         by_scenario: dict[str, dict[str, list[EvalResult]]] = defaultdict(
             lambda: defaultdict(list)
@@ -116,12 +131,21 @@ class ReportGenerator:
 
         # Overall aggregation per mode
         all_modes: dict[str, list[EvalResult]] = defaultdict(list)
+        regression_modes: dict[str, list[EvalResult]] = defaultdict(list)
         for r in results:
             all_modes[r.mode].append(r)
+            if r.scenario_id not in stable:
+                regression_modes[r.mode].append(r)
 
-        overall: dict[str, dict] = {
-            mode: _agg(rs) for mode, rs in sorted(all_modes.items())
-        }
+        overall: dict[str, dict] = {}
+        for mode, rs in sorted(all_modes.items()):
+            agg = _agg(rs)
+            reg_rs = regression_modes.get(mode, [])
+            agg["solved_rate_regression_only"] = _avg(
+                [int(bool((r.verdict or {}).get("solved"))) for r in reg_rs]
+            )
+            agg["regression_count"] = len(reg_rs)
+            overall[mode] = agg
 
         # Token reduction: with_gla vs code_only
         token_reduction: Optional[float] = None
@@ -131,15 +155,24 @@ class ReportGenerator:
             if base_tok:
                 token_reduction = (base_tok - gpa_tok) / base_tok
 
+        observed_stable = sorted(
+            sid for sid in by_scenario if sid in stable
+        )
+
         return {
             "scenarios": summary_scenarios,
             "overall": overall,
             "token_reduction_fraction": token_reduction,
+            "stable_failure_ids": observed_stable,
         }
 
-    def generate_markdown(self, results: list[EvalResult]) -> str:
+    def generate_markdown(
+        self,
+        results: list[EvalResult],
+        stable_failure_ids: Optional[set[str]] = None,
+    ) -> str:
         """Generate a human-readable markdown comparison report."""
-        summary = self.generate_summary(results)
+        summary = self.generate_summary(results, stable_failure_ids=stable_failure_ids)
         lines: list[str] = []
 
         lines.append("# OpenGPA Evaluation Report")
@@ -167,6 +200,7 @@ class ReportGenerator:
             ("avg_turns", "Avg Turns"),
             ("avg_time_seconds", "Avg Time (s)"),
             ("solved_rate", "Solved (verdict orchestrator)"),
+            ("solved_rate_regression_only", "Solved (regression-only)"),
         ]
         for key, label in metrics_display:
             row = [label]
@@ -185,6 +219,16 @@ class ReportGenerator:
             lines.append("")
             lines.append(
                 f"**Token reduction (with_gla vs code_only): {pct:.1f}%**"
+            )
+
+        # R18-P0: surface stable-failure scenarios so readers know which
+        # IDs are excluded from the regression-only row.
+        stable_ids = summary.get("stable_failure_ids") or []
+        if stable_ids:
+            lines.append("")
+            lines.append(
+                f"**Stable failures excluded from regression-only row ({len(stable_ids)}):** "
+                + ", ".join(f"`{sid}`" for sid in stable_ids)
             )
 
         lines.append("")

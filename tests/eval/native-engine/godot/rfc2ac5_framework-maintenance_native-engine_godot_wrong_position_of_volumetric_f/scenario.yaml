@@ -17,6 +17,12 @@ backend:
 status: verified
 tags: []
 notes: ''
+expected_failure:
+  reason: 'reasoning-depth at opus-4-7 tier: R17 agent did 11 tool calls
+    + 5.9k tokens (real investigation, not a short-circuit) but missed
+    the diagnosis. Survived the R17 outline-recipe deletion, unlike its
+    two siblings. Not a product gap; capability ceiling at this model.'
+  first_observed_round: r15
 verification:
   checked_at: '2026-05-05T04:25:53.032430+00:00'
   checks_run:

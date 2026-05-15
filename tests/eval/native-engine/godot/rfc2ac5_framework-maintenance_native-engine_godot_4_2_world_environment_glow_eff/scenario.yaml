@@ -17,6 +17,12 @@ backend:
 status: verified
 tags: []
 notes: ''
+expected_failure:
+  reason: 'reasoning-shallow at opus-4-7 tier: agent consistently lands on
+    luminance_multiplier (a surface symptom) instead of the buffer-format
+    root cause. 5 rounds, same failure mode. Not a product gap; would
+    require either a stronger model tier or a different scoring approach.'
+  first_observed_round: r13
 verification:
   checked_at: '2026-05-05T04:25:53.012174+00:00'
   checks_run:
