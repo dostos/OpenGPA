@@ -1,0 +1,100 @@
+{
+  "built_at": "2026-05-15T02:13:00+00:00",
+  "scenario_types": ["native-engine/godot", "web-map/cesium"],
+  "rounds": [
+    {
+      "id": "r17",
+      "date": "2026-05-05",
+      "results_path": "/data3/gla-eval-results/2026-05-05-r17/",
+      "aux_paths": ["/data3/gla-eval-results/2026-05-05-r17-resume/"],
+      "narrative_path": "docs/eval-rounds/2026-05-05-r17.md",
+      "narrative_md": "# Round R17 (test)\n\nFixture round.\n",
+      "headline": "Fixture round.",
+      "results": [
+        {
+          "scenario_id": "sample_godot_solved",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 6116,
+          "tool_calls": 13,
+          "expected_failure": null
+        },
+        {
+          "scenario_id": "sample_godot_stable_failure",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": false,
+          "scorer": "no_signal",
+          "confidence": "low",
+          "output_tokens": 48117,
+          "tool_calls": 45,
+          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
+        },
+        {
+          "scenario_id": "sample_cesium_judge",
+          "scenario_type": "web-map/cesium",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "judge",
+          "confidence": "medium",
+          "output_tokens": 30030,
+          "tool_calls": 61,
+          "expected_failure": null
+        }
+      ]
+    },
+    {
+      "id": "r18",
+      "date": "2026-05-14",
+      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
+      "aux_paths": [],
+      "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
+      "narrative_md": "# Round R18 (test)\n\nSecond fixture round. bug_class dispatch deleted.\n",
+      "headline": "Second fixture round. bug_class dispatch deleted.",
+      "results": [
+        {
+          "scenario_id": "sample_godot_solved",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 6116,
+          "tool_calls": 13,
+          "expected_failure": null
+        },
+        {
+          "scenario_id": "sample_godot_stable_failure",
+          "scenario_type": "native-engine/godot",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": false,
+          "scorer": "no_signal",
+          "confidence": "low",
+          "output_tokens": 50000,
+          "tool_calls": 45,
+          "expected_failure": {"reason": "reasoning-depth ceiling", "first_observed_round": "r15"}
+        },
+        {
+          "scenario_id": "sample_cesium_judge",
+          "scenario_type": "web-map/cesium",
+          "mode": "code_only",
+          "tier": "opus",
+          "solved": true,
+          "scorer": "file_level",
+          "confidence": "high",
+          "output_tokens": 12000,
+          "tool_calls": 8,
+          "expected_failure": null
+        }
+      ]
+    }
+  ]
+}
