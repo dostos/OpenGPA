@@ -17,12 +17,12 @@ backend:
 status: verified
 tags: []
 notes: ''
-expected_failure:
-  reason: 'reasoning-shallow at opus-4-7 tier: agent consistently lands on
-    luminance_multiplier (a surface symptom) instead of the buffer-format
-    root cause. 5 rounds, same failure mode. Not a product gap; would
-    require either a stronger model tier or a different scoring approach.'
-  first_observed_round: r13
+# R19-P1 (2026-05-17): expected_failure block removed. R18 forensic
+# showed this scenario was not reasoning-shallow — it was prompt-mis-
+# routing (mined bug_class was wrong, dispatched to advisor.md asking
+# for user_code_change schema instead of proposed_patches). Once R18-P2
+# routed every class through maintainer_framing, the scenario solved at
+# file_level/high on first run.
 verification:
   checked_at: '2026-05-05T04:25:53.012174+00:00'
   checks_run:

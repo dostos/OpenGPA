@@ -306,8 +306,16 @@ def test_run_scenario_populates_maintainer_score_on_framework_internal(tmp_path)
 
 
 def test_run_scenario_flags_missing_json_tail():
-    """Agent that forgets the JSON tail → parsed_json=False, maintainer
-    fields set to the scorer's failure output."""
+    """Agent that forgets the JSON tail → parsed_json=False; verdict
+    falls through to prose/judge scorers which record no_signal.
+
+    Pre-R19 the harness short-circuited any framework-internal scenario
+    without JSON to ``maintainer_solved=False, file_score=0.0``. R19-P3
+    deleted that bug_class-specific shortcut — every scenario now goes
+    through the verdict orchestrator regardless of JSON presence. The
+    failure surfaces via verdict.solved=False / scorer=no_signal rather
+    than via the legacy maintainer_solved field.
+    """
     harness = _make_harness()
     harness._scorer.score.return_value = (False, False)
     scenario = _make_scenario(
@@ -321,8 +329,12 @@ def test_run_scenario_flags_missing_json_tail():
 
     r = harness.run_scenario("test_missing_json", "code_only", _agent_fn)
     assert r.parsed_json is False
-    assert r.maintainer_solved is False
-    assert r.file_score == 0.0
+    # File-level scoring did not fire — that's the new contract.
+    assert r.maintainer_solved is None
+    assert r.file_score is None
+    # The verdict orchestrator still records the failure.
+    assert (r.verdict or {}).get("solved") is False
+    assert (r.verdict or {}).get("scorer") == "no_signal"
 
 
 def test_run_scenario_legacy_scenario_leaves_maintainer_fields_none():

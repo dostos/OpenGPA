@@ -146,15 +146,14 @@ class EvalHarness:
                 )
                 parsed = _extract_json_tail(diagnosis_text)
                 parsed_json = parsed is not None
-                # framework-internal prompts ask for JSON, so missing JSON
-                # is itself signal worth scoring (records solved=False).
-                # Other classes (advisor format) don't ask for JSON;
-                # missing JSON is expected, so leave file_score None and
-                # let the prose scorer below handle them.
-                should_score = (
-                    bug_class == "framework-internal" or parsed_json
-                )
-                if should_score:
+                # R19-P3: file-level scoring fires whenever the agent emits
+                # parseable JSON. Pre-R19 this also had a `bug_class ==
+                # "framework-internal"` clause kept around for the advisor /
+                # config_advice prompts that don't ask for JSON. R18-P2
+                # deleted that dispatch — every non-legacy class now gets
+                # the maintainer prompt, which always asks for JSON.
+                # `parsed_json` is the only signal that matters.
+                if parsed_json:
                     snapshot_root = None
                     try:
                         if (scenario.upstream_snapshot_repo
