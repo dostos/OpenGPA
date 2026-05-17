@@ -157,10 +157,10 @@ def print_summary(results: list[EvalRun]):
         print()
 
     # Framebuffer trap analysis
-    gpa_runs = [r for r in results if r.mode == "with_gla"]
-    if gpa_runs:
-        fb_first_count = sum(1 for r in gpa_runs if r.framebuffer_first)
-        total_gla = len(gpa_runs)
+    bhdr_runs = [r for r in results if r.mode == "with_gla"]
+    if bhdr_runs:
+        fb_first_count = sum(1 for r in bhdr_runs if r.framebuffer_first)
+        total_gla = len(bhdr_runs)
         print(f"\nFramebuffer trap: {fb_first_count}/{total_gla} GPA runs queried pixels before state inspection")
 
     # Failure analysis
@@ -201,7 +201,7 @@ def main():
 
     # Import eval agent
     sys.path.insert(0, str(REPO / "src" / "python"))
-    from bhdr.eval.llm_agent import EvalAgent, GpaToolExecutor
+    from bhdr.eval.llm_agent import EvalAgent, BhdrToolExecutor
 
     results = []
 
@@ -237,9 +237,9 @@ def main():
                     if mode == "with_gla":
                         # Need frame_id — check if captured
                         # For now, use frame_id=0 as placeholder
-                        executor = GpaToolExecutor(
+                        executor = BhdrToolExecutor(
                             base_url="http://127.0.0.1:18080",
-                            token=os.environ.get("GPA_TOKEN", "eval-test"),
+                            token=os.environ.get("BHDR_TOKEN", "eval-test"),
                             frame_id=0,
                         )
                         result = agent.run_with_gla(

@@ -84,7 +84,7 @@ scenarios should:
 - For the next mining round, target Bevy bugs where the user report
   is purely visual (no framework-internal keywords).
 - Use the now-verified Vulkan layer + `cargo run --example` flow to
-  measure `with_gpa` on those harder scenarios.
+  measure `with_bhdr` on those harder scenarios.
 
 ## Reproducibility
 

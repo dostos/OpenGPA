@@ -784,10 +784,10 @@ import pytest
 
 
 @pytest.mark.e2e
-def test_opengpa_sidecar_emits_joint_markers(workbench_page, gpa_engine):
+def test_opengpa_sidecar_emits_joint_markers(workbench_page, bhdr_engine):
     """With OpenGPA capture toggled on, generated motion produces metadata
     POSTs containing all canonical joint markers."""
-    # gpa_engine fixture: starts gla engine on :18080, yields its base URL.
+    # bhdr_engine fixture: starts gla engine on :18080, yields its base URL.
     # workbench_page fixture: launches workbench in mock mode + Playwright page.
 
     page = workbench_page
@@ -802,7 +802,7 @@ def test_opengpa_sidecar_emits_joint_markers(workbench_page, gpa_engine):
     time.sleep(2.0)
 
     # Query the engine for the most recent metadata POST.
-    base = gpa_engine.rstrip("/")
+    base = bhdr_engine.rstrip("/")
     # Frames are numbered from 0 in workbench mode (sidecar's local counter).
     # Try the first few frame IDs and pick the highest one with metadata.
     for frame_id in range(20, -1, -1):
@@ -830,7 +830,7 @@ def test_opengpa_sidecar_emits_joint_markers(workbench_page, gpa_engine):
     )
 ```
 
-If the `gpa_engine` fixture does not yet exist in the test conftest, add it. It should `subprocess.Popen` the gla engine (per `gla/CLAUDE.md` "Running the Eval" section), wait for `:18080` to accept connections, yield the URL, then terminate cleanly.
+If the `bhdr_engine` fixture does not yet exist in the test conftest, add it. It should `subprocess.Popen` the gla engine (per `gla/CLAUDE.md` "Running the Eval" section), wait for `:18080` to accept connections, yield the URL, then terminate cleanly.
 
 The engine launcher requires Bazel-built artifacts (`bazel-bin/src/bindings`). The fixture should skip the test (not fail it) if the build artifacts are missing — use `pytest.importorskip` or check `Path(...).exists()` and `pytest.skip("Run `bazel build //...` first.")`. CI environments without Bazel should not block this test from being committed.
 
@@ -850,7 +850,7 @@ If it fails, check the order of operations:
 ```bash
 cd /home/jingyulee/gh/omnispace-gen
 git add tests/e2e/test_workbench_browser.py
-# Plus conftest changes if you added the gpa_engine fixture:
+# Plus conftest changes if you added the bhdr_engine fixture:
 git add tests/e2e/conftest.py 2>/dev/null || true
 git commit -m "test(workbench): E2E asserts OpenGPA Tier-3 captures joint markers"
 ```

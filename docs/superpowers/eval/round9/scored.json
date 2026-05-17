@@ -15,7 +15,7 @@
       "Read": 17,
       "mcp__plugin_serena_sterena__search_for_pattern": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2658420,
     "cache_creation": 93609,
     "total_output_tokens": 11067,
@@ -39,7 +39,7 @@
       "Grep": 4,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 157245,
     "cache_creation": 21653,
     "total_output_tokens": 2964,
@@ -64,7 +64,7 @@
       "Glob": 1,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 117153,
     "cache_creation": 17833,
     "total_output_tokens": 3832,
@@ -78,7 +78,7 @@
   },
   {
     "scenario": "r10_feedback_loop_error_with_transmission_an",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -90,8 +90,8 @@
       "Bash": 18,
       "Read": 12
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 2281520,
     "cache_creation": 110794,
@@ -106,7 +106,7 @@
   },
   {
     "scenario": "r10_feedback_loop_error_with_transmission_an",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -117,9 +117,9 @@
       "Grep": 3,
       "Read": 3
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 1
     },
     "cache_read": 196670,
     "cache_creation": 24261,
@@ -134,7 +134,7 @@
   },
   {
     "scenario": "r10_feedback_loop_error_with_transmission_an",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -148,8 +148,8 @@
       "Read": 18,
       "Bash": 23
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 122564,
     "cache_creation": 18049,
@@ -175,7 +175,7 @@
       "Read": 12,
       "Bash": 16
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1981391,
     "cache_creation": 85716,
     "total_output_tokens": 9990,
@@ -201,7 +201,7 @@
       "Read": 2,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 203473,
     "cache_creation": 26184,
     "total_output_tokens": 3794,
@@ -225,7 +225,7 @@
       "Bash": 12,
       "Read": 15
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 895776,
     "cache_creation": 73149,
     "total_output_tokens": 25630,
@@ -239,7 +239,7 @@
   },
   {
     "scenario": "r13_cubecamera_render_target_displaying_rand",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -251,9 +251,9 @@
       "Bash": 11,
       "gpa": 7
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 6
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 6
     },
     "cache_read": 2215998,
     "cache_creation": 94513,
@@ -268,7 +268,7 @@
   },
   {
     "scenario": "r13_cubecamera_render_target_displaying_rand",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -280,8 +280,8 @@
       "Read": 3,
       "Grep": 4
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 359599,
     "cache_creation": 28739,
@@ -296,7 +296,7 @@
   },
   {
     "scenario": "r13_cubecamera_render_target_displaying_rand",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -312,10 +312,10 @@
       "Read": 16,
       "Grep": 21
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 6,
-      "gpa_trace": 2
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 6,
+      "bhdr_trace": 2
     },
     "cache_read": 629083,
     "cache_creation": 54660,
@@ -341,7 +341,7 @@
       "Grep": 6,
       "Read": 6
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 843057,
     "cache_creation": 137652,
     "total_output_tokens": 11929,
@@ -367,7 +367,7 @@
       "Grep": 12,
       "Read": 18
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2383276,
     "cache_creation": 75875,
     "total_output_tokens": 18519,
@@ -394,7 +394,7 @@
       "Read": 33,
       "Grep": 21
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 4569908,
     "cache_creation": 231264,
     "total_output_tokens": 2131,
@@ -408,7 +408,7 @@
   },
   {
     "scenario": "r14_cannot_override_vertexnode_of_instanced_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -419,9 +419,9 @@
       "Bash": 25,
       "Read": 9
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 1
     },
     "cache_read": 2982979,
     "cache_creation": 109150,
@@ -436,7 +436,7 @@
   },
   {
     "scenario": "r14_cannot_override_vertexnode_of_instanced_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -448,8 +448,8 @@
       "Read": 10,
       "Grep": 8
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 907407,
     "cache_creation": 49555,
@@ -464,7 +464,7 @@
   },
   {
     "scenario": "r14_cannot_override_vertexnode_of_instanced_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -476,8 +476,8 @@
       "Bash": 29,
       "Read": 21
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 531527,
     "cache_creation": 53872,
@@ -503,7 +503,7 @@
       "Read": 10,
       "Bash": 24
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2434955,
     "cache_creation": 137594,
     "total_output_tokens": 19758,
@@ -529,7 +529,7 @@
       "Read": 6,
       "Grep": 13
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1505945,
     "cache_creation": 86581,
     "total_output_tokens": 29790,
@@ -554,7 +554,7 @@
       "Read": 7,
       "Glob": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 814162,
     "cache_creation": 42726,
     "total_output_tokens": 19670,
@@ -579,7 +579,7 @@
       "Read": 12,
       "Bash": 19
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2378120,
     "cache_creation": 63784,
     "total_output_tokens": 20288,
@@ -604,7 +604,7 @@
       "Read": 5,
       "Grep": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 441110,
     "cache_creation": 33263,
     "total_output_tokens": 4260,
@@ -630,7 +630,7 @@
       "Grep": 16,
       "Bash": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2908583,
     "cache_creation": 116778,
     "total_output_tokens": 46170,
@@ -644,7 +644,7 @@
   },
   {
     "scenario": "r17_replacing_an_attribute_of_a_geometry_ins",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -656,8 +656,8 @@
       "Bash": 23,
       "Read": 15
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 3014129,
     "cache_creation": 98559,
@@ -672,7 +672,7 @@
   },
   {
     "scenario": "r17_replacing_an_attribute_of_a_geometry_ins",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -683,8 +683,8 @@
       "Grep": 3,
       "Read": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 183840,
     "cache_creation": 42714,
@@ -699,7 +699,7 @@
   },
   {
     "scenario": "r17_replacing_an_attribute_of_a_geometry_ins",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 0,
@@ -712,9 +712,9 @@
       "Read": 40,
       "Grep": 7
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 1
     },
     "cache_read": 1770966,
     "cache_creation": 75360,
@@ -740,7 +740,7 @@
       "Read": 16,
       "Bash": 23
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2896554,
     "cache_creation": 104054,
     "total_output_tokens": 15464,
@@ -766,7 +766,7 @@
       "Bash": 2,
       "Grep": 5
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 825608,
     "cache_creation": 66005,
     "total_output_tokens": 13162,
@@ -791,7 +791,7 @@
       "Grep": 16,
       "Read": 16
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 3225460,
     "cache_creation": 276233,
     "total_output_tokens": 1203,
@@ -816,7 +816,7 @@
       "Read": 5,
       "bash": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 3528492,
     "cache_creation": 128429,
     "total_output_tokens": 18286,
@@ -841,7 +841,7 @@
       "Read": 15,
       "Grep": 15
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2154240,
     "cache_creation": 100878,
     "total_output_tokens": 23786,
@@ -867,7 +867,7 @@
       "Grep": 9,
       "Read": 12
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 156799,
     "cache_creation": 28855,
     "total_output_tokens": 3607,
@@ -881,7 +881,7 @@
   },
   {
     "scenario": "r18_model_disappears_when_rotating_or_zoomin",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -893,8 +893,8 @@
       "Bash": 8,
       "Read": 5
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 1228910,
     "cache_creation": 109108,
@@ -909,7 +909,7 @@
   },
   {
     "scenario": "r18_model_disappears_when_rotating_or_zoomin",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -920,8 +920,8 @@
       "Bash": 18,
       "Read": 14
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 1947526,
     "cache_creation": 91321,
@@ -936,7 +936,7 @@
   },
   {
     "scenario": "r18_model_disappears_when_rotating_or_zoomin",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -950,8 +950,8 @@
       "Grep": 8,
       "Read": 10
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 87486,
     "cache_creation": 15898,
@@ -978,7 +978,7 @@
       "Grep": 4,
       "Bash": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 959256,
     "cache_creation": 78464,
     "total_output_tokens": 7653,
@@ -1003,7 +1003,7 @@
       "Grep": 4,
       "Bash": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 480483,
     "cache_creation": 27840,
     "total_output_tokens": 6920,
@@ -1028,7 +1028,7 @@
       "Glob": 1,
       "Grep": 18
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1991127,
     "cache_creation": 86537,
     "total_output_tokens": 33344,
@@ -1052,7 +1052,7 @@
       "Grep": 7,
       "Read": 6
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 718127,
     "cache_creation": 86741,
     "total_output_tokens": 17774,
@@ -1075,7 +1075,7 @@
     "tool_counts": {
       "Grep": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 82245,
     "cache_creation": 15911,
     "total_output_tokens": 1454,
@@ -1101,7 +1101,7 @@
       "Bash": 4,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 240933,
     "cache_creation": 30798,
     "total_output_tokens": 2833,
@@ -1127,7 +1127,7 @@
       "Glob": 2,
       "Read": 6
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1284668,
     "cache_creation": 95562,
     "total_output_tokens": 12143,
@@ -1151,7 +1151,7 @@
       "Grep": 3,
       "Read": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 239933,
     "cache_creation": 28960,
     "total_output_tokens": 3331,
@@ -1177,7 +1177,7 @@
       "Read": 15,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 87801,
     "cache_creation": 15294,
     "total_output_tokens": 4625,
@@ -1191,7 +1191,7 @@
   },
   {
     "scenario": "r20_object_with_meshphysicalmaterial_contain",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -1204,9 +1204,9 @@
       "Grep": 1,
       "Read": 10
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 4
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 4
     },
     "cache_read": 1556648,
     "cache_creation": 76564,
@@ -1221,7 +1221,7 @@
   },
   {
     "scenario": "r20_object_with_meshphysicalmaterial_contain",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -1233,9 +1233,9 @@
       "Read": 4,
       "Bash": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 5
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 5
     },
     "cache_read": 767355,
     "cache_creation": 54742,
@@ -1250,7 +1250,7 @@
   },
   {
     "scenario": "r20_object_with_meshphysicalmaterial_contain",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -1264,8 +1264,8 @@
       "Grep": 1,
       "Read": 18
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 60900,
     "cache_creation": 15334,
@@ -1293,7 +1293,7 @@
       "Grep": 20,
       "Read": 14
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 3091429,
     "cache_creation": 115369,
     "total_output_tokens": 12398,
@@ -1318,7 +1318,7 @@
       "Grep": 3,
       "Read": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 406462,
     "cache_creation": 43610,
     "total_output_tokens": 5650,
@@ -1344,7 +1344,7 @@
       "Grep": 8,
       "Read": 14
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1266281,
     "cache_creation": 59965,
     "total_output_tokens": 9848,
@@ -1358,7 +1358,7 @@
   },
   {
     "scenario": "r21_fix_vertical_and_horizontal_artifacts_on",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -1370,9 +1370,9 @@
       "Bash": 9,
       "Read": 4
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 5
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 5
     },
     "cache_read": 1284919,
     "cache_creation": 101034,
@@ -1387,7 +1387,7 @@
   },
   {
     "scenario": "r21_fix_vertical_and_horizontal_artifacts_on",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -1401,9 +1401,9 @@
       "Read": 3,
       "curl": 3
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 15
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 15
     },
     "cache_read": 1081142,
     "cache_creation": 44384,
@@ -1418,7 +1418,7 @@
   },
   {
     "scenario": "r21_fix_vertical_and_horizontal_artifacts_on",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1432,8 +1432,8 @@
       "Grep": 6,
       "Read": 25
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 1252725,
     "cache_creation": 80401,
@@ -1458,7 +1458,7 @@
       "Bash": 24,
       "Read": 8
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2034267,
     "cache_creation": 61642,
     "total_output_tokens": 7607,
@@ -1483,7 +1483,7 @@
       "Read": 1,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 100958,
     "cache_creation": 36293,
     "total_output_tokens": 2535,
@@ -1510,7 +1510,7 @@
       "Bash": 27,
       "Grep": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 280190,
     "cache_creation": 25877,
     "total_output_tokens": 8336,
@@ -1524,7 +1524,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -1536,9 +1536,9 @@
       "Bash": 16,
       "Read": 9
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 4
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 4
     },
     "cache_read": 2086524,
     "cache_creation": 91245,
@@ -1553,7 +1553,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 2,
@@ -1564,8 +1564,8 @@
       "Bash": 3,
       "Read": 1
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 191916,
     "cache_creation": 20463,
@@ -1580,7 +1580,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -1593,8 +1593,8 @@
       "Bash": 22,
       "Read": 21
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 36450,
     "cache_creation": 14020,
@@ -1620,7 +1620,7 @@
       "Read": 14,
       "Bash": 15
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2503963,
     "cache_creation": 79687,
     "total_output_tokens": 25902,
@@ -1643,7 +1643,7 @@
     "tool_counts": {
       "Grep": 3
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 117125,
     "cache_creation": 17239,
     "total_output_tokens": 1881,
@@ -1669,7 +1669,7 @@
       "Read": 25,
       "Grep": 5
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 141756,
     "cache_creation": 15467,
     "total_output_tokens": 2512,
@@ -1683,7 +1683,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -1695,9 +1695,9 @@
       "Bash": 17,
       "Read": 15
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 6
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 6
     },
     "cache_read": 2591318,
     "cache_creation": 128692,
@@ -1712,7 +1712,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -1724,9 +1724,9 @@
       "Grep": 2,
       "Read": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 4
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 4
     },
     "cache_read": 370842,
     "cache_creation": 23443,
@@ -1741,7 +1741,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -1755,10 +1755,10 @@
       "Glob": 2,
       "Read": 29
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 6,
-      "gpa_check": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 6,
+      "bhdr_check": 1
     },
     "cache_read": 1418319,
     "cache_creation": 78312,
@@ -1784,7 +1784,7 @@
       "Bash": 30,
       "Read": 9
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2707388,
     "cache_creation": 128375,
     "total_output_tokens": 10599,
@@ -1809,7 +1809,7 @@
       "Read": 3,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 231926,
     "cache_creation": 41492,
     "total_output_tokens": 6088,
@@ -1835,7 +1835,7 @@
       "Read": 12,
       "Grep": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 89024,
     "cache_creation": 15976,
     "total_output_tokens": 2166,
@@ -1849,7 +1849,7 @@
   },
   {
     "scenario": "r27_bug_black_squares_appear_when_rendering_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1861,9 +1861,9 @@
       "Bash": 8,
       "Read": 4
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 6
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 6
     },
     "cache_read": 1250150,
     "cache_creation": 94009,
@@ -1878,7 +1878,7 @@
   },
   {
     "scenario": "r27_bug_black_squares_appear_when_rendering_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -1889,9 +1889,9 @@
       "Bash": 7,
       "Read": 6
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 3
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 3
     },
     "cache_read": 675498,
     "cache_creation": 38589,
@@ -1906,7 +1906,7 @@
   },
   {
     "scenario": "r27_bug_black_squares_appear_when_rendering_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1920,9 +1920,9 @@
       "Read": 16,
       "Bash": 23
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 1
     },
     "cache_read": 342197,
     "cache_creation": 42129,
@@ -1948,7 +1948,7 @@
       "Read": 3,
       "Glob": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 255831,
     "cache_creation": 97620,
     "total_output_tokens": 19121,
@@ -1974,7 +1974,7 @@
       "Grep": 1,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 147510,
     "cache_creation": 17122,
     "total_output_tokens": 1575,
@@ -1999,7 +1999,7 @@
       "Grep": 3,
       "Read": 5
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 291075,
     "cache_creation": 23542,
     "total_output_tokens": 9726,
@@ -2013,7 +2013,7 @@
   },
   {
     "scenario": "r28_objloader_loader_does_not_return_valid_g",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -2026,8 +2026,8 @@
       "gpa": 1,
       "Bash": 3
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 952917,
     "cache_creation": 62430,
@@ -2042,7 +2042,7 @@
   },
   {
     "scenario": "r28_objloader_loader_does_not_return_valid_g",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2054,7 +2054,7 @@
       "Grep": 1,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 361358,
     "cache_creation": 22024,
     "total_output_tokens": 2808,
@@ -2068,7 +2068,7 @@
   },
   {
     "scenario": "r28_objloader_loader_does_not_return_valid_g",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -2080,8 +2080,8 @@
       "Grep": 4,
       "gpa": 1
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 342152,
     "cache_creation": 26161,
@@ -2107,7 +2107,7 @@
       "Bash": 28,
       "Read": 11
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 2750569,
     "cache_creation": 103221,
     "total_output_tokens": 7392,
@@ -2133,7 +2133,7 @@
       "Grep": 8,
       "Read": 6
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 954030,
     "cache_creation": 47458,
     "total_output_tokens": 8380,
@@ -2160,7 +2160,7 @@
       "Grep": 30,
       "Read": 25
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 7790664,
     "cache_creation": 300321,
     "total_output_tokens": 2203,
@@ -2174,7 +2174,7 @@
   },
   {
     "scenario": "r35_strange_bug_with_3_sprites_where_one_of_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -2186,8 +2186,8 @@
       "Bash": 32,
       "Read": 6
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 2788520,
     "cache_creation": 101816,
@@ -2202,7 +2202,7 @@
   },
   {
     "scenario": "r35_strange_bug_with_3_sprites_where_one_of_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2214,9 +2214,9 @@
       "Grep": 10,
       "Read": 5
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 5
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 5
     },
     "cache_read": 1033022,
     "cache_creation": 67349,
@@ -2231,7 +2231,7 @@
   },
   {
     "scenario": "r35_strange_bug_with_3_sprites_where_one_of_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 0,
@@ -2245,8 +2245,8 @@
       "Read": 31,
       "Bash": 43
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 5928671,
     "cache_creation": 332444,
@@ -2272,7 +2272,7 @@
       "Read": 3,
       "Bash": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 269546,
     "cache_creation": 65569,
     "total_output_tokens": 2935,
@@ -2296,7 +2296,7 @@
       "Bash": 1,
       "Read": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 63812,
     "cache_creation": 34611,
     "total_output_tokens": 1576,
@@ -2320,7 +2320,7 @@
       "Bash": 1,
       "Read": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 46603,
     "cache_creation": 28584,
     "total_output_tokens": 1270,
@@ -2334,7 +2334,7 @@
   },
   {
     "scenario": "r4_3d_map_black_screen",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -2346,9 +2346,9 @@
       "Bash": 11,
       "Read": 9
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 2
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 2
     },
     "cache_read": 1599072,
     "cache_creation": 80950,
@@ -2363,7 +2363,7 @@
   },
   {
     "scenario": "r4_3d_map_black_screen",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2374,8 +2374,8 @@
       "Bash": 1,
       "Read": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 142563,
     "cache_creation": 41268,
@@ -2390,7 +2390,7 @@
   },
   {
     "scenario": "r4_3d_map_black_screen",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -2401,8 +2401,8 @@
       "Bash": 1,
       "Read": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 60229,
     "cache_creation": 17035,
@@ -2428,7 +2428,7 @@
       "Grep": 2,
       "Read": 7
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 646984,
     "cache_creation": 85432,
     "total_output_tokens": 12937,
@@ -2452,7 +2452,7 @@
       "Glob": 2,
       "Read": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 64360,
     "cache_creation": 42764,
     "total_output_tokens": 4913,
@@ -2479,7 +2479,7 @@
       "Read": 8,
       "Grep": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 89924,
     "cache_creation": 15670,
     "total_output_tokens": 4609,
@@ -2493,7 +2493,7 @@
   },
   {
     "scenario": "r4_motion_blur_and_instancedmesh",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -2504,7 +2504,7 @@
       "Bash": 11,
       "Read": 6
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1351922,
     "cache_creation": 92635,
     "total_output_tokens": 13079,
@@ -2518,7 +2518,7 @@
   },
   {
     "scenario": "r4_motion_blur_and_instancedmesh",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2529,7 +2529,7 @@
       "Read": 2,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 126799,
     "cache_creation": 28843,
     "total_output_tokens": 4812,
@@ -2543,7 +2543,7 @@
   },
   {
     "scenario": "r4_motion_blur_and_instancedmesh",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -2556,8 +2556,8 @@
       "Read": 13,
       "Grep": 1
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 81062,
     "cache_creation": 35666,
@@ -2582,7 +2582,7 @@
       "Read": 6,
       "Grep": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 544239,
     "cache_creation": 83203,
     "total_output_tokens": 5293,
@@ -2607,7 +2607,7 @@
       "Bash": 3,
       "Grep": 2
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 562197,
     "cache_creation": 44988,
     "total_output_tokens": 13338,
@@ -2632,7 +2632,7 @@
       "Grep": 3,
       "Bash": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 418579,
     "cache_creation": 50924,
     "total_output_tokens": 24806,
@@ -2646,7 +2646,7 @@
   },
   {
     "scenario": "r7_webglbackend_copytexturetotexture_doesn_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -2659,9 +2659,9 @@
       "Bash": 6,
       "gpa": 4
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 3
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 3
     },
     "cache_read": 1385254,
     "cache_creation": 87011,
@@ -2676,7 +2676,7 @@
   },
   {
     "scenario": "r7_webglbackend_copytexturetotexture_doesn_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2687,9 +2687,9 @@
       "Bash": 8,
       "gpa": 3
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 2
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 2
     },
     "cache_read": 1031351,
     "cache_creation": 67104,
@@ -2704,7 +2704,7 @@
   },
   {
     "scenario": "r7_webglbackend_copytexturetotexture_doesn_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 0,
@@ -2716,8 +2716,8 @@
       "Grep": 14,
       "Bash": 8
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 3637613,
     "cache_creation": 208125,
@@ -2744,7 +2744,7 @@
       "Read": 13,
       "Grep": 8
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 1698363,
     "cache_creation": 112136,
     "total_output_tokens": 13238,
@@ -2769,7 +2769,7 @@
       "Read": 5,
       "Grep": 1
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 256138,
     "cache_creation": 29866,
     "total_output_tokens": 6544,
@@ -2794,7 +2794,7 @@
       "Read": 8,
       "Grep": 5
     },
-    "gpa_subtools": {},
+    "bhdr_subtools": {},
     "cache_read": 448757,
     "cache_creation": 61947,
     "total_output_tokens": 18504,
@@ -2808,7 +2808,7 @@
   },
   {
     "scenario": "r9_transparent_objects_brighten_when_using_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -2820,9 +2820,9 @@
       "Bash": 21,
       "Read": 12
     },
-    "gpa_subtools": {
-      "gpa_report": 1,
-      "gpa_dump": 5
+    "bhdr_subtools": {
+      "bhdr_report": 1,
+      "bhdr_dump": 5
     },
     "cache_read": 2794012,
     "cache_creation": 88790,
@@ -2837,7 +2837,7 @@
   },
   {
     "scenario": "r9_transparent_objects_brighten_when_using_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "correct": true,
     "hits": 3,
@@ -2849,8 +2849,8 @@
       "Glob": 2,
       "Read": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 123177,
     "cache_creation": 24984,
@@ -2865,7 +2865,7 @@
   },
   {
     "scenario": "r9_transparent_objects_brighten_when_using_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -2878,8 +2878,8 @@
       "Grep": 2,
       "Bash": 2
     },
-    "gpa_subtools": {
-      "gpa_report": 1
+    "bhdr_subtools": {
+      "bhdr_report": 1
     },
     "cache_read": 223294,
     "cache_creation": 42340,

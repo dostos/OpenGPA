@@ -1,5 +1,5 @@
-#ifndef GPA_PC_TO_DIE_H
-#define GPA_PC_TO_DIE_H
+#ifndef BHDR_PC_TO_DIE_H
+#define BHDR_PC_TO_DIE_H
 
 /* PC → (module, subprogram) index for Phase 2's stack-local scanner.
  *
@@ -19,33 +19,33 @@ extern "C" {
 typedef struct {
     uintptr_t low_pc;    /* inclusive, load-bias adjusted */
     uintptr_t high_pc;   /* exclusive, load-bias adjusted */
-    const GpaDwarfSubprogram* sub; /* borrowed; owner is the Subprograms table */
-} GpaPcRange;
+    const BhdrDwarfSubprogram* sub; /* borrowed; owner is the Subprograms table */
+} BhdrPcRange;
 
 typedef struct {
-    GpaPcRange*  ranges;   /* sorted by low_pc asc */
+    BhdrPcRange*  ranges;   /* sorted by low_pc asc */
     size_t       count;
     size_t       cap;
-} GpaPcIndex;
+} BhdrPcIndex;
 
-void gpa_pc_index_init(GpaPcIndex* idx);
+void bhdr_pc_index_init(BhdrPcIndex* idx);
 
 /* Add every subprogram from `subs` to the index. Safe to call multiple
  * times for multiple modules. Sort before the first query. */
-void gpa_pc_index_add_module(GpaPcIndex* idx, const GpaDwarfSubprograms* subs);
+void bhdr_pc_index_add_module(BhdrPcIndex* idx, const BhdrDwarfSubprograms* subs);
 
 /* Sort ranges in ascending low_pc order. Must be called after all
- * modules are added and before the first gpa_pc_index_lookup(). */
-void gpa_pc_index_sort(GpaPcIndex* idx);
+ * modules are added and before the first bhdr_pc_index_lookup(). */
+void bhdr_pc_index_sort(BhdrPcIndex* idx);
 
 /* Binary-search for the subprogram covering `pc`. Returns NULL if none. */
-const GpaDwarfSubprogram* gpa_pc_index_lookup(const GpaPcIndex* idx,
+const BhdrDwarfSubprogram* bhdr_pc_index_lookup(const BhdrPcIndex* idx,
                                               uintptr_t pc);
 
-void gpa_pc_index_free(GpaPcIndex* idx);
+void bhdr_pc_index_free(BhdrPcIndex* idx);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* GPA_PC_TO_DIE_H */
+#endif /* BHDR_PC_TO_DIE_H */

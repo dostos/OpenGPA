@@ -20,16 +20,16 @@ from gpa.eval.prompts import render_maintainer_prompt
 from gpa.eval.scenario import ScenarioLoader
 
 
-# Per-run patch for the WITH_GPA_ONLY block — replaces the existing tool block
+# Per-run patch for the WITH_BHDR_ONLY block — replaces the existing tool block
 # with a stronger breadcrumb-style workflow that R10's smoke showed agents
 # actually need.
-WITH_GPA_BLOCK_REPLACEMENT = """- OpenGPA live capture. The user report describes a visual symptom but
+WITH_BHDR_BLOCK_REPLACEMENT = """- OpenGPA live capture. The user report describes a visual symptom but
   does NOT name a specific numeric value. OpenGPA has captured the running
   scenario's GL state. The symptom is a numeric value whose origin matters.
 
   **Recommended workflow:**
 
-  1. `curl -s -H "Authorization: Bearer $GPA_TOKEN" http://127.0.0.1:$GPA_PORT/api/v1/frames/current/overview` —
+  1. `curl -s -H "Authorization: Bearer $BHDR_TOKEN" http://127.0.0.1:$BHDR_PORT/api/v1/frames/current/overview` —
      see the captured frame summary.
   2. Look at the captured uniforms / matrices / draw calls / textures for any
      value that looks suspicious or doesn't match what you'd expect for a
@@ -97,7 +97,7 @@ def main() -> None:
         # spans multiple lines, ending right before "# Task".
         new_prompt = re.sub(
             r"- OpenGPA live capture\..*?(?=\n# Task)",
-            WITH_GPA_BLOCK_REPLACEMENT,
+            WITH_BHDR_BLOCK_REPLACEMENT,
             prompt,
             count=1,
             flags=re.DOTALL,

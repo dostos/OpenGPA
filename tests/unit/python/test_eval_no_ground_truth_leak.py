@@ -40,7 +40,7 @@ def test_user_message_excludes_ground_truth_content():
 def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
     """The factory in `build_agent_fn` must pull `bug_description`
     (= User Report) from the scenario object, never `ground_truth_diagnosis`
-    or `gpa_advantage` (the How-OpenGPA-Helps hint).
+    or `bhdr_advantage` (the How-OpenGPA-Helps hint).
     """
     from bhdr.eval.llm_agent import build_agent_fn
 
@@ -48,7 +48,7 @@ def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
     scenario.description = ""  # force fallback to bug_description
     scenario.bug_description = _SENTINEL_USER_REPORT
     scenario.ground_truth_diagnosis = _SENTINEL_GROUND_TRUTH
-    scenario.gpa_advantage = (
+    scenario.bhdr_advantage = (
         "SENTINEL_GT_MARKER: query inspect_drawcall and compare texture IDs."
     )
     scenario.expected_output = "red quad, blue quad"

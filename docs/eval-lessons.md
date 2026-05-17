@@ -39,7 +39,7 @@ framework does not.
 
 ## L3 — GPA as force-multiplier for smaller models
 
-**Round 4 signal:** Haiku+code_only got 2/4; Haiku+with_gpa got 3/4. The
+**Round 4 signal:** Haiku+code_only got 2/4; Haiku+with_bhdr got 3/4. The
 rescue scenario (r10 feedback loop) was one where GPA exposed a texture ID
 simultaneously in the FBO attachment list and a sampler binding. Sonnet
 didn't need GPA because it read five framework files and triangulated from

@@ -4,7 +4,7 @@ Capture backend abstraction layer for OpenGPA. Defines the `FrameProvider` ABC a
 
 ## Key Files
 - `base.py` — `FrameProvider` ABC (interface all backends must implement)
-- `native.py` — `NativeBackend`: wraps the C++ engine via `_gpa_native` bindings
+- `native.py` — `NativeBackend`: wraps the C++ engine via `_bhdr_native` bindings
 - `renderdoc.py` — `RenderDocBackend`: reads `.rdc` capture files offline
 
 ## See Also

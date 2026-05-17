@@ -1,4 +1,4 @@
-"""Tests for the MCP server's ``gpa_report`` / ``gpa_check`` tools.
+"""Tests for the MCP server's ``bhdr_report`` / ``bhdr_check`` tools.
 
 We reuse the same TestClient-backed REST app the rest of the suite uses
 and wrap it in a thin ``APIClient`` stand-in so the MCP dispatcher code
@@ -68,23 +68,23 @@ def api_client(client) -> _TestClientAPI:
 
 
 # --------------------------------------------------------------------------- #
-# gpa_report
+# bhdr_report
 # --------------------------------------------------------------------------- #
 
 
-def test_gpa_report_tool_is_registered():
+def test_bhdr_report_tool_is_registered():
     names = [t["name"] for t in mcp_server.TOOLS]
-    assert "gpa_report" in names
-    assert "gpa_check" in names
-    assert "gpa_report" in mcp_server._DISPATCH
-    assert "gpa_check" in mcp_server._DISPATCH
+    assert "bhdr_report" in names
+    assert "bhdr_check" in names
+    assert "bhdr_report" in mcp_server._DISPATCH
+    assert "bhdr_check" in mcp_server._DISPATCH
 
 
-def test_gpa_report_tool_returns_structured_json(api_client):
+def test_bhdr_report_tool_returns_structured_json(api_client):
     """Default mock frame has a feedback loop (tex 7 bound as sampler AND
     COLOR_ATTACHMENT0) and a NaN uniform. Run the tool and assert the
     report surfaces both findings in a machine-readable shape."""
-    text = mcp_server._tool_gpa_report(api_client, {"frame_id": 1})
+    text = mcp_server._tool_bhdr_report(api_client, {"frame_id": 1})
     payload = json.loads(text)
 
     assert payload["frame"] == 1
@@ -102,7 +102,7 @@ def test_gpa_report_tool_returns_structured_json(api_client):
     assert check_by_name["nan-uniforms"]["status"] == "warn"
 
 
-def test_gpa_report_handles_empty_capture():
+def test_bhdr_report_handles_empty_capture():
     """Frame with zero draw calls: empty-capture check must warn."""
     qe = MagicMock()
     ov = MagicMock()
@@ -118,7 +118,7 @@ def test_gpa_report_handles_empty_capture():
     qe.get_draw_call.side_effect = lambda fid, dcid: None
 
     api = _TestClientAPI(_make_app_client(qe))
-    text = mcp_server._tool_gpa_report(api, {"frame_id": 1})
+    text = mcp_server._tool_bhdr_report(api, {"frame_id": 1})
     payload = json.loads(text)
 
     assert payload["frame"] == 1
@@ -126,15 +126,15 @@ def test_gpa_report_handles_empty_capture():
     assert by_name["empty-capture"]["status"] == "warn"
 
 
-def test_gpa_report_latest_resolves(api_client):
+def test_bhdr_report_latest_resolves(api_client):
     """`latest` should resolve to the current frame via /frames/current/overview."""
-    text = mcp_server._tool_gpa_report(api_client, {"frame_id": "latest"})
+    text = mcp_server._tool_bhdr_report(api_client, {"frame_id": "latest"})
     payload = json.loads(text)
     assert payload["frame"] == 1  # conftest latest_frame_overview → frame_id=1
 
 
-def test_gpa_report_only_filter(api_client):
-    text = mcp_server._tool_gpa_report(
+def test_bhdr_report_only_filter(api_client):
+    text = mcp_server._tool_bhdr_report(
         api_client, {"frame_id": 1, "only": ["empty-capture"]}
     )
     payload = json.loads(text)
@@ -142,8 +142,8 @@ def test_gpa_report_only_filter(api_client):
     assert names == {"empty-capture"}
 
 
-def test_gpa_report_skip_filter(api_client):
-    text = mcp_server._tool_gpa_report(
+def test_bhdr_report_skip_filter(api_client):
+    text = mcp_server._tool_bhdr_report(
         api_client,
         {"frame_id": 1, "skip": ["feedback-loops", "nan-uniforms"]},
     )
@@ -155,12 +155,12 @@ def test_gpa_report_skip_filter(api_client):
 
 
 # --------------------------------------------------------------------------- #
-# gpa_check
+# bhdr_check
 # --------------------------------------------------------------------------- #
 
 
-def test_gpa_check_tool_returns_detail(api_client):
-    text = mcp_server._tool_gpa_check(
+def test_bhdr_check_tool_returns_detail(api_client):
+    text = mcp_server._tool_bhdr_check(
         api_client, {"check_name": "feedback-loops", "frame_id": 1}
     )
     payload = json.loads(text)
@@ -176,8 +176,8 @@ def test_gpa_check_tool_returns_detail(api_client):
     assert first.get("dc_id") == 0
 
 
-def test_gpa_check_unknown_name_returns_error(api_client):
-    text = mcp_server._tool_gpa_check(
+def test_bhdr_check_unknown_name_returns_error(api_client):
+    text = mcp_server._tool_bhdr_check(
         api_client, {"check_name": "does-not-exist", "frame_id": 1}
     )
     payload = json.loads(text)
@@ -188,8 +188,8 @@ def test_gpa_check_unknown_name_returns_error(api_client):
     assert "feedback-loops" in payload["known"]
 
 
-def test_gpa_check_empty_capture_ok(api_client):
-    text = mcp_server._tool_gpa_check(
+def test_bhdr_check_empty_capture_ok(api_client):
+    text = mcp_server._tool_bhdr_check(
         api_client, {"check_name": "empty-capture", "frame_id": 1}
     )
     payload = json.loads(text)
@@ -197,16 +197,16 @@ def test_gpa_check_empty_capture_ok(api_client):
     assert payload["status"] == "ok"
 
 
-def test_gpa_check_missing_check_name_returns_error(api_client):
-    text = mcp_server._tool_gpa_check(api_client, {"frame_id": 1})
+def test_bhdr_check_missing_check_name_returns_error(api_client):
+    text = mcp_server._tool_bhdr_check(api_client, {"frame_id": 1})
     payload = json.loads(text)
     assert "error" in payload
     assert "known" in payload
 
 
-def test_gpa_check_with_dc_id(api_client):
+def test_bhdr_check_with_dc_id(api_client):
     """Passing dc_id should restrict the drill-down to that draw call."""
-    text = mcp_server._tool_gpa_check(
+    text = mcp_server._tool_bhdr_check(
         api_client,
         {"check_name": "feedback-loops", "frame_id": 1, "dc_id": 0},
     )
@@ -229,11 +229,11 @@ class TestNewMcpToolsRegistered:
     """
 
     NEW_TOOLS = [
-        "gpa_check_config",
-        "gpa_explain_draw",
-        "gpa_diff_draws",
-        "gpa_scene_find",
-        "gpa_scene_explain",
+        "bhdr_check_config",
+        "bhdr_explain_draw",
+        "bhdr_diff_draws",
+        "bhdr_scene_find",
+        "bhdr_scene_explain",
     ]
 
     def test_each_tool_listed_and_dispatched(self):
@@ -253,10 +253,10 @@ class TestNewMcpToolsRegistered:
             )
 
 
-def test_gpa_check_config_tool_returns_findings(api_client):
+def test_bhdr_check_config_tool_returns_findings(api_client):
     """Default conftest mock has feedback loop + NaN uniform; the
     rule-engine route should surface at least one config finding."""
-    text = mcp_server._tool_gpa_check_config(
+    text = mcp_server._tool_bhdr_check_config(
         api_client, {"frame_id": 1, "severity": "warn"}
     )
     payload = json.loads(text)
@@ -265,16 +265,16 @@ def test_gpa_check_config_tool_returns_findings(api_client):
     assert isinstance(payload["findings"], list)
 
 
-def test_gpa_check_config_invalid_severity_returns_error(api_client):
-    text = mcp_server._tool_gpa_check_config(
+def test_bhdr_check_config_invalid_severity_returns_error(api_client):
+    text = mcp_server._tool_bhdr_check_config(
         api_client, {"frame_id": 1, "severity": "critical"}
     )
     payload = json.loads(text)
     assert "error" in payload
 
 
-def test_gpa_explain_draw_tool_returns_explanation(api_client):
-    text = mcp_server._tool_gpa_explain_draw(
+def test_bhdr_explain_draw_tool_returns_explanation(api_client):
+    text = mcp_server._tool_bhdr_explain_draw(
         api_client, {"frame_id": 1, "draw_id": 0}
     )
     payload = json.loads(text)
@@ -286,10 +286,10 @@ def test_gpa_explain_draw_tool_returns_explanation(api_client):
     assert "relevant_state" in payload
 
 
-def test_gpa_explain_draw_field_filter(api_client):
+def test_bhdr_explain_draw_field_filter(api_client):
     """``fields`` whitelists the response — only requested top-level keys
     survive (plus the always-on identifying keys)."""
-    text = mcp_server._tool_gpa_explain_draw(
+    text = mcp_server._tool_bhdr_explain_draw(
         api_client,
         {"frame_id": 1, "draw_id": 0, "fields": ["uniforms_set"]},
     )
@@ -302,18 +302,18 @@ def test_gpa_explain_draw_field_filter(api_client):
     assert payload["draw_call_id"] == 0
 
 
-def test_gpa_explain_draw_invalid_draw_id_returns_error(api_client):
-    text = mcp_server._tool_gpa_explain_draw(
+def test_bhdr_explain_draw_invalid_draw_id_returns_error(api_client):
+    text = mcp_server._tool_bhdr_explain_draw(
         api_client, {"frame_id": 1, "draw_id": "not-an-int"}
     )
     payload = json.loads(text)
     assert "error" in payload
 
 
-def test_gpa_diff_draws_tool_state_scope(api_client):
+def test_bhdr_diff_draws_tool_state_scope(api_client):
     """Both draws come from the same mock so the diff is empty — but the
     payload shape must be stable."""
-    text = mcp_server._tool_gpa_diff_draws(
+    text = mcp_server._tool_bhdr_diff_draws(
         api_client, {"frame_id": 1, "a": 0, "b": 0}
     )
     payload = json.loads(text)
@@ -324,25 +324,25 @@ def test_gpa_diff_draws_tool_state_scope(api_client):
     assert "changes" in payload
 
 
-def test_gpa_diff_draws_invalid_scope_returns_error(api_client):
-    text = mcp_server._tool_gpa_diff_draws(
+def test_bhdr_diff_draws_invalid_scope_returns_error(api_client):
+    text = mcp_server._tool_bhdr_diff_draws(
         api_client, {"frame_id": 1, "a": 0, "b": 0, "scope": "bogus"}
     )
     payload = json.loads(text)
     assert "error" in payload
 
 
-def test_gpa_scene_find_no_predicate_returns_error(api_client):
-    text = mcp_server._tool_gpa_scene_find(
+def test_bhdr_scene_find_no_predicate_returns_error(api_client):
+    text = mcp_server._tool_bhdr_scene_find(
         api_client, {"frame_id": 1}
     )
     payload = json.loads(text)
     assert "error" in payload
 
 
-def test_gpa_scene_find_with_predicate(api_client):
+def test_bhdr_scene_find_with_predicate(api_client):
     """Even with no annotations posted the route returns 0 matches (not 4xx)."""
-    text = mcp_server._tool_gpa_scene_find(
+    text = mcp_server._tool_bhdr_scene_find(
         api_client,
         {"frame_id": 1, "predicate": "material:transparent", "limit": 5},
     )
@@ -355,9 +355,9 @@ def test_gpa_scene_find_with_predicate(api_client):
     assert payload["annotation_present"] is False
 
 
-def test_gpa_scene_explain_returns_pixel_trace(api_client):
+def test_bhdr_scene_explain_returns_pixel_trace(api_client):
     """Pixel inside the mock viewport (800x600) → topmost-draw resolution."""
-    text = mcp_server._tool_gpa_scene_explain(
+    text = mcp_server._tool_bhdr_scene_explain(
         api_client, {"frame_id": 1, "x": 400, "y": 300}
     )
     payload = json.loads(text)
@@ -369,8 +369,8 @@ def test_gpa_scene_explain_returns_pixel_trace(api_client):
     assert "draw_call_id" in payload
 
 
-def test_gpa_scene_explain_negative_pixel_returns_error(api_client):
-    text = mcp_server._tool_gpa_scene_explain(
+def test_bhdr_scene_explain_negative_pixel_returns_error(api_client):
+    text = mcp_server._tool_bhdr_scene_explain(
         api_client, {"frame_id": 1, "x": -1, "y": 0}
     )
     payload = json.loads(text)

@@ -4,7 +4,7 @@ Phase 1 MVP: launches Chromium with the WebGL extension against a scenario
 HTML page and polls the engine for captured frames + reflection sources.
 
 Exit codes:
-  0 clean run (frames captured or gpa_done)
+  0 clean run (frames captured or bhdr_done)
   1 generic error (scenario not found, missing index.html, etc.)
   2 no session could be created or discovered
   4 timed out with zero frames captured
@@ -33,14 +33,14 @@ DEFAULT_EXTENSION_DIR = Path("src/shims/webgl/extension")
 
 
 def _resolve_scenario_dir(name: str, *, root: Optional[Path] = None) -> Path:
-    root = root or Path(os.environ.get("GPA_BROWSER_SCENARIO_ROOT",
+    root = root or Path(os.environ.get("BHDR_BROWSER_SCENARIO_ROOT",
                                        str(DEFAULT_SCENARIO_ROOT)))
     return (root / name).resolve()
 
 
 def _resolve_extension_dir() -> Path:
     return Path(os.environ.get(
-        "GPA_BROWSER_EXTENSION_DIR", str(DEFAULT_EXTENSION_DIR)
+        "BHDR_BROWSER_EXTENSION_DIR", str(DEFAULT_EXTENSION_DIR)
     )).resolve()
 
 
@@ -156,7 +156,7 @@ def run(
             f"[gpa] scenario={result.scenario_name} "
             f"frames={result.frames_captured} "
             f"sources={result.sources_captured} "
-            f"gpa_done={result.gpa_done} "
+            f"bhdr_done={result.bhdr_done} "
             f"timed_out={result.timed_out} "
             f"duration={result.duration_sec:.1f}s",
             file=print_stream,

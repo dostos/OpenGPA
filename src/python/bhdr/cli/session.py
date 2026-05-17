@@ -12,7 +12,7 @@ A *session* is a directory on disk holding all state for one engine instance:
 
 Single-session MVP: the most-recently-created session is pointed to by a
 symlink at ``/tmp/gpa-session-current``.  Multi-session use requires setting
-``$GPA_SESSION`` explicitly.
+``$BHDR_SESSION`` explicitly.
 """
 
 from __future__ import annotations
@@ -103,38 +103,38 @@ class Session:
     def env_exports(self) -> str:
         """Return shell-eval-able export statements for connecting a shim.
 
-        Intentionally emits both the GPA_* names which the shim
-        currently reads) and the user-facing ``GPA_*`` names from the spec.
+        Intentionally emits both the BHDR_* names which the shim
+        currently reads) and the user-facing ``BHDR_*`` names from the spec.
         """
         token = self.read_token()
         shm = self.read_shm_name()
         port = self.read_port()
         sock = str(self.socket_path)
         lines = [
-            f"export GPA_SESSION={self.dir}",
-            f"export GPA_SOCKET_PATH={sock}",
-            f"export GPA_SHM_NAME={shm}",
-            f"export GPA_TOKEN={token}",
-            f"export GPA_PORT={port}",
+            f"export BHDR_SESSION={self.dir}",
+            f"export BHDR_SOCKET_PATH={sock}",
+            f"export BHDR_SHM_NAME={shm}",
+            f"export BHDR_TOKEN={token}",
+            f"export BHDR_PORT={port}",
             # Legacy names for the existing shim / launcher.
-            f"export GPA_SOCKET_PATH={sock}",
-            f"export GPA_SHM_NAME={shm}",
-            f"export GPA_TOKEN={token}",
+            f"export BHDR_SOCKET_PATH={sock}",
+            f"export BHDR_SHM_NAME={shm}",
+            f"export BHDR_TOKEN={token}",
         ]
         return "\n".join(lines) + "\n"
 
     def child_env(self, base: Optional[dict] = None) -> dict:
         """Return an env dict to launch a child under this session."""
         env = dict(base if base is not None else os.environ)
-        env["GPA_SESSION"] = str(self.dir)
-        env["GPA_SOCKET_PATH"] = str(self.socket_path)
-        env["GPA_SHM_NAME"] = self.read_shm_name()
-        env["GPA_TOKEN"] = self.read_token()
-        env["GPA_PORT"] = str(self.read_port())
+        env["BHDR_SESSION"] = str(self.dir)
+        env["BHDR_SOCKET_PATH"] = str(self.socket_path)
+        env["BHDR_SHM_NAME"] = self.read_shm_name()
+        env["BHDR_TOKEN"] = self.read_token()
+        env["BHDR_PORT"] = str(self.read_port())
         # Shim-side names (what the C shim actually reads today).
-        env["GPA_SOCKET_PATH"] = str(self.socket_path)
-        env["GPA_SHM_NAME"] = self.read_shm_name()
-        env["GPA_TOKEN"] = self.read_token()
+        env["BHDR_SOCKET_PATH"] = str(self.socket_path)
+        env["BHDR_SHM_NAME"] = self.read_shm_name()
+        env["BHDR_TOKEN"] = self.read_token()
         return env
 
     # ----- Lifecycle ------------------------------------------------------
@@ -201,14 +201,14 @@ class Session:
 
         Resolution order:
           1. ``explicit`` argument (from ``--session``)
-          2. ``$GPA_SESSION`` env var
+          2. ``$BHDR_SESSION`` env var
           3. ``/tmp/gpa-session-current`` symlink
         """
         candidate: Optional[Path] = None
         if explicit is not None:
             candidate = Path(explicit)
-        elif os.environ.get("GPA_SESSION"):
-            candidate = Path(os.environ["GPA_SESSION"])
+        elif os.environ.get("BHDR_SESSION"):
+            candidate = Path(os.environ["BHDR_SESSION"])
         elif os.path.islink(CURRENT_SESSION_LINK) or os.path.exists(CURRENT_SESSION_LINK):
             try:
                 candidate = Path(os.readlink(CURRENT_SESSION_LINK))
@@ -232,7 +232,7 @@ class Session:
         try:
             os.symlink(str(self.dir), CURRENT_SESSION_LINK)
         except OSError:
-            # Non-fatal: session is still usable via --session / $GPA_SESSION.
+            # Non-fatal: session is still usable via --session / $BHDR_SESSION.
             pass
 
     # ----- Teardown -------------------------------------------------------

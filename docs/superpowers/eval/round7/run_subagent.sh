@@ -45,7 +45,7 @@ fi
 OUT=/tmp/eval_round7/${SCENARIO}_${MODE}_${MODEL}.jsonl
 
 export PATH=/home/jingyulee/gh/gla/bin:$PATH
-export GPA_PYTHON=/home/jingyulee/.cache/bazel/_bazel_jingyulee/97df310dd69562eef617a1c4f9fefa27/external/rules_python~~python~python_3_11_x86_64-unknown-linux-gnu/bin/python3.11
+export BHDR_PYTHON=/home/jingyulee/.cache/bazel/_bazel_jingyulee/97df310dd69562eef617a1c4f9fefa27/external/rules_python~~python~python_3_11_x86_64-unknown-linux-gnu/bin/python3.11
 eval "$(gpa env)"
 
 TMPPROMPT=/tmp/eval_round7/${SCENARIO}_${MODE}_${MODEL}.prompt
@@ -69,10 +69,10 @@ cat >> "$TMPPROMPT" <<EOF
 EOF
 fi
 
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
 cat >> "$TMPPROMPT" <<EOF
 - OpenGPA live capture of the rendered frame. A reproduction has been captured as frame #$FRAME_ID.
-  The \`gpa\` CLI is on PATH and the live session env is already set (GPA_TOKEN=$GPA_TOKEN, GPA_PORT=$GPA_PORT).
+  The \`gpa\` CLI is on PATH and the live session env is already set (BHDR_TOKEN=$BHDR_TOKEN, BHDR_PORT=$BHDR_PORT).
   Preferred first call:
     gpa report --frame $FRAME_ID --json
       — runs every diagnostic check in one call (feedback loops, NaN uniforms,
@@ -86,7 +86,7 @@ cat >> "$TMPPROMPT" <<EOF
     gpa dump textures  --frame $FRAME_ID --dc N
     gpa dump pixel     --frame $FRAME_ID --x X --y Y
   Raw REST fallback (equivalent to CLI):
-    curl -sH "Authorization: Bearer \$GPA_TOKEN" http://127.0.0.1:\$GPA_PORT/api/v1/frames/$FRAME_ID/...
+    curl -sH "Authorization: Bearer \$BHDR_TOKEN" http://127.0.0.1:\$BHDR_PORT/api/v1/frames/$FRAME_ID/...
   Prefer ONE \`gpa report\` call over multiple inspect/curl queries.
   Note: the captured app is a minimal C/OpenGL repro of the same bug pattern, not the original framework. Use it as runtime evidence, then cross-reference with the framework source to explain why the original upstream code produces this bug.
 EOF
@@ -104,13 +104,13 @@ When done, output a SINGLE JSON object on the last line (no markdown, no trailin
   "offending_symbol": "<function/file/field name where the bug lives, if identifiable>",
   "confidence": "high|medium|low",
   "framework_files_opened": <integer count of distinct framework source files you read>,
-  "gpa_queries_made": <integer count of distinct GPA CLI or REST queries, 0 in code-only mode>,
+  "bhdr_queries_made": <integer count of distinct GPA CLI or REST queries, 0 in code-only mode>,
   "reasoning": "<2-4 sentence chain explaining how you converged on the diagnosis>"
 }
 EOF
 
 ALLOW="Read Grep Glob"
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   ALLOW="Read Grep Glob Bash(curl:*) Bash(gpa:*)"
 fi
 

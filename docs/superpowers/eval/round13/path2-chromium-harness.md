@@ -5,7 +5,7 @@ added: still blocked. See "Follow-up" section below for the GPU-process
 maps showing chromium loads its **bundled** ANGLE EGL stack, not the
 system libEGL — so eglSwapBuffers interception bypasses chromium for
 the same reason glXSwapBuffers did. Goal: verify chromium-headless under Xvfb
-captures frames via the OpenGPA OpenGL shim (LD_PRELOAD libgpa_gl.so),
+captures frames via the OpenGPA OpenGL shim (LD_PRELOAD libbhdr_gl.so),
 then build a minimal three.js harness for R13 maintainer-framing
 scenarios (r1, r3, r6).*
 
@@ -22,34 +22,34 @@ or any other OpenGL function reach our shim's wrappers.
 This is a structural mismatch, not a missing flag. Path 2 cannot
 unlock R13 scenarios with the current shim design.
 
-Recommended pivot: **Path 3 (programmatic `gpa_emit_frame()` exported
+Recommended pivot: **Path 3 (programmatic `bhdr_emit_frame()` exported
 symbol)** — already implemented in the shim per
 `docs/superpowers/eval/round13/threejs-capture-poc.md`. Drive the
 three.js bug repros from a Node + headless-gl harness that calls
-`gpa_emit_frame()` between renders.
+`bhdr_emit_frame()` between renders.
 
 ## What worked (mechanically)
 
-- A clean engine on port 18084, socket `/tmp/gpa_p2.sock`,
-  shm `/gpa_p2`, started no-auth.
+- A clean engine on port 18084, socket `/tmp/bhdr_p2.sock`,
+  shm `/bhdr_p2`, started no-auth.
 - Xvfb on `:99` (already running on this host).
 - A non-snap chromium (Playwright-managed
   `~/.cache/ms-playwright/chromium-1208/chrome-linux64/chrome`) launched
-  with `LD_PRELOAD=/tmp/libgpa_gl_p2.so`, our copy of the shim binary
-  resolved from `find /home/jingyulee/.cache/bazel -name libgpa_gl.so |
-  head -1` — necessary because `bazel-bin/src/shims/gl/libgpa_gl.so`
+  with `LD_PRELOAD=/tmp/libbhdr_gl_p2.so`, our copy of the shim binary
+  resolved from `find /home/jingyulee/.cache/bazel -name libbhdr_gl.so |
+  head -1` — necessary because `bazel-bin/src/shims/gl/libbhdr_gl.so`
   resolves into a per-cache symlink and the worktree didn't have one
   at the time.
 - A minimal three.js page (`tests/p2-poc/index.html`) drawing a single
   static triangle, with a `setTimeout(window.close, 8000)` exit hatch.
 
 The flag set that **does propagate the shim into chromium's GPU
-process** (verified via `grep libgpa_gl /proc/$GPU/maps`):
+process** (verified via `grep libbhdr_gl /proc/$GPU/maps`):
 
 ```bash
-LD_PRELOAD=/tmp/libgpa_gl_p2.so \
-GPA_SOCKET_PATH=/tmp/gpa_p2.sock \
-GPA_SHM_NAME=/gpa_p2 \
+LD_PRELOAD=/tmp/libbhdr_gl_p2.so \
+BHDR_SOCKET_PATH=/tmp/bhdr_p2.sock \
+BHDR_SHM_NAME=/bhdr_p2 \
 DISPLAY=:99 \
 $CHROME \
   --headless=new \
@@ -91,7 +91,7 @@ WebGL render (PID 1708252 in our trace):
   libs:
     /home/.../chromium-1208/chrome-linux64/libEGL.so
     /home/.../chromium-1208/chrome-linux64/libGLESv2.so
-    /tmp/libgpa_gl_p2.so                          ← our shim is loaded
+    /tmp/libbhdr_gl_p2.so                          ← our shim is loaded
     /usr/lib/x86_64-linux-gnu/libGL.so.1.7.0      ← system desktop GL
     /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
     /usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0
@@ -124,7 +124,7 @@ $ curl -s http://127.0.0.1:18084/api/v1/frames | jq .count
 ### Root cause: ANGLE bypasses LD_PRELOAD via direct dlsym
 
 Built a control probe shim
-(`/tmp/probe4.so` — separate from `libgpa_gl.so`) that exports its own
+(`/tmp/probe4.so` — separate from `libbhdr_gl.so`) that exports its own
 `glXSwapBuffers`, `glClear`, `glDrawArrays`, `glViewport`, etc., and
 prints the call to stderr from a thin wrapper.
 
@@ -217,7 +217,7 @@ $ curl -s http://127.0.0.1:18084/api/v1/frames | jq
 {"frames":[],"count":0}
 
 === Same shim, same engine, same socket: a known-good GL eval bin ===
-$ LD_PRELOAD=$SHIM GPA_SOCKET_PATH=/tmp/gpa_p2.sock GPA_SHM_NAME=/gpa_p2 \
+$ LD_PRELOAD=$SHIM BHDR_SOCKET_PATH=/tmp/bhdr_p2.sock BHDR_SHM_NAME=/bhdr_p2 \
     bazel-bin/tests/eval/r15_godot_mobile_renderer_macos_transparent_flicker
 ... runs, glXSwapBuffers fires ...
 $ curl -s http://127.0.0.1:18084/api/v1/frames | jq .count
@@ -238,9 +238,9 @@ HTML out-of-the-box. What it cannot do, given the ANGLE bypass:
 To unblock for R13 (r1, r3, r6, r13), three concrete options ranked by
 effort:
 
-1. **(recommended) Use Path 3 (`gpa_emit_frame`) with a Node + headless-gl
-   + three.js harness.** The shim already exports `gpa_emit_frame`
-   (verified via `nm -D libgpa_gl.so | grep gpa_emit_frame`). Wire a
+1. **(recommended) Use Path 3 (`bhdr_emit_frame`) with a Node + headless-gl
+   + three.js harness.** The shim already exports `bhdr_emit_frame`
+   (verified via `nm -D libbhdr_gl.so | grep bhdr_emit_frame`). Wire a
    small N-API binding that calls it from JS between three.js
    `renderer.render()` calls, then port each R13 scenario's example
    HTML to a Node ESM module that drives three.js against a
@@ -292,7 +292,7 @@ GPU process maps (filtered) at the moment of attempted capture:
 ```
 /home/jingyulee/.cache/ms-playwright/chromium-1208/chrome-linux64/libEGL.so
 /home/jingyulee/.cache/ms-playwright/chromium-1208/chrome-linux64/libGLESv2.so
-/tmp/libgpa_gl_p2.so
+/tmp/libbhdr_gl_p2.so
 /usr/lib/x86_64-linux-gnu/libGL.so.1.7.0
 /usr/lib/x86_64-linux-gnu/libGLX_mesa.so.0.0.0
 /usr/lib/x86_64-linux-gnu/libGLX.so.0.0.0
@@ -319,7 +319,7 @@ OpenGPA-shim layer.** Reaching real chromium GL calls requires either:
   build with capture hooks). Not LD_PRELOAD scope.
 
 For the three.js eval cluster, **stick with Path 1 (Node + headless-gl +
-gpa_emit_frame)** for what it can capture, and accept that per-draw GL
+bhdr_emit_frame)** for what it can capture, and accept that per-draw GL
 state from headless-gl is similarly invisible (same ANGLE bypass).
 
 ## 2026-04-30 follow-up #2: Vulkan path attempted, blocked by `VK_EXT_headless_surface`
@@ -333,12 +333,12 @@ ANGLE's handle-scoped dlsym trick). Two interlocking issues found.
 
 Vulkan loader debug output:
 ```
-[Vulkan Loader] ERROR: /tmp/gpa-vk-layer/libVkLayer_gpa_capture.so:
+[Vulkan Loader] ERROR: /tmp/gpa-vk-layer/libVkLayer_bhdr_capture.so:
                        undefined symbol: vkGetInstanceProcAddr
-[Vulkan Loader] INFO: Requested layer "VK_LAYER_GPA_capture" failed to load.
+[Vulkan Loader] INFO: Requested layer "VK_LAYER_BHDR_capture" failed to load.
 ```
 
-The layer exported `gpa_vkGetInstanceProcAddr` (prefixed) and
+The layer exported `bhdr_vkGetInstanceProcAddr` (prefixed) and
 `vkNegotiateLoaderLayerInterfaceVersion` correctly, but the manifest
 declared `file_format_version: 1.0.0` + `api_version: 1.0.0`, which
 modern loaders treat as pre-negotiation legacy mode requiring plain
@@ -356,8 +356,8 @@ Fixed in `cc05e19`:
 
 Verified working with `/tmp/vk_present_test`:
 ```
-[OpenGPA-VK] IPC connected: shm=/gpa_vk socket=/tmp/gpa_vk.sock
-LAYER | INFO: Insert instance layer VK_LAYER_GPA_capture
+[OpenGPA-VK] IPC connected: shm=/bhdr_vk socket=/tmp/bhdr_vk.sock
+LAYER | INFO: Insert instance layer VK_LAYER_BHDR_capture
 [vk_test] presented frame 0..3 → engine reports 5 frames, 320x240
 ```
 
@@ -390,7 +390,7 @@ In rough order of effort:
    can advertise instance extensions; our layer would handle
    `vkCreateHeadlessSurfaceEXT` itself (simple stub returning a fake
    surface handle) and the loader validation passes. Probably ~50 LoC
-   in `gpa_layer.c`. **Recommended.**
+   in `bhdr_layer.c`. **Recommended.**
 
 2. **Run chromium in non-headless mode under Xvfb.** Drop
    `--headless=new`; let chromium use real X11 + `VK_KHR_xlib_surface`
@@ -409,6 +409,6 @@ In rough order of effort:
   These can now actually run under our layer.
 - **Chromium-WebGL capture remains blocked** at the system Vulkan
   layer pending workaround #1 (or non-headless mode).
-- Path 1 (Node + headless-gl + `gpa_emit_frame`) is still the only
+- Path 1 (Node + headless-gl + `bhdr_emit_frame`) is still the only
   *currently working* route to capture three.js, and only at frame-
   boundary granularity (per-draw state still hidden by ANGLE bypass).

@@ -70,7 +70,7 @@ def test_find_symbol_cpp_function(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="render_frame", subdir="", lang="",
@@ -91,7 +91,7 @@ def test_find_symbol_cpp_static_function(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="compute_state", subdir="", lang="",
@@ -107,7 +107,7 @@ def test_find_symbol_typescript_function(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="drawFill", subdir="", lang="",
@@ -123,7 +123,7 @@ def test_find_symbol_typescript_class(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="Painter", subdir="", lang="",
@@ -139,7 +139,7 @@ def test_find_symbol_python_def_and_class(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="make_scene", subdir="", lang="",
@@ -163,7 +163,7 @@ def test_find_symbol_godot_func(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="_process", subdir="", lang="",
@@ -178,7 +178,7 @@ def test_find_symbol_no_match(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="nonexistent_symbol_xyz", subdir="", lang="",
@@ -199,7 +199,7 @@ def test_find_symbol_lang_filter(tmp_path, monkeypatch):
     # Add a python file whose body says `Painter` to verify we skip it
     # when lang=ts.
     (root / "src" / "ghost.py").write_text("class Painter:\n    pass\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_find_symbol(
         name="Painter", subdir="", lang="ts",
@@ -233,7 +233,7 @@ def test_grep_with_context_includes_surrounding_lines(tmp_path, monkeypatch):
     (root / "main.c").write_text(
         "line one\nline two\nMATCH HERE\nline four\nline five\n"
     )
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_grep(
         pattern="MATCH", subdir="", glob="",
@@ -257,7 +257,7 @@ def test_grep_default_context_zero_keeps_old_shape(tmp_path, monkeypatch):
     root = tmp_path / "snap"
     root.mkdir()
     (root / "main.c").write_text("line one\nMATCH HERE\nline three\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_grep(
         pattern="MATCH", subdir="", glob="",

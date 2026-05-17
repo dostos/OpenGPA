@@ -16,6 +16,6 @@ gpa source read PATH           # read buggy app source
 gpa upstream read PATH         # read upstream snapshot
 ```
 
-GPA_FRAME_ID is set by the harness, so --frame is automatic.
+BHDR_FRAME_ID is set by the harness, so --frame is automatic.
 
 Do not run pause/resume/step, annotations add, metadata set, or sources set unless asked.

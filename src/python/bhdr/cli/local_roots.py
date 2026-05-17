@@ -1,7 +1,7 @@
 """Env-rooted path resolution shared by ``gpa source`` and ``gpa upstream``.
 
 Both commands operate inside a per-scenario root directory communicated
-via an env var (``GPA_SOURCE_ROOT``, ``GPA_UPSTREAM_ROOT``). All path
+via an env var (``BHDR_SOURCE_ROOT``, ``BHDR_UPSTREAM_ROOT``). All path
 inputs are validated against that root before any filesystem access:
 
 - absolute paths must resolve inside the root

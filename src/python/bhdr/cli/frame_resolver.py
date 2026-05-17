@@ -2,7 +2,7 @@
 
 Precedence:
 1. Explicit --frame value (int or 'latest')
-2. ``GPA_FRAME_ID`` env var (when --frame omitted)
+2. ``BHDR_FRAME_ID`` env var (when --frame omitted)
 3. REST ``current`` overview
 
 Explicit 'latest' deliberately bypasses the env var: when an agent
@@ -26,7 +26,7 @@ def resolve_frame(
         if explicit == "latest":
             return _fetch_current(client)
         return int(explicit)
-    env = os.environ.get("GPA_FRAME_ID", "").strip()
+    env = os.environ.get("BHDR_FRAME_ID", "").strip()
     if env:
         return int(env)
     return _fetch_current(client)

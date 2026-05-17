@@ -150,10 +150,10 @@ class ReportGenerator:
         # Token reduction: with_gla vs code_only
         token_reduction: Optional[float] = None
         if "with_gla" in overall and "code_only" in overall:
-            gpa_tok = overall["with_gla"].get("avg_total_tokens") or 0
+            bhdr_tok = overall["with_gla"].get("avg_total_tokens") or 0
             base_tok = overall["code_only"].get("avg_total_tokens") or 0
             if base_tok:
-                token_reduction = (base_tok - gpa_tok) / base_tok
+                token_reduction = (base_tok - bhdr_tok) / base_tok
 
         observed_stable = sorted(
             sid for sid in by_scenario if sid in stable

@@ -57,11 +57,11 @@ intercepts these calls *above* our layer in the chain.
 
 The investigation found and fixed several layer bugs:
 
-1. **`vkBeginCommandBuffer` was never wrapped.** `gpa_capture_cmd_buf_begin` was defined in `vk_capture.c` but never called — so `gpa_capture_record_draw`'s lookup against `g_cmd_table` always returned NULL, silently dropping every recorded draw. Wrapped now.
+1. **`vkBeginCommandBuffer` was never wrapped.** `bhdr_capture_cmd_buf_begin` was defined in `vk_capture.c` but never called — so `bhdr_capture_record_draw`'s lookup against `g_cmd_table` always returned NULL, silently dropping every recorded draw. Wrapped now.
 
-2. **`vkQueueSubmit2` (Vulkan 1.3) was unwrapped.** Modern wgpu uses this exclusively when available; the pre-1.3 `vkQueueSubmit` codepath was the only hook. Added `gpa_QueueSubmit2KHR` (handles both the core and KHR-aliased entrypoints).
+2. **`vkQueueSubmit2` (Vulkan 1.3) was unwrapped.** Modern wgpu uses this exclusively when available; the pre-1.3 `vkQueueSubmit` codepath was the only hook. Added `bhdr_QueueSubmit2KHR` (handles both the core and KHR-aliased entrypoints).
 
-3. **Indirect draws were unwrapped.** Added `gpa_CmdDraw{,Indexed}Indirect{,Count}` wrappers + KHR/AMD aliases. None of these fire on NVIDIA in this run, but they're real product-needed hooks.
+3. **Indirect draws were unwrapped.** Added `bhdr_CmdDraw{,Indexed}Indirect{,Count}` wrappers + KHR/AMD aliases. None of these fire on NVIDIA in this run, but they're real product-needed hooks.
 
 4. **`vkCmdBeginRendering` (Vulkan 1.3 dynamic rendering) was unwrapped.** Added.
 
@@ -69,7 +69,7 @@ The investigation found and fixed several layer bugs:
 
 6. **GL-format draw call serialisation.** The Vulkan layer wrote a 44-byte-per-call format; the engine parser expected ~96 bytes/call (GL fields). Now serialises in GL-compatible shape with Vulkan's data in matching slots.
 
-7. **`gpa_CmdExecuteCommands` was unwrapped.** Added a wrapper that harvests draws from the secondary cmd buffers it executes, since those draws belong to the executing primary's frame.
+7. **`bhdr_CmdExecuteCommands` was unwrapped.** Added a wrapper that harvests draws from the secondary cmd buffers it executes, since those draws belong to the executing primary's frame.
 
 These are real product improvements the layer needed regardless of
 the agent eval.

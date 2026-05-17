@@ -40,8 +40,8 @@ def env_fixtures(tmp_path, monkeypatch):
     """Redirect scenario root + extension dir at the tmp copy."""
     scen = _make_scenario(tmp_path)
     ext = _make_extension(tmp_path)
-    monkeypatch.setenv("GPA_BROWSER_SCENARIO_ROOT", str(scen.parent))
-    monkeypatch.setenv("GPA_BROWSER_EXTENSION_DIR", str(ext))
+    monkeypatch.setenv("BHDR_BROWSER_SCENARIO_ROOT", str(scen.parent))
+    monkeypatch.setenv("BHDR_BROWSER_EXTENSION_DIR", str(ext))
     return types_ns(scenario_dir=scen, extension_dir=ext, tmp_path=tmp_path)
 
 
@@ -60,8 +60,8 @@ def types_ns(**kw):
 
 
 def test_run_browser_scenario_not_found(tmp_path, monkeypatch):
-    monkeypatch.setenv("GPA_BROWSER_SCENARIO_ROOT", str(tmp_path / "empty"))
-    monkeypatch.setenv("GPA_BROWSER_EXTENSION_DIR", str(_make_extension(tmp_path)))
+    monkeypatch.setenv("BHDR_BROWSER_SCENARIO_ROOT", str(tmp_path / "empty"))
+    monkeypatch.setenv("BHDR_BROWSER_EXTENSION_DIR", str(_make_extension(tmp_path)))
 
     buf = io.StringIO()
     rc = run_browser_cmd.run(scenario="nonexistent", print_stream=buf)
@@ -71,8 +71,8 @@ def test_run_browser_scenario_not_found(tmp_path, monkeypatch):
 
 def test_run_browser_no_index_html(tmp_path, monkeypatch):
     scen = _make_scenario(tmp_path, "nopage", with_index=False)
-    monkeypatch.setenv("GPA_BROWSER_SCENARIO_ROOT", str(scen.parent))
-    monkeypatch.setenv("GPA_BROWSER_EXTENSION_DIR", str(_make_extension(tmp_path)))
+    monkeypatch.setenv("BHDR_BROWSER_SCENARIO_ROOT", str(scen.parent))
+    monkeypatch.setenv("BHDR_BROWSER_EXTENSION_DIR", str(_make_extension(tmp_path)))
 
     buf = io.StringIO()
     rc = run_browser_cmd.run(scenario="nopage", print_stream=buf)
@@ -116,7 +116,7 @@ def test_run_browser_invokes_runner(env_fixtures, tmp_path):
         duration_sec=0.5,
         static_port=54321,
         url="http://127.0.0.1:54321/r21_stub/index.html",
-        gpa_done=True,
+        bhdr_done=True,
     )
 
     buf = io.StringIO()
@@ -151,7 +151,7 @@ def test_run_browser_timeout_zero_frames_exits_4(env_fixtures, tmp_path):
         duration_sec=30.0,
         static_port=11111,
         url="",
-        gpa_done=False,
+        bhdr_done=False,
     )
 
     buf = io.StringIO()

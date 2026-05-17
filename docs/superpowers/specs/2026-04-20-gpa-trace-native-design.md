@@ -24,7 +24,7 @@ At each glUniform*/glBindTexture call, walk the stack with libunwind. For each f
 
 ## Goals
 
-- **No user instrumentation required** (complement the `gpa_trace_mark()` SDK direction, which is opt-in).
+- **No user instrumentation required** (complement the `bhdr_trace_mark()` SDK direction, which is opt-in).
 - **Pay for debug info, but not for modified code.** App just needs to be compiled with `-g` (most projects do by default in dev builds).
 - **Same POST shape + same query surface as JS scanner.** REST / CLI / MCP are unchanged.
 - **Sub-2ms overhead per hooked call.** Otherwise agents see distorted telemetry.
@@ -95,9 +95,9 @@ Stack walking in Phase 2: **libunwind** (also `apt install libunwind-dev`). No h
 
 ### Init-time scan (Phase 1)
 
-Add a `gpa_native_trace_init()` called at the end of `gpa_init()` in `src/shims/gl/gpa_init.c`:
+Add a `bhdr_native_trace_init()` called at the end of `bhdr_init()` in `src/shims/gl/bhdr_init.c`:
 
-1. Gated on env `GPA_TRACE_MODE` being set (`gated|lazy|eager`)
+1. Gated on env `BHDR_TRACE_MODE` being set (`gated|lazy|eager`)
 2. `dl_iterate_phdr()` → for each module: open, mmap, parse DWARF → accumulate globals
 3. Filter by path: exclude system libs (`ld-linux`, `libc`, `libm`, `libgl`, etc.); exclude any paths matching the existing secret regex
 4. Store `{path, address, size, dwarf_type_encoding}` in a shim-scoped global table (thread-safe read via `pthread_rwlock`)
@@ -120,10 +120,10 @@ Budget guards: 2 ms per call; truncate + `"truncated": true` flag if exceeded; s
 
 Extend existing env vars:
 
-- `GPA_TRACE_MODE=gated|lazy|eager|off` (existing; `off` disables)
-- `GPA_TRACE_NATIVE=1` — opt-in master switch (off by default for perf safety)
-- `GPA_TRACE_NATIVE_ROOTS=module1.so,module2` — restrict scan to these modules
-- `GPA_TRACE_NATIVE_EXCLUDE=/usr/lib/**` — glob paths to skip
+- `BHDR_TRACE_MODE=gated|lazy|eager|off` (existing; `off` disables)
+- `BHDR_TRACE_NATIVE=1` — opt-in master switch (off by default for perf safety)
+- `BHDR_TRACE_NATIVE_ROOTS=module1.so,module2` — restrict scan to these modules
+- `BHDR_TRACE_NATIVE_EXCLUDE=/usr/lib/**` — glob paths to skip
 
 ## Query surface
 
@@ -139,7 +139,7 @@ gpa trace value 16.58                            # all origins (default)
 
 Files to create:
 
-- `src/shims/gl/native_trace.h` — public API (`gpa_native_trace_init`, `gpa_native_trace_scan`, `gpa_native_trace_shutdown`)
+- `src/shims/gl/native_trace.h` — public API (`bhdr_native_trace_init`, `bhdr_native_trace_scan`, `bhdr_native_trace_shutdown`)
 - `src/shims/gl/native_trace.c` — `dl_iterate_phdr` + DWARF parser
 - `src/shims/gl/dwarf_parser.c` — hand-rolled DWARF walker (if going option B)
 - `src/shims/gl/dwarf_parser.h`
@@ -147,8 +147,8 @@ Files to create:
 - `tests/unit/shims/test_native_trace.c` — unit tests against a fixture binary built with `-g`
 
 Integration:
-- `src/shims/gl/gl_wrappers.c` — on `glUniform*` + `glBindTexture` (gated path), call `gpa_native_trace_scan(frame_id, dc_id)` which does the scan + POST
-- `src/shims/gl/gpa_init.c` — call `gpa_native_trace_init()` at end of `gpa_init()`
+- `src/shims/gl/gl_wrappers.c` — on `glUniform*` + `glBindTexture` (gated path), call `bhdr_native_trace_scan(frame_id, dc_id)` which does the scan + POST
+- `src/shims/gl/bhdr_init.c` — call `bhdr_native_trace_init()` at end of `bhdr_init()`
 
 Tests to add:
 
@@ -166,7 +166,7 @@ Files to create:
 - `src/shims/gl/dwarf_locations.c` — DWARF expression interpreter (DW_OP_reg*, DW_OP_fbreg, DW_OP_addr, DW_OP_plus_uconst, DW_OP_piece; bail on unsupported)
 
 Integration:
-- `src/shims/gl/gl_wrappers.c` — on gated path, ALSO call `gpa_native_trace_scan_stack()` which walks frames and POSTs `origin: "dwarf-locals"` payload
+- `src/shims/gl/gl_wrappers.c` — on gated path, ALSO call `bhdr_native_trace_scan_stack()` which walks frames and POSTs `origin: "dwarf-locals"` payload
 
 Tests: fixture binary with function-local variables at known stack offsets; assert extraction works for each calling convention we care about (x86-64 System V primary target).
 
@@ -183,7 +183,7 @@ Tests: fixture binary with function-local variables at known stack offsets; asse
 
 After Phase 1 ships:
 
-- Running `gpa run -- bazel-bin/tests/eval/<scenario>` with `GPA_TRACE_NATIVE=1` produces `origin: "dwarf-globals"` entries in `TraceStore`
+- Running `gpa run -- bazel-bin/tests/eval/<scenario>` with `BHDR_TRACE_NATIVE=1` produces `origin: "dwarf-globals"` entries in `TraceStore`
 - `gpa trace value <literal>` returns candidates sourced from native globals
 - Overhead on a typical frame ≤ 5% relative to trace disabled
 - Full Python + C++ test suites stay green

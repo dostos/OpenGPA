@@ -46,7 +46,7 @@
   },
   {
     "scenario": "r11_three_js_effectcomposer_browser_window_r",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -68,7 +68,7 @@
   },
   {
     "scenario": "r11_three_js_effectcomposer_browser_window_r",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -137,7 +137,7 @@
   },
   {
     "scenario": "r12_omniscale_cleanedge_scaling_issues",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -162,7 +162,7 @@
   },
   {
     "scenario": "r12_omniscale_cleanedge_scaling_issues",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -229,7 +229,7 @@
   },
   {
     "scenario": "r15_post_effects_and_transparent_background_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -251,7 +251,7 @@
   },
   {
     "scenario": "r15_post_effects_and_transparent_background_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -318,7 +318,7 @@
   },
   {
     "scenario": "r15_unrealbloompass_produces_no_visible_outp",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -341,7 +341,7 @@
   },
   {
     "scenario": "r15_unrealbloompass_produces_no_visible_outp",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -408,7 +408,7 @@
   },
   {
     "scenario": "r20_three_js_meshdepthmaterial_depth_map_not",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -431,7 +431,7 @@
   },
   {
     "scenario": "r20_three_js_meshdepthmaterial_depth_map_not",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -496,7 +496,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -519,7 +519,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -588,7 +588,7 @@
   },
   {
     "scenario": "r23_using_multiple_alphamask_s_with_renderma",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -611,7 +611,7 @@
   },
   {
     "scenario": "r23_using_multiple_alphamask_s_with_renderma",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -678,7 +678,7 @@
   },
   {
     "scenario": "r24_artifacts_when_rendering_both_sides_of_a",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -701,7 +701,7 @@
   },
   {
     "scenario": "r24_artifacts_when_rendering_both_sides_of_a",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -766,7 +766,7 @@
   },
   {
     "scenario": "r24_enabling_autogeneratemipmaps_breaks_filt",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -788,7 +788,7 @@
   },
   {
     "scenario": "r24_enabling_autogeneratemipmaps_breaks_filt",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -858,7 +858,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -881,7 +881,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -948,7 +948,7 @@
   },
   {
     "scenario": "r25_three_js_transparency_disparition",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -971,7 +971,7 @@
   },
   {
     "scenario": "r25_three_js_transparency_disparition",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1039,7 +1039,7 @@
   },
   {
     "scenario": "r26_incorrect_behavior_in_colormatrixfilter_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1062,7 +1062,7 @@
   },
   {
     "scenario": "r26_incorrect_behavior_in_colormatrixfilter_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1129,7 +1129,7 @@
   },
   {
     "scenario": "r27_bug_black_squares_appear_when_rendering_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -1152,7 +1152,7 @@
   },
   {
     "scenario": "r27_bug_black_squares_appear_when_rendering_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 1,
@@ -1226,7 +1226,7 @@
   },
   {
     "scenario": "r28_bug_in_rendering_glb_models",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -1248,7 +1248,7 @@
   },
   {
     "scenario": "r28_bug_in_rendering_glb_models",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 0,
@@ -1317,7 +1317,7 @@
   },
   {
     "scenario": "r29_add_an_animated_icon_to_the_map_not_work",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -1340,7 +1340,7 @@
   },
   {
     "scenario": "r29_add_an_animated_icon_to_the_map_not_work",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 0,
@@ -1405,7 +1405,7 @@
   },
   {
     "scenario": "r30_incomplete_lines_problem_with_mixing_lay",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -1428,7 +1428,7 @@
   },
   {
     "scenario": "r30_incomplete_lines_problem_with_mixing_lay",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1494,7 +1494,7 @@
   },
   {
     "scenario": "r32_v7_issue_with_custom_points_shader_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1517,7 +1517,7 @@
   },
   {
     "scenario": "r32_v7_issue_with_custom_points_shader_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 1,
@@ -1584,7 +1584,7 @@
   },
   {
     "scenario": "r33_latest_build_6_38_1_got_glitchy_opacity_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -1607,7 +1607,7 @@
   },
   {
     "scenario": "r33_latest_build_6_38_1_got_glitchy_opacity_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -1679,7 +1679,7 @@
   },
   {
     "scenario": "r34_depth_buffer_issue_when_using_depthoffie",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -1702,7 +1702,7 @@
   },
   {
     "scenario": "r34_depth_buffer_issue_when_using_depthoffie",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": false,
     "hits": 1,
@@ -1770,7 +1770,7 @@
   },
   {
     "scenario": "r3_material_shines_through_when_zooming_out",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1793,7 +1793,7 @@
   },
   {
     "scenario": "r3_material_shines_through_when_zooming_out",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,

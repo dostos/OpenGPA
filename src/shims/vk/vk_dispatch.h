@@ -23,7 +23,7 @@ extern "C" {
  * Instance dispatch table
  * Subset of instance-level functions we intercept or need to call down.
  * ---------------------------------------------------------------------- */
-typedef struct GpaInstanceDispatch {
+typedef struct BhdrInstanceDispatch {
     /* Dispatch key — must be first: pointer to the loader's dispatch table */
     void *dispatch_key;
 
@@ -51,13 +51,13 @@ typedef struct GpaInstanceDispatch {
     PFN_vkGetPhysicalDeviceSurfaceFormatsKHR      GetPhysicalDeviceSurfaceFormatsKHR;
     PFN_vkGetPhysicalDeviceSurfacePresentModesKHR GetPhysicalDeviceSurfacePresentModesKHR;
     PFN_vkGetPhysicalDeviceMemoryProperties       GetPhysicalDeviceMemoryProperties;
-} GpaInstanceDispatch;
+} BhdrInstanceDispatch;
 
 /* -------------------------------------------------------------------------
  * Device dispatch table
  * Subset of device-level functions we intercept or need to call down.
  * ---------------------------------------------------------------------- */
-typedef struct GpaDeviceDispatch {
+typedef struct BhdrDeviceDispatch {
     /* Dispatch key */
     void *dispatch_key;
 
@@ -121,7 +121,7 @@ typedef struct GpaDeviceDispatch {
      * is a different family (eg. NVIDIA's compute-only queue). */
     uint32_t                      readback_queue_family;
     PFN_vkGetDeviceQueue          GetDeviceQueue;
-} GpaDeviceDispatch;
+} BhdrDeviceDispatch;
 
 /* -------------------------------------------------------------------------
  * Registry: store/retrieve dispatch tables keyed by the dispatch pointer.
@@ -129,22 +129,22 @@ typedef struct GpaDeviceDispatch {
  * ---------------------------------------------------------------------- */
 
 /* Extract the dispatch key from any dispatchable Vulkan handle */
-static inline void *gpa_dispatch_key(const void *dispatchable_handle) {
+static inline void *bhdr_dispatch_key(const void *dispatchable_handle) {
     /* The loader places a pointer to its internal dispatch table as the first
      * word of every dispatchable object. */
     return *(void *const *)dispatchable_handle;
 }
 
-void gpa_instance_dispatch_store(VkInstance instance, GpaInstanceDispatch *disp);
-GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance);
-void gpa_instance_dispatch_remove(VkInstance instance);
+void bhdr_instance_dispatch_store(VkInstance instance, BhdrInstanceDispatch *disp);
+BhdrInstanceDispatch *bhdr_instance_dispatch_get(VkInstance instance);
+void bhdr_instance_dispatch_remove(VkInstance instance);
 
-void gpa_device_dispatch_store(VkDevice device, GpaDeviceDispatch *disp);
-GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device);
-void gpa_device_dispatch_remove(VkDevice device);
+void bhdr_device_dispatch_store(VkDevice device, BhdrDeviceDispatch *disp);
+BhdrDeviceDispatch *bhdr_device_dispatch_get(VkDevice device);
+void bhdr_device_dispatch_remove(VkDevice device);
 
-void gpa_dispatch_init(void);
-void gpa_dispatch_cleanup(void);
+void bhdr_dispatch_init(void);
+void bhdr_dispatch_cleanup(void);
 
 #ifdef __cplusplus
 }

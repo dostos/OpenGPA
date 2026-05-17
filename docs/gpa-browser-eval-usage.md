@@ -28,8 +28,8 @@ Xvfb :99 -screen 0 800x600x24 &
 export DISPLAY=:99
 
 # Invoke. `bin/gpa` auto-detects the bazel-built Python 3.11 interpreter
-# and prepends `bazel-bin/src/bindings` to PYTHONPATH so `_gpa_core`
-# resolves without manual env-var plumbing. Set $GPA_PYTHON to override.
+# and prepends `bazel-bin/src/bindings` to PYTHONPATH so `_bhdr_core`
+# resolves without manual env-var plumbing. Set $BHDR_PYTHON to override.
 bin/gpa run-browser --scenario r21_tile_id_overflow --timeout 10
 ```
 
@@ -37,7 +37,7 @@ Expected output:
 
 ```
 [gpa] session /tmp/gpa-session-...
-[gpa] scenario=r21_tile_id_overflow frames=1 sources=1 gpa_done=True timed_out=False duration=1.1s
+[gpa] scenario=r21_tile_id_overflow frames=1 sources=1 bhdr_done=True timed_out=False duration=1.1s
 ```
 
 Exit code 0. If Chromium isn't installed, exit 5 with a clear message.
@@ -57,7 +57,7 @@ Timeout with zero frames → exit 4.
 
 | Code | Meaning |
 |------|---------|
-| 0    | Clean run — frames captured and/or `__gpa_done` sentinel set |
+| 0    | Clean run — frames captured and/or `__bhdr_done` sentinel set |
 | 1    | Generic error (scenario missing, no index.html, engine failure) |
 | 2    | `--session DIR` doesn't point at a valid session |
 | 4    | Timed out with zero frames captured |

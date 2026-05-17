@@ -16,7 +16,7 @@ def _make_root(tmp_path: Path) -> Path:
 
 def test_upstream_read_returns_json(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_read(path="main.c", max_bytes=200000, print_stream=buf)
     assert rc == 0
@@ -28,7 +28,7 @@ def test_upstream_read_returns_json(tmp_path, monkeypatch):
 
 def test_upstream_read_max_bytes(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_read(path="main.c", max_bytes=5, print_stream=buf)
     assert rc == 0
@@ -39,7 +39,7 @@ def test_upstream_read_max_bytes(tmp_path, monkeypatch):
 
 def test_upstream_read_traversal_rejected(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     err = io.StringIO()
     rc = upstream_cmd.run_read(
@@ -52,7 +52,7 @@ def test_upstream_read_traversal_rejected(tmp_path, monkeypatch):
 
 def test_upstream_grep_finds_pattern(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=50, print_stream=buf,
@@ -66,7 +66,7 @@ def test_upstream_grep_finds_pattern(tmp_path, monkeypatch):
 
 def test_upstream_grep_max_matches(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=1, print_stream=buf,
@@ -78,7 +78,7 @@ def test_upstream_grep_max_matches(tmp_path, monkeypatch):
 
 
 def test_upstream_no_root_set(monkeypatch):
-    monkeypatch.delenv("GPA_UPSTREAM_ROOT", raising=False)
+    monkeypatch.delenv("BHDR_UPSTREAM_ROOT", raising=False)
     buf = io.StringIO()
     err = io.StringIO()
     rc = upstream_cmd.run_read(
@@ -86,7 +86,7 @@ def test_upstream_no_root_set(monkeypatch):
         print_stream=buf, err_stream=err,
     )
     assert rc == 2
-    assert "GPA_UPSTREAM_ROOT" in err.getvalue()
+    assert "BHDR_UPSTREAM_ROOT" in err.getvalue()
 
 
 def test_upstream_list_returns_entries(tmp_path, monkeypatch):
@@ -95,7 +95,7 @@ def test_upstream_list_returns_entries(tmp_path, monkeypatch):
     (root / "src" / "a.c").write_text("")
     (root / "src" / "b.c").write_text("")
     (root / "src" / "lib").mkdir()
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_list(subdir="src", print_stream=buf)
     assert rc == 0
@@ -109,7 +109,7 @@ def test_upstream_list_empty_subdir(tmp_path, monkeypatch):
     root.mkdir()
     (root / "README").write_text("hi")
     (root / "src").mkdir()
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_list(subdir="", print_stream=buf)
     assert rc == 0
@@ -140,7 +140,7 @@ def test_upstream_outline_lists_functions(tmp_path, monkeypatch):
         "}\n"
         "struct Bar {};\n"
     )
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_outline(path="src/a.cpp", max_definitions=500,
                                   print_stream=buf)
@@ -169,7 +169,7 @@ def test_upstream_outline_filters_control_flow_keywords(tmp_path, monkeypatch):
         "    }\n"
         "}\n"
     )
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_outline(path="src/x.cpp", max_definitions=500,
                                   print_stream=buf)
@@ -190,7 +190,7 @@ def test_upstream_outline_unknown_extension_falls_back_gracefully(tmp_path, monk
     have to retry with `read`."""
     root = tmp_path / "up"; root.mkdir()
     (root / "README.md").write_text("# hello\nworld\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_outline(path="README.md", max_definitions=500,
                                   print_stream=buf)
@@ -215,7 +215,7 @@ def test_upstream_outline_python(tmp_path, monkeypatch):
         "def standalone():\n"
         "    return 1\n"
     )
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_outline(path="lib.py", max_definitions=500,
                                   print_stream=buf)
@@ -232,7 +232,7 @@ def test_upstream_outline_truncates_at_cap(tmp_path, monkeypatch):
     root = tmp_path / "up"; root.mkdir()
     body = "\n".join(f"def f{i}(): pass" for i in range(20))
     (root / "many.py").write_text(body + "\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_outline(path="many.py", max_definitions=5,
                                   print_stream=buf)
@@ -247,7 +247,7 @@ def test_upstream_read_with_line_range(tmp_path, monkeypatch):
     root = tmp_path / "up"; root.mkdir()
     text = "".join(f"line {i}\n" for i in range(1, 11))  # 10 lines
     (root / "f.c").write_text(text)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_read(path="f.c", max_bytes=512_000, lines="3..5",
                                print_stream=buf)
@@ -264,7 +264,7 @@ def test_upstream_read_with_single_line(tmp_path, monkeypatch):
     root = tmp_path / "up"; root.mkdir()
     text = "".join(f"line {i}\n" for i in range(1, 11))
     (root / "f.c").write_text(text)
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_read(path="f.c", max_bytes=512_000, lines="5",
                                print_stream=buf)
@@ -278,7 +278,7 @@ def test_upstream_read_with_single_line(tmp_path, monkeypatch):
 def test_upstream_read_invalid_line_spec_returns_error(tmp_path, monkeypatch):
     root = tmp_path / "up"; root.mkdir()
     (root / "f.c").write_text("hi\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     err = io.StringIO()
     rc = upstream_cmd.run_read(path="f.c", max_bytes=1000, lines="bogus",
                                print_stream=io.StringIO(), err_stream=err)
@@ -290,7 +290,7 @@ def test_upstream_read_no_line_range_returns_full_file(tmp_path, monkeypatch):
     """Backwards-compat: when --lines is empty, return the whole file."""
     root = tmp_path / "up"; root.mkdir()
     (root / "f.c").write_text("alpha\nbeta\n")
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_read(path="f.c", max_bytes=1000, lines="",
                                print_stream=buf)

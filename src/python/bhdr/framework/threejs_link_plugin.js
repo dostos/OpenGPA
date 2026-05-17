@@ -15,12 +15,12 @@
 //     installGpaLinkPlugin({
 //       scene, renderer,
 //       endpoint: 'http://localhost:18080',
-//       token:    window.GPA_AUTH_TOKEN,
+//       token:    window.BHDR_AUTH_TOKEN,
 //     });
 //     renderer.render(scene, camera); // plugin tags + POSTs automatically
 //   </script>
 //
-// Reads `window.GPA_AUTH_TOKEN` and `window.GPA_FRAME_ID` (if set);
+// Reads `window.BHDR_AUTH_TOKEN` and `window.BHDR_FRAME_ID` (if set);
 // falls back to the values passed in `options`. Never blocks the render
 // loop — POST is deferred to requestAnimationFrame; failures are
 // swallowed so a misconfigured engine never breaks the host page.
@@ -121,18 +121,18 @@ export function installGpaLinkPlugin(options) {
   }
   const endpoint =
     options.endpoint ||
-    (typeof window !== "undefined" && window.GPA_ENDPOINT) ||
+    (typeof window !== "undefined" && window.BHDR_ENDPOINT) ||
     "http://localhost:18080";
   const token =
     options.token ||
-    (typeof window !== "undefined" && window.GPA_AUTH_TOKEN) ||
+    (typeof window !== "undefined" && window.BHDR_AUTH_TOKEN) ||
     "";
 
   let frameCounter =
     typeof options.frameId === "number"
       ? options.frameId
-      : (typeof window !== "undefined" && typeof window.GPA_FRAME_ID === "number"
-         ? window.GPA_FRAME_ID
+      : (typeof window !== "undefined" && typeof window.BHDR_FRAME_ID === "number"
+         ? window.BHDR_FRAME_ID
          : 0);
 
   const gl = (renderer.getContext && renderer.getContext()) || null;

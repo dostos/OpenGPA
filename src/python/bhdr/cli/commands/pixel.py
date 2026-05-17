@@ -48,7 +48,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="pixel_cmd", required=True)
@@ -56,14 +56,14 @@ def add_subparser(subparsers) -> None:
     # ---- get ----
     p_get = sub.add_parser("get", help="Read raw pixel colour (JSON)")
     p_get.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_get.add_argument("--x", type=int, required=True, help="Pixel x coordinate")
     p_get.add_argument("--y", type=int, required=True, help="Pixel y coordinate")
 
     # ---- explain ----
     p_explain = sub.add_parser("explain", help="Pixel→draw→node trace (JSON)")
     p_explain.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_explain.add_argument("--x", type=int, required=True, help="Pixel x coordinate")
     p_explain.add_argument("--y", type=int, required=True, help="Pixel y coordinate")
 

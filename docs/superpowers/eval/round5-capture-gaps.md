@@ -16,7 +16,7 @@ red-herring runtime evidence, and capture-time scenario bugs.
 | 2 | No invariant/NaN annotation on framebuffer pixels | r27 three.js anisotropic black squares | High — active source of confusion (GPA *regressed* accuracy vs code-only on both models) | Add `/frames/<id>/framebuffer/nan-mask` or `.../inf-mask` returning a bitmask image of pixels whose computed-vs-expected output diverged. Today the agent sees "patches of black" and correctly hypothesises NaN, but cannot distinguish `0/0` (D_GGX distribution) from `saturate()` removal (V_GGX visibility) — both would produce the same pixel pattern. Without a way to trace *which* instruction produced the NaN, GPA becomes a misleading signal. A related fix: shader-step debug with per-instruction value capture for a sample pixel. |
 | 3 | Symbol/layer placement state never surfaces in the GL stream | r29 mapbox two-symbol-layers | Medium — only 1/2 code-only cells succeeded; GPA cannot run (scenario crashed) | Tier 3 metadata from a mapbox-gl-js plugin (POST `placement.placements` map and layer→source attribution per frame). Same fix-shape as R4 gap #1; now confirmed to recur in a second independent Mapbox scenario. |
 | 4 | GBuffer attachment ↔ fragment output declaration mismatch not flagged | r32 three.js points-material MRT | Medium — sonnet code-only missed it (1/4 cell) | Add a derived field `fragment_outputs_mismatch_attachments: bool` (plus the diff list) to each draw call. Requires parsing shader GLSL `layout(location=X) out` declarations and comparing with `glDrawBuffers`. This gap would also catch many future G-Buffer/MRT regressions. |
-| 5 | Scenario capture binary segfaults before first swap | r29_add_an_animated_icon_to_the_map_not_work | Low (scenario bug, not a product gap) — blocks with_gpa measurement | Fix the r29 `main.c` repro so it can initialize GL and issue at least one draw call. Orthogonal to OpenGPA's capabilities. |
+| 5 | Scenario capture binary segfaults before first swap | r29_add_an_animated_icon_to_the_map_not_work | Low (scenario bug, not a product gap) — blocks with_bhdr measurement | Fix the r29 `main.c` repro so it can initialize GL and issue at least one draw call. Orthogonal to OpenGPA's capabilities. |
 
 ## Notes on evidence quality
 
@@ -26,7 +26,7 @@ red-herring runtime evidence, and capture-time scenario bugs.
   `GL_UNSIGNED_BYTE` indices, `short` vertex attributes, or 16-bit depth
   textures in contexts where higher precision is needed.
 - Gap (2) is the first time live runtime data *hurt* diagnosis quality
-  in the eval. Both `with_gpa` agents on r27 wrote confident, well-argued,
+  in the eval. Both `with_bhdr` agents on r27 wrote confident, well-argued,
   and plausible-looking root-cause statements that nonetheless pointed at
   the wrong function. Code-only agents, forced to read the shader and
   reason about the semantic change in the diff, landed on the ground

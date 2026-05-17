@@ -2,11 +2,11 @@
 # Starts Xvfb, OpenGPA engine, and captures frames from eval scenarios
 set -e
 
-DISPLAY_NUM=${GPA_DISPLAY:-99}
-PORT=${GPA_PORT:-18080}
-TOKEN=${GPA_TOKEN:-$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")}
-SOCKET_PATH="/tmp/gpa_eval.sock"
-SHM_NAME="/gpa_eval"
+DISPLAY_NUM=${BHDR_DISPLAY:-99}
+PORT=${BHDR_PORT:-18080}
+TOKEN=${BHDR_TOKEN:-$(python3 -c "import secrets; print(secrets.token_urlsafe(16))")}
+SOCKET_PATH="/tmp/bhdr_eval.sock"
+SHM_NAME="/bhdr_eval"
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
 # Start Xvfb if not running
@@ -25,7 +25,7 @@ PYTHONPATH="${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings" \
     --shm "${SHM_NAME}" \
     --port "${PORT}" \
     --token "${TOKEN}" &
-GPA_PID=$!
+BHDR_PID=$!
 sleep 2
 
 echo ""
@@ -53,8 +53,8 @@ cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
       "args": ["-m", "bhdr.mcp.server"],
       "env": {
         "PYTHONPATH": "${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings",
-        "GPA_BASE_URL": "http://127.0.0.1:${PORT}",
-        "GPA_TOKEN": "${TOKEN}"
+        "BHDR_BASE_URL": "http://127.0.0.1:${PORT}",
+        "BHDR_TOKEN": "${TOKEN}"
       }
     }
   }
@@ -62,4 +62,4 @@ cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
 MCPEOF
 
 # Wait for OpenGPA engine
-wait $GPA_PID
+wait $BHDR_PID

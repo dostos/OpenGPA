@@ -6,12 +6,12 @@
 //      resolution works for our wrappers).
 //   2. headless-gl never calls glXSwapBuffers, so the only existing
 //      frame-emit path in the shim is dead. With the new exported
-//      gpa_emit_frame() symbol, we can drive frame capture directly via
+//      bhdr_emit_frame() symbol, we can drive frame capture directly via
 //      koffi (a Node FFI library — N-API based, no node-gyp build needed).
 //
 // Usage:
 //   LD_PRELOAD=$SHIM_PATH \
-//     GPA_SOCKET_PATH=/tmp/gpa_e2e.sock GPA_SHM_NAME=/gpa_e2e \
+//     BHDR_SOCKET_PATH=/tmp/bhdr_e2e.sock BHDR_SHM_NAME=/bhdr_e2e \
 //     DISPLAY=:99 \
 //     node demo.js [num_frames]
 //
@@ -37,21 +37,21 @@ if (!gl) {
 //    this would fail with ENOENT, which is the correct behavior.)
 let shim;
 try {
-    shim = koffi.load('libgpa_gl.so');
+    shim = koffi.load('libbhdr_gl.so');
 } catch (e) {
-    // Fallback: explicit GPA_SHIM_PATH env var, useful for ad-hoc testing
+    // Fallback: explicit BHDR_SHIM_PATH env var, useful for ad-hoc testing
     // outside of LD_PRELOAD (won't actually capture frames, but lets us
     // surface obvious dlopen errors).
-    const fallback = process.env.GPA_SHIM_PATH;
+    const fallback = process.env.BHDR_SHIM_PATH;
     if (!fallback) {
-        console.error('koffi.load("libgpa_gl.so") failed; set LD_PRELOAD '
-                    + 'or GPA_SHIM_PATH. Underlying error:', e.message);
+        console.error('koffi.load("libbhdr_gl.so") failed; set LD_PRELOAD '
+                    + 'or BHDR_SHIM_PATH. Underlying error:', e.message);
         process.exit(1);
     }
     shim = koffi.load(fallback);
 }
 
-const gpa_emit_frame = shim.func('void gpa_emit_frame()');
+const bhdr_emit_frame = shim.func('void bhdr_emit_frame()');
 
 // -- 3. Render and emit frames ----------------------------------------------
 //    Per-frame: clear to a different colour, do a tiny draw, then trigger
@@ -98,7 +98,7 @@ for (let i = 0; i < NUM_FRAMES; i++) {
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.finish();
-    gpa_emit_frame();
+    bhdr_emit_frame();
     console.log(`[demo]   frame ${i+1}/${NUM_FRAMES}: cleared to (${c.slice(0,3).join(', ')}) + 1 triangle`);
 }
 

@@ -11,7 +11,7 @@
 // the authoritative wire-format contract for numbers.
 //
 // Run:
-//   node tests/unit/shims/test_gpa_trace_js_hash.js
+//   node tests/unit/shims/test_bhdr_trace_js_hash.js
 //
 // Integrated into the Python test suite as a skipped-if-no-node parity
 // test in test_trace_hash_parity.py.

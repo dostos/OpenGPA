@@ -1,5 +1,5 @@
 #define _GNU_SOURCE
-#include "gpa_layer.h"
+#include "bhdr_layer.h"
 #include "vk_dispatch.h"
 #include "vk_capture.h"
 #include "vk_ipc_client.h"
@@ -14,7 +14,7 @@
  * Swapchain image tracking
  *
  * We need to map (VkSwapchainKHR, image_index) → VkImage so that
- * gpa_capture_on_present can pass the actual VkImage handle.
+ * bhdr_capture_on_present can pass the actual VkImage handle.
  * -------------------------------------------------------------------------- */
 
 #define MAX_SWAPCHAINS 16
@@ -61,49 +61,49 @@ static SwapchainInfo *find_swapchain(VkSwapchainKHR sc) {
  * unchanged.
  * -------------------------------------------------------------------------- */
 
-#define GPA_HEADLESS_MAGIC      0x47504148u  /* 'GPAH' */
-#define GPA_HEADLESS_SC_MAGIC   0x47504153u  /* 'GPAS' */
-#define GPA_MAX_HEADLESS_SURFACES   8
-#define GPA_MAX_HEADLESS_SWAPCHAINS 8
-#define GPA_MAX_HEADLESS_IMAGES     4
+#define BHDR_HEADLESS_MAGIC      0x47504148u  /* 'GPAH' */
+#define BHDR_HEADLESS_SC_MAGIC   0x47504153u  /* 'GPAS' */
+#define BHDR_MAX_HEADLESS_SURFACES   8
+#define BHDR_MAX_HEADLESS_SWAPCHAINS 8
+#define BHDR_MAX_HEADLESS_IMAGES     4
 
 typedef struct {
     uint32_t   magic;
     int        in_use;
     VkInstance instance;
-} GpaHeadlessSurface;
+} BhdrHeadlessSurface;
 
 typedef struct {
     uint32_t       magic;
     int            in_use;
     VkDevice       device;
-    GpaHeadlessSurface *surface;
+    BhdrHeadlessSurface *surface;
     VkFormat       format;
     VkExtent2D     extent;
     uint32_t       image_count;
-    VkImage        images[GPA_MAX_HEADLESS_IMAGES];
-    VkDeviceMemory memories[GPA_MAX_HEADLESS_IMAGES];
+    VkImage        images[BHDR_MAX_HEADLESS_IMAGES];
+    VkDeviceMemory memories[BHDR_MAX_HEADLESS_IMAGES];
     uint32_t       next_acquire;
-} GpaHeadlessSwapchain;
+} BhdrHeadlessSwapchain;
 
-static GpaHeadlessSurface   g_h_surfaces[GPA_MAX_HEADLESS_SURFACES];
-static GpaHeadlessSwapchain g_h_swapchains[GPA_MAX_HEADLESS_SWAPCHAINS];
+static BhdrHeadlessSurface   g_h_surfaces[BHDR_MAX_HEADLESS_SURFACES];
+static BhdrHeadlessSwapchain g_h_swapchains[BHDR_MAX_HEADLESS_SWAPCHAINS];
 static pthread_mutex_t      g_headless_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static GpaHeadlessSurface *find_headless_surface(VkSurfaceKHR sfc) {
-    for (int i = 0; i < GPA_MAX_HEADLESS_SURFACES; i++) {
-        GpaHeadlessSurface *s = &g_h_surfaces[i];
-        if (s->in_use && s->magic == GPA_HEADLESS_MAGIC &&
+static BhdrHeadlessSurface *find_headless_surface(VkSurfaceKHR sfc) {
+    for (int i = 0; i < BHDR_MAX_HEADLESS_SURFACES; i++) {
+        BhdrHeadlessSurface *s = &g_h_surfaces[i];
+        if (s->in_use && s->magic == BHDR_HEADLESS_MAGIC &&
             (VkSurfaceKHR)(uintptr_t)s == sfc)
             return s;
     }
     return NULL;
 }
 
-static GpaHeadlessSwapchain *find_headless_swapchain(VkSwapchainKHR sc) {
-    for (int i = 0; i < GPA_MAX_HEADLESS_SWAPCHAINS; i++) {
-        GpaHeadlessSwapchain *s = &g_h_swapchains[i];
-        if (s->in_use && s->magic == GPA_HEADLESS_SC_MAGIC &&
+static BhdrHeadlessSwapchain *find_headless_swapchain(VkSwapchainKHR sc) {
+    for (int i = 0; i < BHDR_MAX_HEADLESS_SWAPCHAINS; i++) {
+        BhdrHeadlessSwapchain *s = &g_h_swapchains[i];
+        if (s->in_use && s->magic == BHDR_HEADLESS_SC_MAGIC &&
             (VkSwapchainKHR)(uintptr_t)s == sc)
             return s;
     }
@@ -115,7 +115,7 @@ static GpaHeadlessSwapchain *find_headless_swapchain(VkSwapchainKHR sc) {
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
+bhdr_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
                    const VkAllocationCallbacks *pAllocator,
                    VkInstance                  *pInstance) {
     /* Walk the pNext chain to find the loader link info */
@@ -151,7 +151,7 @@ gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
      * asked for instance-level functions (vkGetPhysicalDeviceSurface*KHR), which
      * causes infinite recursion. `next_gipa` is the next-layer-down GIPA passed
      * to us via VkLayerInstanceCreateInfo and dispatches directly below us. */
-    GpaInstanceDispatch disp;
+    BhdrInstanceDispatch disp;
     memset(&disp, 0, sizeof(disp));
     disp.dispatch_key = *(void **)(*pInstance);
     disp.instance     = *pInstance;
@@ -184,16 +184,16 @@ gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
         (PFN_vkGetPhysicalDeviceMemoryProperties)
         next_gipa(*pInstance, "vkGetPhysicalDeviceMemoryProperties");
     /* Initialise subsystems once — must happen BEFORE storing the dispatch
-     * table, because gpa_dispatch_init() zeroes the table. */
+     * table, because bhdr_dispatch_init() zeroes the table. */
     static int g_inited = 0;
     if (!g_inited) {
-        gpa_dispatch_init();
-        gpa_capture_init();
-        gpa_vk_ipc_connect();
+        bhdr_dispatch_init();
+        bhdr_capture_init();
+        bhdr_vk_ipc_connect();
         g_inited = 1;
     }
 
-    gpa_instance_dispatch_store(*pInstance, &disp);
+    bhdr_instance_dispatch_store(*pInstance, &disp);
 
     return VK_SUCCESS;
 }
@@ -205,10 +205,10 @@ gpa_CreateInstance(const VkInstanceCreateInfo  *pCreateInfo,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_EnumeratePhysicalDevices(VkInstance        instance,
+bhdr_EnumeratePhysicalDevices(VkInstance        instance,
                               uint32_t         *pPhysicalDeviceCount,
                               VkPhysicalDevice *pPhysicalDevices) {
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get(instance);
     if (!disp || !disp->EnumeratePhysicalDevices)
         return VK_ERROR_INITIALIZATION_FAILED;
     return disp->EnumeratePhysicalDevices(instance, pPhysicalDeviceCount,
@@ -220,15 +220,15 @@ gpa_EnumeratePhysicalDevices(VkInstance        instance,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_DestroyInstance(VkInstance                  instance,
+bhdr_DestroyInstance(VkInstance                  instance,
                     const VkAllocationCallbacks *pAllocator) {
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get(instance);
     if (disp && disp->DestroyInstance)
         disp->DestroyInstance(instance, pAllocator);
 
-    gpa_instance_dispatch_remove(instance);
-    gpa_vk_ipc_disconnect();
-    gpa_capture_shutdown();
+    bhdr_instance_dispatch_remove(instance);
+    bhdr_vk_ipc_disconnect();
+    bhdr_capture_shutdown();
 }
 
 /* --------------------------------------------------------------------------
@@ -236,7 +236,7 @@ gpa_DestroyInstance(VkInstance                  instance,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_CreateDevice(VkPhysicalDevice             physicalDevice,
+bhdr_CreateDevice(VkPhysicalDevice             physicalDevice,
                  const VkDeviceCreateInfo    *pCreateInfo,
                  const VkAllocationCallbacks *pAllocator,
                  VkDevice                    *pDevice) {
@@ -267,7 +267,7 @@ gpa_CreateDevice(VkPhysicalDevice             physicalDevice,
     if (result != VK_SUCCESS) return result;
 
     /* Build device dispatch table */
-    GpaDeviceDispatch disp;
+    BhdrDeviceDispatch disp;
     memset(&disp, 0, sizeof(disp));
     disp.dispatch_key     = *(void **)(*pDevice);
     disp.physical_device  = physicalDevice;
@@ -328,7 +328,7 @@ gpa_CreateDevice(VkPhysicalDevice             physicalDevice,
         disp.readback_queue_family =
             pCreateInfo->pQueueCreateInfos[0].queueFamilyIndex;
 
-    gpa_device_dispatch_store(*pDevice, &disp);
+    bhdr_device_dispatch_store(*pDevice, &disp);
     return VK_SUCCESS;
 }
 
@@ -337,12 +337,12 @@ gpa_CreateDevice(VkPhysicalDevice             physicalDevice,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_DestroyDevice(VkDevice                     device,
+bhdr_DestroyDevice(VkDevice                     device,
                   const VkAllocationCallbacks *pAllocator) {
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (disp && disp->DestroyDevice)
         disp->DestroyDevice(device, pAllocator);
-    gpa_device_dispatch_remove(device);
+    bhdr_device_dispatch_remove(device);
 }
 
 /* --------------------------------------------------------------------------
@@ -350,28 +350,28 @@ gpa_DestroyDevice(VkDevice                     device,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_QueueSubmit(VkQueue             queue,
+bhdr_QueueSubmit(VkQueue             queue,
                 uint32_t            submitCount,
                 const VkSubmitInfo *pSubmits,
                 VkFence             fence) {
     /* Collect draw call metadata from all command buffers before forwarding */
     for (uint32_t s = 0; s < submitCount; s++) {
         const VkSubmitInfo *si = &pSubmits[s];
-        gpa_capture_queue_submit(si->commandBufferCount,
+        bhdr_capture_queue_submit(si->commandBufferCount,
                                  si->pCommandBuffers);
     }
 
     /* The queue dispatch key matches the device's key created during
      * vkCreateDevice since the loader sets them both. Look up via the
      * queue's dispatch key by casting to VkDevice (same key). */
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get((VkDevice)queue);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get((VkDevice)queue);
     if (!disp || !disp->QueueSubmit) return VK_ERROR_DEVICE_LOST;
 
     return disp->QueueSubmit(queue, submitCount, pSubmits, fence);
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_QueueSubmit2KHR(VkQueue              queue,
+bhdr_QueueSubmit2KHR(VkQueue              queue,
                      uint32_t             submitCount,
                      const VkSubmitInfo2 *pSubmits,
                      VkFence              fence) {
@@ -389,11 +389,11 @@ gpa_QueueSubmit2KHR(VkQueue              queue,
         for (uint32_t i = 0; i < si->commandBufferInfoCount; i++) {
             cbs[i] = si->pCommandBufferInfos[i].commandBuffer;
         }
-        gpa_capture_queue_submit(si->commandBufferInfoCount, cbs);
+        bhdr_capture_queue_submit(si->commandBufferInfoCount, cbs);
         free(cbs_heap);
     }
 
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get((VkDevice)queue);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get((VkDevice)queue);
     if (!disp || !disp->QueueSubmit2KHR) return VK_ERROR_DEVICE_LOST;
     return disp->QueueSubmit2KHR(queue, submitCount, pSubmits, fence);
 }
@@ -403,11 +403,11 @@ gpa_QueueSubmit2KHR(VkQueue              queue,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_QueuePresentKHR(VkQueue                 queue,
+bhdr_QueuePresentKHR(VkQueue                 queue,
                     const VkPresentInfoKHR *pPresentInfo) {
     /* Look up device dispatch — queue shares the same dispatch key */
-    GpaDeviceDispatch *dev_disp =
-        gpa_device_dispatch_get((VkDevice)queue);
+    BhdrDeviceDispatch *dev_disp =
+        bhdr_device_dispatch_get((VkDevice)queue);
 
     /* Detect whether ALL presented swapchains are headless. If so we must
      * NOT chain to the driver's QueuePresentKHR (it'd reject the synthetic
@@ -424,7 +424,7 @@ gpa_QueuePresentKHR(VkQueue                 queue,
         else all_headless = 0;
     }
 
-    if (dev_disp && gpa_vk_ipc_is_connected()) {
+    if (dev_disp && bhdr_vk_ipc_is_connected()) {
         /* Capture each swapchain being presented (usually just one) */
         for (uint32_t i = 0; i < pPresentInfo->swapchainCount; i++) {
             VkSwapchainKHR sc  = pPresentInfo->pSwapchains[i];
@@ -432,7 +432,7 @@ gpa_QueuePresentKHR(VkQueue                 queue,
 
             SwapchainInfo *sc_info = find_swapchain(sc);
             if (sc_info && idx < sc_info->image_count) {
-                gpa_capture_on_present(
+                bhdr_capture_on_present(
                     queue,
                     sc_info->device,
                     sc,
@@ -461,76 +461,76 @@ gpa_QueuePresentKHR(VkQueue                 queue,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_BeginCommandBuffer(VkCommandBuffer commandBuffer,
+bhdr_BeginCommandBuffer(VkCommandBuffer commandBuffer,
                        const VkCommandBufferBeginInfo *pBeginInfo) {
-    gpa_capture_cmd_buf_begin(commandBuffer);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_cmd_buf_begin(commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (!disp || !disp->BeginCommandBuffer) return VK_ERROR_INITIALIZATION_FAILED;
     return disp->BeginCommandBuffer(commandBuffer, pBeginInfo);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDraw(VkCommandBuffer commandBuffer,
+bhdr_CmdDraw(VkCommandBuffer commandBuffer,
             uint32_t        vertexCount,
             uint32_t        instanceCount,
             uint32_t        firstVertex,
             uint32_t        firstInstance) {
-    gpa_capture_record_draw(commandBuffer, vertexCount, instanceCount,
+    bhdr_capture_record_draw(commandBuffer, vertexCount, instanceCount,
                              firstVertex, firstInstance);
 
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDraw)
         disp->CmdDraw(commandBuffer, vertexCount, instanceCount,
                       firstVertex, firstInstance);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDrawIndexed(VkCommandBuffer commandBuffer,
+bhdr_CmdDrawIndexed(VkCommandBuffer commandBuffer,
                    uint32_t        indexCount,
                    uint32_t        instanceCount,
                    uint32_t        firstIndex,
                    int32_t         vertexOffset,
                    uint32_t        firstInstance) {
-    gpa_capture_record_draw_indexed(commandBuffer, indexCount, instanceCount,
+    bhdr_capture_record_draw_indexed(commandBuffer, indexCount, instanceCount,
                                      firstIndex, vertexOffset, firstInstance);
 
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDrawIndexed)
         disp->CmdDrawIndexed(commandBuffer, indexCount, instanceCount,
                              firstIndex, vertexOffset, firstInstance);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDrawIndirect(VkCommandBuffer commandBuffer,
+bhdr_CmdDrawIndirect(VkCommandBuffer commandBuffer,
                     VkBuffer        buffer,
                     VkDeviceSize    offset,
                     uint32_t        drawCount,
                     uint32_t        stride) {
-    gpa_capture_record_indirect_draw(commandBuffer, drawCount, 0);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_record_indirect_draw(commandBuffer, drawCount, 0);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDrawIndirect)
         disp->CmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
+bhdr_CmdDrawIndexedIndirect(VkCommandBuffer commandBuffer,
                             VkBuffer        buffer,
                             VkDeviceSize    offset,
                             uint32_t        drawCount,
                             uint32_t        stride) {
-    gpa_capture_record_indirect_draw(commandBuffer, drawCount, 1);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_record_indirect_draw(commandBuffer, drawCount, 1);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDrawIndexedIndirect)
         disp->CmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDrawIndirectCount(VkCommandBuffer commandBuffer,
+bhdr_CmdDrawIndirectCount(VkCommandBuffer commandBuffer,
                           VkBuffer        buffer,
                           VkDeviceSize    offset,
                           VkBuffer        countBuffer,
@@ -539,9 +539,9 @@ gpa_CmdDrawIndirectCount(VkCommandBuffer commandBuffer,
                           uint32_t        stride) {
     /* drawCount is GPU-resident in countBuffer; record maxDrawCount as
      * upper-bound. */
-    gpa_capture_record_indirect_draw(commandBuffer, maxDrawCount, 0);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_record_indirect_draw(commandBuffer, maxDrawCount, 0);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDrawIndirectCount)
         disp->CmdDrawIndirectCount(commandBuffer, buffer, offset,
                                     countBuffer, countBufferOffset,
@@ -549,16 +549,16 @@ gpa_CmdDrawIndirectCount(VkCommandBuffer commandBuffer,
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer,
+bhdr_CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer,
                                  VkBuffer        buffer,
                                  VkDeviceSize    offset,
                                  VkBuffer        countBuffer,
                                  VkDeviceSize    countBufferOffset,
                                  uint32_t        maxDrawCount,
                                  uint32_t        stride) {
-    gpa_capture_record_indirect_draw(commandBuffer, maxDrawCount, 1);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_record_indirect_draw(commandBuffer, maxDrawCount, 1);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDrawIndexedIndirectCount)
         disp->CmdDrawIndexedIndirectCount(commandBuffer, buffer, offset,
                                            countBuffer, countBufferOffset,
@@ -566,60 +566,60 @@ gpa_CmdDrawIndexedIndirectCount(VkCommandBuffer commandBuffer,
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdBeginRendering(VkCommandBuffer            commandBuffer,
+bhdr_CmdBeginRendering(VkCommandBuffer            commandBuffer,
                        const VkRenderingInfo *   pRenderingInfo) {
-    gpa_capture_begin_render_pass(commandBuffer);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_begin_render_pass(commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdBeginRendering)
         disp->CmdBeginRendering(commandBuffer, pRenderingInfo);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdDispatch(VkCommandBuffer commandBuffer,
+bhdr_CmdDispatch(VkCommandBuffer commandBuffer,
                 uint32_t        gx, uint32_t gy, uint32_t gz) {
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdDispatch)
         disp->CmdDispatch(commandBuffer, gx, gy, gz);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdExecuteCommands(VkCommandBuffer        commandBuffer,
+bhdr_CmdExecuteCommands(VkCommandBuffer        commandBuffer,
                         uint32_t              cbCount,
                         const VkCommandBuffer *pCmds) {
     /* Harvest draws recorded into the secondary cmd buffers — they ran
      * as part of this primary's submission, so they belong to this frame. */
-    gpa_capture_queue_submit(cbCount, pCmds);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    bhdr_capture_queue_submit(cbCount, pCmds);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdExecuteCommands)
         disp->CmdExecuteCommands(commandBuffer, cbCount, pCmds);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdEndRendering(VkCommandBuffer commandBuffer) {
-    gpa_capture_end_render_pass(commandBuffer);
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+bhdr_CmdEndRendering(VkCommandBuffer commandBuffer) {
+    bhdr_capture_end_render_pass(commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdEndRendering)
         disp->CmdEndRendering(commandBuffer);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdBindPipeline(VkCommandBuffer     commandBuffer,
+bhdr_CmdBindPipeline(VkCommandBuffer     commandBuffer,
                     VkPipelineBindPoint pipelineBindPoint,
                     VkPipeline          pipeline) {
-    gpa_capture_bind_pipeline(commandBuffer, pipelineBindPoint, pipeline);
+    bhdr_capture_bind_pipeline(commandBuffer, pipelineBindPoint, pipeline);
 
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdBindPipeline)
         disp->CmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdBindDescriptorSets(VkCommandBuffer        commandBuffer,
+bhdr_CmdBindDescriptorSets(VkCommandBuffer        commandBuffer,
                            VkPipelineBindPoint   pipelineBindPoint,
                            VkPipelineLayout      layout,
                            uint32_t              firstSet,
@@ -628,8 +628,8 @@ gpa_CmdBindDescriptorSets(VkCommandBuffer        commandBuffer,
                            uint32_t              dynamicOffsetCount,
                            const uint32_t        *pDynamicOffsets) {
     /* Pass through; no additional metadata captured in M5 MVP */
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdBindDescriptorSets)
         disp->CmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout,
                                     firstSet, descriptorSetCount,
@@ -638,23 +638,23 @@ gpa_CmdBindDescriptorSets(VkCommandBuffer        commandBuffer,
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdBeginRenderPass(VkCommandBuffer              commandBuffer,
+bhdr_CmdBeginRenderPass(VkCommandBuffer              commandBuffer,
                         const VkRenderPassBeginInfo *pRenderPassBegin,
                         VkSubpassContents            contents) {
-    gpa_capture_begin_render_pass(commandBuffer);
+    bhdr_capture_begin_render_pass(commandBuffer);
 
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdBeginRenderPass)
         disp->CmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_CmdEndRenderPass(VkCommandBuffer commandBuffer) {
-    gpa_capture_end_render_pass(commandBuffer);
+bhdr_CmdEndRenderPass(VkCommandBuffer commandBuffer) {
+    bhdr_capture_end_render_pass(commandBuffer);
 
-    GpaDeviceDispatch *disp =
-        gpa_device_dispatch_get((VkDevice)commandBuffer);
+    BhdrDeviceDispatch *disp =
+        bhdr_device_dispatch_get((VkDevice)commandBuffer);
     if (disp && disp->CmdEndRenderPass)
         disp->CmdEndRenderPass(commandBuffer);
 }
@@ -664,13 +664,13 @@ gpa_CmdEndRenderPass(VkCommandBuffer commandBuffer) {
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_GetSwapchainImagesKHR(VkDevice       device,
+bhdr_GetSwapchainImagesKHR(VkDevice       device,
                            VkSwapchainKHR swapchain,
                            uint32_t      *pSwapchainImageCount,
                            VkImage       *pSwapchainImages) {
     /* Headless? Return our images. */
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    BhdrHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
     if (hsc) {
         if (!pSwapchainImages) {
             *pSwapchainImageCount = hsc->image_count;
@@ -687,7 +687,7 @@ gpa_GetSwapchainImagesKHR(VkDevice       device,
     }
     pthread_mutex_unlock(&g_headless_mutex);
 
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (!disp) return VK_ERROR_DEVICE_LOST;
 
     /* Resolve GetSwapchainImagesKHR from the next layer */
@@ -724,21 +724,21 @@ gpa_GetSwapchainImagesKHR(VkDevice       device,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_CreateSwapchainKHR(VkDevice                        device,
+bhdr_CreateSwapchainKHR(VkDevice                        device,
                         const VkSwapchainCreateInfoKHR *pCreateInfo,
                         const VkAllocationCallbacks    *pAllocator,
                         VkSwapchainKHR                 *pSwapchain) {
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (!disp) return VK_ERROR_DEVICE_LOST;
 
     /* Headless surface? Emulate the swapchain ourselves. */
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSurface *hsfc = find_headless_surface(pCreateInfo->surface);
+    BhdrHeadlessSurface *hsfc = find_headless_surface(pCreateInfo->surface);
     pthread_mutex_unlock(&g_headless_mutex);
     if (hsfc) {
         pthread_mutex_lock(&g_headless_mutex);
-        GpaHeadlessSwapchain *slot = NULL;
-        for (int i = 0; i < GPA_MAX_HEADLESS_SWAPCHAINS; i++) {
+        BhdrHeadlessSwapchain *slot = NULL;
+        for (int i = 0; i < BHDR_MAX_HEADLESS_SWAPCHAINS; i++) {
             if (!g_h_swapchains[i].in_use) { slot = &g_h_swapchains[i]; break; }
         }
         if (!slot) {
@@ -746,7 +746,7 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
             return VK_ERROR_OUT_OF_HOST_MEMORY;
         }
         memset(slot, 0, sizeof(*slot));
-        slot->magic   = GPA_HEADLESS_SC_MAGIC;
+        slot->magic   = BHDR_HEADLESS_SC_MAGIC;
         slot->in_use  = 1;
         slot->device  = device;
         slot->surface = hsfc;
@@ -754,7 +754,7 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
         slot->extent  = pCreateInfo->imageExtent;
         slot->image_count = pCreateInfo->minImageCount;
         if (slot->image_count < 2) slot->image_count = 2;
-        if (slot->image_count > GPA_MAX_HEADLESS_IMAGES) slot->image_count = GPA_MAX_HEADLESS_IMAGES;
+        if (slot->image_count > BHDR_MAX_HEADLESS_IMAGES) slot->image_count = BHDR_MAX_HEADLESS_IMAGES;
         pthread_mutex_unlock(&g_headless_mutex);
 
         /* Resolve image management functions lazily */
@@ -776,8 +776,8 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
          * when intercepted instance-level lookups go through us again). */
         VkPhysicalDeviceMemoryProperties mem_props = {0};
         if (disp->physical_device != VK_NULL_HANDLE) {
-            GpaInstanceDispatch *idisp =
-                gpa_instance_dispatch_get((VkInstance)disp->physical_device);
+            BhdrInstanceDispatch *idisp =
+                bhdr_instance_dispatch_get((VkInstance)disp->physical_device);
             if (idisp && idisp->GetPhysicalDeviceMemoryProperties)
                 idisp->GetPhysicalDeviceMemoryProperties(disp->physical_device,
                                                            &mem_props);
@@ -880,11 +880,11 @@ gpa_CreateSwapchainKHR(VkDevice                        device,
 /* vkAcquireNextImageKHR — for headless swapchains, rotate through our
  * preallocated images. For real swapchains, chain down. */
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain,
+bhdr_AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain,
                          uint64_t timeout, VkSemaphore semaphore,
                          VkFence fence, uint32_t *pImageIndex) {
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    BhdrHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
     if (hsc) {
         *pImageIndex = hsc->next_acquire % hsc->image_count;
         hsc->next_acquire++;
@@ -896,7 +896,7 @@ gpa_AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain,
         return VK_SUCCESS;
     }
     pthread_mutex_unlock(&g_headless_mutex);
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (!disp) return VK_ERROR_DEVICE_LOST;
     PFN_vkAcquireNextImageKHR next_fn = (PFN_vkAcquireNextImageKHR)
         disp->GetDeviceProcAddr(device, "vkAcquireNextImageKHR");
@@ -909,14 +909,14 @@ gpa_AcquireNextImageKHR(VkDevice device, VkSwapchainKHR swapchain,
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_DestroySwapchainKHR(VkDevice                     device,
+bhdr_DestroySwapchainKHR(VkDevice                     device,
                           VkSwapchainKHR               swapchain,
                           const VkAllocationCallbacks *pAllocator) {
     /* Headless? Free our images and clear the slot. */
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
+    BhdrHeadlessSwapchain *hsc = find_headless_swapchain(swapchain);
     if (hsc) {
-        GpaDeviceDispatch *ddisp = gpa_device_dispatch_get(device);
+        BhdrDeviceDispatch *ddisp = bhdr_device_dispatch_get(device);
         PFN_vkDestroyImage destroy_image = NULL;
         if (ddisp && ddisp->GetDeviceProcAddr)
             destroy_image = (PFN_vkDestroyImage)
@@ -949,7 +949,7 @@ gpa_DestroySwapchainKHR(VkDevice                     device,
         }
     }
 
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (disp) {
         PFN_vkDestroySwapchainKHR next_fn =
             (PFN_vkDestroySwapchainKHR)
@@ -963,32 +963,32 @@ gpa_DestroySwapchainKHR(VkDevice                     device,
  * -------------------------------------------------------------------------- */
 
 VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-gpa_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
+bhdr_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
 #define INTERCEPT(fn) \
-    if (strcmp(pName, "vk" #fn) == 0) return (PFN_vkVoidFunction)gpa_##fn
+    if (strcmp(pName, "vk" #fn) == 0) return (PFN_vkVoidFunction)bhdr_##fn
 
     if (strcmp(pName, "vkGetDeviceProcAddr") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetDeviceProcAddr;
+        return (PFN_vkVoidFunction)bhdr_vkGetDeviceProcAddr;
     INTERCEPT(DestroyDevice);
     INTERCEPT(QueueSubmit);
     INTERCEPT(QueuePresentKHR);
     INTERCEPT(BeginCommandBuffer);
-    if (strcmp(pName, "vkQueueSubmit2") == 0) return (PFN_vkVoidFunction)gpa_QueueSubmit2KHR;
-    if (strcmp(pName, "vkQueueSubmit2KHR") == 0) return (PFN_vkVoidFunction)gpa_QueueSubmit2KHR;
+    if (strcmp(pName, "vkQueueSubmit2") == 0) return (PFN_vkVoidFunction)bhdr_QueueSubmit2KHR;
+    if (strcmp(pName, "vkQueueSubmit2KHR") == 0) return (PFN_vkVoidFunction)bhdr_QueueSubmit2KHR;
 
     /* Wrap the KHR/AMD aliases for the indirect-count and dynamic-rendering
      * entry points. wgpu loads VK_KHR_draw_indirect_count via the *_KHR
      * function pointer table and never touches the promoted core name. */
     if (strcmp(pName, "vkCmdDrawIndexedIndirectCountKHR") == 0
         || strcmp(pName, "vkCmdDrawIndexedIndirectCountAMD") == 0)
-        return (PFN_vkVoidFunction)gpa_CmdDrawIndexedIndirectCount;
+        return (PFN_vkVoidFunction)bhdr_CmdDrawIndexedIndirectCount;
     if (strcmp(pName, "vkCmdDrawIndirectCountKHR") == 0
         || strcmp(pName, "vkCmdDrawIndirectCountAMD") == 0)
-        return (PFN_vkVoidFunction)gpa_CmdDrawIndirectCount;
+        return (PFN_vkVoidFunction)bhdr_CmdDrawIndirectCount;
     if (strcmp(pName, "vkCmdBeginRenderingKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_CmdBeginRendering;
+        return (PFN_vkVoidFunction)bhdr_CmdBeginRendering;
     if (strcmp(pName, "vkCmdEndRenderingKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_CmdEndRendering;
+        return (PFN_vkVoidFunction)bhdr_CmdEndRendering;
     INTERCEPT(CmdDraw);
     INTERCEPT(CmdDrawIndexed);
     INTERCEPT(CmdDrawIndirect);
@@ -1010,7 +1010,7 @@ gpa_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
 #undef INTERCEPT
 
     if (device == VK_NULL_HANDLE) return NULL;
-    GpaDeviceDispatch *disp = gpa_device_dispatch_get(device);
+    BhdrDeviceDispatch *disp = bhdr_device_dispatch_get(device);
     if (disp && disp->GetDeviceProcAddr)
         return disp->GetDeviceProcAddr(device, pName);
     return NULL;
@@ -1029,17 +1029,17 @@ gpa_vkGetDeviceProcAddr(VkDevice device, const char *pName) {
  * vkCreateInstance call with VK_ERROR_EXTENSION_NOT_PRESENT.
  *
  * Our layer advertises VK_EXT_headless_surface via vkEnumerateInstance-
- * ExtensionProperties("VK_LAYER_GPA_capture", ...) so the loader sees it
+ * ExtensionProperties("VK_LAYER_BHDR_capture", ...) so the loader sees it
  * as supplied by an enabled layer and validation passes. The actual
  * vkCreateHeadlessSurfaceEXT entrypoint chains down — modern Vulkan
  * loaders provide a built-in implementation for any headless surface.
  * -------------------------------------------------------------------------- */
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkEnumerateInstanceExtensionProperties(const char *pLayerName,
+bhdr_vkEnumerateInstanceExtensionProperties(const char *pLayerName,
                                             uint32_t *pPropertyCount,
                                             VkExtensionProperties *pProperties) {
-    if (pLayerName == NULL || strcmp(pLayerName, "VK_LAYER_GPA_capture") != 0) {
+    if (pLayerName == NULL || strcmp(pLayerName, "VK_LAYER_BHDR_capture") != 0) {
         /* Not our layer query. With our layer-interface-v2, the loader
          * resolves these globally and calls the next layer / ICD. Returning
          * VK_SUCCESS with 0 properties is safe — the loader merges with
@@ -1049,23 +1049,23 @@ gpa_vkEnumerateInstanceExtensionProperties(const char *pLayerName,
     }
 
     /* Extensions provided by our layer */
-    static const VkExtensionProperties gpa_layer_exts[] = {
+    static const VkExtensionProperties bhdr_layer_exts[] = {
         { "VK_EXT_headless_surface", 1 },
     };
-    const uint32_t n = (uint32_t)(sizeof(gpa_layer_exts) / sizeof(gpa_layer_exts[0]));
+    const uint32_t n = (uint32_t)(sizeof(bhdr_layer_exts) / sizeof(bhdr_layer_exts[0]));
 
     if (pProperties == NULL) {
         *pPropertyCount = n;
         return VK_SUCCESS;
     }
     uint32_t copy = (*pPropertyCount < n) ? *pPropertyCount : n;
-    if (copy > 0) memcpy(pProperties, gpa_layer_exts, copy * sizeof(VkExtensionProperties));
+    if (copy > 0) memcpy(pProperties, bhdr_layer_exts, copy * sizeof(VkExtensionProperties));
     *pPropertyCount = copy;
     return (copy < n) ? VK_INCOMPLETE : VK_SUCCESS;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkCreateHeadlessSurfaceEXT(VkInstance instance,
+bhdr_vkCreateHeadlessSurfaceEXT(VkInstance instance,
                                 const VkHeadlessSurfaceCreateInfoEXT *pCreateInfo,
                                 const VkAllocationCallbacks *pAllocator,
                                 VkSurfaceKHR *pSurface) {
@@ -1074,15 +1074,15 @@ gpa_vkCreateHeadlessSurfaceEXT(VkInstance instance,
      * we target ship VK_EXT_headless_surface, and the loader trampoline
      * would route the lookup through our own GIPA again (recursion). */
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSurface *slot = NULL;
-    for (int i = 0; i < GPA_MAX_HEADLESS_SURFACES; i++) {
+    BhdrHeadlessSurface *slot = NULL;
+    for (int i = 0; i < BHDR_MAX_HEADLESS_SURFACES; i++) {
         if (!g_h_surfaces[i].in_use) { slot = &g_h_surfaces[i]; break; }
     }
     if (!slot) {
         pthread_mutex_unlock(&g_headless_mutex);
         return VK_ERROR_OUT_OF_HOST_MEMORY;
     }
-    slot->magic    = GPA_HEADLESS_MAGIC;
+    slot->magic    = BHDR_HEADLESS_MAGIC;
     slot->in_use   = 1;
     slot->instance = instance;
     *pSurface = (VkSurfaceKHR)(uintptr_t)slot;
@@ -1092,24 +1092,24 @@ gpa_vkCreateHeadlessSurfaceEXT(VkInstance instance,
 }
 
 static VKAPI_ATTR void VKAPI_CALL
-gpa_vkDestroySurfaceKHR(VkInstance instance,
+bhdr_vkDestroySurfaceKHR(VkInstance instance,
                          VkSurfaceKHR surface,
                          const VkAllocationCallbacks *pAllocator) {
     pthread_mutex_lock(&g_headless_mutex);
-    GpaHeadlessSurface *hsfc = find_headless_surface(surface);
+    BhdrHeadlessSurface *hsfc = find_headless_surface(surface);
     if (hsfc) {
         memset(hsfc, 0, sizeof(*hsfc));
         pthread_mutex_unlock(&g_headless_mutex);
         return;
     }
     pthread_mutex_unlock(&g_headless_mutex);
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get(instance);
     if (disp && disp->DestroySurfaceKHR)
         disp->DestroySurfaceKHR(instance, surface, pAllocator);
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physDev,
+bhdr_vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physDev,
                                           uint32_t queueFamilyIndex,
                                           VkSurfaceKHR surface,
                                           VkBool32 *pSupported) {
@@ -1118,7 +1118,7 @@ gpa_vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physDev,
     int is_ours = find_headless_surface(surface) != NULL;
     pthread_mutex_unlock(&g_headless_mutex);
     if (is_ours) { *pSupported = VK_TRUE; return VK_SUCCESS; }
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get((VkInstance)physDev);
     if (disp && disp->GetPhysicalDeviceSurfaceSupportKHR)
         return disp->GetPhysicalDeviceSurfaceSupportKHR(physDev, queueFamilyIndex,
                                                           surface, pSupported);
@@ -1126,7 +1126,7 @@ gpa_vkGetPhysicalDeviceSurfaceSupportKHR(VkPhysicalDevice physDev,
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physDev,
+bhdr_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physDev,
                                                VkSurfaceKHR surface,
                                                VkSurfaceCapabilitiesKHR *pCaps) {
     pthread_mutex_lock(&g_headless_mutex);
@@ -1135,7 +1135,7 @@ gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physDev,
     if (is_ours) {
         memset(pCaps, 0, sizeof(*pCaps));
         pCaps->minImageCount = 2;
-        pCaps->maxImageCount = GPA_MAX_HEADLESS_IMAGES;
+        pCaps->maxImageCount = BHDR_MAX_HEADLESS_IMAGES;
         /* 0xFFFFFFFF means "match what the swapchain requests" */
         pCaps->currentExtent.width  = 0xFFFFFFFFu;
         pCaps->currentExtent.height = 0xFFFFFFFFu;
@@ -1154,14 +1154,14 @@ gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR(VkPhysicalDevice physDev,
                                        VK_IMAGE_USAGE_STORAGE_BIT;
         return VK_SUCCESS;
     }
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get((VkInstance)physDev);
     if (disp && disp->GetPhysicalDeviceSurfaceCapabilitiesKHR)
         return disp->GetPhysicalDeviceSurfaceCapabilitiesKHR(physDev, surface, pCaps);
     return VK_ERROR_SURFACE_LOST_KHR;
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physDev,
+bhdr_vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physDev,
                                           VkSurfaceKHR surface,
                                           uint32_t *pSurfaceFormatCount,
                                           VkSurfaceFormatKHR *pSurfaceFormats) {
@@ -1180,7 +1180,7 @@ gpa_vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physDev,
         *pSurfaceFormatCount = copy;
         return (copy < n) ? VK_INCOMPLETE : VK_SUCCESS;
     }
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get((VkInstance)physDev);
     if (disp && disp->GetPhysicalDeviceSurfaceFormatsKHR)
         return disp->GetPhysicalDeviceSurfaceFormatsKHR(physDev, surface,
                                                           pSurfaceFormatCount,
@@ -1189,7 +1189,7 @@ gpa_vkGetPhysicalDeviceSurfaceFormatsKHR(VkPhysicalDevice physDev,
 }
 
 static VKAPI_ATTR VkResult VKAPI_CALL
-gpa_vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physDev,
+bhdr_vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physDev,
                                                 VkSurfaceKHR surface,
                                                 uint32_t *pPresentModeCount,
                                                 VkPresentModeKHR *pPresentModes) {
@@ -1205,7 +1205,7 @@ gpa_vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physDev,
         *pPresentModeCount = copy;
         return (copy < n) ? VK_INCOMPLETE : VK_SUCCESS;
     }
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get((VkInstance)physDev);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get((VkInstance)physDev);
     if (disp && disp->GetPhysicalDeviceSurfacePresentModesKHR)
         return disp->GetPhysicalDeviceSurfacePresentModesKHR(physDev, surface,
                                                                pPresentModeCount,
@@ -1214,35 +1214,35 @@ gpa_vkGetPhysicalDeviceSurfacePresentModesKHR(VkPhysicalDevice physDev,
 }
 
 VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
-gpa_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
+bhdr_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
     /* Layer negotiation */
     if (strcmp(pName, "vkNegotiateLoaderLayerInterfaceVersion") == 0)
         return (PFN_vkVoidFunction)vkNegotiateLoaderLayerInterfaceVersion;
 
     /* Pre-instance / global functions (instance == VK_NULL_HANDLE) */
     if (strcmp(pName, "vkEnumerateInstanceExtensionProperties") == 0)
-        return (PFN_vkVoidFunction)gpa_vkEnumerateInstanceExtensionProperties;
+        return (PFN_vkVoidFunction)bhdr_vkEnumerateInstanceExtensionProperties;
 
     /* Extension entrypoints we provide */
     if (strcmp(pName, "vkCreateHeadlessSurfaceEXT") == 0)
-        return (PFN_vkVoidFunction)gpa_vkCreateHeadlessSurfaceEXT;
+        return (PFN_vkVoidFunction)bhdr_vkCreateHeadlessSurfaceEXT;
     if (strcmp(pName, "vkDestroySurfaceKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_vkDestroySurfaceKHR;
+        return (PFN_vkVoidFunction)bhdr_vkDestroySurfaceKHR;
     if (strcmp(pName, "vkGetPhysicalDeviceSurfaceSupportKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceSupportKHR;
+        return (PFN_vkVoidFunction)bhdr_vkGetPhysicalDeviceSurfaceSupportKHR;
     if (strcmp(pName, "vkGetPhysicalDeviceSurfaceCapabilitiesKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
+        return (PFN_vkVoidFunction)bhdr_vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
     if (strcmp(pName, "vkGetPhysicalDeviceSurfaceFormatsKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfaceFormatsKHR;
+        return (PFN_vkVoidFunction)bhdr_vkGetPhysicalDeviceSurfaceFormatsKHR;
     if (strcmp(pName, "vkGetPhysicalDeviceSurfacePresentModesKHR") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetPhysicalDeviceSurfacePresentModesKHR;
+        return (PFN_vkVoidFunction)bhdr_vkGetPhysicalDeviceSurfacePresentModesKHR;
 
     /* Instance-level intercepts */
 #define INTERCEPT(fn) \
-    if (strcmp(pName, "vk" #fn) == 0) return (PFN_vkVoidFunction)gpa_##fn
+    if (strcmp(pName, "vk" #fn) == 0) return (PFN_vkVoidFunction)bhdr_##fn
 
     if (strcmp(pName, "vkGetInstanceProcAddr") == 0)
-        return (PFN_vkVoidFunction)gpa_vkGetInstanceProcAddr;
+        return (PFN_vkVoidFunction)bhdr_vkGetInstanceProcAddr;
     INTERCEPT(CreateInstance);
     INTERCEPT(DestroyInstance);
     INTERCEPT(CreateDevice);
@@ -1250,12 +1250,12 @@ gpa_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
 #undef INTERCEPT
 
     /* Device-level functions also queryable via GetInstanceProcAddr */
-    PFN_vkVoidFunction dev_fn = gpa_vkGetDeviceProcAddr(VK_NULL_HANDLE, pName);
+    PFN_vkVoidFunction dev_fn = bhdr_vkGetDeviceProcAddr(VK_NULL_HANDLE, pName);
     if (dev_fn) return dev_fn;
 
     /* Chain to the next layer */
     if (instance == VK_NULL_HANDLE) return NULL;
-    GpaInstanceDispatch *disp = gpa_instance_dispatch_get(instance);
+    BhdrInstanceDispatch *disp = bhdr_instance_dispatch_get(instance);
     if (disp && disp->GetInstanceProcAddr)
         return disp->GetInstanceProcAddr(instance, pName);
     return NULL;
@@ -1272,12 +1272,12 @@ gpa_vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
  * not interpose globally. */
 VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetInstanceProcAddr(VkInstance instance, const char *pName) {
-    return gpa_vkGetInstanceProcAddr(instance, pName);
+    return bhdr_vkGetInstanceProcAddr(instance, pName);
 }
 
 VK_LAYER_EXPORT VKAPI_ATTR PFN_vkVoidFunction VKAPI_CALL
 vkGetDeviceProcAddr(VkDevice device, const char *pName) {
-    return gpa_vkGetDeviceProcAddr(device, pName);
+    return bhdr_vkGetDeviceProcAddr(device, pName);
 }
 
 VK_LAYER_EXPORT VKAPI_ATTR VkResult VKAPI_CALL
@@ -1294,8 +1294,8 @@ vkNegotiateLoaderLayerInterfaceVersion(VkNegotiateLayerInterface *pVersionStruct
     }
 
     if (pVersionStruct->loaderLayerInterfaceVersion >= 2) {
-        pVersionStruct->pfnGetInstanceProcAddr = gpa_vkGetInstanceProcAddr;
-        pVersionStruct->pfnGetDeviceProcAddr   = gpa_vkGetDeviceProcAddr;
+        pVersionStruct->pfnGetInstanceProcAddr = bhdr_vkGetInstanceProcAddr;
+        pVersionStruct->pfnGetDeviceProcAddr   = bhdr_vkGetDeviceProcAddr;
         pVersionStruct->pfnGetPhysicalDeviceProcAddr = NULL;
     }
 

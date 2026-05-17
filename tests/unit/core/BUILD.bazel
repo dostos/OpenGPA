@@ -52,7 +52,7 @@ cc_test(
     name = "test_engine",
     srcs = ["test_engine.cpp"],
     deps = [
-        "//src/core:gpa_core",
+        "//src/core:bhdr_core",
         "//src/core:ipc",
         "//src/core:store",
         "@googletest//:gtest_main",

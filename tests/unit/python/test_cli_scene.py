@@ -51,7 +51,7 @@ def _client(**extra_paths) -> _CapturingClient:
 
 
 def test_get_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = scene_mod.run_get(client=client, frame=None, print_stream=buf)
@@ -60,7 +60,7 @@ def test_get_hits_correct_url(monkeypatch):
 
 
 def test_get_output_is_json_passthrough(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     payload = {"camera": {"fov": 45}, "objects": []}
     path = f"/api/v1/frames/{_CURRENT_FID}/scene"
     client = _client(**{path: payload})
@@ -76,7 +76,7 @@ def test_get_output_is_json_passthrough(monkeypatch):
 
 
 def test_camera_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = scene_mod.run_camera(client=client, frame=None, print_stream=buf)
@@ -90,7 +90,7 @@ def test_camera_hits_correct_url(monkeypatch):
 
 
 def test_objects_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = scene_mod.run_objects(client=client, frame=None, print_stream=buf)
@@ -99,7 +99,7 @@ def test_objects_hits_correct_url(monkeypatch):
 
 
 def test_objects_limit_offset_query_params(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     path = f"/api/v1/frames/{_CURRENT_FID}/scene/objects?limit=5&offset=10"
     client = _client(**{path: {"objects": []}})
     buf = io.StringIO()
@@ -116,7 +116,7 @@ def test_objects_limit_offset_query_params(monkeypatch):
 
 
 def test_find_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     from urllib.parse import urlencode
     qs = urlencode({"predicate": "material:transparent", "limit": 10})
     path = f"/api/v1/frames/{_CURRENT_FID}/scene/find?{qs}"
@@ -131,7 +131,7 @@ def test_find_hits_correct_url(monkeypatch):
 
 
 def test_find_default_limit(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     # Should not raise; default limit=10 appended
@@ -151,7 +151,7 @@ def test_find_default_limit(monkeypatch):
 
 
 def test_explain_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = scene_mod.run_explain(client=client, frame=None, x=200, y=150, print_stream=buf)
@@ -165,7 +165,7 @@ def test_explain_hits_correct_url(monkeypatch):
 
 
 def test_get_frame_env_fallback(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "3")
+    monkeypatch.setenv("BHDR_FRAME_ID", "3")
     path = "/api/v1/frames/3/scene"
     client = _client(**{path: {"camera": None, "objects": []}})
     buf = io.StringIO()
@@ -175,7 +175,7 @@ def test_get_frame_env_fallback(monkeypatch):
 
 
 def test_explicit_frame_overrides_env(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "3")
+    monkeypatch.setenv("BHDR_FRAME_ID", "3")
     path = "/api/v1/frames/5/scene/camera"
     client = _client(**{path: {"fov": 60}})
     buf = io.StringIO()

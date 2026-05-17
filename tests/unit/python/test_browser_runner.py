@@ -147,7 +147,7 @@ def test_runner_launches_via_injected_fn(tmp_path):
     with patch.object(BrowserRunner, "_poll_status",
                       return_value={"frame_count": 0,
                                     "sources_count": 0,
-                                    "gpa_done": False}):
+                                    "bhdr_done": False}):
         runner = BrowserRunner()
         result = runner.run(opts)
 
@@ -178,8 +178,8 @@ def test_runner_polls_until_frame_captured(tmp_path):
     def fake_poll(self, session):  # noqa: ARG001
         calls["n"] += 1
         if calls["n"] < 3:
-            return {"frame_count": 0, "sources_count": 0, "gpa_done": False}
-        return {"frame_count": 1, "sources_count": 1, "gpa_done": False}
+            return {"frame_count": 0, "sources_count": 0, "bhdr_done": False}
+        return {"frame_count": 1, "sources_count": 1, "bhdr_done": False}
 
     proc = _StubProc(alive=True)
 
@@ -209,7 +209,7 @@ def test_runner_times_out(tmp_path):
     with patch.object(BrowserRunner, "_poll_status",
                       return_value={"frame_count": 0,
                                     "sources_count": 0,
-                                    "gpa_done": False}):
+                                    "bhdr_done": False}):
         result = BrowserRunner().run(opts)
     elapsed = time.monotonic() - started
 
@@ -219,15 +219,15 @@ def test_runner_times_out(tmp_path):
     assert elapsed < 3.0
 
 
-def test_runner_completes_on_gpa_done(tmp_path):
-    """gpa_done annotation alone ends the poll loop."""
+def test_runner_completes_on_bhdr_done(tmp_path):
+    """bhdr_done annotation alone ends the poll loop."""
     polls = {"n": 0}
 
     def fake_poll(self, session):  # noqa: ARG001
         polls["n"] += 1
         if polls["n"] == 1:
-            return {"frame_count": 0, "sources_count": 0, "gpa_done": False}
-        return {"frame_count": 0, "sources_count": 0, "gpa_done": True}
+            return {"frame_count": 0, "sources_count": 0, "bhdr_done": False}
+        return {"frame_count": 0, "sources_count": 0, "bhdr_done": True}
 
     proc = _StubProc(alive=True)
 
@@ -238,7 +238,7 @@ def test_runner_completes_on_gpa_done(tmp_path):
     with patch.object(BrowserRunner, "_poll_status", new=fake_poll):
         result = BrowserRunner().run(opts)
 
-    assert result.gpa_done is True
+    assert result.bhdr_done is True
     assert result.timed_out is False
 
 
@@ -258,7 +258,7 @@ def test_runner_tears_down_chromium_on_exit(tmp_path):
     with patch.object(BrowserRunner, "_poll_status",
                       return_value={"frame_count": 0,
                                     "sources_count": 0,
-                                    "gpa_done": False}):
+                                    "bhdr_done": False}):
         BrowserRunner().run(opts)
 
     assert proc.terminated is True
@@ -275,7 +275,7 @@ def test_runner_keeps_chromium_open_when_requested(tmp_path):
     with patch.object(BrowserRunner, "_poll_status",
                       return_value={"frame_count": 0,
                                     "sources_count": 0,
-                                    "gpa_done": False}):
+                                    "bhdr_done": False}):
         BrowserRunner().run(opts)
 
     assert proc.terminated is False

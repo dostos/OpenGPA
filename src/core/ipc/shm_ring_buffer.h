@@ -39,14 +39,14 @@ static_assert(sizeof(SlotHeader) == 64, "SlotHeader must be exactly one cache li
 
 // Ring-buffer header placed at the start of the shared memory segment.
 struct RingHeader {
-    uint64_t magic;       // GPA_SHM_MAGIC — sanity check on open()
+    uint64_t magic;       // BHDR_SHM_MAGIC — sanity check on open()
     uint32_t num_slots;
     uint32_t _pad;
     uint64_t slot_size;   // usable data bytes per slot
     uint64_t total_size;  // total mmap size (informational)
 };
 
-static constexpr uint64_t GPA_SHM_MAGIC = 0x474C415F53484D00ULL; // "GPA_SHM\0"
+static constexpr uint64_t BHDR_SHM_MAGIC = 0x474C415F53484D00ULL; // "BHDR_SHM\0"
 
 class ShmRingBuffer {
 public:
@@ -95,7 +95,7 @@ private:
 
     void*       base_{nullptr};    // start of mmap region
     size_t      mapped_size_{0};   // total mmap size
-    std::string name_;             // shm name (e.g. "/gpa_ipc")
+    std::string name_;             // shm name (e.g. "/bhdr_ipc")
     bool        owner_{false};     // true iff we should call shm_unlink
     uint32_t    num_slots_{0};
     uint64_t    slot_size_{0};

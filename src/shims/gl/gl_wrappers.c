@@ -8,25 +8,25 @@
 #include "native_trace.h"
 
 /* Declared in gl_shim.c */
-extern GpaShadowState gpa_shadow;
-void gpa_init(void);
+extern BhdrShadowState bhdr_shadow;
+void bhdr_init(void);
 
 /* Native-trace scan hook. Fires on glUniform* / glBindTexture in gated
  * mode, matching the browser JS scanner.
  *
- *   GPA_TRACE_NATIVE=1        → globals scan (Phase 1)
- *   GPA_TRACE_NATIVE_STACK=1  → stack-local scan (Phase 2)
+ *   BHDR_TRACE_NATIVE=1        → globals scan (Phase 1)
+ *   BHDR_TRACE_NATIVE_STACK=1  → stack-local scan (Phase 2)
  *
  * Both env vars are independent; either or both may be enabled. Each scan
  * is a no-op unless its scanner was successfully initialised. */
-static inline void gpa_trace_gated(void) {
-    if (gpa_native_trace_is_enabled()) {
-        gpa_native_trace_scan(gpa_shadow.frame_number,
-                              gpa_shadow.draw_call_count);
+static inline void bhdr_trace_gated(void) {
+    if (bhdr_native_trace_is_enabled()) {
+        bhdr_native_trace_scan(bhdr_shadow.frame_number,
+                              bhdr_shadow.draw_call_count);
     }
-    if (gpa_native_trace_stack_is_enabled()) {
-        gpa_native_trace_scan_stack(gpa_shadow.frame_number,
-                                    gpa_shadow.draw_call_count);
+    if (bhdr_native_trace_stack_is_enabled()) {
+        bhdr_native_trace_scan_stack(bhdr_shadow.frame_number,
+                                    bhdr_shadow.draw_call_count);
     }
 }
 
@@ -34,51 +34,51 @@ static inline void gpa_trace_gated(void) {
  * Dispatch table initialization
  * -------------------------------------------------------------------------- */
 
-void gpa_wrappers_init(void) {
-    gpa_real_gl.glDrawArrays            = dlsym(RTLD_NEXT, "glDrawArrays");
-    gpa_real_gl.glDrawElements          = dlsym(RTLD_NEXT, "glDrawElements");
-    gpa_real_gl.glDrawArraysInstanced   = dlsym(RTLD_NEXT, "glDrawArraysInstanced");
-    gpa_real_gl.glDrawElementsInstanced = dlsym(RTLD_NEXT, "glDrawElementsInstanced");
+void bhdr_wrappers_init(void) {
+    bhdr_real_gl.glDrawArrays            = dlsym(RTLD_NEXT, "glDrawArrays");
+    bhdr_real_gl.glDrawElements          = dlsym(RTLD_NEXT, "glDrawElements");
+    bhdr_real_gl.glDrawArraysInstanced   = dlsym(RTLD_NEXT, "glDrawArraysInstanced");
+    bhdr_real_gl.glDrawElementsInstanced = dlsym(RTLD_NEXT, "glDrawElementsInstanced");
 
-    gpa_real_gl.glUseProgram        = dlsym(RTLD_NEXT, "glUseProgram");
-    gpa_real_gl.glUniform1f         = dlsym(RTLD_NEXT, "glUniform1f");
-    gpa_real_gl.glUniform3f         = dlsym(RTLD_NEXT, "glUniform3f");
-    gpa_real_gl.glUniform4f         = dlsym(RTLD_NEXT, "glUniform4f");
-    gpa_real_gl.glUniform1i         = dlsym(RTLD_NEXT, "glUniform1i");
-    gpa_real_gl.glUniformMatrix4fv  = dlsym(RTLD_NEXT, "glUniformMatrix4fv");
-    gpa_real_gl.glUniformMatrix3fv  = dlsym(RTLD_NEXT, "glUniformMatrix3fv");
+    bhdr_real_gl.glUseProgram        = dlsym(RTLD_NEXT, "glUseProgram");
+    bhdr_real_gl.glUniform1f         = dlsym(RTLD_NEXT, "glUniform1f");
+    bhdr_real_gl.glUniform3f         = dlsym(RTLD_NEXT, "glUniform3f");
+    bhdr_real_gl.glUniform4f         = dlsym(RTLD_NEXT, "glUniform4f");
+    bhdr_real_gl.glUniform1i         = dlsym(RTLD_NEXT, "glUniform1i");
+    bhdr_real_gl.glUniformMatrix4fv  = dlsym(RTLD_NEXT, "glUniformMatrix4fv");
+    bhdr_real_gl.glUniformMatrix3fv  = dlsym(RTLD_NEXT, "glUniformMatrix3fv");
 
-    gpa_real_gl.glActiveTexture = dlsym(RTLD_NEXT, "glActiveTexture");
-    gpa_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
-    gpa_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
+    bhdr_real_gl.glActiveTexture = dlsym(RTLD_NEXT, "glActiveTexture");
+    bhdr_real_gl.glBindTexture   = dlsym(RTLD_NEXT, "glBindTexture");
+    bhdr_real_gl.glTexImage2D    = dlsym(RTLD_NEXT, "glTexImage2D");
 
-    gpa_real_gl.glClear       = dlsym(RTLD_NEXT, "glClear");
+    bhdr_real_gl.glClear       = dlsym(RTLD_NEXT, "glClear");
 
-    gpa_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
-    gpa_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
-    gpa_real_gl.glDepthFunc   = dlsym(RTLD_NEXT, "glDepthFunc");
-    gpa_real_gl.glDepthMask   = dlsym(RTLD_NEXT, "glDepthMask");
-    gpa_real_gl.glBlendFunc   = dlsym(RTLD_NEXT, "glBlendFunc");
-    gpa_real_gl.glCullFace    = dlsym(RTLD_NEXT, "glCullFace");
-    gpa_real_gl.glFrontFace   = dlsym(RTLD_NEXT, "glFrontFace");
-    gpa_real_gl.glViewport    = dlsym(RTLD_NEXT, "glViewport");
-    gpa_real_gl.glScissor     = dlsym(RTLD_NEXT, "glScissor");
+    bhdr_real_gl.glEnable      = dlsym(RTLD_NEXT, "glEnable");
+    bhdr_real_gl.glDisable     = dlsym(RTLD_NEXT, "glDisable");
+    bhdr_real_gl.glDepthFunc   = dlsym(RTLD_NEXT, "glDepthFunc");
+    bhdr_real_gl.glDepthMask   = dlsym(RTLD_NEXT, "glDepthMask");
+    bhdr_real_gl.glBlendFunc   = dlsym(RTLD_NEXT, "glBlendFunc");
+    bhdr_real_gl.glCullFace    = dlsym(RTLD_NEXT, "glCullFace");
+    bhdr_real_gl.glFrontFace   = dlsym(RTLD_NEXT, "glFrontFace");
+    bhdr_real_gl.glViewport    = dlsym(RTLD_NEXT, "glViewport");
+    bhdr_real_gl.glScissor     = dlsym(RTLD_NEXT, "glScissor");
 
-    gpa_real_gl.glBindVertexArray      = dlsym(RTLD_NEXT, "glBindVertexArray");
-    gpa_real_gl.glBindBuffer           = dlsym(RTLD_NEXT, "glBindBuffer");
-    gpa_real_gl.glBindFramebuffer      = dlsym(RTLD_NEXT, "glBindFramebuffer");
-    gpa_real_gl.glFramebufferTexture2D = dlsym(RTLD_NEXT, "glFramebufferTexture2D");
+    bhdr_real_gl.glBindVertexArray      = dlsym(RTLD_NEXT, "glBindVertexArray");
+    bhdr_real_gl.glBindBuffer           = dlsym(RTLD_NEXT, "glBindBuffer");
+    bhdr_real_gl.glBindFramebuffer      = dlsym(RTLD_NEXT, "glBindFramebuffer");
+    bhdr_real_gl.glFramebufferTexture2D = dlsym(RTLD_NEXT, "glFramebufferTexture2D");
 
-    gpa_real_gl.glReadPixels   = dlsym(RTLD_NEXT, "glReadPixels");
-    gpa_real_gl.glGetIntegerv  = dlsym(RTLD_NEXT, "glGetIntegerv");
+    bhdr_real_gl.glReadPixels   = dlsym(RTLD_NEXT, "glReadPixels");
+    bhdr_real_gl.glGetIntegerv  = dlsym(RTLD_NEXT, "glGetIntegerv");
 
-    gpa_real_gl.glPushDebugGroup = dlsym(RTLD_NEXT, "glPushDebugGroup");
-    gpa_real_gl.glPopDebugGroup  = dlsym(RTLD_NEXT, "glPopDebugGroup");
+    bhdr_real_gl.glPushDebugGroup = dlsym(RTLD_NEXT, "glPushDebugGroup");
+    bhdr_real_gl.glPopDebugGroup  = dlsym(RTLD_NEXT, "glPopDebugGroup");
 
-    gpa_real_gl.glXSwapBuffers        = dlsym(RTLD_NEXT, "glXSwapBuffers");
-    gpa_real_gl.glXGetProcAddressARB  = dlsym(RTLD_NEXT, "glXGetProcAddressARB");
+    bhdr_real_gl.glXSwapBuffers        = dlsym(RTLD_NEXT, "glXSwapBuffers");
+    bhdr_real_gl.glXGetProcAddressARB  = dlsym(RTLD_NEXT, "glXGetProcAddressARB");
 
-    gpa_real_gl.eglSwapBuffers        = dlsym(RTLD_NEXT, "eglSwapBuffers");
+    bhdr_real_gl.eglSwapBuffers        = dlsym(RTLD_NEXT, "eglSwapBuffers");
 }
 
 /* --------------------------------------------------------------------------
@@ -86,10 +86,10 @@ void gpa_wrappers_init(void) {
  * -------------------------------------------------------------------------- */
 
 void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
-    gpa_init();
-    gpa_real_gl.glDrawArrays(mode, first, count);
-    gpa_shadow_record_draw(&gpa_shadow);
-    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
+    bhdr_init();
+    bhdr_real_gl.glDrawArrays(mode, first, count);
+    bhdr_shadow_record_draw(&bhdr_shadow);
+    bhdr_frame_record_draw_call(&bhdr_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
                                /*index_type=*/0,
                                /*instance_count=*/1);
@@ -97,10 +97,10 @@ void glDrawArrays(GLenum mode, GLint first, GLsizei count) {
 }
 
 void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices) {
-    gpa_init();
-    gpa_real_gl.glDrawElements(mode, count, type, indices);
-    gpa_shadow_record_draw(&gpa_shadow);
-    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
+    bhdr_init();
+    bhdr_real_gl.glDrawElements(mode, count, type, indices);
+    bhdr_shadow_record_draw(&bhdr_shadow);
+    bhdr_frame_record_draw_call(&bhdr_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
                                /*index_type=*/(uint32_t)type,
@@ -109,10 +109,10 @@ void glDrawElements(GLenum mode, GLsizei count, GLenum type, const void* indices
 }
 
 void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei instancecount) {
-    gpa_init();
-    gpa_real_gl.glDrawArraysInstanced(mode, first, count, instancecount);
-    gpa_shadow_record_draw(&gpa_shadow);
-    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
+    bhdr_init();
+    bhdr_real_gl.glDrawArraysInstanced(mode, first, count, instancecount);
+    bhdr_shadow_record_draw(&bhdr_shadow);
+    bhdr_frame_record_draw_call(&bhdr_shadow, (uint32_t)mode,
                                (uint32_t)count, /*index_count=*/0,
                                /*index_type=*/0,
                                (uint32_t)instancecount);
@@ -121,10 +121,10 @@ void glDrawArraysInstanced(GLenum mode, GLint first, GLsizei count, GLsizei inst
 
 void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
                               const void* indices, GLsizei instancecount) {
-    gpa_init();
-    gpa_real_gl.glDrawElementsInstanced(mode, count, type, indices, instancecount);
-    gpa_shadow_record_draw(&gpa_shadow);
-    gpa_frame_record_draw_call(&gpa_shadow, (uint32_t)mode,
+    bhdr_init();
+    bhdr_real_gl.glDrawElementsInstanced(mode, count, type, indices, instancecount);
+    bhdr_shadow_record_draw(&bhdr_shadow);
+    bhdr_frame_record_draw_call(&bhdr_shadow, (uint32_t)mode,
                                /*vertex_count=*/(uint32_t)count,
                                /*index_count=*/(uint32_t)count,
                                /*index_type=*/(uint32_t)type,
@@ -137,53 +137,53 @@ void glDrawElementsInstanced(GLenum mode, GLsizei count, GLenum type,
  * -------------------------------------------------------------------------- */
 
 void glUseProgram(GLuint program) {
-    gpa_init();
-    gpa_real_gl.glUseProgram(program);
-    gpa_shadow_use_program(&gpa_shadow, program);
+    bhdr_init();
+    bhdr_real_gl.glUseProgram(program);
+    bhdr_shadow_use_program(&bhdr_shadow, program);
 }
 
 void glUniform1f(GLint location, GLfloat v0) {
-    gpa_init();
-    gpa_real_gl.glUniform1f(location, v0);
-    gpa_shadow_set_uniform_1f(&gpa_shadow, location, v0);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniform1f(location, v0);
+    bhdr_shadow_set_uniform_1f(&bhdr_shadow, location, v0);
+    bhdr_trace_gated();
 }
 
 void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) {
-    gpa_init();
-    gpa_real_gl.glUniform3f(location, v0, v1, v2);
-    gpa_shadow_set_uniform_3f(&gpa_shadow, location, v0, v1, v2);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniform3f(location, v0, v1, v2);
+    bhdr_shadow_set_uniform_3f(&bhdr_shadow, location, v0, v1, v2);
+    bhdr_trace_gated();
 }
 
 void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) {
-    gpa_init();
-    gpa_real_gl.glUniform4f(location, v0, v1, v2, v3);
-    gpa_shadow_set_uniform_4f(&gpa_shadow, location, v0, v1, v2, v3);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniform4f(location, v0, v1, v2, v3);
+    bhdr_shadow_set_uniform_4f(&bhdr_shadow, location, v0, v1, v2, v3);
+    bhdr_trace_gated();
 }
 
 void glUniform1i(GLint location, GLint v0) {
-    gpa_init();
-    gpa_real_gl.glUniform1i(location, v0);
-    gpa_shadow_set_uniform_1i(&gpa_shadow, location, v0);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniform1i(location, v0);
+    bhdr_shadow_set_uniform_1i(&bhdr_shadow, location, v0);
+    bhdr_trace_gated();
 }
 
 void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose,
                          const GLfloat* value) {
-    gpa_init();
-    gpa_real_gl.glUniformMatrix4fv(location, count, transpose, value);
-    gpa_shadow_set_uniform_mat4(&gpa_shadow, location, value);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniformMatrix4fv(location, count, transpose, value);
+    bhdr_shadow_set_uniform_mat4(&bhdr_shadow, location, value);
+    bhdr_trace_gated();
 }
 
 void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
                          const GLfloat* value) {
-    gpa_init();
-    gpa_real_gl.glUniformMatrix3fv(location, count, transpose, value);
-    gpa_shadow_set_uniform_mat3(&gpa_shadow, location, value);
-    gpa_trace_gated();
+    bhdr_init();
+    bhdr_real_gl.glUniformMatrix3fv(location, count, transpose, value);
+    bhdr_shadow_set_uniform_mat3(&bhdr_shadow, location, value);
+    bhdr_trace_gated();
 }
 
 /* --------------------------------------------------------------------------
@@ -191,31 +191,31 @@ void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose,
  * -------------------------------------------------------------------------- */
 
 void glActiveTexture(GLenum texture) {
-    gpa_init();
-    gpa_real_gl.glActiveTexture(texture);
-    gpa_shadow_active_texture(&gpa_shadow, texture);
+    bhdr_init();
+    bhdr_real_gl.glActiveTexture(texture);
+    bhdr_shadow_active_texture(&bhdr_shadow, texture);
 }
 
 void glBindTexture(GLenum target, GLuint texture) {
-    gpa_init();
-    gpa_real_gl.glBindTexture(target, texture);
+    bhdr_init();
+    bhdr_real_gl.glBindTexture(target, texture);
     if (target == GL_TEXTURE_2D) {
-        gpa_shadow_bind_texture_2d(&gpa_shadow, texture);
+        bhdr_shadow_bind_texture_2d(&bhdr_shadow, texture);
     }
-    gpa_trace_gated();
+    bhdr_trace_gated();
 }
 
 void glTexImage2D(GLenum target, GLint level, GLint internalformat,
                   GLsizei width, GLsizei height, GLint border,
                   GLenum format, GLenum type, const void* pixels) {
-    gpa_init();
-    gpa_real_gl.glTexImage2D(target, level, internalformat, width, height,
+    bhdr_init();
+    bhdr_real_gl.glTexImage2D(target, level, internalformat, width, height,
                              border, format, type, pixels);
     /* Track texture dimensions for level 0 of GL_TEXTURE_2D */
     if (target == GL_TEXTURE_2D && level == 0) {
-        uint32_t tex_id = gpa_shadow.bound_textures_2d[gpa_shadow.active_texture_unit];
+        uint32_t tex_id = bhdr_shadow.bound_textures_2d[bhdr_shadow.active_texture_unit];
         if (tex_id > 0) {
-            gpa_shadow_tex_image_2d(&gpa_shadow, tex_id,
+            bhdr_shadow_tex_image_2d(&bhdr_shadow, tex_id,
                                     (uint32_t)width, (uint32_t)height,
                                     (uint32_t)internalformat);
         }
@@ -227,9 +227,9 @@ void glTexImage2D(GLenum target, GLint level, GLint internalformat,
  * -------------------------------------------------------------------------- */
 
 void glClear(GLbitfield mask) {
-    gpa_init();
-    gpa_real_gl.glClear(mask);
-    gpa_shadow_record_clear(&gpa_shadow, (uint32_t)mask);
+    bhdr_init();
+    bhdr_real_gl.glClear(mask);
+    bhdr_shadow_record_clear(&bhdr_shadow, (uint32_t)mask);
 }
 
 /* --------------------------------------------------------------------------
@@ -237,57 +237,57 @@ void glClear(GLbitfield mask) {
  * -------------------------------------------------------------------------- */
 
 void glEnable(GLenum cap) {
-    gpa_init();
-    gpa_real_gl.glEnable(cap);
-    gpa_shadow_enable(&gpa_shadow, cap);
+    bhdr_init();
+    bhdr_real_gl.glEnable(cap);
+    bhdr_shadow_enable(&bhdr_shadow, cap);
 }
 
 void glDisable(GLenum cap) {
-    gpa_init();
-    gpa_real_gl.glDisable(cap);
-    gpa_shadow_disable(&gpa_shadow, cap);
+    bhdr_init();
+    bhdr_real_gl.glDisable(cap);
+    bhdr_shadow_disable(&bhdr_shadow, cap);
 }
 
 void glDepthFunc(GLenum func) {
-    gpa_init();
-    gpa_real_gl.glDepthFunc(func);
-    gpa_shadow_depth_func(&gpa_shadow, func);
+    bhdr_init();
+    bhdr_real_gl.glDepthFunc(func);
+    bhdr_shadow_depth_func(&bhdr_shadow, func);
 }
 
 void glDepthMask(GLboolean flag) {
-    gpa_init();
-    gpa_real_gl.glDepthMask(flag);
-    gpa_shadow_depth_mask(&gpa_shadow, (bool)flag);
+    bhdr_init();
+    bhdr_real_gl.glDepthMask(flag);
+    bhdr_shadow_depth_mask(&bhdr_shadow, (bool)flag);
 }
 
 void glBlendFunc(GLenum sfactor, GLenum dfactor) {
-    gpa_init();
-    gpa_real_gl.glBlendFunc(sfactor, dfactor);
-    gpa_shadow_blend_func(&gpa_shadow, sfactor, dfactor);
+    bhdr_init();
+    bhdr_real_gl.glBlendFunc(sfactor, dfactor);
+    bhdr_shadow_blend_func(&bhdr_shadow, sfactor, dfactor);
 }
 
 void glCullFace(GLenum mode) {
-    gpa_init();
-    gpa_real_gl.glCullFace(mode);
-    gpa_shadow_cull_face(&gpa_shadow, mode);
+    bhdr_init();
+    bhdr_real_gl.glCullFace(mode);
+    bhdr_shadow_cull_face(&bhdr_shadow, mode);
 }
 
 void glFrontFace(GLenum mode) {
-    gpa_init();
-    gpa_real_gl.glFrontFace(mode);
-    gpa_shadow_front_face(&gpa_shadow, mode);
+    bhdr_init();
+    bhdr_real_gl.glFrontFace(mode);
+    bhdr_shadow_front_face(&bhdr_shadow, mode);
 }
 
 void glViewport(GLint x, GLint y, GLsizei width, GLsizei height) {
-    gpa_init();
-    gpa_real_gl.glViewport(x, y, width, height);
-    gpa_shadow_viewport(&gpa_shadow, x, y, width, height);
+    bhdr_init();
+    bhdr_real_gl.glViewport(x, y, width, height);
+    bhdr_shadow_viewport(&bhdr_shadow, x, y, width, height);
 }
 
 void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
-    gpa_init();
-    gpa_real_gl.glScissor(x, y, width, height);
-    gpa_shadow_scissor(&gpa_shadow, x, y, width, height);
+    bhdr_init();
+    bhdr_real_gl.glScissor(x, y, width, height);
+    bhdr_shadow_scissor(&bhdr_shadow, x, y, width, height);
 }
 
 /* --------------------------------------------------------------------------
@@ -295,29 +295,29 @@ void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) {
  * -------------------------------------------------------------------------- */
 
 void glBindVertexArray(GLuint array) {
-    gpa_init();
-    gpa_real_gl.glBindVertexArray(array);
-    gpa_shadow_bind_vao(&gpa_shadow, array);
+    bhdr_init();
+    bhdr_real_gl.glBindVertexArray(array);
+    bhdr_shadow_bind_vao(&bhdr_shadow, array);
 }
 
 void glBindBuffer(GLenum target, GLuint buffer) {
-    gpa_init();
-    gpa_real_gl.glBindBuffer(target, buffer);
-    gpa_shadow_bind_buffer(&gpa_shadow, target, buffer);
+    bhdr_init();
+    bhdr_real_gl.glBindBuffer(target, buffer);
+    bhdr_shadow_bind_buffer(&bhdr_shadow, target, buffer);
 }
 
 void glBindFramebuffer(GLenum target, GLuint framebuffer) {
-    gpa_init();
-    gpa_real_gl.glBindFramebuffer(target, framebuffer);
-    gpa_shadow_bind_framebuffer(&gpa_shadow, target, framebuffer);
+    bhdr_init();
+    bhdr_real_gl.glBindFramebuffer(target, framebuffer);
+    bhdr_shadow_bind_framebuffer(&bhdr_shadow, target, framebuffer);
 }
 
 void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget,
                              GLuint texture, GLint level) {
-    gpa_init();
-    if (gpa_real_gl.glFramebufferTexture2D)
-        gpa_real_gl.glFramebufferTexture2D(target, attachment, textarget, texture, level);
-    gpa_shadow_framebuffer_texture_2d(&gpa_shadow, target, attachment, texture);
+    bhdr_init();
+    if (bhdr_real_gl.glFramebufferTexture2D)
+        bhdr_real_gl.glFramebufferTexture2D(target, attachment, textarget, texture, level);
+    bhdr_shadow_framebuffer_texture_2d(&bhdr_shadow, target, attachment, texture);
 }
 
 /* --------------------------------------------------------------------------
@@ -326,13 +326,13 @@ void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget,
 
 void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
                    GLenum format, GLenum type, void* pixels) {
-    gpa_init();
-    gpa_real_gl.glReadPixels(x, y, width, height, format, type, pixels);
+    bhdr_init();
+    bhdr_real_gl.glReadPixels(x, y, width, height, format, type, pixels);
 }
 
 void glGetIntegerv(GLenum pname, GLint* data) {
-    gpa_init();
-    gpa_real_gl.glGetIntegerv(pname, data);
+    bhdr_init();
+    bhdr_real_gl.glGetIntegerv(pname, data);
 }
 
 /* --------------------------------------------------------------------------
@@ -340,17 +340,17 @@ void glGetIntegerv(GLenum pname, GLint* data) {
  * -------------------------------------------------------------------------- */
 
 void glPushDebugGroup(GLenum source, GLuint id, GLsizei length, const char* message) {
-    gpa_init();
-    if (gpa_real_gl.glPushDebugGroup)
-        gpa_real_gl.glPushDebugGroup(source, id, length, message);
-    gpa_shadow_push_debug_group(&gpa_shadow, id, message);
+    bhdr_init();
+    if (bhdr_real_gl.glPushDebugGroup)
+        bhdr_real_gl.glPushDebugGroup(source, id, length, message);
+    bhdr_shadow_push_debug_group(&bhdr_shadow, id, message);
 }
 
 void glPopDebugGroup(void) {
-    gpa_init();
-    if (gpa_real_gl.glPopDebugGroup)
-        gpa_real_gl.glPopDebugGroup();
-    gpa_shadow_pop_debug_group(&gpa_shadow);
+    bhdr_init();
+    if (bhdr_real_gl.glPopDebugGroup)
+        bhdr_real_gl.glPopDebugGroup();
+    bhdr_shadow_pop_debug_group(&bhdr_shadow);
 }
 
 /* --------------------------------------------------------------------------
@@ -358,22 +358,22 @@ void glPopDebugGroup(void) {
  * -------------------------------------------------------------------------- */
 
 void glXSwapBuffers(Display* dpy, GLXDrawable drawable) {
-    gpa_init();
-    gpa_frame_on_swap();             /* capture before swap (includes draw call data) */
-    gpa_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
-    gpa_shadow_new_frame(&gpa_shadow);
-    gpa_real_gl.glXSwapBuffers(dpy, drawable);
+    bhdr_init();
+    bhdr_frame_on_swap();             /* capture before swap (includes draw call data) */
+    bhdr_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
+    bhdr_shadow_new_frame(&bhdr_shadow);
+    bhdr_real_gl.glXSwapBuffers(dpy, drawable);
 }
 
 /* EGL swap path — same shape as glXSwapBuffers. Triggers on chromium /
  * Wayland / Android-style stacks where libEGL is the swap entrypoint. */
 unsigned int eglSwapBuffers(void* dpy, void* surface) {
-    gpa_init();
-    gpa_frame_on_swap();
-    gpa_frame_reset_draw_calls();
-    gpa_shadow_new_frame(&gpa_shadow);
-    if (gpa_real_gl.eglSwapBuffers) {
-        return gpa_real_gl.eglSwapBuffers(dpy, surface);
+    bhdr_init();
+    bhdr_frame_on_swap();
+    bhdr_frame_reset_draw_calls();
+    bhdr_shadow_new_frame(&bhdr_shadow);
+    if (bhdr_real_gl.eglSwapBuffers) {
+        return bhdr_real_gl.eglSwapBuffers(dpy, surface);
     }
     return 1;  /* EGL_TRUE */
 }
@@ -389,16 +389,16 @@ unsigned int eglSwapBuffers(void* dpy, void* surface) {
  * -------------------------------------------------------------------------- */
 
 __attribute__((visibility("default")))
-void gpa_emit_frame(void) {
-    gpa_init();
-    gpa_frame_on_swap();             /* capture: draw calls + framebuffer + IPC notify */
-    gpa_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
-    gpa_shadow_new_frame(&gpa_shadow);
+void bhdr_emit_frame(void) {
+    bhdr_init();
+    bhdr_frame_on_swap();             /* capture: draw calls + framebuffer + IPC notify */
+    bhdr_frame_reset_draw_calls();    /* clear per-frame buffer for next frame */
+    bhdr_shadow_new_frame(&bhdr_shadow);
 }
 
 /* Map function names to our wrapper addresses so that apps using
  * glXGetProcAddress get our interceptors, not the real GL functions. */
-static __GLXextFuncPtr gpa_resolve_wrapper(const char* name) {
+static __GLXextFuncPtr bhdr_resolve_wrapper(const char* name) {
     if (!name) return (void*)0;
     /* Draw calls */
     if (strcmp(name, "glDrawArrays") == 0)            return (__GLXextFuncPtr)glDrawArrays;
@@ -444,16 +444,16 @@ static __GLXextFuncPtr gpa_resolve_wrapper(const char* name) {
 }
 
 __GLXextFuncPtr glXGetProcAddressARB(const unsigned char* procName) {
-    gpa_init();
-    __GLXextFuncPtr wrapper = gpa_resolve_wrapper((const char*)procName);
+    bhdr_init();
+    __GLXextFuncPtr wrapper = bhdr_resolve_wrapper((const char*)procName);
     if (wrapper) return wrapper;
-    return gpa_real_gl.glXGetProcAddressARB(procName);
+    return bhdr_real_gl.glXGetProcAddressARB(procName);
 }
 
 /* Also intercept glXGetProcAddress (non-ARB variant) */
 __GLXextFuncPtr glXGetProcAddress(const unsigned char* procName) {
-    gpa_init();
-    __GLXextFuncPtr wrapper = gpa_resolve_wrapper((const char*)procName);
+    bhdr_init();
+    __GLXextFuncPtr wrapper = bhdr_resolve_wrapper((const char*)procName);
     if (wrapper) return wrapper;
-    return gpa_real_gl.glXGetProcAddressARB(procName);
+    return bhdr_real_gl.glXGetProcAddressARB(procName);
 }

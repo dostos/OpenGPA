@@ -73,7 +73,7 @@ def main() -> None:
 
         tool_counts = parsed.get("tool_counts") or {}
         # Call-count for GPA endpoint usage.
-        gpa_calls = tool_counts.get("gpa", 0) + tool_counts.get("curl", 0)
+        bhdr_calls = tool_counts.get("gpa", 0) + tool_counts.get("curl", 0)
 
         run = {
             "parsed_json": tail is not None,
@@ -107,7 +107,7 @@ def main() -> None:
             "cache_read": parsed.get("cache_read", 0),
             "cache_creation": parsed.get("cache_creation", 0),
             "tool_counts": tool_counts,
-            "gpa_calls": gpa_calls,
+            "bhdr_calls": bhdr_calls,
             "file_score": file_score,
             "file_hits": file_hits,
             "file_misses": file_misses,

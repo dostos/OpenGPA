@@ -8,8 +8,8 @@ from bhdr.eval.llm_agent import (
     AgentResult,
     CODE_ONLY_TOOLS,
     EvalAgent,
-    GPA_TOOLS,
-    GpaToolExecutor,
+    BHDR_TOOLS,
+    BhdrToolExecutor,
 )
 
 
@@ -19,13 +19,13 @@ from bhdr.eval.llm_agent import (
 
 class TestGpaToolsStructure(unittest.TestCase):
     def test_all_tools_have_required_keys(self):
-        for tool in GPA_TOOLS:
+        for tool in BHDR_TOOLS:
             self.assertIn("name", tool, f"Tool missing 'name': {tool}")
             self.assertIn("description", tool, f"Tool {tool['name']} missing 'description'")
             self.assertIn("input_schema", tool, f"Tool {tool['name']} missing 'input_schema'")
 
     def test_tool_names(self):
-        names = {t["name"] for t in GPA_TOOLS}
+        names = {t["name"] for t in BHDR_TOOLS}
         expected = {
             "query_frame",
             "inspect_drawcall",
@@ -37,13 +37,13 @@ class TestGpaToolsStructure(unittest.TestCase):
         self.assertEqual(names, expected)
 
     def test_input_schemas_are_objects(self):
-        for tool in GPA_TOOLS:
+        for tool in BHDR_TOOLS:
             schema = tool["input_schema"]
             self.assertEqual(schema["type"], "object")
             self.assertIn("properties", schema)
 
     def test_required_fields_present_in_schemas(self):
-        for tool in GPA_TOOLS:
+        for tool in BHDR_TOOLS:
             self.assertIn("required", tool["input_schema"],
                           f"Tool {tool['name']} schema missing 'required'")
 
@@ -55,17 +55,17 @@ class TestCodeOnlyTools(unittest.TestCase):
     def test_code_only_tools_is_read_source_file(self):
         self.assertEqual(CODE_ONLY_TOOLS[0]["name"], "read_source_file")
 
-    def test_code_only_tools_is_last_gpa_tool(self):
-        self.assertIs(CODE_ONLY_TOOLS[0], GPA_TOOLS[-1])
+    def test_code_only_tools_is_last_bhdr_tool(self):
+        self.assertIs(CODE_ONLY_TOOLS[0], BHDR_TOOLS[-1])
 
 
 # ---------------------------------------------------------------------------
-# GpaToolExecutor HTTP routing
+# BhdrToolExecutor HTTP routing
 # ---------------------------------------------------------------------------
 
 class TestGpaToolExecutorQueryFrame(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="test-token",
             frame_id=42,
@@ -108,7 +108,7 @@ class TestGpaToolExecutorQueryFrame(unittest.TestCase):
 
 class TestGpaToolExecutorInspectDrawcall(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
@@ -126,7 +126,7 @@ class TestGpaToolExecutorInspectDrawcall(unittest.TestCase):
 
 class TestGpaToolExecutorQueryPixel(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=3,
@@ -144,7 +144,7 @@ class TestGpaToolExecutorQueryPixel(unittest.TestCase):
 
 class TestGpaToolExecutorQueryScene(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=5,
@@ -180,7 +180,7 @@ class TestGpaToolExecutorQueryScene(unittest.TestCase):
 
 class TestGpaToolExecutorCompareFrames(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
@@ -206,7 +206,7 @@ class TestGpaToolExecutorCompareFrames(unittest.TestCase):
 
 class TestGpaToolExecutorExecuteDispatch(unittest.TestCase):
     def setUp(self):
-        self.executor = GpaToolExecutor(
+        self.executor = BhdrToolExecutor(
             base_url="http://localhost:8080",
             token="tok",
             frame_id=1,
@@ -228,18 +228,18 @@ class TestEvalAgentSystemPrompt(unittest.TestCase):
         with patch("bhdr.eval.agents.api_agent.Anthropic"):
             self.agent = EvalAgent(api_key="fake-key")
 
-    def test_with_gpa_prompt_mentions_tools(self):
+    def test_with_bhdr_prompt_mentions_tools(self):
         prompt = self.agent._build_system_prompt("with_gla")
         for tool in ["query_frame", "inspect_drawcall", "query_pixel",
                      "query_scene", "compare_frames", "read_source_file"]:
             self.assertIn(tool, prompt, f"'{tool}' not mentioned in with_gla prompt")
 
-    def test_with_gpa_prompt_ends_with_diagnosis_fix(self):
+    def test_with_bhdr_prompt_ends_with_diagnosis_fix(self):
         prompt = self.agent._build_system_prompt("with_gla")
         self.assertIn("DIAGNOSIS:", prompt)
         self.assertIn("FIX:", prompt)
 
-    def test_code_only_prompt_does_not_mention_gpa_tools(self):
+    def test_code_only_prompt_does_not_mention_bhdr_tools(self):
         prompt = self.agent._build_system_prompt("code_only")
         for tool in ["query_frame", "inspect_drawcall", "query_pixel",
                      "query_scene", "compare_frames"]:
@@ -391,13 +391,13 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
             MockAnthropic.return_value = self.mock_client
             self.agent = EvalAgent(api_key="fake-key", max_turns=5)
 
-    def test_with_gpa_uses_gpa_tools_list(self):
+    def test_with_bhdr_uses_bhdr_tools_list(self):
         text_block = _make_text_block("DIAGNOSIS: Bad depth test.\nFIX: Enable depth test.")
         self.mock_client.messages.create.return_value = _make_response(
             [text_block], stop_reason="end_turn"
         )
 
-        executor = MagicMock(spec=GpaToolExecutor)
+        executor = MagicMock(spec=BhdrToolExecutor)
         self.agent.run_with_gla(
             scenario_description="Depth issue.",
             source_code="",
@@ -411,7 +411,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
         self.assertIn("inspect_drawcall", tool_names)
         self.assertIn("query_pixel", tool_names)
 
-    def test_with_gpa_delegates_tool_calls_to_executor(self):
+    def test_with_bhdr_delegates_tool_calls_to_executor(self):
         tool_block = _make_tool_use_block("tu2", "query_frame", {"query_type": "overview"})
         text_block = _make_text_block("DIAGNOSIS: OK.\nFIX: Nothing.")
 
@@ -420,7 +420,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
             _make_response([text_block], stop_reason="end_turn"),
         ]
 
-        executor = MagicMock(spec=GpaToolExecutor)
+        executor = MagicMock(spec=BhdrToolExecutor)
         executor.execute.return_value = '{"frame_id": 1}'
 
         self.agent.run_with_gla(

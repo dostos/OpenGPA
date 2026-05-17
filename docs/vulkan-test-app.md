@@ -83,7 +83,7 @@ This app tests basic Vulkan layer interception.
 [OpenGPA] Ended recording command buffer
 
 [OpenGPA] Application ran successfully.
-If VK_LAYER_GPA_capture was active, the layer should have
+If VK_LAYER_BHDR_capture was active, the layer should have
 intercepted all Vulkan calls above.
 
 [OpenGPA] Cleanup complete
@@ -100,12 +100,12 @@ cd examples/vulkan
 make run
 ```
 
-This sets `VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture` and runs the app.
+This sets `VK_INSTANCE_LAYERS=VK_LAYER_BHDR_capture` and runs the app.
 
 ### Manual Execution
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_BHDR_capture
 ./minimal_app
 ```
 
@@ -121,7 +121,7 @@ make debug
 Or manually:
 
 ```bash
-export VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture
+export VK_INSTANCE_LAYERS=VK_LAYER_BHDR_capture
 export VK_LAYER_PATH=~/.config/vulkan/implicit_layer.d
 export VK_LOADER_DEBUG=all
 ./minimal_app 2>&1 | grep -i gpa
@@ -145,7 +145,7 @@ ls -la ~/.config/vulkan/implicit_layer.d/
 
 **Symbol not found**: Ensure the `.so` was built correctly:
 ```bash
-ldd ~/.config/vulkan/implicit_layer.d/libVkLayer_gpa_capture.so
+ldd ~/.config/vulkan/implicit_layer.d/libVkLayer_bhdr_capture.so
 ```
 
 **Device not found**: Your system must have a Vulkan-capable GPU. Check:

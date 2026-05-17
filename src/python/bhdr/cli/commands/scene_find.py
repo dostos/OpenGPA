@@ -49,7 +49,7 @@ def add_subparser(subparsers) -> None:
     )
     p.add_argument(
         "--session", dest="session", type=Path, default=None,
-        help="Session directory (overrides $GPA_SESSION and the link)",
+        help="Session directory (overrides $BHDR_SESSION and the link)",
     )
     p.add_argument(
         "--frame", dest="frame", default=None,

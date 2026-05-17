@@ -57,7 +57,7 @@ class TestRulesListing:
     def test_rules_flag_lists_all(self, monkeypatch, tmp_path):
         # No session needed; --rules short-circuits.
         from bhdr.cli import session as session_mod
-        monkeypatch.delenv("GPA_SESSION", raising=False)
+        monkeypatch.delenv("BHDR_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
             str(tmp_path / "no-such-link"),
@@ -75,7 +75,7 @@ class TestRulesListing:
 
     def test_rules_json(self, monkeypatch, tmp_path):
         from bhdr.cli import session as session_mod
-        monkeypatch.delenv("GPA_SESSION", raising=False)
+        monkeypatch.delenv("BHDR_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
             str(tmp_path / "no-such-link"),
@@ -97,7 +97,7 @@ class TestLiveCheckConfig:
     def test_default_human_output(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1", client=injected_rest, print_stream=buf,
@@ -114,7 +114,7 @@ class TestLiveCheckConfig:
     def test_json_output(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1", json_output=True,
@@ -132,7 +132,7 @@ class TestLiveCheckConfig:
     def test_severity_error_filters(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1", severity="error",
@@ -165,7 +165,7 @@ class TestLiveCheckConfig:
         )
         mock_query_engine.latest_frame_overview.return_value = new_ov
 
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1", severity="error",
@@ -179,7 +179,7 @@ class TestLiveCheckConfig:
     def test_rule_filter_passthrough(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1",
@@ -196,7 +196,7 @@ class TestLiveCheckConfig:
     def test_default_frame_resolves_to_latest(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         # No --frame, no stdin (use a TTY-faking IO).
         stdin = io.StringIO("")
@@ -221,7 +221,7 @@ class TestErrorPaths:
     def test_unknown_rule_name_exit_3(
         self, session_dir, injected_rest, monkeypatch, capsys
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(
             frame="1", rule="not-a-real-rule",
@@ -234,7 +234,7 @@ class TestErrorPaths:
 
     def test_no_session_exit_3(self, monkeypatch, tmp_path, capsys):
         from bhdr.cli import session as session_mod
-        monkeypatch.delenv("GPA_SESSION", raising=False)
+        monkeypatch.delenv("BHDR_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
             str(tmp_path / "no-such-link"),
@@ -248,7 +248,7 @@ class TestErrorPaths:
     def test_invalid_frame_value_exit_3(
         self, session_dir, monkeypatch, capsys
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(frame="abc", print_stream=buf)
         assert rc == 3
@@ -258,7 +258,7 @@ class TestErrorPaths:
     def test_invalid_severity_exit_3(
         self, session_dir, monkeypatch, capsys
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         rc = cc_cmd.run(frame="1", severity="critical", print_stream=buf)
         assert rc == 3
@@ -275,7 +275,7 @@ class TestStdinPipeline:
     def test_dash_frame_reads_stdin(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         # Two ids in stdin.
         stdin = io.StringIO("1\n1\n")
@@ -291,7 +291,7 @@ class TestStdinPipeline:
     def test_dash_frame_empty_stdin_falls_back_to_latest(
         self, session_dir, injected_rest, monkeypatch
     ):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         stdin = io.StringIO("")
         rc = cc_cmd.run(

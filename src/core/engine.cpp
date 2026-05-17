@@ -489,7 +489,7 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
                 if (dc_ptr + 2 <= dc_end) {
                     uint16_t group_count = 0;
                     std::memcpy(&group_count, dc_ptr, 2); dc_ptr += 2;
-                    if (group_count > 32) group_count = 32; // sanity = GPA_MAX_DEBUG_GROUP_DEPTH
+                    if (group_count > 32) group_count = 32; // sanity = BHDR_MAX_DEBUG_GROUP_DEPTH
                     dc.debug_groups.reserve(group_count);
                     for (uint16_t gi = 0; gi < group_count; ++gi) {
                         if (dc_ptr + 2 > dc_end) break;
@@ -536,7 +536,7 @@ void Engine::ingest_frame(const void* shm_data, uint64_t data_size,
             if (dc_ptr + 4 <= dc_end) {
                 uint32_t clear_count = 0;
                 if (read_u32(clear_count)) {
-                    if (clear_count > 16) clear_count = 16; // sanity cap = GPA_MAX_CLEARS_PER_FRAME
+                    if (clear_count > 16) clear_count = 16; // sanity cap = BHDR_MAX_CLEARS_PER_FRAME
                     frame.clear_records.reserve(clear_count);
                     for (uint32_t c = 0; c < clear_count; ++c) {
                         store::RawClearRecord cr{};

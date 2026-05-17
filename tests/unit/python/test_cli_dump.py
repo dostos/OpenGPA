@@ -52,7 +52,7 @@ def injected_rest(client):
 
 
 def test_dump_frame_plain(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = dump_cmd.run(
         what="frame", frame=1, client=injected_rest, print_stream=buf,
@@ -65,7 +65,7 @@ def test_dump_frame_plain(session_dir, injected_rest, monkeypatch):
 
 
 def test_dump_frame_json(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     dump_cmd.run(
         what="frame", frame=1, fmt="json",
@@ -76,7 +76,7 @@ def test_dump_frame_json(session_dir, injected_rest, monkeypatch):
 
 
 def test_dump_frame_compact(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     dump_cmd.run(
         what="frame", frame=1, fmt="compact",
@@ -89,7 +89,7 @@ def test_dump_frame_compact(session_dir, injected_rest, monkeypatch):
 
 
 def test_dump_drawcalls_plain(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     dump_cmd.run(
         what="drawcalls", frame=1, client=injected_rest, print_stream=buf,
@@ -100,7 +100,7 @@ def test_dump_drawcalls_plain(session_dir, injected_rest, monkeypatch):
 
 
 def test_dump_pixel_plain(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = dump_cmd.run(
         what="pixel", frame=1, x=10, y=20,
@@ -113,7 +113,7 @@ def test_dump_pixel_plain(session_dir, injected_rest, monkeypatch):
 
 
 def test_dump_unknown_target(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = dump_cmd.run(
         what="bogus", frame=1, client=injected_rest, print_stream=buf,
@@ -146,7 +146,7 @@ def test_dump_removed_subtarget_shows_redirect(
     we removed; loud failure with a pointer to the narrow command keeps the
     agent on-rails.
     """
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = dump_cmd.run(
         what=subtarget, frame=1,
@@ -177,7 +177,7 @@ def test_dump_removed_subtarget_via_full_cli(argv, session_dir, monkeypatch, cap
     through the redirect (exit 3), not argparse's exit 2."""
     from bhdr.cli.main import main as cli_main
 
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     rc = cli_main(argv)
     assert rc == 3
     err = capsys.readouterr().err
@@ -200,7 +200,7 @@ def test_dump_pixel_via_full_cli_parses_xy(session_dir, monkeypatch):
     x=10, y=20, frame=1 — not all-None (which is what REMAINDER produced)."""
     from bhdr.cli import main as cli_main_mod
 
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     captured = {}
 
     def fake_run(**kwargs):
@@ -221,7 +221,7 @@ def test_dump_frame_via_full_cli_parses_frame(session_dir, monkeypatch):
     """``gpa dump frame --frame 7`` must reach the handler with frame=7."""
     from bhdr.cli import main as cli_main_mod
 
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     captured = {}
 
     def fake_run(**kwargs):
@@ -240,7 +240,7 @@ def test_dump_drawcalls_via_full_cli_parses_format(session_dir, monkeypatch):
     fmt='json' (REMAINDER would have absorbed ``--format json``)."""
     from bhdr.cli import main as cli_main_mod
 
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     captured = {}
 
     def fake_run(**kwargs):
@@ -263,7 +263,7 @@ def test_dump_prints_deprecation_warning(session_dir, monkeypatch, capsys):
     """`gpa dump frame` still works but warns to stderr."""
     from bhdr.cli import main as cli_main_mod
 
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
 
     def fake_run(**kwargs):
         return 0
@@ -284,7 +284,7 @@ def test_dump_prints_deprecation_warning(session_dir, monkeypatch, capsys):
 def test_frames_falls_back_to_latest_when_no_list_route(
     session_dir, injected_rest, monkeypatch
 ):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = frames_cmd.run_list(client=injected_rest, print_stream=buf, text_output=True, json_output=False)
     assert rc == 0

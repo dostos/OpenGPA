@@ -33,7 +33,7 @@ def _make_scenario(**overrides) -> ScenarioMetadata:
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
         framework="three.js",
@@ -158,7 +158,7 @@ def test_bug_class_legacy_explicit_also_none():
     assert tools["system_prompt"] is None
 
 
-def test_with_gla_includes_gpa_tool_block():
+def test_with_gla_includes_bhdr_tool_block():
     """`mode='with_gla'` includes the OpenGPA-only tool block in the prompt."""
     harness = _make_harness()
     scenario = _make_scenario(
@@ -342,8 +342,8 @@ def test_run_scenario_legacy_scenario_leaves_maintainer_fields_none():
     assert r.parsed_json is None
 
 
-def test_prompt_renderer_strips_with_gpa_block_for_code_only():
-    """The ``<!-- WITH_GPA_ONLY -->`` block in the raw template must
+def test_prompt_renderer_strips_with_bhdr_block_for_code_only():
+    """The ``<!-- WITH_BHDR_ONLY -->`` block in the raw template must
     disappear entirely when rendered for code_only mode — no marker
     leak into the final prompt."""
     harness = _make_harness()
@@ -353,8 +353,8 @@ def test_prompt_renderer_strips_with_gpa_block_for_code_only():
         upstream_snapshot_sha="abc",
     )
     prompt = harness._build_tools(scenario, mode="code_only")["system_prompt"]
-    assert "<!-- WITH_GPA_ONLY -->" not in prompt
-    assert "<!-- END_WITH_GPA_ONLY -->" not in prompt
+    assert "<!-- WITH_BHDR_ONLY -->" not in prompt
+    assert "<!-- END_WITH_BHDR_ONLY -->" not in prompt
 
 
 def test_prompt_renderer_keeps_block_content_for_with_gla():
@@ -366,7 +366,7 @@ def test_prompt_renderer_keeps_block_content_for_with_gla():
         upstream_snapshot_sha="abc",
     )
     prompt = harness._build_tools(scenario, mode="with_gla")["system_prompt"]
-    assert "<!-- WITH_GPA_ONLY -->" not in prompt
-    assert "<!-- END_WITH_GPA_ONLY -->" not in prompt
+    assert "<!-- WITH_BHDR_ONLY -->" not in prompt
+    assert "<!-- END_WITH_BHDR_ONLY -->" not in prompt
     # Content within the block survives.
     assert "gpa report" in prompt

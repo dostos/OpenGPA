@@ -22,7 +22,7 @@ def _make_scenario(repo_root, *, slug="my_scenario",
     return ScenarioMetadata(
         id=slug, title="t", bug_description="b", expected_output="e",
         actual_output="a", ground_truth_diagnosis="g", ground_truth_fix="f",
-        difficulty=1, adversarial_principles=[], gpa_advantage="",
+        difficulty=1, adversarial_principles=[], bhdr_advantage="",
         source_path=str(src), binary_name=slug,
     )
 
@@ -38,9 +38,9 @@ def test_build_and_capture_returns_framebuffer_and_metadata(tmp_path):
             "metadata": {"draw_call_count": 2, "draw_calls": []},
         }
         r = ScenarioRunner(
-            gpa_base_url="http://127.0.0.1:18080",
-            gpa_token="t",
-            shim_path="/path/libgpa_gl.so",
+            bhdr_base_url="http://127.0.0.1:18080",
+            bhdr_token="t",
+            shim_path="/path/libbhdr_gl.so",
             bazel_bin="bazel",
             repo_root=str(tmp_path),
         )
@@ -70,8 +70,8 @@ def test_build_and_capture_uses_nested_taxonomy_target(tmp_path):
             "metadata": {"draw_call_count": 0, "draw_calls": []},
         }
         r = ScenarioRunner(
-            gpa_base_url="http://127.0.0.1:18080",
-            gpa_token="tok",
+            bhdr_base_url="http://127.0.0.1:18080",
+            bhdr_token="tok",
             shim_path="/shim.so",
             bazel_bin="bazel",
             repo_root=str(tmp_path),
@@ -145,7 +145,7 @@ def test_build_scenario_raises_clearly_when_no_source_path(tmp_path):
         id="rfc2ac5_no_source", title="t", bug_description="b",
         expected_output="e", actual_output="a", ground_truth_diagnosis="g",
         ground_truth_fix="f", difficulty=1, adversarial_principles=[],
-        gpa_advantage="", source_path="", binary_name="rfc2ac5_no_source",
+        bhdr_advantage="", source_path="", binary_name="rfc2ac5_no_source",
     )
     r = ScenarioRunner(repo_root=str(tmp_path))
     with pytest.raises(FileNotFoundError, match="no source_path"):

@@ -15,11 +15,11 @@ def _mk(mode, correct, total_tokens):
         verdict={"solved": bool(correct), "scorer": "test", "confidence": "high"},
     )
 
-def test_rule_1_gpa_correct_code_wrong():
+def test_rule_1_bhdr_correct_code_wrong():
     r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", False, 1000))
     assert r.verdict == "yes"
 
-def test_rule_2_gpa_wrong_code_correct():
+def test_rule_2_bhdr_wrong_code_correct():
     r = classify_observed_helps(_mk("with_gla", False, 1000), _mk("code_only", True, 1000))
     assert r.verdict == "no"
 
@@ -64,7 +64,7 @@ def test_attribute_failure_mode_parses_json():
     r = attribute_failure_mode(
         llm_client=llm,
         scenario_md="# scenario md body...",
-        with_gpa_diagnosis="wrong",
+        with_bhdr_diagnosis="wrong",
         code_only_diagnosis="right",
         ground_truth="actual root cause...",
     )

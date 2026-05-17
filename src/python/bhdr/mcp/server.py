@@ -206,7 +206,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_report",
+        "name": "bhdr_report",
         "description": (
             "Run every diagnostic check on a captured frame. Returns a structured "
             "JSON report listing any findings (feedback loops, NaN uniforms, "
@@ -236,7 +236,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_trace_value",
+        "name": "bhdr_trace_value",
         "description": (
             "Reverse-lookup app-level fields whose value matches a captured "
             "uniform / texture ID / literal. Answers 'where in the framework "
@@ -275,10 +275,10 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_check",
+        "name": "bhdr_check",
         "description": (
             "Drill down into a single diagnostic check with full detail. Use "
-            "after `gpa_report` flags something. Available check names: "
+            "after `bhdr_report` flags something. Available check names: "
             "empty-capture, feedback-loops, nan-uniforms, missing-clear."
         ),
         "inputSchema": {
@@ -302,7 +302,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_check_config",
+        "name": "bhdr_check_config",
         "description": (
             "Cross-validate a captured frame against a hand-curated rule "
             "library (config-style 'is this idiomatic GL?' rules). Surfaces "
@@ -339,7 +339,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_explain_draw",
+        "name": "bhdr_explain_draw",
         "description": (
             "Single-call explanation for one draw call: scene-node path, "
             "shader/material name, non-default uniforms, textures sampled, "
@@ -379,7 +379,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_diff_draws",
+        "name": "bhdr_diff_draws",
         "description": (
             "Compare two draw calls within the same frame and return only "
             "the differences (pipeline-state, uniforms, or textures, "
@@ -411,7 +411,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_scene_find",
+        "name": "bhdr_scene_find",
         "description": (
             "Predicate-driven scene-graph search. Returns scene nodes that "
             "match every supplied predicate (CSV-AND form), each annotated "
@@ -449,7 +449,7 @@ TOOLS: List[Dict[str, Any]] = [
         },
     },
     {
-        "name": "gpa_scene_explain",
+        "name": "bhdr_scene_explain",
         "description": (
             "Pixel→draw_call→scene_node trace. Given a pixel coordinate, "
             "answers 'which draw call produced this pixel and which scene "
@@ -703,7 +703,7 @@ def _resolve_frame_id_for_checks(client: APIClient, frame_id: Any) -> Optional[i
         return None
 
 
-def _tool_gpa_report(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_report(client: APIClient, args: Dict[str, Any]) -> str:
     from bhdr.cli import checks as checks_mod
     from bhdr.cli.checks import CheckResult
     from bhdr.cli.rest_client import RestError
@@ -738,7 +738,7 @@ def _tool_gpa_report(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(payload, indent=2)
 
 
-def _tool_gpa_check(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_check(client: APIClient, args: Dict[str, Any]) -> str:
     from bhdr.cli import checks as checks_mod
     from bhdr.cli.rest_client import RestError
 
@@ -788,7 +788,7 @@ def _tool_gpa_check(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(payload, indent=2)
 
 
-def _tool_gpa_trace_value(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_trace_value(client: APIClient, args: Dict[str, Any]) -> str:
     from urllib.parse import quote
 
     field = args.get("field")
@@ -840,7 +840,7 @@ def _tool_gpa_trace_value(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_gpa_check_config(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_check_config(client: APIClient, args: Dict[str, Any]) -> str:
     """Run the rule-engine check-config endpoint and return its JSON payload.
 
     Mirrors the CLI command (and the REST route): resolves 'latest' alias,
@@ -869,7 +869,7 @@ def _tool_gpa_check_config(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_gpa_explain_draw(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_explain_draw(client: APIClient, args: Dict[str, Any]) -> str:
     """Single-call explanation for one draw call.
 
     Optional ``fields`` filters the top-level payload to a whitelist so
@@ -903,7 +903,7 @@ def _tool_gpa_explain_draw(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_gpa_diff_draws(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_diff_draws(client: APIClient, args: Dict[str, Any]) -> str:
     """Diff two draw calls within the same frame.
 
     ``a`` and ``b`` are both required.  ``scope`` controls which channels
@@ -938,7 +938,7 @@ def _tool_gpa_diff_draws(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_gpa_scene_find(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_scene_find(client: APIClient, args: Dict[str, Any]) -> str:
     """Predicate-driven scene-graph search.
 
     The ``predicate`` argument is a single string holding one or more
@@ -974,7 +974,7 @@ def _tool_gpa_scene_find(client: APIClient, args: Dict[str, Any]) -> str:
     return json.dumps(data, indent=2)
 
 
-def _tool_gpa_scene_explain(client: APIClient, args: Dict[str, Any]) -> str:
+def _tool_bhdr_scene_explain(client: APIClient, args: Dict[str, Any]) -> str:
     """Pixel → draw → scene-node trace.
 
     Wraps the ``/frames/{id}/explain-pixel`` route. ``x``/``y`` are
@@ -1017,14 +1017,14 @@ _DISPATCH = {
     "query_object": _tool_query_object,
     "list_render_passes": _tool_list_render_passes,
     "query_annotations": _tool_query_annotations,
-    "gpa_report": _tool_gpa_report,
-    "gpa_check": _tool_gpa_check,
-    "gpa_trace_value": _tool_gpa_trace_value,
-    "gpa_check_config": _tool_gpa_check_config,
-    "gpa_explain_draw": _tool_gpa_explain_draw,
-    "gpa_diff_draws": _tool_gpa_diff_draws,
-    "gpa_scene_find": _tool_gpa_scene_find,
-    "gpa_scene_explain": _tool_gpa_scene_explain,
+    "bhdr_report": _tool_bhdr_report,
+    "bhdr_check": _tool_bhdr_check,
+    "bhdr_trace_value": _tool_bhdr_trace_value,
+    "bhdr_check_config": _tool_bhdr_check_config,
+    "bhdr_explain_draw": _tool_bhdr_explain_draw,
+    "bhdr_diff_draws": _tool_bhdr_diff_draws,
+    "bhdr_scene_find": _tool_bhdr_scene_find,
+    "bhdr_scene_explain": _tool_bhdr_scene_explain,
 }
 
 
@@ -1118,25 +1118,25 @@ def main() -> None:
     parser.add_argument(
         "--base-url",
         default=None,
-        help="OpenGPA REST API base URL (default: GPA_BASE_URL env or http://127.0.0.1:8080/api/v1)",
+        help="OpenGPA REST API base URL (default: BHDR_BASE_URL env or http://127.0.0.1:8080/api/v1)",
     )
     parser.add_argument(
         "--token",
         default=None,
-        help="Bearer token for the OpenGPA REST API (default: GPA_TOKEN env)",
+        help="Bearer token for the OpenGPA REST API (default: BHDR_TOKEN env)",
     )
     args = parser.parse_args()
 
     # Env vars take precedence over built-in defaults; CLI args override env vars.
     base_url = (
         args.base_url
-        or os.environ.get("GPA_BASE_URL", "http://127.0.0.1:8080/api/v1")
+        or os.environ.get("BHDR_BASE_URL", "http://127.0.0.1:8080/api/v1")
     )
-    # GPA_BASE_URL may point at the server root; ensure it ends with /api/v1
+    # BHDR_BASE_URL may point at the server root; ensure it ends with /api/v1
     if not base_url.endswith("/api/v1"):
         base_url = base_url.rstrip("/") + "/api/v1"
 
-    token = args.token or os.environ.get("GPA_TOKEN", "")
+    token = args.token or os.environ.get("BHDR_TOKEN", "")
 
     run(base_url=base_url, token=token)
 

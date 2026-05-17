@@ -2,7 +2,7 @@
 # Round 10 subagent runner — maintainer-framing on 9 scenarios.
 #
 # Usage: run_subagent.sh <scenario> <mode> <model>
-#   mode: with_gpa | code_only
+#   mode: with_bhdr | code_only
 #   model: haiku | sonnet | opus
 set -u
 
@@ -34,7 +34,7 @@ PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); pr
 
 # ---- Build the prompt template via the shared renderer. ----
 PROMPT_MODE=code_only
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   PROMPT_MODE=with_gla
 fi
 
@@ -45,7 +45,7 @@ python3 /tmp/eval_round10/build_prompt.py "$SCENARIO" "$PROMPT_MODE" > "$PROMPT_
 
 # ---- With-GPA: start an engine session and (try to) capture one frame. ----
 FRAME_NOTE=""
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   rm -rf "$SESSION_DIR"
   mkdir -p "$SESSION_DIR"
   # Start daemon on the free port.
@@ -61,15 +61,15 @@ if [ "$MODE" = "with_gpa" ]; then
         set -e
         eval "$(gpa env --session "$SESSION_DIR")"
         export DISPLAY=:99
-        export LD_PRELOAD=/home/jingyulee/gh/gla/bazel-bin/src/shims/gl/libgpa_gl.so
-        export GPA_TRACE_NATIVE=1
-        export GPA_TRACE_NATIVE_STACK=1
+        export LD_PRELOAD=/home/jingyulee/gh/gla/bazel-bin/src/shims/gl/libbhdr_gl.so
+        export BHDR_TRACE_NATIVE=1
+        export BHDR_TRACE_NATIVE_STACK=1
         timeout 5 "$BIN" > "$CAPTURE_LOG" 2>&1 || true
       )
       # Verify capture by asking the REST API for the current frame overview.
       sleep 0.5
-      GPA_TOKEN=$(cat "$SESSION_DIR/token")
-      OVERVIEW=$(curl -s -H "Authorization: Bearer $GPA_TOKEN" "http://127.0.0.1:$PORT/api/v1/frames/current/overview" 2>/dev/null | head -c 400)
+      BHDR_TOKEN=$(cat "$SESSION_DIR/token")
+      OVERVIEW=$(curl -s -H "Authorization: Bearer $BHDR_TOKEN" "http://127.0.0.1:$PORT/api/v1/frames/current/overview" 2>/dev/null | head -c 400)
       if ! echo "$OVERVIEW" | grep -q '"frame_id"'; then
         FRAME_NOTE="no frames captured"
       fi
@@ -91,7 +91,7 @@ esac
 #      so we rely on --disallowedTools to block mutation tools that could
 #      clobber the shared snapshot directory (Edit/Write/NotebookEdit).
 ALLOW="Read Grep Glob"
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   ALLOW="Read Grep Glob Bash(curl:*) Bash(gpa:*)"
 fi
 DENY="Edit Write NotebookEdit MultiEdit"
@@ -101,19 +101,19 @@ if [ -n "$SNAP" ] && [ -d "$SNAP" ]; then
   ADD_DIRS="$ADD_DIRS --add-dir $SNAP"
 fi
 
-# Extra prompt tail carrying runtime session info for the with_gpa agent.
+# Extra prompt tail carrying runtime session info for the with_bhdr agent.
 FINAL_PROMPT="$OUT_DIR/${SCENARIO}_${MODE}_${MODEL}.final-prompt"
 cp "$PROMPT_FILE" "$FINAL_PROMPT"
-if [ "$MODE" = "with_gpa" ] && [ -f "$SESSION_DIR/token" ]; then
+if [ "$MODE" = "with_bhdr" ] && [ -f "$SESSION_DIR/token" ]; then
   TOKEN=$(cat "$SESSION_DIR/token")
   {
     echo ""
     echo ""
     echo "# Runtime session (already exported for you)"
     echo ""
-    echo "- GPA_SESSION=$SESSION_DIR"
-    echo "- GPA_PORT=$PORT"
-    echo "- GPA_TOKEN=$TOKEN"
+    echo "- BHDR_SESSION=$SESSION_DIR"
+    echo "- BHDR_PORT=$PORT"
+    echo "- BHDR_TOKEN=$TOKEN"
     if [ -n "$SNAP" ] && [ -d "$SNAP" ]; then
       echo "- Framework snapshot path: $SNAP"
     fi
@@ -139,11 +139,11 @@ cd "$OUT_DIR"
 
 RUN_ATTEMPT() {
   local turns=$1 outfile=$2
-  # Wrap GPA env export in the spawned shell if with_gpa, so Bash(gpa:*) sees them.
-  if [ "$MODE" = "with_gpa" ] && [ -f "$SESSION_DIR/token" ]; then
-    export GPA_SESSION="$SESSION_DIR"
-    export GPA_PORT="$PORT"
-    export GPA_TOKEN=$(cat "$SESSION_DIR/token")
+  # Wrap GPA env export in the spawned shell if with_bhdr, so Bash(gpa:*) sees them.
+  if [ "$MODE" = "with_bhdr" ] && [ -f "$SESSION_DIR/token" ]; then
+    export BHDR_SESSION="$SESSION_DIR"
+    export BHDR_PORT="$PORT"
+    export BHDR_TOKEN=$(cat "$SESSION_DIR/token")
   fi
   timeout 1200 claude -p \
       --model "$MODELNAME" \
@@ -172,7 +172,7 @@ if [ -s "$OUT" ]; then
 fi
 
 # ---- Stop session. ----
-if [ "$MODE" = "with_gpa" ] && [ -d "$SESSION_DIR" ]; then
+if [ "$MODE" = "with_bhdr" ] && [ -d "$SESSION_DIR" ]; then
   gpa stop --session "$SESSION_DIR" > "$SESSION_DIR/stop.log" 2>&1 || true
 fi
 

@@ -15,7 +15,7 @@ from anthropic import Anthropic
 from bhdr.eval.agents.base import AgentBackend, AgentResult
 
 
-class GpaToolExecutor:
+class BhdrToolExecutor:
     """Executes OpenGPA tool calls by proxying to the REST API."""
 
     def __init__(self, base_url: str, token: str, frame_id: int):
@@ -110,7 +110,7 @@ class GpaToolExecutor:
 # Tool definitions for Claude API
 # ---------------------------------------------------------------------------
 
-GPA_TOOLS = [
+BHDR_TOOLS = [
     {
         "name": "query_frame",
         "description": (
@@ -231,7 +231,7 @@ GPA_TOOLS = [
 ]
 
 # For code-only mode, only the source reader is available
-CODE_ONLY_TOOLS = [GPA_TOOLS[-1]]  # just read_source_file
+CODE_ONLY_TOOLS = [BHDR_TOOLS[-1]]  # just read_source_file
 
 # Snapshot tool specs — added dynamically when scenario has snapshot refs.
 # These tools operate over the FULL snapshot tree.  The scenario's
@@ -378,9 +378,9 @@ class ApiAgent(AgentBackend):
                     extra_tools=extra_tools or None,
                     system_prompt=system_prompt,
                 )
-            executor = GpaToolExecutor(
-                base_url=os.environ.get("GPA_BASE_URL", "http://127.0.0.1:18080"),
-                token=os.environ.get("GPA_TOKEN", ""),
+            executor = BhdrToolExecutor(
+                base_url=os.environ.get("BHDR_BASE_URL", "http://127.0.0.1:18080"),
+                token=os.environ.get("BHDR_TOKEN", ""),
                 frame_id=frame_id,
             )
             return self.run_with_gla(
@@ -409,7 +409,7 @@ class ApiAgent(AgentBackend):
         scenario_description: str,
         source_code: str,
         source_path: str,
-        tool_executor: GpaToolExecutor,
+        tool_executor: BhdrToolExecutor,
         extra_tools: dict | None = None,
         system_prompt: str | None = None,
     ) -> AgentResult:
@@ -425,9 +425,9 @@ class ApiAgent(AgentBackend):
                 maintainer-framing harness to drive bug_class-specific
                 prompts.
         """
-        # Build the tool spec list: always include GPA_TOOLS, then append
+        # Build the tool spec list: always include BHDR_TOOLS, then append
         # specs for any extra_tools that are present.
-        tool_specs = list(GPA_TOOLS)
+        tool_specs = list(BHDR_TOOLS)
         if extra_tools:
             tool_specs += [s for s in SNAPSHOT_TOOLS if s["name"] in extra_tools]
         return self._run(
@@ -490,7 +490,7 @@ class ApiAgent(AgentBackend):
 
         Args:
             tool_specs: Anthropic tool-use spec dicts sent to the API.
-            tool_executor: GpaToolExecutor for OpenGPA REST API tools (or None).
+            tool_executor: BhdrToolExecutor for OpenGPA REST API tools (or None).
             extra_tools: dict of tool_name -> callable(tool_input: dict) -> str,
                 for tools dispatched locally (e.g. snapshot tools). The callable
                 receives the raw tool_input dict.
@@ -683,7 +683,7 @@ def build_agent_fn(
     matching :class:`bhdr.eval.harness.AgentFn`.
 
     In "with_gla" mode the agent is given the full OpenGPA tool set plus the
-    source reader and is driven by a `GpaToolExecutor` pointed at the
+    source reader and is driven by a `BhdrToolExecutor` pointed at the
     captured frame. In "code_only" mode the agent only has `read_source_file`.
 
     When the scenario carries Phase-4 maintainer-framing metadata
@@ -742,9 +742,9 @@ def build_agent_fn(
                     system_prompt=system_prompt,
                 )
             else:
-                executor = GpaToolExecutor(
-                    base_url=os.environ.get("GPA_BASE_URL", "http://127.0.0.1:18080"),
-                    token=os.environ.get("GPA_TOKEN", ""),
+                executor = BhdrToolExecutor(
+                    base_url=os.environ.get("BHDR_BASE_URL", "http://127.0.0.1:18080"),
+                    token=os.environ.get("BHDR_TOKEN", ""),
                     frame_id=frame_id,
                 )
                 result = agent.run_with_gla(

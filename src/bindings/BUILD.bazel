@@ -1,10 +1,10 @@
 load("@pybind11_bazel//:build_defs.bzl", "pybind_extension")
 
 pybind_extension(
-    name = "_gpa_core",
-    srcs = ["py_gpa.cpp"],
+    name = "_bhdr_core",
+    srcs = ["py_bhdr.cpp"],
     deps = [
-        "//src/core:gpa_core",
+        "//src/core:bhdr_core",
     ],
     visibility = ["//visibility:public"],
 )

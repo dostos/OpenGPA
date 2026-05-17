@@ -66,8 +66,8 @@ class EvalHarness:
         eval_dir = cfg.get("eval_dir", "tests/eval")
         self.loader = ScenarioLoader(eval_dir=eval_dir)
         self.runner = ScenarioRunner(
-            gpa_base_url=cfg.get("gpa_base_url", "http://127.0.0.1:18080"),
-            gpa_token=cfg.get("gpa_token", ""),
+            bhdr_base_url=cfg.get("bhdr_base_url", "http://127.0.0.1:18080"),
+            bhdr_token=cfg.get("bhdr_token", ""),
             shim_path=cfg.get("shim_path", ""),
             bazel_bin=cfg.get("bazel_bin", "bazel"),
             repo_root=cfg.get("repo_root"),
@@ -371,7 +371,7 @@ class EvalHarness:
                 except (RuntimeError, FileNotFoundError, OSError) as exc:
                     _log.warning(
                         "scenario %s: live capture unavailable (%s); "
-                        "with_gla will run without GPA_FRAME_ID",
+                        "with_gla will run without BHDR_FRAME_ID",
                         scenario.id, exc,
                     )
                     return None
@@ -397,7 +397,7 @@ class EvalHarness:
                 except Exception as exc:
                     _log.warning(
                         "scenario %s: snapshot fetch failed (%s); "
-                        "GPA_UPSTREAM_ROOT will not be set",
+                        "BHDR_UPSTREAM_ROOT will not be set",
                         scenario.id, exc,
                     )
                     return None

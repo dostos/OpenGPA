@@ -68,7 +68,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="drawcalls_cmd", required=True)
@@ -76,7 +76,7 @@ def add_subparser(subparsers) -> None:
     # ---- list ----
     p_list = sub.add_parser("list", help="List draw calls for a frame (JSON)")
     p_list.add_argument("--frame", default=None,
-                        help="Frame id (default: GPA_FRAME_ID env or latest)")
+                        help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_list.add_argument("--limit", type=int, default=None,
                         help="Maximum number of draw calls to return")
     p_list.add_argument("--offset", type=int, default=None,
@@ -85,63 +85,63 @@ def add_subparser(subparsers) -> None:
     # ---- get ----
     p_get = sub.add_parser("get", help="Get a single draw call (JSON)")
     p_get.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_get.add_argument("--dc", type=int, required=True,
                        help="Draw call id")
 
     # ---- shader ----
     p_shader = sub.add_parser("shader", help="Shader info for a draw call")
     p_shader.add_argument("--frame", default=None,
-                          help="Frame id (default: GPA_FRAME_ID env or latest)")
+                          help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_shader.add_argument("--dc", type=int, required=True,
                           help="Draw call id")
 
     # ---- textures ----
     p_tex = sub.add_parser("textures", help="Bound textures for a draw call")
     p_tex.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_tex.add_argument("--dc", type=int, required=True,
                        help="Draw call id")
 
     # ---- vertices ----
     p_verts = sub.add_parser("vertices", help="Vertex data for a draw call")
     p_verts.add_argument("--frame", default=None,
-                         help="Frame id (default: GPA_FRAME_ID env or latest)")
+                         help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_verts.add_argument("--dc", type=int, required=True,
                          help="Draw call id")
 
     # ---- attachments ----
     p_att = sub.add_parser("attachments", help="Framebuffer attachments for a draw call")
     p_att.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_att.add_argument("--dc", type=int, required=True,
                        help="Draw call id")
 
     # ---- nan-uniforms ----
     p_nan = sub.add_parser("nan-uniforms", help="NaN/Inf uniforms for a draw call")
     p_nan.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_nan.add_argument("--dc", type=int, required=True,
                        help="Draw call id")
 
     # ---- feedback-loops ----
     p_fb = sub.add_parser("feedback-loops", help="Feedback-loop hazards for a draw call")
     p_fb.add_argument("--frame", default=None,
-                      help="Frame id (default: GPA_FRAME_ID env or latest)")
+                      help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_fb.add_argument("--dc", type=int, required=True,
                       help="Draw call id")
 
     # ---- explain ----
     p_explain = sub.add_parser("explain", help="Full explanation of a draw call")
     p_explain.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_explain.add_argument("--dc", type=int, required=True,
                            help="Draw call id")
 
     # ---- diff ----
     p_diff = sub.add_parser("diff", help="State/uniform/texture delta between two draw calls")
     p_diff.add_argument("--frame", default=None,
-                        help="Frame id (default: GPA_FRAME_ID env or latest)")
+                        help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_diff.add_argument("--a", type=int, required=True,
                         help="First draw call id")
     p_diff.add_argument("--b", type=int, required=True,
@@ -159,13 +159,13 @@ def add_subparser(subparsers) -> None:
 
     p_src_get = sources_sub.add_parser("get", help="Get source mappings")
     p_src_get.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_src_get.add_argument("--dc", type=int, required=True,
                            help="Draw call id")
 
     p_src_set = sources_sub.add_parser("set", help="Set source mappings")
     p_src_set.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_src_set.add_argument("--dc", type=int, required=True,
                            help="Draw call id")
     body_group = p_src_set.add_mutually_exclusive_group(required=True)

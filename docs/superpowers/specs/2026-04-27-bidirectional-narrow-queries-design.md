@@ -68,7 +68,7 @@ scene_node_path}`. Heavier (one POST per draw), but framework-portable.
 ### 2.2 Precondition
 
 This spec **assumes** `NormalizedDrawCall.debug_group_path: str` exists
-(verified at commit `72a2ddb`: `normalized_types.h:57`, `py_gpa.cpp:82`,
+(verified at commit `72a2ddb`: `normalized_types.h:57`, `py_bhdr.cpp:82`,
 `gl_wrappers.c:340-351`, `frame_capture.c:71/158/299`, `engine.cpp:493`). If
 later renamed to `debug_groups: list[str]` per the framework-integration plan
 wording, the link engine reads whichever exists. The Tier-3 plugin emitting
@@ -559,14 +559,14 @@ that alias, and the module script does
 `installGpaLinkPlugin({ scene, renderer, endpoint, token })`. The
 runner's URL-param injection (`?token=...&port=...`) is reused — the
 inline bootstrap script copies those params into
-`window.GPA_AUTH_TOKEN`, `window.GPA_ENDPOINT`, `window.GPA_FRAME_ID = 0`
+`window.BHDR_AUTH_TOKEN`, `window.BHDR_ENDPOINT`, `window.BHDR_FRAME_ID = 0`
 before the module loads.
 
 **Engine endpoints exercised:**
 
 - `POST /api/v1/frames/{0,1,2,3}/annotations` — link-plugin's
   per-render scene-tree dump, key `"threejs-link"`.
-- `POST /api/v1/frames/9999/annotations` — `gpa_done: true` sentinel
+- `POST /api/v1/frames/9999/annotations` — `bhdr_done: true` sentinel
   (separate frame id so it does not clobber the link records).
 - `GET  /api/v1/frames/3/scene/find?predicate=…` — backing endpoint for
   `gpa scene-find`.
@@ -597,7 +597,7 @@ before the module loads.
    matches predicates against the captured nodes (`name-contains:sphere`
    and `type:Mesh` both return the `transmission_sphere` Mesh with
    `material_name: feedback_glass`).
-5. `gpa_done` sentinel POST to a high frame id (`9999`) does not
+5. `bhdr_done` sentinel POST to a high frame id (`9999`) does not
    clobber the per-render link annotations on frames 0–3.
 
 **Known gaps (documented; will land as follow-ups):**
@@ -612,7 +612,7 @@ before the module loads.
   `scene_node_path` column for browser-captured frames until this is
   fixed. **Fix:** add `pushDebugGroup`/`popDebugGroup` patches to
   `interceptor.js` mirroring the LD_PRELOAD shim's
-  `gl_wrappers.c::gpa_gl_PushDebugGroup` behaviour, and propagate the
+  `gl_wrappers.c::bhdr_gl_PushDebugGroup` behaviour, and propagate the
   per-frame group stack into `recordDrawCall()`.
 - **No `NormalizedFrame` in the engine.** The browser Phase-1 MVP runner
   captures reflection-trace sources and (now) Tier-3 annotations, but
@@ -626,9 +626,9 @@ before the module loads.
   in alongside the static server in `BrowserRunner.run()`, or let the
   link plugin POST link-records directly via the JS-proxy fallback (§2.1
   mechanism B).
-- **Time-of-day reservation.** `gpa_done` is POSTed to frame 9999 to
+- **Time-of-day reservation.** `bhdr_done` is POSTed to frame 9999 to
   avoid overwriting link annotations on frames 0–3. The
   `AnnotationsStore.put()` semantics overwrite the entire frame's dict;
-  if a future plugin wants to coexist with `gpa_done` on the same frame
+  if a future plugin wants to coexist with `bhdr_done` on the same frame
   it would need a merge-on-write put endpoint. Out of scope for this
   smoke test.

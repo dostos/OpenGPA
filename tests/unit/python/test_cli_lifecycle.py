@@ -101,7 +101,7 @@ def fake_spawn(monkeypatch, tmp_path):
 def isolated_current_link(monkeypatch, tmp_path):
     link = tmp_path / "gpa-session-current"
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK", str(link))
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     return link
 
 
@@ -119,14 +119,14 @@ def test_start_stop_roundtrip(tmp_path, fake_spawn, isolated_current_link):
     assert rc == 0, buf.getvalue()
     assert sess_dir.is_dir()
     assert (sess_dir / "engine.pid").exists()
-    assert f"export GPA_PORT={port}" in buf.getvalue()
+    assert f"export BHDR_PORT={port}" in buf.getvalue()
     assert os.readlink(str(isolated_current_link)) == str(sess_dir)
 
     # Env discovery while running.
     env_buf = io.StringIO()
     rc_env = env_cmd.run(print_stream=env_buf)
     assert rc_env == 0
-    assert f"export GPA_PORT={port}" in env_buf.getvalue()
+    assert f"export BHDR_PORT={port}" in env_buf.getvalue()
 
     # Stop removes everything.
     rc_stop = stop_cmd.run()
@@ -176,12 +176,12 @@ def test_start_with_port_zero_auto_picks(tmp_path, fake_spawn, isolated_current_
 
 
 def test_stop_with_no_session_returns_2(isolated_current_link, monkeypatch):
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     assert stop_cmd.run() == 2
 
 
 def test_env_with_no_session_returns_2(isolated_current_link, monkeypatch):
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     buf = io.StringIO()
     assert env_cmd.run(print_stream=buf) == 2
 
@@ -213,13 +213,13 @@ def test_run_sets_child_env(tmp_path, fake_spawn, isolated_current_link):
     port = _free_port()
     marker = tmp_path / "env.dump"
     # /bin/sh is portable enough for this test host.
-    cmd = ["/bin/sh", "-c", f'echo "$GPA_TOKEN|$LD_PRELOAD|$GPA_SOCKET_PATH" > {marker}']
+    cmd = ["/bin/sh", "-c", f'echo "$BHDR_TOKEN|$LD_PRELOAD|$BHDR_SOCKET_PATH" > {marker}']
     rc = run_cmd.run(cmd, session_dir=sess_dir, port=port)
     assert rc == 0
 
     token, ld_preload, shim_sock = marker.read_text().strip().split("|")
     assert len(token) == 32
-    assert "libgpa_gl.so" in ld_preload
+    assert "libbhdr_gl.so" in ld_preload
     assert shim_sock.endswith("/socket")
 
 

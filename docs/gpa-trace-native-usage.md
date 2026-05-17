@@ -9,15 +9,15 @@ scanner; the only new field in the POST payload is `"origin":
 
 - Target binary compiled with `-g` (DWARF 3 or 4). DWARF 5 is rejected at
   parse time with a clear log message.
-- Engine running on `127.0.0.1:18080` (overridable via `GPA_TRACE_HOST` +
-  `GPA_TRACE_PORT`).
-- Bearer token set via `GPA_TOKEN` if the engine requires auth.
+- Engine running on `127.0.0.1:18080` (overridable via `BHDR_TRACE_HOST` +
+  `BHDR_TRACE_PORT`).
+- Bearer token set via `BHDR_TOKEN` if the engine requires auth.
 
 ## Enable at runtime
 
 ```bash
 # Build the shim.
-bazel build //src/shims/gl:gpa_gl
+bazel build //src/shims/gl:bhdr_gl
 
 # Build the scenario. As of `tests/eval/BUILD.bazel` every eval
 # `cc_binary` carries `copts = ["-g", "-gdwarf-4",
@@ -30,15 +30,15 @@ bazel build //src/shims/gl:gpa_gl
 bazel build --strip=never //tests/eval/synthetic/uniform/e5_uniform_collision
 
 # Run with native trace enabled.
-GPA_TRACE_NATIVE=1 \
-  LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-  GPA_SOCKET_PATH=/tmp/gpa.sock GPA_SHM_NAME=/gpa \
-  GPA_TOKEN=TOKEN \
+BHDR_TRACE_NATIVE=1 \
+  LD_PRELOAD=bazel-bin/src/shims/gl/libbhdr_gl.so \
+  BHDR_SOCKET_PATH=/tmp/gpa.sock BHDR_SHM_NAME=/gpa \
+  BHDR_TOKEN=TOKEN \
   bazel-bin/tests/eval/synthetic/uniform/e5_uniform_collision/e5_uniform_collision
 
 # Query — same CLI surface as the browser path. `bin/gpa` autodetects the
-# bazel-built Python 3.11 + _gpa_core.so; no manual PYTHONPATH/GPA_PYTHON
-# setup required once you've run `bazel build //src/bindings:_gpa_core.so`.
+# bazel-built Python 3.11 + _bhdr_core.so; no manual PYTHONPATH/BHDR_PYTHON
+# setup required once you've run `bazel build //src/bindings:_bhdr_core.so`.
 bin/gpa trace value 100.0 --origin dwarf-globals
 ```
 
@@ -51,10 +51,10 @@ At shim init you'll see a stderr line such as:
 
 | Env var             | Default         | Purpose                                 |
 |---------------------|-----------------|-----------------------------------------|
-| `GPA_TRACE_NATIVE`  | unset (off)     | Master switch — must be `1` to enable.  |
-| `GPA_TRACE_HOST`    | `127.0.0.1`     | Engine REST host.                       |
-| `GPA_TRACE_PORT`    | `18080`         | Engine REST port.                       |
-| `GPA_TOKEN`         | unset           | Sent as `Authorization: Bearer <tok>`.  |
+| `BHDR_TRACE_NATIVE`  | unset (off)     | Master switch — must be `1` to enable.  |
+| `BHDR_TRACE_HOST`    | `127.0.0.1`     | Engine REST host.                       |
+| `BHDR_TRACE_PORT`    | `18080`         | Engine REST port.                       |
+| `BHDR_TOKEN`         | unset           | Sent as `Authorization: Bearer <tok>`.  |
 
 ## Known limits (Phase 1)
 
@@ -68,7 +68,7 @@ At shim init you'll see a stderr line such as:
   and pointers are recorded with byte_size but not hashed in this
   phase.
 - **Architecture:** the Phase 2 stack-local scanner
-  (`GPA_TRACE_NATIVE_STACK=1`) is x86_64 System V only. On other
+  (`BHDR_TRACE_NATIVE_STACK=1`) is x86_64 System V only. On other
   architectures the walker is compiled as a no-op and logs
   `[OpenGPA] native-trace: stack trace unavailable on this architecture
   (x86_64 only)` once at the first scan. Globals-only (Phase 1) tracing
@@ -79,6 +79,6 @@ At shim init you'll see a stderr line such as:
 ```bash
 # Expect: a hash entry pointing at g_public_double whenever the app
 # calls glUniform*(..., 100.0).
-GPA_TRACE_NATIVE=1 gpa run -- bazel-bin/tests/eval/synthetic/uniform/e5_uniform_collision/e5_uniform_collision
+BHDR_TRACE_NATIVE=1 gpa run -- bazel-bin/tests/eval/synthetic/uniform/e5_uniform_collision/e5_uniform_collision
 gpa trace value 100.0 --origin dwarf-globals
 ```

@@ -1,6 +1,6 @@
 """``gpa source read|grep`` — harness-local source access.
 
-Operates inside ``$GPA_SOURCE_ROOT``. All paths are validated by
+Operates inside ``$BHDR_SOURCE_ROOT``. All paths are validated by
 ``bhdr.cli.local_roots`` before any filesystem access.
 """
 from __future__ import annotations
@@ -20,19 +20,19 @@ from bhdr.cli.local_roots import (
 _DEFAULT_MAX_BYTES = 200_000
 _DEFAULT_MAX_MATCHES = 50
 _HARD_MAX_MATCHES = 500
-_ENV_NAME = "GPA_SOURCE_ROOT"
+_ENV_NAME = "BHDR_SOURCE_ROOT"
 
 
 def add_subparser(subparsers) -> None:
     p = subparsers.add_parser(
         "source",
-        help="Harness-local source access (under $GPA_SOURCE_ROOT)",
+        help="Harness-local source access (under $BHDR_SOURCE_ROOT)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = p.add_subparsers(dest="source_cmd", required=True)
 
     p_read = sub.add_parser("read", help="Read a source file as JSON")
-    p_read.add_argument("path", help="Path relative to $GPA_SOURCE_ROOT")
+    p_read.add_argument("path", help="Path relative to $BHDR_SOURCE_ROOT")
     p_read.add_argument(
         "--max-bytes", type=int, default=_DEFAULT_MAX_BYTES,
         help=f"Truncation cap (default {_DEFAULT_MAX_BYTES})",

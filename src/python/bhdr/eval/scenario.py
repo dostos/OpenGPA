@@ -86,7 +86,7 @@ class ScenarioMetadata:
     ground_truth_fix: str              # how to fix (extracted from diagnosis)
     difficulty: int                    # 1-5
     adversarial_principles: list[str]  # bullet points from Adversarial Principles
-    gpa_advantage: str                 # how GPA helps
+    bhdr_advantage: str                 # how GPA helps
     source_path: str                   # absolute path to primary source file (main.c)
     binary_name: str                   # bazel target name (same as id)
     # --- Directory-form scenario fields ---
@@ -139,7 +139,7 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "ground_truth_diagnosis": ["ground truth", "ground truth diagnosis"],
     "difficulty": ["difficulty rating", "difficulty"],
     "adversarial_principles": ["adversarial principles"],
-    "gpa_advantage": ["how gpa helps", "how opengpa helps", "gpa advantage", "opengpa advantage"],
+    "bhdr_advantage": ["how gpa helps", "how opengpa helps", "gpa advantage", "opengpa advantage"],
     "source": ["source"],
     "tier": ["tier"],
     "api": ["api"],
@@ -583,7 +583,7 @@ class ScenarioLoader:
             adversarial_principles=_extract_adversarial_principles(
                 sections.get("adversarial_principles", "")
             ),
-            gpa_advantage=sections.get("gpa_advantage", ""),
+            bhdr_advantage=sections.get("bhdr_advantage", ""),
             source_path=source_path,
             binary_name=scenario_id,
             scenario_dir=str(scenario_dir.resolve()),

@@ -4,8 +4,8 @@ const WebSocket = require('ws');
 const net = require('net');
 const { Buffer } = require('buffer');
 
-const WS_PORT = parseInt(process.env.GPA_WS_PORT || '18081', 10);
-const GPA_SOCKET = process.env.GPA_SOCKET_PATH || '/tmp/gpa.sock';
+const WS_PORT = parseInt(process.env.BHDR_WS_PORT || '18081', 10);
+const BHDR_SOCKET = process.env.BHDR_SOCKET_PATH || '/tmp/gpa.sock';
 
 // ---------------------------------------------------------------------------
 // Protocol constants (must match engine's ipc_client.h)
@@ -15,7 +15,7 @@ const MSG_FRAME_READY = 4;
 const API_TYPE_WEBGL  = 2;
 const PROTOCOL_VER    = 1;
 
-class GpaBridge {
+class BhdrBridge {
   constructor() {
     this.wsServer = null;
     this.engineSocket = null;
@@ -36,7 +36,7 @@ class GpaBridge {
     });
 
     console.log(`[bridge] Listening on ws://127.0.0.1:${WS_PORT}`);
-    console.log(`[bridge] Engine socket: ${GPA_SOCKET}`);
+    console.log(`[bridge] Engine socket: ${BHDR_SOCKET}`);
   }
 
   // -------------------------------------------------------------------------
@@ -48,7 +48,7 @@ class GpaBridge {
       this.reconnectTimer = null;
     }
 
-    this.engineSocket = net.createConnection(GPA_SOCKET);
+    this.engineSocket = net.createConnection(BHDR_SOCKET);
 
     this.engineSocket.on('connect', () => {
       this.connected = true;
@@ -178,5 +178,5 @@ class GpaBridge {
 // ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
-const bridge = new GpaBridge();
+const bridge = new BhdrBridge();
 bridge.start();

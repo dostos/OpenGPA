@@ -17,9 +17,9 @@ for scen in $(cat /tmp/round5_scenarios.txt); do
   # Run binary briefly under LD_PRELOAD with a timeout (many scenarios may be infinite loops)
   LOG=/tmp/eval_round5/capture_${scen}.log
   timeout 4 env \
-    LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    GPA_SOCKET_PATH=/tmp/gpa_eval.sock \
-    GPA_SHM_NAME=/gpa_eval \
+    LD_PRELOAD=bazel-bin/src/shims/gl/libbhdr_gl.so \
+    BHDR_SOCKET_PATH=/tmp/bhdr_eval.sock \
+    BHDR_SHM_NAME=/bhdr_eval \
     DISPLAY=:99 \
     "$BIN" >"$LOG" 2>&1 || true
 

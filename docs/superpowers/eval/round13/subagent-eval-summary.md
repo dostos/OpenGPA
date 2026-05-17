@@ -111,7 +111,7 @@ and seeing zero scissor/viewport handling in `updateBefore`. 9 calls.
 
 - Run the same 4 scenarios with the **buildable GL eval scenarios
   from earlier rounds** (e.g. R10's transmission feedback loop with
-  its captured frame) to get with_gpa evidence the cleanups didn't
+  its captured frame) to get with_bhdr evidence the cleanups didn't
   break the Tier-1 win.
 - Mine more for the remaining check-config rules (color-space,
   tone-mapping, premultiplied-alpha, mipmap-NPOT) — only depth-write

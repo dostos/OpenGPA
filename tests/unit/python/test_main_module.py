@@ -18,25 +18,25 @@ import pytest
 def test_main_module_imports_cli_main():
     """``gpa.__main__`` must import the CLI main (not the launcher)."""
     # Reload to make sure we observe the current __main__.py contents.
-    import bhdr.__main__ as gpa_main  # noqa: F401
-    importlib.reload(gpa_main)
+    import bhdr.__main__ as bhdr_main  # noqa: F401
+    importlib.reload(bhdr_main)
 
     from bhdr.cli import main as cli_main
 
     # The exported `main` reference should be the CLI's `main` function,
     # which takes an optional argv list.  The launcher's main takes no
     # arguments — checking the signature is a faithful proxy.
-    assert gpa_main.main is cli_main.main
+    assert bhdr_main.main is cli_main.main
 
 
 def test_main_module_help_output(monkeypatch, capsys):
     """``python -m gpa --help`` should show CLI help, not launcher help."""
-    import bhdr.__main__ as gpa_main
-    importlib.reload(gpa_main)
+    import bhdr.__main__ as bhdr_main
+    importlib.reload(bhdr_main)
 
     # argparse exits with 0 on --help and writes to stdout.
     with pytest.raises(SystemExit) as excinfo:
-        gpa_main.main(["--help"])
+        bhdr_main.main(["--help"])
     assert excinfo.value.code == 0
 
     out = capsys.readouterr().out
@@ -52,13 +52,13 @@ def test_main_module_dispatches_subcommand(monkeypatch):
 
     We don't have a real session so the call exits 2 (no session). What
     matters is that dispatch reached the CLI codepath and *not* the
-    engine launcher (which would have tried to import ``_gpa_core``).
+    engine launcher (which would have tried to import ``_bhdr_core``).
     """
-    import bhdr.__main__ as gpa_main
-    importlib.reload(gpa_main)
+    import bhdr.__main__ as bhdr_main
+    importlib.reload(bhdr_main)
 
-    # Make sure no stale GPA_SESSION leaks in.
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    # Make sure no stale BHDR_SESSION leaks in.
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
 
     # Point the session-discovery link at a path that does not exist.
     from bhdr.cli import session as session_mod
@@ -68,7 +68,7 @@ def test_main_module_dispatches_subcommand(monkeypatch):
 
     err = io.StringIO()
     with redirect_stderr(err):
-        rc = gpa_main.main(["frames"])
+        rc = bhdr_main.main(["frames"])
     assert rc == 2
     assert "no active session" in err.getvalue()
 

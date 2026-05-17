@@ -21,7 +21,7 @@ Expected output (frames + sources non-zero, no timeout):
 
 ```
 [gpa] scenario=r10_feedback_loop_three_transmission_browser \
-      frames=N sources=M gpa_done=True timed_out=False ...
+      frames=N sources=M bhdr_done=True timed_out=False ...
 ```
 
 To view what the JS scanner posted:

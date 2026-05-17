@@ -77,8 +77,8 @@ def test_r21_index_html_structure():
     assert "/api/v1/frames/0/drawcalls/0/sources" in script
     assert "POST" in script
 
-    # Sets the gpa_done sentinel.
-    assert "__gpa_done" in script
+    # Sets the bhdr_done sentinel.
+    assert "__bhdr_done" in script
     assert "true" in script.lower()
 
 

@@ -1,7 +1,7 @@
 """Tests for the `bin/gpa` wrapper's Python + extension autodetection.
 
-Exercises the diagnostic mode (GPA_DIAG=1) which prints the resolved
-GPA_PYTHON + PYTHONPATH and exits 0 — this lets us assert wiring without
+Exercises the diagnostic mode (BHDR_DIAG=1) which prints the resolved
+BHDR_PYTHON + PYTHONPATH and exits 0 — this lets us assert wiring without
 actually booting the CLI.
 """
 from __future__ import annotations
@@ -18,9 +18,9 @@ BINDINGS_DIR = REPO_ROOT / "bazel-bin" / "src" / "bindings"
 
 def _run_diag(extra_env: dict | None = None) -> tuple[int, str, str]:
     env = os.environ.copy()
-    env["GPA_DIAG"] = "1"
-    # Scrub any pre-existing GPA_PYTHON unless the test injects one.
-    env.pop("GPA_PYTHON", None)
+    env["BHDR_DIAG"] = "1"
+    # Scrub any pre-existing BHDR_PYTHON unless the test injects one.
+    env.pop("BHDR_PYTHON", None)
     if extra_env:
         env.update(extra_env)
     proc = subprocess.run(
@@ -33,7 +33,7 @@ def _run_diag(extra_env: dict | None = None) -> tuple[int, str, str]:
     return proc.returncode, proc.stdout, proc.stderr
 
 
-def test_bin_gpa_exists_and_executable():
+def test_bin_bhdr_exists_and_executable():
     assert BIN_GPA.exists(), f"{BIN_GPA} missing"
     assert os.access(BIN_GPA, os.X_OK), f"{BIN_GPA} not executable"
 
@@ -52,15 +52,15 @@ def test_diag_reports_pythonpath_contains_src_python():
 
 
 def test_diag_prepends_bindings_dir_when_present():
-    """If bazel has built _gpa_core.so, the bindings dir must appear
-    before src/python on PYTHONPATH so `import _gpa_core` resolves."""
-    so = BINDINGS_DIR / "_gpa_core.so"
+    """If bazel has built _bhdr_core.so, the bindings dir must appear
+    before src/python on PYTHONPATH so `import _bhdr_core` resolves."""
+    so = BINDINGS_DIR / "_bhdr_core.so"
     if not so.exists():
         # Can't verify prepend without the artifact; at least the binding
         # warning should be visible on stderr.
         code, _out, err = _run_diag()
         assert code == 0
-        assert "_gpa_core.so not found" in err
+        assert "_bhdr_core.so not found" in err
         return
     code, out, _err = _run_diag()
     assert code == 0
@@ -81,11 +81,11 @@ def test_diag_prepends_bindings_dir_when_present():
 
 def test_diag_detects_bazel_python_3_11_when_available():
     """If a bazel-built python 3.11 is available in ~/.cache/bazel, we
-    should pick it up automatically (no GPA_PYTHON set)."""
+    should pick it up automatically (no BHDR_PYTHON set)."""
     code, out, _err = _run_diag()
     assert code == 0
     py_line = next(
-        (ln for ln in out.splitlines() if ln.startswith("GPA_PYTHON=")),
+        (ln for ln in out.splitlines() if ln.startswith("BHDR_PYTHON=")),
         None,
     )
     assert py_line is not None, out
@@ -98,10 +98,10 @@ def test_diag_detects_bazel_python_3_11_when_available():
         assert py == "python3"
 
 
-def test_diag_honors_explicit_gpa_python_override():
-    code, out, _err = _run_diag(extra_env={"GPA_PYTHON": "/opt/custom/python"})
+def test_diag_honors_explicit_bhdr_python_override():
+    code, out, _err = _run_diag(extra_env={"BHDR_PYTHON": "/opt/custom/python"})
     assert code == 0
-    assert "GPA_PYTHON=/opt/custom/python" in out
+    assert "BHDR_PYTHON=/opt/custom/python" in out
 
 
 def test_diag_honors_bazel_output_base_override(tmp_path):
@@ -127,8 +127,8 @@ def test_diag_honors_bazel_output_base_override(tmp_path):
     empty_home.mkdir()
 
     env = os.environ.copy()
-    env["GPA_DIAG"] = "1"
-    env.pop("GPA_PYTHON", None)
+    env["BHDR_DIAG"] = "1"
+    env.pop("BHDR_PYTHON", None)
     env["HOME"] = str(empty_home)
     env["BAZEL_OUTPUT_BASE"] = str(tmp_path)
     # Remove bazel from PATH so the `bazel info output_base` fallback
@@ -144,10 +144,10 @@ def test_diag_honors_bazel_output_base_override(tmp_path):
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     py_line = next(
-        (ln for ln in proc.stdout.splitlines() if ln.startswith("GPA_PYTHON=")),
+        (ln for ln in proc.stdout.splitlines() if ln.startswith("BHDR_PYTHON=")),
         None,
     )
     assert py_line is not None, proc.stdout
-    assert py_line == f"GPA_PYTHON={py_stub}", (
+    assert py_line == f"BHDR_PYTHON={py_stub}", (
         f"expected override path, got {py_line!r}"
     )

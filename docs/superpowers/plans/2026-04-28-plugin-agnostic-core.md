@@ -18,7 +18,7 @@
 |------|---------|-------------|
 | `src/python/bhdr/api/trace_ranking.py` | Confidence ranker for trace candidates | Modify — remove allowlist + 2 helpers; update docstring |
 | `src/python/bhdr/cli/main.py` | Top-level CLI parser config | Modify — neutral `gpa trace` help text |
-| `src/python/bhdr/mcp/server.py` | MCP tool registry | Modify — neutral `query_annotations` + `gpa_trace_value` descriptions |
+| `src/python/bhdr/mcp/server.py` | MCP tool registry | Modify — neutral `query_annotations` + `bhdr_trace_value` descriptions |
 | `src/python/bhdr/cli/commands/scene_find.py` | `gpa scene-find` CLI command | Modify — drop plugin-name cite, point at spec doc |
 | `tests/unit/python/test_trace_ranking.py` | Ranker unit tests | Modify — drop 5 tests, rewrite 1, update 1 comment, add 1 |
 
@@ -278,7 +278,7 @@ EOF
 
 ---
 
-## Task 3: Neutralize MCP `query_annotations` + `gpa_trace_value` descriptions
+## Task 3: Neutralize MCP `query_annotations` + `bhdr_trace_value` descriptions
 
 **Files:**
 - Modify: `src/python/bhdr/mcp/server.py` (two description blocks around lines 185-200 and 230-240)
@@ -309,7 +309,7 @@ with:
         ),
 ```
 
-- [ ] **Step 2: Edit `gpa_trace_value` description**
+- [ ] **Step 2: Edit `bhdr_trace_value` description**
 
 In `src/python/bhdr/mcp/server.py`, around line 232-239, replace:
 
@@ -354,9 +354,9 @@ Expected: green. Same count as after Task 1.
 ```bash
 git add src/python/bhdr/mcp/server.py
 git commit -m "$(cat <<'EOF'
-docs(mcp): neutralize query_annotations + gpa_trace_value descriptions
+docs(mcp): neutralize query_annotations + bhdr_trace_value descriptions
 
-Drops "JS-layer state … mapbox tile cache" and the WebGL-only requirement note from gpa_trace_value (native DWARF backend feeds the same endpoint).
+Drops "JS-layer state … mapbox tile cache" and the WebGL-only requirement note from bhdr_trace_value (native DWARF backend feeds the same endpoint).
 
 Refs: docs/superpowers/specs/2026-04-28-plugin-agnostic-core-design.md
 

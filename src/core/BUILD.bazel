@@ -58,7 +58,7 @@ cc_library(
 
 
 cc_library(
-    name = "gpa_core",
+    name = "bhdr_core",
     srcs = ["engine.cpp"],
     hdrs = ["engine.h"],
     deps = [
@@ -72,8 +72,8 @@ cc_library(
 )
 
 cc_binary(
-    name = "gpa_engine",
+    name = "bhdr_engine",
     srcs = ["engine_main.cpp"],
-    deps = [":gpa_core"],
+    deps = [":bhdr_core"],
     visibility = ["//visibility:public"],
 )

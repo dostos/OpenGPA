@@ -1,4 +1,4 @@
-# R10 — with_gpa vs code_only (single tier, single scenario)
+# R10 — with_bhdr vs code_only (single tier, single scenario)
 
 *Run: 2026-04-30. Model: Opus 4.7 (1M context) via Claude Code subagent dispatch.*
 
@@ -15,7 +15,7 @@ Both subagents got:
 - `gh` CLI for reading three.js source.
 - A 20-tool-call budget cap.
 
-The **with_gpa** subagent additionally got:
+The **with_bhdr** subagent additionally got:
 - `curl` access (no auth) to a running OpenGPA engine at
   `localhost:18080` with the R10 scenario captured at `frame_id=1,
   draw_call_id=0`.
@@ -40,7 +40,7 @@ The **with_gpa** subagent additionally got:
 
 ## Results
 
-| Metric | code_only | with_gpa | Δ |
+| Metric | code_only | with_bhdr | Δ |
 |---|---|---|---|
 | **Diagnosis accuracy** | correct root cause (PR #32444, samples=0, MSAA-resolve indirection lost) | correct root cause (same reasoning + GL-level evidence anchor) | tie |
 | **Files matched** | `WebGLRenderer.js` + `WebGLCapabilities.js` (2/4 expected) | `WebGLRenderer.js` + `WebGLCapabilities.js` (2/4 expected) | tie |
@@ -62,13 +62,13 @@ the two adjacent files (the actual upstream fix touched all four).
 4. `gh search code "transmissionRenderTarget" --repo mrdoob/three.js --limit 5`
 5. `gh api repos/mrdoob/three.js/contents/src/renderers/webgl/WebGLCapabilities.js?ref=r182`
 
-**with_gpa (4 calls):**
+**with_bhdr (4 calls):**
 1. `curl /api/v1/frames/1/drawcalls/0/textures` → instant smoking gun: `collides_with_fbo_attachment: true` on `texture_id=1`
 2. `gh pr view 32444 -R mrdoob/three.js --json files,title`
 3. `gh api repos/mrdoob/three.js/pulls/32444/files`
 4. `gh api repos/mrdoob/three.js/contents/src/renderers/webgl/WebGLCapabilities.js?ref=r182`
 
-The with_gpa agent skipped one source-navigation call because the
+The with_bhdr agent skipped one source-navigation call because the
 GPA narrow check confirmed the GL-level pattern up-front, letting it
 go straight to the regression line in PR #32444 with stronger
 confidence.
@@ -96,7 +96,7 @@ confidence.
 ## Comparison to R13 subagent eval (different scenario shape)
 
 The R13 maintainer-framing scenarios (r1, r3, r6, r13) had no
-captured frames, so the with_gpa-vs-code_only comparison wasn't
+captured frames, so the with_bhdr-vs-code_only comparison wasn't
 runnable there. Their token costs (mean 29k / scenario) include
 cross-repo navigation that R10's 19-21k doesn't, suggesting
 maintainer-framing eval intrinsically costs ~50% more than
@@ -107,8 +107,8 @@ buildable-GL eval at single tier.
 - Run this same comparison on harder scenarios (no PR-# hint,
   multi-file fix) to see if the GPA gap widens.
 - When the API key is available, run the multi-tier matrix (haiku /
-  sonnet / opus × code_only / with_gpa) on at least 5 R10-shape
+  sonnet / opus × code_only / with_bhdr) on at least 5 R10-shape
   scenarios. **Estimated cost: ~$15** based on R10v2/R11 means.
 - Capture frames for the R13 maintainer-framing scenarios (run the
   buggy three.js examples under the OpenGPA shim) to enable
-  with_gpa runs there too.
+  with_bhdr runs there too.

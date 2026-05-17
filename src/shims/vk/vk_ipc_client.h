@@ -17,44 +17,44 @@ extern "C" {
 
 /*
  * Connect to the OpenGPA engine.
- * Reads GPA_SOCKET_PATH and GPA_SHM_NAME from the environment.
+ * Reads BHDR_SOCKET_PATH and BHDR_SHM_NAME from the environment.
  * Returns 0 on success, -1 if the engine is not running (passthrough mode).
  */
-int gpa_vk_ipc_connect(void);
+int bhdr_vk_ipc_connect(void);
 
 /* Returns non-zero if connected. */
-int gpa_vk_ipc_is_connected(void);
+int bhdr_vk_ipc_is_connected(void);
 
 /*
  * Claim a FREE slot in the SHM ring buffer.
  * Returns a pointer to the data region, or NULL if the buffer is full.
  * *slot_index is set to the claimed slot on success.
  */
-void *gpa_vk_ipc_claim_slot(uint32_t *slot_index);
+void *bhdr_vk_ipc_claim_slot(uint32_t *slot_index);
 
 /*
- * Commit a slot that was previously claimed with gpa_vk_ipc_claim_slot.
+ * Commit a slot that was previously claimed with bhdr_vk_ipc_claim_slot.
  * 'size' is the number of valid bytes written into the data region.
  */
-void gpa_vk_ipc_commit_slot(uint32_t slot_index, uint64_t size);
+void bhdr_vk_ipc_commit_slot(uint32_t slot_index, uint64_t size);
 
 /*
  * Send MSG_FRAME_READY to the engine over the control socket.
  */
-void gpa_vk_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index);
+void bhdr_vk_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index);
 
 /*
  * Non-blocking check: returns 1 if the engine sent a MSG_CONTROL(pause).
  */
-int gpa_vk_ipc_should_pause(void);
+int bhdr_vk_ipc_should_pause(void);
 
 /*
  * Blocking wait until the engine sends MSG_CONTROL(resume).
  */
-void gpa_vk_ipc_wait_resume(void);
+void bhdr_vk_ipc_wait_resume(void);
 
 /* Disconnect and release all resources. */
-void gpa_vk_ipc_disconnect(void);
+void bhdr_vk_ipc_disconnect(void);
 
 #ifdef __cplusplus
 }

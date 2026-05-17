@@ -83,29 +83,29 @@ class CliAgent(AgentBackend):
     def run(self, scenario, mode: str, tools: dict) -> AgentResult:
         env = os.environ.copy()
 
-        # With-gla mode: try live capture; pin GPA_FRAME_ID when we have one.
+        # With-gla mode: try live capture; pin BHDR_FRAME_ID when we have one.
         # If capture is unavailable (no Bazel target, build error, no engine,
         # etc.), the harness's run_with_capture lambda returns None — we
-        # leave GPA_FRAME_ID unset so any `gpa` CLI calls fall back to env /
+        # leave BHDR_FRAME_ID unset so any `gpa` CLI calls fall back to env /
         # current-frame defaults instead of pointing at a sentinel id.
         frame_id = None
         if mode == "with_gla":
             frame_id = tools["run_with_capture"]()
             if frame_id is not None:
-                env["GPA_FRAME_ID"] = str(frame_id)
-            env.setdefault("GPA_BASE_URL", os.environ.get(
-                "GPA_BASE_URL", "http://127.0.0.1:18080",
+                env["BHDR_FRAME_ID"] = str(frame_id)
+            env.setdefault("BHDR_BASE_URL", os.environ.get(
+                "BHDR_BASE_URL", "http://127.0.0.1:18080",
             ))
         # Source root (always set if we have a source path)
         source_path = getattr(scenario, "source_path", None)
         if source_path:
-            env["GPA_SOURCE_ROOT"] = str(Path(source_path).parent)
+            env["BHDR_SOURCE_ROOT"] = str(Path(source_path).parent)
         # Upstream snapshot root (passed via tools dict by the harness as a
         # callable: returns Path on success, None on fetch error).
         snap_provider = tools.get("snapshot_root") if tools else None
         snap = snap_provider() if callable(snap_provider) else snap_provider
         if snap:
-            env["GPA_UPSTREAM_ROOT"] = str(snap)
+            env["BHDR_UPSTREAM_ROOT"] = str(snap)
 
         prompt = self._render_prompt(
             scenario, mode, tools,
@@ -274,7 +274,7 @@ class CliAgent(AgentBackend):
     def _tool_block(mode: str, have_frame: bool, have_snapshot: bool) -> str:
         """Render only the tools the agent can actually use right now."""
         live_block = (
-            "Live-frame tools (GPA_FRAME_ID is set; --frame is automatic):\n"
+            "Live-frame tools (BHDR_FRAME_ID is set; --frame is automatic):\n"
             "- gpa frames overview                — current frame summary\n"
             "- gpa drawcalls list                 — list draw calls in this frame\n"
             "- gpa drawcalls explain --dc N       — deep dive on draw call N\n"
@@ -286,7 +286,7 @@ class CliAgent(AgentBackend):
             "- gpa diff frames --a A --b B        — diff two frames\n"
         )
         upstream_block = (
-            "Upstream-snapshot tools (GPA_UPSTREAM_ROOT is set):\n"
+            "Upstream-snapshot tools (BHDR_UPSTREAM_ROOT is set):\n"
             "- gpa upstream list [SUBDIR]                        — orient inside the framework tree\n"
             "- gpa upstream grep PATTERN [-C N]                  — grep with N lines of context\n"
             "- gpa upstream find-symbol NAME [--lang LANG]       — locate a definition (function/class/struct/etc)\n"

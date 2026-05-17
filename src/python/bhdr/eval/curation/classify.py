@@ -24,7 +24,7 @@ _VALID_CATEGORIES = {
     "shader_compile_not_exposed", "framework_internal_state",
     "needs_temporal_diff", "driver_specific",
     "bug_requires_multi_frame_capture", "scorer_ambiguous",
-    "gpa_query_insufficient", "other",
+    "bhdr_query_insufficient", "other",
 }
 
 
@@ -103,7 +103,7 @@ def classify_observed_helps(
 def attribute_failure_mode(
     llm_client: LLMClient,
     scenario_md: str,
-    with_gpa_diagnosis: str,
+    with_bhdr_diagnosis: str,
     code_only_diagnosis: str,
     ground_truth: str,
 ) -> FailureModeResult:
@@ -112,7 +112,7 @@ def attribute_failure_mode(
     user = (
         f"SCENARIO_MD:\n{scenario_md}\n\n"
         f"GROUND_TRUTH:\n{ground_truth}\n\n"
-        f"WITH_GPA_DIAGNOSIS:\n{with_gpa_diagnosis}\n\n"
+        f"WITH_BHDR_DIAGNOSIS:\n{with_bhdr_diagnosis}\n\n"
         f"CODE_ONLY_DIAGNOSIS:\n{code_only_diagnosis}\n"
     )
     resp = llm_client.complete(system=system,

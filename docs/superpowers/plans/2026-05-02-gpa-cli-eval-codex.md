@@ -37,7 +37,7 @@ from gpa.cli.local_roots import (
 
 
 def test_resolve_relative_inside_root(tmp_path):
-    root = LocalRoot("GPA_SOURCE_ROOT", tmp_path)
+    root = LocalRoot("BHDR_SOURCE_ROOT", tmp_path)
     target = tmp_path / "sub" / "file.c"
     target.parent.mkdir()
     target.write_text("hello")
@@ -46,19 +46,19 @@ def test_resolve_relative_inside_root(tmp_path):
 
 
 def test_resolve_rejects_absolute_outside(tmp_path):
-    root = LocalRoot("GPA_SOURCE_ROOT", tmp_path)
+    root = LocalRoot("BHDR_SOURCE_ROOT", tmp_path)
     with pytest.raises(LocalRootError, match="absolute path"):
         resolve_relative(root, "/etc/passwd")
 
 
 def test_resolve_rejects_traversal(tmp_path):
-    root = LocalRoot("GPA_SOURCE_ROOT", tmp_path)
+    root = LocalRoot("BHDR_SOURCE_ROOT", tmp_path)
     with pytest.raises(LocalRootError, match="escapes root"):
         resolve_relative(root, "../../etc/passwd")
 
 
 def test_resolve_accepts_absolute_inside_root(tmp_path):
-    root = LocalRoot("GPA_SOURCE_ROOT", tmp_path)
+    root = LocalRoot("BHDR_SOURCE_ROOT", tmp_path)
     target = tmp_path / "x.c"
     target.write_text("")
     resolved = resolve_relative(root, str(target))
@@ -66,14 +66,14 @@ def test_resolve_accepts_absolute_inside_root(tmp_path):
 
 
 def test_localroot_from_env_missing(monkeypatch):
-    monkeypatch.delenv("GPA_SOURCE_ROOT", raising=False)
+    monkeypatch.delenv("BHDR_SOURCE_ROOT", raising=False)
     with pytest.raises(LocalRootError, match="not set"):
-        LocalRoot.from_env("GPA_SOURCE_ROOT")
+        LocalRoot.from_env("BHDR_SOURCE_ROOT")
 
 
 def test_localroot_from_env_present(monkeypatch, tmp_path):
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(tmp_path))
-    root = LocalRoot.from_env("GPA_SOURCE_ROOT")
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(tmp_path))
+    root = LocalRoot.from_env("BHDR_SOURCE_ROOT")
     assert root.path == tmp_path
 ```
 
@@ -91,7 +91,7 @@ Expected: ImportError / collection error.
 """Env-rooted path resolution shared by ``gpa source`` and ``gpa upstream``.
 
 Both commands operate inside a per-scenario root directory communicated
-via an env var (``GPA_SOURCE_ROOT``, ``GPA_UPSTREAM_ROOT``). All path
+via an env var (``BHDR_SOURCE_ROOT``, ``BHDR_UPSTREAM_ROOT``). All path
 inputs are validated against that root before any filesystem access:
 
 - absolute paths must resolve inside the root
@@ -194,7 +194,7 @@ def _make_root(tmp_path: Path) -> Path:
 
 def test_source_read_returns_json(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_read(path="main.c", max_bytes=200000, print_stream=buf)
     assert rc == 0
@@ -206,7 +206,7 @@ def test_source_read_returns_json(tmp_path, monkeypatch):
 
 def test_source_read_max_bytes(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_read(path="main.c", max_bytes=5, print_stream=buf)
     assert rc == 0
@@ -217,7 +217,7 @@ def test_source_read_max_bytes(tmp_path, monkeypatch):
 
 def test_source_read_traversal_rejected(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     err = io.StringIO()
     rc = source_cmd.run_read(
@@ -230,7 +230,7 @@ def test_source_read_traversal_rejected(tmp_path, monkeypatch):
 
 def test_source_grep_finds_pattern(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=50, print_stream=buf,
@@ -244,7 +244,7 @@ def test_source_grep_finds_pattern(tmp_path, monkeypatch):
 
 def test_source_grep_max_matches(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=1, print_stream=buf,
@@ -256,7 +256,7 @@ def test_source_grep_max_matches(tmp_path, monkeypatch):
 
 
 def test_source_no_root_set(monkeypatch):
-    monkeypatch.delenv("GPA_SOURCE_ROOT", raising=False)
+    monkeypatch.delenv("BHDR_SOURCE_ROOT", raising=False)
     buf = io.StringIO()
     err = io.StringIO()
     rc = source_cmd.run_read(
@@ -264,7 +264,7 @@ def test_source_no_root_set(monkeypatch):
         print_stream=buf, err_stream=err,
     )
     assert rc == 2
-    assert "GPA_SOURCE_ROOT" in err.getvalue()
+    assert "BHDR_SOURCE_ROOT" in err.getvalue()
 ```
 
 - [ ] **Step 2: Run, expect fail**
@@ -279,7 +279,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/test_cli_source.py -q
 # src/python/bhdr/cli/commands/source.py
 """``gpa source read|grep`` — harness-local source access.
 
-Operates inside ``$GPA_SOURCE_ROOT``. All paths are validated by
+Operates inside ``$BHDR_SOURCE_ROOT``. All paths are validated by
 ``gpa.cli.local_roots`` before any filesystem access.
 """
 from __future__ import annotations
@@ -301,19 +301,19 @@ from gpa.cli.local_roots import (
 _DEFAULT_MAX_BYTES = 200_000
 _DEFAULT_MAX_MATCHES = 50
 _HARD_MAX_MATCHES = 500
-_ENV_NAME = "GPA_SOURCE_ROOT"
+_ENV_NAME = "BHDR_SOURCE_ROOT"
 
 
 def add_subparser(subparsers) -> None:
     p = subparsers.add_parser(
         "source",
-        help="Harness-local source access (under $GPA_SOURCE_ROOT)",
+        help="Harness-local source access (under $BHDR_SOURCE_ROOT)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = p.add_subparsers(dest="source_cmd", required=True)
 
     p_read = sub.add_parser("read", help="Read a source file as JSON")
-    p_read.add_argument("path", help="Path relative to $GPA_SOURCE_ROOT")
+    p_read.add_argument("path", help="Path relative to $BHDR_SOURCE_ROOT")
     p_read.add_argument(
         "--max-bytes", type=int, default=_DEFAULT_MAX_BYTES,
         help=f"Truncation cap (default {_DEFAULT_MAX_BYTES})",
@@ -438,7 +438,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/test_cli_source.py -q
 
 ```bash
 git add src/python/bhdr/cli/commands/source.py src/python/bhdr/cli/main.py tests/unit/python/test_cli_source.py
-git commit -m "feat(cli): gpa source read/grep over GPA_SOURCE_ROOT"
+git commit -m "feat(cli): gpa source read/grep over BHDR_SOURCE_ROOT"
 ```
 
 ---
@@ -461,7 +461,7 @@ def test_upstream_list_returns_entries(tmp_path, monkeypatch):
     (root / "src" / "a.c").write_text("")
     (root / "src" / "b.c").write_text("")
     (root / "src" / "lib").mkdir()
-    monkeypatch.setenv("GPA_UPSTREAM_ROOT", str(root))
+    monkeypatch.setenv("BHDR_UPSTREAM_ROOT", str(root))
     buf = io.StringIO()
     rc = upstream_cmd.run_list(subdir="src", print_stream=buf)
     assert rc == 0
@@ -473,7 +473,7 @@ def test_upstream_list_returns_entries(tmp_path, monkeypatch):
 - [ ] **Step 2: Implement `upstream.py`**
 
 Identical structure to `source.py` with:
-- `_ENV_NAME = "GPA_UPSTREAM_ROOT"`
+- `_ENV_NAME = "BHDR_UPSTREAM_ROOT"`
 - `run_list(subdir)` returning `{"subdir": subdir, "entries": [{"name": str, "type": "file"|"dir"}]}`
 - read/grep otherwise identical (consider extracting common helpers later — defer to keep DRY decisions for after both land).
 
@@ -488,7 +488,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/test_cli_upstream.py -q
 - [ ] **Step 5: Commit**
 
 ```bash
-git commit -m "feat(cli): gpa upstream read/list/grep over GPA_UPSTREAM_ROOT"
+git commit -m "feat(cli): gpa upstream read/list/grep over BHDR_UPSTREAM_ROOT"
 ```
 
 ---
@@ -517,7 +517,7 @@ git commit -m "refactor(cli): hoist shared read/grep helpers into local_roots"
 
 Each task here registers one noun namespace (`drawcalls`, `pixel`, `scene`, etc.). Pattern is identical: `add_subparser(subparsers)` → `run(args, *, client, print_stream)`. Tests use the existing `injected_rest` fixture pattern from `test_cli_dump.py`.
 
-### Task 5: Frame-resolver helper with GPA_FRAME_ID precedence
+### Task 5: Frame-resolver helper with BHDR_FRAME_ID precedence
 
 **Files:**
 - Create: `src/python/bhdr/cli/frame_resolver.py`
@@ -527,24 +527,24 @@ Each task here registers one noun namespace (`drawcalls`, `pixel`, `scene`, etc.
 
 ```python
 def test_resolve_explicit_int(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     assert resolve_frame(client=_FakeClient({}), explicit=7) == 7
 
 def test_resolve_uses_env(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "42")
+    monkeypatch.setenv("BHDR_FRAME_ID", "42")
     assert resolve_frame(client=_FakeClient({}), explicit=None) == 42
 
 def test_explicit_wins_over_env(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "42")
+    monkeypatch.setenv("BHDR_FRAME_ID", "42")
     assert resolve_frame(client=_FakeClient({}), explicit=7) == 7
 
 def test_falls_back_to_latest_via_rest(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     fake = _FakeClient({"/api/v1/frames/current/overview": {"frame_id": 99}})
     assert resolve_frame(client=fake, explicit=None) == 99
 
 def test_latest_string_resolves_via_rest(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     fake = _FakeClient({"/api/v1/frames/current/overview": {"frame_id": 5}})
     assert resolve_frame(client=fake, explicit="latest") == 5
 ```
@@ -554,7 +554,7 @@ def test_latest_string_resolves_via_rest(monkeypatch):
 ```python
 """Resolve --frame for CLI commands.
 
-Precedence: explicit --frame > GPA_FRAME_ID env > REST 'current'.
+Precedence: explicit --frame > BHDR_FRAME_ID env > REST 'current'.
 """
 from __future__ import annotations
 import os
@@ -569,7 +569,7 @@ def resolve_frame(
     if explicit is not None and explicit != "latest":
         return int(explicit)
     if explicit is None:
-        env = os.environ.get("GPA_FRAME_ID", "").strip()
+        env = os.environ.get("BHDR_FRAME_ID", "").strip()
         if env:
             return int(env)
     overview = client.get_json("/api/v1/frames/current/overview")
@@ -580,7 +580,7 @@ def resolve_frame(
 - [ ] **Step 4: Commit**
 
 ```bash
-git commit -m "feat(cli): frame_resolver honors GPA_FRAME_ID env"
+git commit -m "feat(cli): frame_resolver honors BHDR_FRAME_ID env"
 ```
 
 ---
@@ -840,7 +840,7 @@ git commit -m "feat(eval): create gpa.eval.agents package with AgentBackend ABC"
 - Create: `src/python/bhdr/eval/agents/api_agent.py`
 - Modify: `src/python/bhdr/eval/llm_agent.py` (becomes shim)
 
-Move the existing `EvalAgent`, `GpaToolExecutor`, `GPA_TOOLS`, `CODE_ONLY_TOOLS`, `SNAPSHOT_TOOLS`, `build_agent_fn` constants into `api_agent.py`. Rename `EvalAgent` → `ApiAgent` and have it implement `AgentBackend`.
+Move the existing `EvalAgent`, `BhdrToolExecutor`, `BHDR_TOOLS`, `CODE_ONLY_TOOLS`, `SNAPSHOT_TOOLS`, `build_agent_fn` constants into `api_agent.py`. Rename `EvalAgent` → `ApiAgent` and have it implement `AgentBackend`.
 
 `llm_agent.py` becomes:
 
@@ -850,8 +850,8 @@ from __future__ import annotations
 import warnings
 from gpa.eval.agents.api_agent import (
     ApiAgent as EvalAgent,
-    GpaToolExecutor,
-    GPA_TOOLS,
+    BhdrToolExecutor,
+    BHDR_TOOLS,
     CODE_ONLY_TOOLS,
     SNAPSHOT_TOOLS,
     build_agent_fn,
@@ -863,7 +863,7 @@ warnings.warn(
     DeprecationWarning, stacklevel=2,
 )
 __all__ = [
-    "EvalAgent", "GpaToolExecutor", "GPA_TOOLS", "CODE_ONLY_TOOLS",
+    "EvalAgent", "BhdrToolExecutor", "BHDR_TOOLS", "CODE_ONLY_TOOLS",
     "SNAPSHOT_TOOLS", "build_agent_fn", "AgentResult",
 ]
 ```
@@ -880,7 +880,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/ -k "eval or harness or
 grep -rn "from gpa.eval.llm_agent\|import gpa.eval.llm_agent" src/ tests/
 ```
 
-Confirmed callers (as of plan writing): `tests/unit/python/test_eval_agent.py` imports `EvalAgent`, `GpaToolExecutor`, `GPA_TOOLS`, `CODE_ONLY_TOOLS`, `SNAPSHOT_TOOLS`, `build_agent_fn`. `tests/unit/python/test_eval_no_ground_truth_leak.py` imports `EvalAgent` and `build_agent_fn`. The shim's `__all__` must cover every symbol grep finds.
+Confirmed callers (as of plan writing): `tests/unit/python/test_eval_agent.py` imports `EvalAgent`, `BhdrToolExecutor`, `BHDR_TOOLS`, `CODE_ONLY_TOOLS`, `SNAPSHOT_TOOLS`, `build_agent_fn`. `tests/unit/python/test_eval_no_ground_truth_leak.py` imports `EvalAgent` and `build_agent_fn`. The shim's `__all__` must cover every symbol grep finds.
 
 - [ ] **Step 3: Move file content** to `gpa.eval.agents.api_agent`. No behaviour changes.
 - [ ] **Step 4: Convert `llm_agent.py` to shim** with `__all__` covering every symbol the audit identified, including `AgentResult`.
@@ -994,14 +994,14 @@ class CliAgent(AgentBackend):
         # Pin frame_id (with-gla mode runs the binary first)
         if mode == "with_gla":
             frame_id = tools["run_with_capture"]()
-            env["GPA_FRAME_ID"] = str(frame_id)
-        env["GPA_BASE_URL"] = env.get("GPA_BASE_URL", "http://127.0.0.1:18080")
-        if "GPA_TOKEN" not in env and "token" in tools:
-            env["GPA_TOKEN"] = tools["token"]
+            env["BHDR_FRAME_ID"] = str(frame_id)
+        env["BHDR_BASE_URL"] = env.get("BHDR_BASE_URL", "http://127.0.0.1:18080")
+        if "BHDR_TOKEN" not in env and "token" in tools:
+            env["BHDR_TOKEN"] = tools["token"]
         if scenario.source_path:
-            env["GPA_SOURCE_ROOT"] = str(Path(scenario.source_path).parent)
+            env["BHDR_SOURCE_ROOT"] = str(Path(scenario.source_path).parent)
         if tools.get("snapshot_root"):
-            env["GPA_UPSTREAM_ROOT"] = str(tools["snapshot_root"])
+            env["BHDR_UPSTREAM_ROOT"] = str(tools["snapshot_root"])
 
         prompt = self._render_prompt(scenario, mode, tools)
         argv = [self._spec.binary, *self._spec.base_args]
@@ -1053,7 +1053,7 @@ Available tools (run via your shell):
 - gpa upstream grep PATTERN              — grep the upstream snapshot
 - gpa --help                             — discover more
 
-GPA_FRAME_ID is set so --frame is automatic.
+BHDR_FRAME_ID is set so --frame is automatic.
 
 Problem:
 {scenario.description}
@@ -1343,7 +1343,7 @@ git commit -m "docs(mcp): mark MCP server deprecated; cli is the new agent integ
 - Create: `.codex/skills/gpa/SKILL.md`
 - Create: `.claude/skills/gpa/SKILL.md`
 
-Write `docs/cli/agent-integration.md` covering: when to use, env (`GPA_BASE_URL`, `GPA_TOKEN`, `GPA_FRAME_ID`, `GPA_SOURCE_ROOT`, `GPA_UPSTREAM_ROOT`), frame workflow, drawcall workflow, pixel/scene workflow, source/upstream workflow, "do not do without approval" list (`gpa control pause/resume/step`, `gpa annotations add`, `gpa frames metadata set`, `gpa drawcalls sources set`), three example invocations.
+Write `docs/cli/agent-integration.md` covering: when to use, env (`BHDR_BASE_URL`, `BHDR_TOKEN`, `BHDR_FRAME_ID`, `BHDR_SOURCE_ROOT`, `BHDR_UPSTREAM_ROOT`), frame workflow, drawcall workflow, pixel/scene workflow, source/upstream workflow, "do not do without approval" list (`gpa control pause/resume/step`, `gpa annotations add`, `gpa frames metadata set`, `gpa drawcalls sources set`), three example invocations.
 
 Skill stubs at `.codex/skills/gpa/SKILL.md` and `.claude/skills/gpa/SKILL.md`:
 
@@ -1425,4 +1425,4 @@ After completing all tasks:
 
 - **CLI parser fragility:** stream-json/codex log parsing depends on undocumented output formats. Tasks 19 and 20 each pin against a fixture; a CLI-version assertion at the spec level catches drift.
 - **Subprocess timeouts:** default 1800 s per scenario via `CliBackendSpec.timeout_sec`. Tune as needed.
-- **`gpa source` env-var coupling:** the harness must set `GPA_SOURCE_ROOT` on every CLI-agent invocation. Test 21 checks this contract.
+- **`gpa source` env-var coupling:** the harness must set `BHDR_SOURCE_ROOT` on every CLI-agent invocation. Test 21 checks this contract.

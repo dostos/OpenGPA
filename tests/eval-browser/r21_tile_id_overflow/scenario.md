@@ -45,7 +45,7 @@ manual grepping through the minified mapbox bundle.
 ## Phase 1 vs Phase 2
 
 Phase 1 (this scenario) validates the **pipeline end-to-end**: a browser
-page POSTs a synthetic `sources` payload + sets `window.__gpa_done`, and
+page POSTs a synthetic `sources` payload + sets `window.__bhdr_done`, and
 the `gpa run-browser` runner detects completion and tears down.
 
 Phase 2 ships the real mapbox-gl-js bundle (pinned at a pre-fix SHA),

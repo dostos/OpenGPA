@@ -16,9 +16,9 @@ The reflection scanner lives in
 ### Option A — auto-enable via `localStorage`
 
 ```js
-localStorage.GPA_TRACE_MODE = 'gated';       // or 'lazy' | 'eager'
-localStorage.GPA_TRACE_ENDPOINT = 'http://127.0.0.1:18080/api/v1';
-localStorage.GPA_TRACE_TOKEN = '<bearer>';   // engine auth token
+localStorage.BHDR_TRACE_MODE = 'gated';       // or 'lazy' | 'eager'
+localStorage.BHDR_TRACE_ENDPOINT = 'http://127.0.0.1:18080/api/v1';
+localStorage.BHDR_TRACE_TOKEN = '<bearer>';   // engine auth token
 // Reload. The module auto-calls gpa.trace.enable() on load.
 ```
 
@@ -60,7 +60,7 @@ error, `2` bad args / no session, `4` no frames captured yet.
 
 ## MCP
 
-A single tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` wraps
+A single tool `bhdr_trace_value(frame_id, field?, value?, dc_id?)` wraps
 the three subcommands. Pass either `field` (uniform name) *or* `value`
 (literal). Returns the same JSON as `--json`.
 

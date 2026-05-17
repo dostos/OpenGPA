@@ -90,11 +90,11 @@ static void test_http_post_sends_valid_request(void) {
     assert(L.port > 0);
 
     const char* body = "{\"hello\":\"world\"}";
-    int rc = gpa_http_post_json("127.0.0.1", L.port,
+    int rc = bhdr_http_post_json("127.0.0.1", L.port,
                                 "/api/v1/test", NULL,
                                 body, strlen(body));
     pthread_join(tid, NULL);
-    assert(rc == GPA_HTTP_OK);
+    assert(rc == BHDR_HTTP_OK);
 
     /* Verify what the listener received. */
     assert(strstr(L.buf, "POST /api/v1/test HTTP/1.0") != NULL);
@@ -119,12 +119,12 @@ static void test_http_post_fails_open_on_connection_refused(void) {
     int port = ntohs(sa.sin_port);
     close(s);
 
-    int rc = gpa_http_post_json("127.0.0.1", port,
+    int rc = bhdr_http_post_json("127.0.0.1", port,
                                 "/api/v1/test", NULL,
                                 "{}", 2);
     /* Must return an error, must NOT crash. */
-    assert(rc != GPA_HTTP_OK);
-    assert(rc == GPA_HTTP_ERR_CONNECT);
+    assert(rc != BHDR_HTTP_OK);
+    assert(rc == BHDR_HTTP_ERR_CONNECT);
     printf("PASS test_http_post_fails_open_on_connection_refused\n");
 }
 
@@ -134,11 +134,11 @@ static void test_http_post_honors_token(void) {
     pthread_create(&tid, NULL, listener_thread, &L);
     while (L.done == 0) { usleep(1000); }
 
-    int rc = gpa_http_post_json("127.0.0.1", L.port,
+    int rc = bhdr_http_post_json("127.0.0.1", L.port,
                                 "/x", "secret-token-xyz",
                                 "{}", 2);
     pthread_join(tid, NULL);
-    assert(rc == GPA_HTTP_OK);
+    assert(rc == BHDR_HTTP_OK);
     assert(strstr(L.buf, "Authorization: Bearer secret-token-xyz") != NULL);
     printf("PASS test_http_post_honors_token\n");
 }

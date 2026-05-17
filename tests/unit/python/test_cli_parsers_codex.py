@@ -77,7 +77,7 @@ class TestParseCodexNdjson:
         assert m.input_tokens == 12345
         assert m.output_tokens == 0   # codex doesn't split input/output in summary
 
-    def test_non_gpa_commands_not_counted(self):
+    def test_non_bhdr_commands_not_counted(self):
         """Shell calls that don't start with `gpa` must NOT increment tool_calls."""
         text = (
             '{"type":"item.completed","item":{"id":"i0","type":"command_execution",'

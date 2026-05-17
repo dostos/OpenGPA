@@ -51,7 +51,7 @@ def _client(**extra_paths) -> _CapturingClient:
 
 
 def test_get_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = pixel_mod.run_get(client=client, frame=None, x=100, y=200, print_stream=buf)
@@ -60,7 +60,7 @@ def test_get_hits_correct_url(monkeypatch):
 
 
 def test_get_output_is_json_passthrough(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     payload = {"r": 255, "g": 0, "b": 0, "a": 255}
     path = f"/api/v1/frames/{_CURRENT_FID}/pixel/10/20"
     client = _client(**{path: payload})
@@ -76,7 +76,7 @@ def test_get_output_is_json_passthrough(monkeypatch):
 
 
 def test_explain_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = pixel_mod.run_explain(client=client, frame=None, x=50, y=75, print_stream=buf)
@@ -90,7 +90,7 @@ def test_explain_hits_correct_url(monkeypatch):
 
 
 def test_get_frame_env_fallback(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "3")
+    monkeypatch.setenv("BHDR_FRAME_ID", "3")
     path = "/api/v1/frames/3/pixel/1/2"
     client = _client(**{path: {"r": 0, "g": 0, "b": 0, "a": 255}})
     buf = io.StringIO()

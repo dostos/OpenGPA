@@ -2,7 +2,7 @@
 # R10v2 + R11 subagent runner — 11 scenarios × 3 tiers × 2 modes.
 #
 # Usage: run_subagent.sh <scenario> <mode> <model>
-#   mode: with_gpa | code_only
+#   mode: with_bhdr | code_only
 #   model: haiku | sonnet | opus
 set -u
 
@@ -31,7 +31,7 @@ export PATH=/home/jingyulee/gh/gla/bin:$PATH
 
 # ---- Build the prompt template via the shared renderer. ----
 PROMPT_MODE=code_only
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   PROMPT_MODE=with_gla
 fi
 
@@ -44,7 +44,7 @@ python3 /tmp/eval_r10v2_r11/build_prompt.py "$SCENARIO" "$PROMPT_MODE" > "$PROMP
 FRAME_NOTE=""
 SESSION_PORT=""
 SESSION_TOKEN=""
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   rm -rf "$SESSION_DIR"
   mkdir -p "$SESSION_DIR"
   # Start daemon with auto-port (R10v2/R11 fix).
@@ -61,9 +61,9 @@ if [ "$MODE" = "with_gpa" ]; then
       (
         eval "$(gpa env --session "$SESSION_DIR")"
         export DISPLAY=:99
-        export LD_PRELOAD=/home/jingyulee/gh/gla/bazel-bin/src/shims/gl/libgpa_gl.so
-        export GPA_TRACE_NATIVE=1
-        export GPA_TRACE_NATIVE_STACK=1
+        export LD_PRELOAD=/home/jingyulee/gh/gla/bazel-bin/src/shims/gl/libbhdr_gl.so
+        export BHDR_TRACE_NATIVE=1
+        export BHDR_TRACE_NATIVE_STACK=1
         timeout 5 "$BIN" > "$CAPTURE_LOG" 2>&1 || true
       )
       sleep 0.5
@@ -89,7 +89,7 @@ esac
 #      so we rely on --disallowedTools to block mutation tools that could
 #      clobber the shared snapshot directory (Edit/Write/NotebookEdit).
 ALLOW="Read Grep Glob"
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   ALLOW="Read Grep Glob Bash(curl:*) Bash(gpa:*)"
 fi
 DENY="Edit Write NotebookEdit MultiEdit"
@@ -99,18 +99,18 @@ if [ -n "$SNAP" ] && [ -d "$SNAP" ]; then
   ADD_DIRS="$ADD_DIRS --add-dir $SNAP"
 fi
 
-# Extra prompt tail carrying runtime session info for the with_gpa agent.
+# Extra prompt tail carrying runtime session info for the with_bhdr agent.
 FINAL_PROMPT="$OUT_DIR/${SCENARIO}_${MODE}_${MODEL}.final-prompt"
 cp "$PROMPT_FILE" "$FINAL_PROMPT"
-if [ "$MODE" = "with_gpa" ] && [ -n "$SESSION_TOKEN" ]; then
+if [ "$MODE" = "with_bhdr" ] && [ -n "$SESSION_TOKEN" ]; then
   {
     echo ""
     echo ""
     echo "# Runtime session (already exported for you)"
     echo ""
-    echo "- GPA_SESSION=$SESSION_DIR"
-    echo "- GPA_PORT=$SESSION_PORT"
-    echo "- GPA_TOKEN=$SESSION_TOKEN"
+    echo "- BHDR_SESSION=$SESSION_DIR"
+    echo "- BHDR_PORT=$SESSION_PORT"
+    echo "- BHDR_TOKEN=$SESSION_TOKEN"
     if [ -n "$SNAP" ] && [ -d "$SNAP" ]; then
       echo "- Framework snapshot path: $SNAP"
     fi
@@ -136,10 +136,10 @@ cd "$OUT_DIR"
 
 RUN_ATTEMPT() {
   local turns=$1 outfile=$2
-  if [ "$MODE" = "with_gpa" ] && [ -n "$SESSION_TOKEN" ]; then
-    export GPA_SESSION="$SESSION_DIR"
-    export GPA_PORT="$SESSION_PORT"
-    export GPA_TOKEN="$SESSION_TOKEN"
+  if [ "$MODE" = "with_bhdr" ] && [ -n "$SESSION_TOKEN" ]; then
+    export BHDR_SESSION="$SESSION_DIR"
+    export BHDR_PORT="$SESSION_PORT"
+    export BHDR_TOKEN="$SESSION_TOKEN"
   fi
   timeout 1200 claude -p \
       --model "$MODELNAME" \
@@ -167,7 +167,7 @@ if [ -s "$OUT" ]; then
 fi
 
 # ---- Stop session. ----
-if [ "$MODE" = "with_gpa" ] && [ -d "$SESSION_DIR" ]; then
+if [ "$MODE" = "with_bhdr" ] && [ -d "$SESSION_DIR" ]; then
   gpa stop --session "$SESSION_DIR" > "$SESSION_DIR/stop.log" 2>&1 || true
 fi
 

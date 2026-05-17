@@ -8,7 +8,7 @@ Usage::
     python -m bhdr.eval.plan \
         --scenarios scen_a scen_b scen_c \
         --tiers haiku sonnet opus \
-        --modes code_only with_gpa \
+        --modes code_only with_bhdr \
         --max-budget-usd 150 \
         --baseline-per-run 0.50
 
@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="bhdr.eval.plan")
     p.add_argument("--scenarios", nargs="+", required=True)
     p.add_argument("--tiers", nargs="+", default=["haiku", "sonnet", "opus"])
-    p.add_argument("--modes", nargs="+", default=["code_only", "with_gpa"])
+    p.add_argument("--modes", nargs="+", default=["code_only", "with_bhdr"])
     p.add_argument("--max-budget-usd", type=float, required=True)
     p.add_argument("--baseline-per-run", type=float, default=0.50)
     args = p.parse_args(argv)

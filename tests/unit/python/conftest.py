@@ -1,6 +1,6 @@
 """Shared pytest fixtures for GPA REST API tests.
 
-All C++ (_gpa_core) types are mocked — no native extension needed at test time.
+All C++ (_bhdr_core) types are mocked — no native extension needed at test time.
 The test fixtures now construct a NativeBackend around mock objects, so the
 routes exercise the full provider-based code path.
 """

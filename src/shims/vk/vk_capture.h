@@ -19,12 +19,12 @@ extern "C" {
 #endif
 
 /* Maximum draw calls recorded per frame (matches GL shim ceiling). */
-#define GPA_VK_MAX_DRAW_CALLS 1024
+#define BHDR_VK_MAX_DRAW_CALLS 1024
 
 /* -------------------------------------------------------------------------
  * Draw call snapshot stored during command buffer recording.
  * ---------------------------------------------------------------------- */
-typedef struct GpaVkDrawCall {
+typedef struct BhdrVkDrawCall {
     uint32_t id;
     uint32_t vertex_count;
     uint32_t index_count;
@@ -39,14 +39,14 @@ typedef struct GpaVkDrawCall {
 
     /* Render pass info */
     uint32_t subpass;
-} GpaVkDrawCall;
+} BhdrVkDrawCall;
 
 /* -------------------------------------------------------------------------
  * Per-command-buffer recording state.
  * ---------------------------------------------------------------------- */
-typedef struct GpaVkCmdBufState {
+typedef struct BhdrVkCmdBufState {
     VkCommandBuffer cmd_buf;
-    GpaVkDrawCall   draws[GPA_VK_MAX_DRAW_CALLS];
+    BhdrVkDrawCall   draws[BHDR_VK_MAX_DRAW_CALLS];
     uint32_t        draw_count;
 
     /* Tracked pipeline */
@@ -55,35 +55,35 @@ typedef struct GpaVkCmdBufState {
 
     /* Current render pass subpass index */
     uint32_t        current_subpass;
-} GpaVkCmdBufState;
+} BhdrVkCmdBufState;
 
 /* -------------------------------------------------------------------------
  * Public API
  * ---------------------------------------------------------------------- */
 
 /* Called once on layer init to set up the capture module. */
-void gpa_capture_init(void);
+void bhdr_capture_init(void);
 
 /* Called on layer teardown. */
-void gpa_capture_shutdown(void);
+void bhdr_capture_shutdown(void);
 
 /* Allocate (or recycle) per-command-buffer state. */
-GpaVkCmdBufState *gpa_capture_cmd_buf_begin(VkCommandBuffer cmd_buf);
+BhdrVkCmdBufState *bhdr_capture_cmd_buf_begin(VkCommandBuffer cmd_buf);
 
 /* Free per-command-buffer state. */
-void gpa_capture_cmd_buf_end(VkCommandBuffer cmd_buf);
+void bhdr_capture_cmd_buf_end(VkCommandBuffer cmd_buf);
 
 /* Retrieve existing state (may return NULL if not tracked). */
-GpaVkCmdBufState *gpa_capture_cmd_buf_get(VkCommandBuffer cmd_buf);
+BhdrVkCmdBufState *bhdr_capture_cmd_buf_get(VkCommandBuffer cmd_buf);
 
 /* Record a draw call into the per-command-buffer state. */
-void gpa_capture_record_draw(VkCommandBuffer cmd_buf,
+void bhdr_capture_record_draw(VkCommandBuffer cmd_buf,
                               uint32_t vertex_count,
                               uint32_t instance_count,
                               uint32_t first_vertex,
                               uint32_t first_instance);
 
-void gpa_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
+void bhdr_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
                                       uint32_t index_count,
                                       uint32_t instance_count,
                                       uint32_t first_index,
@@ -97,18 +97,18 @@ void gpa_capture_record_draw_indexed(VkCommandBuffer cmd_buf,
  *   `draw_count` is the number of indirect commands in the buffer
  *   (or `maxDrawCount` for the *Count variants).
  *   `indexed` is non-zero for the indexed variants. */
-void gpa_capture_record_indirect_draw(VkCommandBuffer cmd_buf,
+void bhdr_capture_record_indirect_draw(VkCommandBuffer cmd_buf,
                                        uint32_t draw_count,
                                        int      indexed);
 
 /* Track pipeline bind. */
-void gpa_capture_bind_pipeline(VkCommandBuffer cmd_buf,
+void bhdr_capture_bind_pipeline(VkCommandBuffer cmd_buf,
                                 VkPipelineBindPoint bind_point,
                                 VkPipeline pipeline);
 
 /* Track render pass boundaries. */
-void gpa_capture_begin_render_pass(VkCommandBuffer cmd_buf);
-void gpa_capture_end_render_pass(VkCommandBuffer cmd_buf);
+void bhdr_capture_begin_render_pass(VkCommandBuffer cmd_buf);
+void bhdr_capture_end_render_pass(VkCommandBuffer cmd_buf);
 
 /* Called on vkQueuePresentKHR — perform readback and IPC send.
  *
@@ -119,7 +119,7 @@ void gpa_capture_end_render_pass(VkCommandBuffer cmd_buf);
  * compositor left behind, the pre-present layout is non-standard, and
  * waiting on a fence for our staging copy can take seconds in
  * compositor-style apps (chromium). */
-void gpa_capture_on_present(VkQueue           queue,
+void bhdr_capture_on_present(VkQueue           queue,
                              VkDevice          device,
                              VkSwapchainKHR    swapchain,
                              uint32_t          image_index,
@@ -130,7 +130,7 @@ void gpa_capture_on_present(VkQueue           queue,
 
 /* Accumulate draw calls from submitted command buffers into the frame buffer.
  * Called from vkQueueSubmit so we can harvest metadata even before present. */
-void gpa_capture_queue_submit(uint32_t cmd_buf_count,
+void bhdr_capture_queue_submit(uint32_t cmd_buf_count,
                                const VkCommandBuffer *cmd_bufs);
 
 #ifdef __cplusplus

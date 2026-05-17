@@ -22,10 +22,10 @@
 
   // Stash for the extension so it knows which engine to post to.
   try {
-    localStorage.setItem("GPA_TRACE_TOKEN", token);
-    localStorage.setItem("GPA_TRACE_ENDPOINT",
+    localStorage.setItem("BHDR_TRACE_TOKEN", token);
+    localStorage.setItem("BHDR_TRACE_ENDPOINT",
                          "http://127.0.0.1:" + port + "/api/v1");
-    localStorage.setItem("GPA_TRACE_MODE", "gated");
+    localStorage.setItem("BHDR_TRACE_MODE", "gated");
   } catch (e) { /* ignore */ }
 
   const statusEl = document.getElementById("status");
@@ -61,12 +61,12 @@
     body: JSON.stringify(fakeSources)
   }).then(function (resp) {
     setStatus("sources POST status=" + resp.status);
-    window.__gpa_done = true;
+    window.__bhdr_done = true;
   }).catch(function (err) {
     setStatus("sources POST failed: " + err);
     // Still mark done so runner doesn't hang; phase 2 will
     // handle retry + real failure modes.
-    window.__gpa_done = true;
+    window.__bhdr_done = true;
   });
 })();
 </script>

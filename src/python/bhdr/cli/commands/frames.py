@@ -51,7 +51,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
     # NOTE: required=False so bare ``gpa frames`` reaches the dispatcher and
     # gets routed to the deprecated alias for ``frames list``.
@@ -72,7 +72,7 @@ def add_subparser(subparsers) -> None:
     p_overview = sub.add_parser("overview", help="Frame overview (JSON)")
     p_overview.add_argument(
         "--frame", default=None,
-        help="Frame id (default: GPA_FRAME_ID env or latest)",
+        help="Frame id (default: BHDR_FRAME_ID env or latest)",
     )
 
     # ---- metadata (sub-sub-noun) ----
@@ -85,13 +85,13 @@ def add_subparser(subparsers) -> None:
     m_get = metadata_sub.add_parser("get", help="Get metadata summary for a frame (JSON)")
     m_get.add_argument(
         "--frame", default=None,
-        help="Frame id (default: GPA_FRAME_ID env or latest)",
+        help="Frame id (default: BHDR_FRAME_ID env or latest)",
     )
 
     m_set = metadata_sub.add_parser("set", help="Post metadata JSON for a frame")
     m_set.add_argument(
         "--frame", default=None,
-        help="Frame id (default: GPA_FRAME_ID env or latest)",
+        help="Frame id (default: BHDR_FRAME_ID env or latest)",
     )
     m_body_group = m_set.add_mutually_exclusive_group(required=True)
     m_body_group.add_argument(
@@ -110,7 +110,7 @@ def add_subparser(subparsers) -> None:
     )
     p_cc.add_argument(
         "--frame", default=None,
-        help="Frame id (default: GPA_FRAME_ID env or latest)",
+        help="Frame id (default: BHDR_FRAME_ID env or latest)",
     )
     p_cc.add_argument(
         "--severity", default="warn",

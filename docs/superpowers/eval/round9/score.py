@@ -316,13 +316,13 @@ def count_gpa_subtools(messages: list) -> dict:
                 if c.get("type") == "tool_use" and c.get("name") == "Bash":
                     cmd = c.get("input", {}).get("command", "")
                     if "gpa report" in cmd:
-                        counts["gpa_report"] += 1
+                        counts["bhdr_report"] += 1
                     if "gpa trace" in cmd:
-                        counts["gpa_trace"] += 1
+                        counts["bhdr_trace"] += 1
                     if "gpa check" in cmd:
-                        counts["gpa_check"] += 1
+                        counts["bhdr_check"] += 1
                     if "gpa dump" in cmd:
-                        counts["gpa_dump"] += 1
+                        counts["bhdr_dump"] += 1
         except Exception:
             continue
     return dict(counts)
@@ -332,7 +332,7 @@ def main() -> None:
     rows = []
     for f in sorted(RESULTS_DIR.glob("*_*.jsonl")):
         name = f.stem
-        m = re.match(r"^(.*?)_(code_only|with_gpa)_(haiku|sonnet|opus)$", name)
+        m = re.match(r"^(.*?)_(code_only|with_bhdr)_(haiku|sonnet|opus)$", name)
         if not m:
             continue
         scen, mode, model = m.group(1), m.group(2), m.group(3)
@@ -358,7 +358,7 @@ def main() -> None:
                         pass
         except Exception:
             pass
-        gpa_subs = count_gpa_subtools(msgs)
+        bhdr_subs = count_gpa_subtools(msgs)
 
         timed_out = (
             (not parsed.get("result_text"))
@@ -391,7 +391,7 @@ def main() -> None:
             "turns": parsed["num_turns"],
             "cost_usd": parsed["total_cost_usd"],
             "tool_counts": parsed["tool_counts"],
-            "gpa_subtools": gpa_subs,
+            "bhdr_subtools": bhdr_subs,
             "cache_read": parsed["cache_read"],
             "cache_creation": parsed["cache_creation"],
             "total_output_tokens": parsed["total_tokens_out"],
@@ -450,13 +450,13 @@ def main() -> None:
     # Per scenario
     out.append("\n## Per-Scenario (Y/N/-)")
     hdr = f"{'scenario':<50} " + " ".join(
-        f"{mode[:2]}_{model[0]}" for mode in ("code_only","with_gpa")
+        f"{mode[:2]}_{model[0]}" for mode in ("code_only","with_bhdr")
         for model in ("haiku","sonnet","opus"))
     out.append(hdr)
     for scen in sorted(by_scen):
         d = {(r["mode"], r["model"]): r["correct"] for r in by_scen[scen]}
         parts = [f"{scen:<50}"]
-        for mode in ("code_only","with_gpa"):
+        for mode in ("code_only","with_bhdr"):
             for model in ("haiku","sonnet","opus"):
                 if (mode, model) in d:
                     parts.append("  Y  " if d[(mode, model)] else "  N  ")
@@ -472,16 +472,16 @@ def main() -> None:
         rs = by_cell[(mode, model)]
         n = max(len(rs), 1)
         s = {k: 0 for k in ("gpa","curl","Read","Grep","Bash")}
-        subs = {k: 0 for k in ("gpa_report","gpa_trace","gpa_check","gpa_dump")}
+        subs = {k: 0 for k in ("bhdr_report","bhdr_trace","bhdr_check","bhdr_dump")}
         for r in rs:
             for k in s:
                 s[k] += int(r["tool_counts"].get(k, 0))
             for k in subs:
-                subs[k] += int(r["gpa_subtools"].get(k, 0))
+                subs[k] += int(r["bhdr_subtools"].get(k, 0))
         out.append(f"{mode:<12} {model:<8} "
-                   f"{s['gpa']/n:>5.1f} {subs['gpa_report']/n:>5.1f} "
-                   f"{subs['gpa_trace']/n:>5.1f} {subs['gpa_check']/n:>5.1f} "
-                   f"{subs['gpa_dump']/n:>5.1f} {s['curl']/n:>5.1f} "
+                   f"{s['gpa']/n:>5.1f} {subs['bhdr_report']/n:>5.1f} "
+                   f"{subs['bhdr_trace']/n:>5.1f} {subs['bhdr_check']/n:>5.1f} "
+                   f"{subs['bhdr_dump']/n:>5.1f} {s['curl']/n:>5.1f} "
                    f"{s['Read']/n:>5.1f} {s['Grep']/n:>5.1f} {s['Bash']/n:>5.1f}")
 
     # Category x mode x model accuracy
@@ -500,18 +500,18 @@ def main() -> None:
         co_solved = sum(1 for r in rows if r["scenario"] in SOURCE_LOGICAL
                         and r["mode"]=="code_only" and r["model"]==model and r["correct"])
         gp_solved = sum(1 for r in rows if r["scenario"] in SOURCE_LOGICAL
-                        and r["mode"]=="with_gpa" and r["model"]==model and r["correct"])
+                        and r["mode"]=="with_bhdr" and r["model"]==model and r["correct"])
         gp_n = sum(1 for r in rows if r["scenario"] in SOURCE_LOGICAL
-                   and r["mode"]=="with_gpa" and r["model"]==model)
+                   and r["mode"]=="with_bhdr" and r["model"]==model)
         co_n = sum(1 for r in rows if r["scenario"] in SOURCE_LOGICAL
                    and r["mode"]=="code_only" and r["model"]==model)
-        trace_uses = sum(r["gpa_subtools"].get("gpa_trace",0) for r in rows
+        trace_uses = sum(r["bhdr_subtools"].get("bhdr_trace",0) for r in rows
                          if r["scenario"] in SOURCE_LOGICAL
-                         and r["mode"]=="with_gpa" and r["model"]==model)
+                         and r["mode"]=="with_bhdr" and r["model"]==model)
         trace_runs = sum(1 for r in rows if r["scenario"] in SOURCE_LOGICAL
-                         and r["mode"]=="with_gpa" and r["model"]==model
-                         and r["gpa_subtools"].get("gpa_trace",0) > 0)
-        out.append(f"  {model:<7} code_only {co_solved}/{co_n}  with_gpa {gp_solved}/{gp_n}  "
+                         and r["mode"]=="with_bhdr" and r["model"]==model
+                         and r["bhdr_subtools"].get("bhdr_trace",0) > 0)
+        out.append(f"  {model:<7} code_only {co_solved}/{co_n}  with_bhdr {gp_solved}/{gp_n}  "
                    f"trace_calls={trace_uses}  runs_with_trace={trace_runs}/{gp_n}")
 
     # Paired deltas by model
@@ -521,7 +521,7 @@ def main() -> None:
         for scen, rs in by_scen.items():
             d = {(r["mode"], r["model"]): r for r in rs}
             co = d.get(("code_only", model))
-            gp = d.get(("with_gpa", model))
+            gp = d.get(("with_bhdr", model))
             if not co or not gp:
                 continue
             if not (co["correct"] and gp["correct"]):
@@ -554,7 +554,7 @@ def main() -> None:
                     continue
                 d = {(r["mode"], r["model"]): r for r in rs}
                 co = d.get(("code_only", model))
-                gp = d.get(("with_gpa", model))
+                gp = d.get(("with_bhdr", model))
                 if not co or not gp:
                     continue
                 if not (co["correct"] and gp["correct"]):
@@ -576,9 +576,9 @@ def main() -> None:
     opus_only = []
     for scen, rs in by_scen.items():
         d = {(r["mode"], r["model"]): r["correct"] for r in rs}
-        opus_solved = d.get(("code_only","opus"),False) or d.get(("with_gpa","opus"),False)
-        son_solved = d.get(("code_only","sonnet"),False) or d.get(("with_gpa","sonnet"),False)
-        haiku_solved = d.get(("code_only","haiku"),False) or d.get(("with_gpa","haiku"),False)
+        opus_solved = d.get(("code_only","opus"),False) or d.get(("with_bhdr","opus"),False)
+        son_solved = d.get(("code_only","sonnet"),False) or d.get(("with_bhdr","sonnet"),False)
+        haiku_solved = d.get(("code_only","haiku"),False) or d.get(("with_bhdr","haiku"),False)
         if opus_solved and not son_solved and not haiku_solved:
             opus_only.append(scen)
     out.append(f"  Opus-only wins (Haiku+Sonnet both failed): {len(opus_only)}")
@@ -588,8 +588,8 @@ def main() -> None:
     regressions = []
     for scen, rs in by_scen.items():
         d = {(r["mode"], r["model"]): r["correct"] for r in rs}
-        opus_solved = any(d.get((m,"opus"),False) for m in ("code_only","with_gpa"))
-        son_solved  = any(d.get((m,"sonnet"),False) for m in ("code_only","with_gpa"))
+        opus_solved = any(d.get((m,"opus"),False) for m in ("code_only","with_bhdr"))
+        son_solved  = any(d.get((m,"sonnet"),False) for m in ("code_only","with_bhdr"))
         if son_solved and not opus_solved:
             regressions.append(scen)
     out.append(f"  Sonnet-solved, Opus-failed (potential regression): {len(regressions)}")

@@ -1,5 +1,5 @@
-#ifndef GPA_DWARF_LOCATIONS_H
-#define GPA_DWARF_LOCATIONS_H
+#ifndef BHDR_DWARF_LOCATIONS_H
+#define BHDR_DWARF_LOCATIONS_H
 
 /* Hand-rolled DWARF v4 location-expression interpreter for Phase 2 of
  * `gpa trace`. Supports a deliberately narrow opcode subset — enough for
@@ -18,7 +18,7 @@
  *   DW_OP_implicit_value — fixed-width literal value in the expression
  *
  * Any opcode outside this subset causes the evaluator to return
- * GPA_LOCEVAL_UNSUPPORTED — the caller skips the variable silently. */
+ * BHDR_LOCEVAL_UNSUPPORTED — the caller skips the variable silently. */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -30,12 +30,12 @@ extern "C" {
 #endif
 
 typedef enum {
-    GPA_LOCEVAL_OK          = 0,
-    GPA_LOCEVAL_UNSUPPORTED = -1, /* opcode outside the supported subset */
-    GPA_LOCEVAL_EMPTY       = -2, /* zero-length expression */
-    GPA_LOCEVAL_MALFORMED   = -3, /* truncated or invalid bytes */
-    GPA_LOCEVAL_UNREADABLE  = -4, /* dereference of unreadable memory */
-} GpaLocEvalError;
+    BHDR_LOCEVAL_OK          = 0,
+    BHDR_LOCEVAL_UNSUPPORTED = -1, /* opcode outside the supported subset */
+    BHDR_LOCEVAL_EMPTY       = -2, /* zero-length expression */
+    BHDR_LOCEVAL_MALFORMED   = -3, /* truncated or invalid bytes */
+    BHDR_LOCEVAL_UNREADABLE  = -4, /* dereference of unreadable memory */
+} BhdrLocEvalError;
 
 /* Describes what the interpreter resolved the expression to. Two flavours:
  *   - ADDRESS: location is a process-space byte address; caller reads N
@@ -44,13 +44,13 @@ typedef enum {
  *     truncated/extended to the declared type size.
  *   - IMPLICIT: the bytes are inline in `implicit_bytes` (DW_OP_implicit_value). */
 typedef enum {
-    GPA_LOCKIND_ADDRESS  = 1,
-    GPA_LOCKIND_REGISTER = 2,
-    GPA_LOCKIND_IMPLICIT = 3,
-} GpaLocKind;
+    BHDR_LOCKIND_ADDRESS  = 1,
+    BHDR_LOCKIND_REGISTER = 2,
+    BHDR_LOCKIND_IMPLICIT = 3,
+} BhdrLocKind;
 
 typedef struct {
-    GpaLocKind kind;
+    BhdrLocKind kind;
     union {
         uintptr_t address;
         int       regno;   /* DWARF reg number (0..16) */
@@ -59,7 +59,7 @@ typedef struct {
             size_t         len;
         } implicit;
     };
-} GpaLocResult;
+} BhdrLocResult;
 
 /* A minimal "register file" view that the interpreter consults for reg
  * / breg / fbreg lookups. `frame_base` is the function's DWARF frame_base
@@ -69,27 +69,27 @@ typedef struct {
     const uint8_t*   reg_valid;   /* 1 = valid */
     size_t           reg_count;
     uintptr_t        frame_base;
-} GpaLocCtx;
+} BhdrLocCtx;
 
 /* Evaluate a DWARF location expression.
  *   expr / expr_len = location-expression bytes (from DW_AT_location block).
  *   ctx             = live register snapshot + frame_base.
  *   out             = resolved location.
- * Returns 0 on success or a negative GpaLocEvalError. */
-int gpa_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
-                            const GpaLocCtx* ctx,
-                            GpaLocResult* out);
+ * Returns 0 on success or a negative BhdrLocEvalError. */
+int bhdr_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
+                            const BhdrLocCtx* ctx,
+                            BhdrLocResult* out);
 
 /* Convenience: given a resolved location plus a declared byte_size, read the
  * value into `buf` (up to `buf_cap` bytes). Returns bytes written or
  * negative on failure. For REGISTER and IMPLICIT locations no memory is
  * read. For ADDRESS locations the read is bounded by `buf_cap`. */
-int gpa_dwarf_read_value(const GpaLocResult* loc, size_t byte_size,
-                         const GpaLocCtx* ctx,
+int bhdr_dwarf_read_value(const BhdrLocResult* loc, size_t byte_size,
+                         const BhdrLocCtx* ctx,
                          void* buf, size_t buf_cap);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* GPA_DWARF_LOCATIONS_H */
+#endif /* BHDR_DWARF_LOCATIONS_H */

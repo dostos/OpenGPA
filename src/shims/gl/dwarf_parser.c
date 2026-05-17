@@ -6,7 +6,7 @@
  *   - Type chain → DW_AT_encoding, DW_AT_byte_size
  *
  * DWARF v3 and v4. DWARF v5 is detected and rejected with
- * GPA_DWARF_UNSUPPORTED_VERSION so the caller can log and move on.
+ * BHDR_DWARF_UNSUPPORTED_VERSION so the caller can log and move on.
  *
  * Design choices:
  *  - We mmap the ELF file once, walk section headers, point to the three
@@ -149,14 +149,14 @@ static int rd_sleb(const uint8_t** p, const uint8_t* end, int64_t* out) {
     *out = r; return 1;
 }
 
-const char* gpa_dwarf_strerror(int err) {
+const char* bhdr_dwarf_strerror(int err) {
     switch (err) {
-        case GPA_DWARF_OK: return "ok";
-        case GPA_DWARF_ERR_OPEN: return "open failed";
-        case GPA_DWARF_ERR_NOT_ELF: return "not a 64-bit ELF";
-        case GPA_DWARF_ERR_NO_DEBUG_INFO: return "no .debug_info";
-        case GPA_DWARF_UNSUPPORTED_VERSION: return "unsupported DWARF version";
-        case GPA_DWARF_ERR_MALFORMED: return "malformed DWARF";
+        case BHDR_DWARF_OK: return "ok";
+        case BHDR_DWARF_ERR_OPEN: return "open failed";
+        case BHDR_DWARF_ERR_NOT_ELF: return "not a 64-bit ELF";
+        case BHDR_DWARF_ERR_NO_DEBUG_INFO: return "no .debug_info";
+        case BHDR_DWARF_UNSUPPORTED_VERSION: return "unsupported DWARF version";
+        case BHDR_DWARF_ERR_MALFORMED: return "malformed DWARF";
     }
     return "unknown";
 }
@@ -166,32 +166,32 @@ const char* gpa_dwarf_strerror(int err) {
 static int dwfile_open(DwFile* f, const char* path) {
     memset(f, 0, sizeof(*f));
     f->fd = open(path, O_RDONLY | O_CLOEXEC);
-    if (f->fd < 0) return GPA_DWARF_ERR_OPEN;
+    if (f->fd < 0) return BHDR_DWARF_ERR_OPEN;
 
     struct stat st;
     if (fstat(f->fd, &st) < 0 || st.st_size < (off_t)sizeof(Elf64_Ehdr)) {
         close(f->fd); f->fd = -1;
-        return GPA_DWARF_ERR_OPEN;
+        return BHDR_DWARF_ERR_OPEN;
     }
     f->map_size = (size_t)st.st_size;
     f->map = mmap(NULL, f->map_size, PROT_READ, MAP_PRIVATE, f->fd, 0);
     if (f->map == MAP_FAILED) {
         close(f->fd); f->fd = -1;
-        return GPA_DWARF_ERR_OPEN;
+        return BHDR_DWARF_ERR_OPEN;
     }
 
     const Elf64_Ehdr* eh = (const Elf64_Ehdr*)f->map;
     if (memcmp(eh->e_ident, ELFMAG, SELFMAG) != 0 ||
         eh->e_ident[EI_CLASS] != ELFCLASS64) {
-        return GPA_DWARF_ERR_NOT_ELF;
+        return BHDR_DWARF_ERR_NOT_ELF;
     }
     if ((size_t)eh->e_shoff + (size_t)eh->e_shnum * sizeof(Elf64_Shdr) >
-        f->map_size) return GPA_DWARF_ERR_NOT_ELF;
+        f->map_size) return BHDR_DWARF_ERR_NOT_ELF;
 
     const Elf64_Shdr* sh = (const Elf64_Shdr*)((const uint8_t*)f->map + eh->e_shoff);
     const Elf64_Shdr* shstr = &sh[eh->e_shstrndx];
     if ((size_t)shstr->sh_offset + (size_t)shstr->sh_size > f->map_size)
-        return GPA_DWARF_ERR_NOT_ELF;
+        return BHDR_DWARF_ERR_NOT_ELF;
     const char* strtab = (const char*)f->map + shstr->sh_offset;
 
     for (int i = 0; i < eh->e_shnum; i++) {
@@ -206,8 +206,8 @@ static int dwfile_open(DwFile* f, const char* path) {
         else if (strcmp(name, ".debug_line_str") == 0) { f->line_str = (DwSection){data, size}; }
     }
     if (f->info.size == 0 || f->abbrev.size == 0)
-        return GPA_DWARF_ERR_NO_DEBUG_INFO;
-    return GPA_DWARF_OK;
+        return BHDR_DWARF_ERR_NO_DEBUG_INFO;
+    return BHDR_DWARF_OK;
 }
 
 static void dwfile_close(DwFile* f) {
@@ -256,11 +256,11 @@ static int abbrev_parse(DwAbbrevTable* out,
     memset(out, 0, sizeof(*out));
     while (p < end) {
         uint64_t code;
-        if (!rd_uleb(&p, end, &code)) return GPA_DWARF_ERR_MALFORMED;
+        if (!rd_uleb(&p, end, &code)) return BHDR_DWARF_ERR_MALFORMED;
         if (code == 0) break;
         uint64_t tag;
-        if (!rd_uleb(&p, end, &tag)) return GPA_DWARF_ERR_MALFORMED;
-        if (p >= end) return GPA_DWARF_ERR_MALFORMED;
+        if (!rd_uleb(&p, end, &tag)) return BHDR_DWARF_ERR_MALFORMED;
+        if (p >= end) return BHDR_DWARF_ERR_MALFORMED;
         int has_children = (*p++ != 0);
 
         DwAbbrev a = {code, tag, has_children, NULL, 0};
@@ -268,13 +268,13 @@ static int abbrev_parse(DwAbbrevTable* out,
         for (;;) {
             uint64_t an, af;
             if (!rd_uleb(&p, end, &an) || !rd_uleb(&p, end, &af))
-                { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
+                { free(a.attrs); return BHDR_DWARF_ERR_MALFORMED; }
             if (an == 0 && af == 0) break;
             if (a.attr_count == acap) {
                 size_t new_cap = acap ? acap * 2 : 8;
                 DwAttrSpec* tmp = (DwAttrSpec*)realloc(
                     a.attrs, new_cap * sizeof(DwAttrSpec));
-                if (!tmp) { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
+                if (!tmp) { free(a.attrs); return BHDR_DWARF_ERR_MALFORMED; }
                 a.attrs = tmp;
                 acap = new_cap;
             }
@@ -285,13 +285,13 @@ static int abbrev_parse(DwAbbrevTable* out,
             size_t new_cap = out->cap ? out->cap * 2 : 16;
             DwAbbrev* tmp = (DwAbbrev*)realloc(
                 out->items, new_cap * sizeof(DwAbbrev));
-            if (!tmp) { free(a.attrs); return GPA_DWARF_ERR_MALFORMED; }
+            if (!tmp) { free(a.attrs); return BHDR_DWARF_ERR_MALFORMED; }
             out->items = tmp;
             out->cap = new_cap;
         }
         out->items[out->count++] = a;
     }
-    return GPA_DWARF_OK;
+    return BHDR_DWARF_OK;
 }
 
 /* ---- Form reader ------------------------------------------------------- */
@@ -506,7 +506,7 @@ static int resolve_type(const CuView* cu, const DwFile* file,
 
 /* ---- CU walker --------------------------------------------------------- */
 
-static int globals_push(GpaDwarfGlobals* g, const char* name,
+static int globals_push(BhdrDwarfGlobals* g, const char* name,
                         uintptr_t addr, uint64_t size, uint32_t enc) {
     size_t nlen = strlen(name);
     if (g->strpool_len + nlen + 1 > g->strpool_cap) {
@@ -530,26 +530,26 @@ static int globals_push(GpaDwarfGlobals* g, const char* name,
 
     if (g->count == g->cap) {
         size_t nc = g->cap ? g->cap * 2 : 32;
-        GpaDwarfGlobal* nb = (GpaDwarfGlobal*)realloc(g->items,
-                                                      nc * sizeof(GpaDwarfGlobal));
+        BhdrDwarfGlobal* nb = (BhdrDwarfGlobal*)realloc(g->items,
+                                                      nc * sizeof(BhdrDwarfGlobal));
         if (!nb) return 0;
         g->items = nb; g->cap = nc;
     }
-    g->items[g->count++] = (GpaDwarfGlobal){slot, addr, size, enc};
+    g->items[g->count++] = (BhdrDwarfGlobal){slot, addr, size, enc};
     return 1;
 }
 
 static int parse_cu(const DwFile* file,
                     const uint8_t* cu_start, const uint8_t* cu_end,
                     uintptr_t load_bias,
-                    GpaDwarfGlobals* out) {
+                    BhdrDwarfGlobals* out) {
     /* CU header. We assume 32-bit DWARF. */
-    if (cu_start + 11 > cu_end) return GPA_DWARF_ERR_MALFORMED;
+    if (cu_start + 11 > cu_end) return BHDR_DWARF_ERR_MALFORMED;
     uint32_t len = rd_u32(cu_start);
-    if (len == 0xffffffff) return GPA_DWARF_ERR_MALFORMED; /* 64-bit DWARF unsupported */
+    if (len == 0xffffffff) return BHDR_DWARF_ERR_MALFORMED; /* 64-bit DWARF unsupported */
     uint16_t version = rd_u16(cu_start + 4);
-    if (version == 5) return GPA_DWARF_UNSUPPORTED_VERSION;
-    if (version < 2 || version > 4) return GPA_DWARF_UNSUPPORTED_VERSION;
+    if (version == 5) return BHDR_DWARF_UNSUPPORTED_VERSION;
+    if (version < 2 || version > 4) return BHDR_DWARF_UNSUPPORTED_VERSION;
     uint32_t abbrev_off = rd_u32(cu_start + 6);
     uint8_t  addr_size  = cu_start[10];
 
@@ -558,12 +558,12 @@ static int parse_cu(const DwFile* file,
     if (die_end > cu_end) die_end = cu_end;
 
     /* Parse abbrev table for this CU. */
-    if (abbrev_off >= file->abbrev.size) return GPA_DWARF_ERR_MALFORMED;
+    if (abbrev_off >= file->abbrev.size) return BHDR_DWARF_ERR_MALFORMED;
     DwAbbrevTable tab;
     int rc = abbrev_parse(&tab,
                           file->abbrev.data + abbrev_off,
                           file->abbrev.data + file->abbrev.size);
-    if (rc != GPA_DWARF_OK) return rc;
+    if (rc != BHDR_DWARF_OK) return rc;
 
     CuView cu = {cu_start, die_start, die_end, &tab, addr_size};
 
@@ -581,7 +581,7 @@ static int parse_cu(const DwFile* file,
             continue;
         }
         DwAbbrev* ab = abbrev_find(&tab, code);
-        if (!ab) { rc = GPA_DWARF_ERR_MALFORMED; break; }
+        if (!ab) { rc = BHDR_DWARF_ERR_MALFORMED; break; }
 
         const char* name = NULL;
         const char* linkage = NULL;
@@ -595,7 +595,7 @@ static int parse_cu(const DwFile* file,
             if (!read_form(ab->attrs[i].form, &p, die_end,
                            die_start, (size_t)(die_end - die_start),
                            addr_size, file, &v)) {
-                rc = GPA_DWARF_ERR_MALFORMED; goto done;
+                rc = BHDR_DWARF_ERR_MALFORMED; goto done;
             }
             switch (ab->attrs[i].name) {
             case DW_AT_name: if (v.has_string) name = v.str; break;
@@ -629,7 +629,7 @@ static int parse_cu(const DwFile* file,
                 if (have_type) resolve_type(&cu, file, type_ref, &sz, &enc);
                 uintptr_t final_addr = addr + load_bias;
                 if (!globals_push(out, use_name, final_addr, sz, enc)) {
-                    rc = GPA_DWARF_ERR_MALFORMED; goto done;
+                    rc = BHDR_DWARF_ERR_MALFORMED; goto done;
                 }
             }
         }
@@ -642,36 +642,36 @@ done:
     return rc;
 }
 
-int gpa_dwarf_parse_module(const char* path,
+int bhdr_dwarf_parse_module(const char* path,
                            uintptr_t load_bias,
-                           GpaDwarfGlobals* out) {
+                           BhdrDwarfGlobals* out) {
     memset(out, 0, sizeof(*out));
     DwFile f;
     int rc = dwfile_open(&f, path);
-    if (rc != GPA_DWARF_OK) { dwfile_close(&f); return rc; }
+    if (rc != BHDR_DWARF_OK) { dwfile_close(&f); return rc; }
 
     const uint8_t* p = f.info.data;
     const uint8_t* end = f.info.data + f.info.size;
     while (p + 11 <= end) {
         uint32_t len = rd_u32(p);
-        if (len == 0xffffffff) { rc = GPA_DWARF_UNSUPPORTED_VERSION; break; }
+        if (len == 0xffffffff) { rc = BHDR_DWARF_UNSUPPORTED_VERSION; break; }
         const uint8_t* cu_end = p + 4 + len;
-        if (cu_end > end) { rc = GPA_DWARF_ERR_MALFORMED; break; }
+        if (cu_end > end) { rc = BHDR_DWARF_ERR_MALFORMED; break; }
         rc = parse_cu(&f, p, cu_end, load_bias, out);
-        if (rc == GPA_DWARF_UNSUPPORTED_VERSION) break;
-        if (rc != GPA_DWARF_OK) break;
+        if (rc == BHDR_DWARF_UNSUPPORTED_VERSION) break;
+        if (rc != BHDR_DWARF_OK) break;
         p = cu_end;
     }
 
     dwfile_close(&f);
-    if (rc != GPA_DWARF_OK) {
+    if (rc != BHDR_DWARF_OK) {
         /* On partial failure, keep whatever globals we already collected —
          * caller decides. But still return the error code. */
     }
     return rc;
 }
 
-void gpa_dwarf_globals_free(GpaDwarfGlobals* g) {
+void bhdr_dwarf_globals_free(BhdrDwarfGlobals* g) {
     if (!g) return;
     free(g->items);
     free(g->strpool);
@@ -682,7 +682,7 @@ void gpa_dwarf_globals_free(GpaDwarfGlobals* g) {
  * Phase 2: subprogram + local-variable indexing
  * ====================================================================== */
 
-static const char* sub_strpool_dup(GpaDwarfSubprograms* s, const char* src) {
+static const char* sub_strpool_dup(BhdrDwarfSubprograms* s, const char* src) {
     if (!src) return NULL;
     size_t n = strlen(src);
     if (s->strpool_len + n + 1 > s->strpool_cap) {
@@ -708,11 +708,11 @@ static const char* sub_strpool_dup(GpaDwarfSubprograms* s, const char* src) {
     return dst;
 }
 
-static void sub_append_local(GpaDwarfSubprogram* sp, const GpaDwarfLocal* l) {
+static void sub_append_local(BhdrDwarfSubprogram* sp, const BhdrDwarfLocal* l) {
     if (sp->local_count == sp->local_cap) {
         size_t nc = sp->local_cap ? sp->local_cap * 2 : 8;
-        GpaDwarfLocal* nb = (GpaDwarfLocal*)realloc(sp->locals,
-                                                    nc * sizeof(GpaDwarfLocal));
+        BhdrDwarfLocal* nb = (BhdrDwarfLocal*)realloc(sp->locals,
+                                                    nc * sizeof(BhdrDwarfLocal));
         if (!nb) return;
         sp->locals = nb; sp->local_cap = nc;
     }
@@ -724,13 +724,13 @@ static void sub_append_local(GpaDwarfSubprogram* sp, const GpaDwarfLocal* l) {
 static int parse_cu_subprograms(const DwFile* file,
                                 const uint8_t* cu_start, const uint8_t* cu_end,
                                 uintptr_t load_bias,
-                                GpaDwarfSubprograms* out) {
-    if (cu_start + 11 > cu_end) return GPA_DWARF_ERR_MALFORMED;
+                                BhdrDwarfSubprograms* out) {
+    if (cu_start + 11 > cu_end) return BHDR_DWARF_ERR_MALFORMED;
     uint32_t len = rd_u32(cu_start);
-    if (len == 0xffffffff) return GPA_DWARF_ERR_MALFORMED;
+    if (len == 0xffffffff) return BHDR_DWARF_ERR_MALFORMED;
     uint16_t version = rd_u16(cu_start + 4);
-    if (version == 5) return GPA_DWARF_UNSUPPORTED_VERSION;
-    if (version < 2 || version > 4) return GPA_DWARF_UNSUPPORTED_VERSION;
+    if (version == 5) return BHDR_DWARF_UNSUPPORTED_VERSION;
+    if (version < 2 || version > 4) return BHDR_DWARF_UNSUPPORTED_VERSION;
     uint32_t abbrev_off = rd_u32(cu_start + 6);
     uint8_t  addr_size  = cu_start[10];
 
@@ -738,12 +738,12 @@ static int parse_cu_subprograms(const DwFile* file,
     const uint8_t* die_end   = cu_start + 4 + len;
     if (die_end > cu_end) die_end = cu_end;
 
-    if (abbrev_off >= file->abbrev.size) return GPA_DWARF_ERR_MALFORMED;
+    if (abbrev_off >= file->abbrev.size) return BHDR_DWARF_ERR_MALFORMED;
     DwAbbrevTable tab;
     int rc = abbrev_parse(&tab,
                           file->abbrev.data + abbrev_off,
                           file->abbrev.data + file->abbrev.size);
-    if (rc != GPA_DWARF_OK) return rc;
+    if (rc != BHDR_DWARF_OK) return rc;
 
     CuView cu = {cu_start, die_start, die_end, &tab, addr_size};
 
@@ -769,7 +769,7 @@ static int parse_cu_subprograms(const DwFile* file,
             continue;
         }
         DwAbbrev* ab = abbrev_find(&tab, code);
-        if (!ab) { rc = GPA_DWARF_ERR_MALFORMED; break; }
+        if (!ab) { rc = BHDR_DWARF_ERR_MALFORMED; break; }
 
         const char* name = NULL;
         const char* linkage = NULL;
@@ -784,7 +784,7 @@ static int parse_cu_subprograms(const DwFile* file,
             if (!read_form(ab->attrs[i].form, &p, die_end,
                            die_start, (size_t)(die_end - die_start),
                            addr_size, file, &v)) {
-                rc = GPA_DWARF_ERR_MALFORMED; goto done;
+                rc = BHDR_DWARF_ERR_MALFORMED; goto done;
             }
             switch (ab->attrs[i].name) {
             case DW_AT_name: if (v.has_string) name = v.str; break;
@@ -820,13 +820,13 @@ static int parse_cu_subprograms(const DwFile* file,
             /* Append a new subprogram entry. */
             if (out->count == out->cap) {
                 size_t nc = out->cap ? out->cap * 2 : 64;
-                GpaDwarfSubprogram* nb = (GpaDwarfSubprogram*)realloc(out->items,
-                    nc * sizeof(GpaDwarfSubprogram));
-                if (!nb) { rc = GPA_DWARF_ERR_MALFORMED; goto done; }
+                BhdrDwarfSubprogram* nb = (BhdrDwarfSubprogram*)realloc(out->items,
+                    nc * sizeof(BhdrDwarfSubprogram));
+                if (!nb) { rc = BHDR_DWARF_ERR_MALFORMED; goto done; }
                 out->items = nb; out->cap = nc;
             }
             size_t idx = out->count++;
-            GpaDwarfSubprogram* sp = &out->items[idx];
+            BhdrDwarfSubprogram* sp = &out->items[idx];
             memset(sp, 0, sizeof(*sp));
             const char* use_name = name ? name : linkage;
             sp->name = sub_strpool_dup(out, use_name ? use_name : "");
@@ -855,7 +855,7 @@ static int parse_cu_subprograms(const DwFile* file,
             if (use_name) {
                 /* Dup name first (may realloc strpool + rebase pointers). */
                 const char* nm = sub_strpool_dup(out, use_name);
-                GpaDwarfLocal l = {
+                BhdrDwarfLocal l = {
                     .name = nm,
                     .location_expr = loc_expr,
                     .location_len = loc_len,
@@ -874,13 +874,13 @@ done:
     return rc;
 }
 
-int gpa_dwarf_parse_subprograms(const char* path,
+int bhdr_dwarf_parse_subprograms(const char* path,
                                 uintptr_t load_bias,
-                                GpaDwarfSubprograms* out) {
+                                BhdrDwarfSubprograms* out) {
     memset(out, 0, sizeof(*out));
     DwFile f;
     int rc = dwfile_open(&f, path);
-    if (rc != GPA_DWARF_OK) { dwfile_close(&f); return rc; }
+    if (rc != BHDR_DWARF_OK) { dwfile_close(&f); return rc; }
 
     /* Hand ownership of the mmap to `out` so location-expression pointers
      * into it stay valid after we return. */
@@ -895,12 +895,12 @@ int gpa_dwarf_parse_subprograms(const char* path,
     const uint8_t* end = f.info.data + f.info.size;
     while (p + 11 <= end) {
         uint32_t len = rd_u32(p);
-        if (len == 0xffffffff) { rc = GPA_DWARF_UNSUPPORTED_VERSION; break; }
+        if (len == 0xffffffff) { rc = BHDR_DWARF_UNSUPPORTED_VERSION; break; }
         const uint8_t* cu_end = p + 4 + len;
-        if (cu_end > end) { rc = GPA_DWARF_ERR_MALFORMED; break; }
+        if (cu_end > end) { rc = BHDR_DWARF_ERR_MALFORMED; break; }
         rc = parse_cu_subprograms(&f, p, cu_end, load_bias, out);
-        if (rc == GPA_DWARF_UNSUPPORTED_VERSION) break;
-        if (rc != GPA_DWARF_OK) break;
+        if (rc == BHDR_DWARF_UNSUPPORTED_VERSION) break;
+        if (rc != BHDR_DWARF_OK) break;
         p = cu_end;
     }
 
@@ -909,7 +909,7 @@ int gpa_dwarf_parse_subprograms(const char* path,
     return rc;
 }
 
-void gpa_dwarf_subprograms_free(GpaDwarfSubprograms* s) {
+void bhdr_dwarf_subprograms_free(BhdrDwarfSubprograms* s) {
     if (!s) return;
     for (size_t i = 0; i < s->count; i++) free(s->items[i].locals);
     free(s->items);

@@ -10,7 +10,7 @@
 #include <unistd.h>
 
 /* Declared in gl_shim.c — lazy IPC init on first swap */
-void gpa_ensure_ipc(void);
+void bhdr_ensure_ipc(void);
 
 /* GL constants not pulled from GL headers */
 #define GL_RGBA            0x1908
@@ -20,8 +20,8 @@ void gpa_ensure_ipc(void);
 #define GL_VIEWPORT        0x0BA2
 
 /* Globals defined in gl_shim.c */
-extern GpaShadowState   gpa_shadow;
-extern GpaRealGlFuncs   gpa_real_gl;
+extern BhdrShadowState   bhdr_shadow;
+extern BhdrRealGlFuncs   bhdr_real_gl;
 
 /* -------------------------------------------------------------------------
  * Per-frame draw call recording buffer
@@ -31,7 +31,7 @@ extern GpaRealGlFuncs   gpa_real_gl;
  * stops recording once the cap is hit.
  * ---------------------------------------------------------------------- */
 
-#define GPA_MAX_DRAW_CALLS_PER_FRAME 1024
+#define BHDR_MAX_DRAW_CALLS_PER_FRAME 1024
 
 /* Snapshot of a single draw call taken at the moment the draw is issued. */
 typedef struct {
@@ -61,55 +61,55 @@ typedef struct {
     uint32_t texture_count;
     struct { uint32_t slot; uint32_t texture_id;
              uint32_t width; uint32_t height; uint32_t format; }
-        textures[GPA_MAX_TEXTURE_UNITS];
+        textures[BHDR_MAX_TEXTURE_UNITS];
 
     /* Uniform / shader params */
     uint32_t param_count;
-    GpaShadowUniform params[GPA_MAX_UNIFORMS];
+    BhdrShadowUniform params[BHDR_MAX_UNIFORMS];
 
     /* Debug groups (GL_KHR_debug push/pop group stack) — list form.
      * Each entry is the literal name of one push group, in order from outer
      * to inner. ``debug_group_count`` is the depth at draw time; names are
      * stored in ``debug_groups[]`` (NUL-terminated, capped per-name). */
     uint32_t debug_group_count;
-    char     debug_groups[GPA_MAX_DEBUG_GROUP_DEPTH][GPA_MAX_DEBUG_GROUP_NAME];
+    char     debug_groups[BHDR_MAX_DEBUG_GROUP_DEPTH][BHDR_MAX_DEBUG_GROUP_NAME];
 
     /* FBO color attachment texture (for feedback loop detection).
      * `fbo_color_attachment_tex` preserves the pre-MRT single-attachment API
      * and is always kept equal to `fbo_color_attachments[0]`. The 8-element
      * array captures the full MRT layout (COLOR_ATTACHMENT0..7). */
     uint32_t fbo_color_attachment_tex;
-    uint32_t fbo_color_attachments[GPA_MAX_COLOR_ATTACHMENTS];
-} GpaDrawCallSnapshot;
+    uint32_t fbo_color_attachments[BHDR_MAX_COLOR_ATTACHMENTS];
+} BhdrDrawCallSnapshot;
 
-static GpaDrawCallSnapshot gpa_draw_call_buf[GPA_MAX_DRAW_CALLS_PER_FRAME];
-static uint32_t            gpa_draw_call_count = 0;
+static BhdrDrawCallSnapshot bhdr_draw_call_buf[BHDR_MAX_DRAW_CALLS_PER_FRAME];
+static uint32_t            bhdr_draw_call_count = 0;
 
 
 /* -------------------------------------------------------------------------
  * Public: reset draw call buffer at frame start
  * ---------------------------------------------------------------------- */
 
-void gpa_frame_reset_draw_calls(void) {
-    gpa_draw_call_count = 0;
+void bhdr_frame_reset_draw_calls(void) {
+    bhdr_draw_call_count = 0;
 }
 
 /* -------------------------------------------------------------------------
  * Public: snapshot draw call state
  * ---------------------------------------------------------------------- */
 
-void gpa_frame_record_draw_call(const GpaShadowState* shadow,
+void bhdr_frame_record_draw_call(const BhdrShadowState* shadow,
                                  uint32_t primitive,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
                                  uint32_t index_type,
                                  uint32_t instance_count) {
-    if (gpa_draw_call_count >= GPA_MAX_DRAW_CALLS_PER_FRAME) return;
+    if (bhdr_draw_call_count >= BHDR_MAX_DRAW_CALLS_PER_FRAME) return;
 
-    GpaDrawCallSnapshot* s = &gpa_draw_call_buf[gpa_draw_call_count];
+    BhdrDrawCallSnapshot* s = &bhdr_draw_call_buf[bhdr_draw_call_count];
     memset(s, 0, sizeof(*s));
 
-    s->id               = gpa_draw_call_count;
+    s->id               = bhdr_draw_call_count;
     s->primitive_type   = primitive;
     s->vertex_count     = vertex_count;
     s->index_count      = index_count;
@@ -133,12 +133,12 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
 
     /* Texture bindings — collect non-zero slots, with dimensions */
     s->texture_count = 0;
-    for (uint32_t i = 0; i < GPA_MAX_TEXTURE_UNITS; i++) {
+    for (uint32_t i = 0; i < BHDR_MAX_TEXTURE_UNITS; i++) {
         uint32_t tid = shadow->bound_textures_2d[i];
         if (tid != 0) {
             s->textures[s->texture_count].slot       = i;
             s->textures[s->texture_count].texture_id = tid;
-            const GpaTextureInfo* info = gpa_shadow_get_texture_info(shadow, tid);
+            const BhdrTextureInfo* info = bhdr_shadow_get_texture_info(shadow, tid);
             if (info) {
                 s->textures[s->texture_count].width  = info->width;
                 s->textures[s->texture_count].height = info->height;
@@ -153,39 +153,39 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
     }
 
     /* Uniform params */
-    s->param_count = shadow->uniform_count < GPA_MAX_UNIFORMS
+    s->param_count = shadow->uniform_count < BHDR_MAX_UNIFORMS
                    ? shadow->uniform_count
-                   : GPA_MAX_UNIFORMS;
+                   : BHDR_MAX_UNIFORMS;
     memcpy(s->params, shadow->uniforms,
-           s->param_count * sizeof(GpaShadowUniform));
+           s->param_count * sizeof(BhdrShadowUniform));
 
     /* Capture each currently-active push-group name as its own entry. */
     s->debug_group_count = shadow->debug_group_depth;
-    if (s->debug_group_count > GPA_MAX_DEBUG_GROUP_DEPTH) {
-        s->debug_group_count = GPA_MAX_DEBUG_GROUP_DEPTH;
+    if (s->debug_group_count > BHDR_MAX_DEBUG_GROUP_DEPTH) {
+        s->debug_group_count = BHDR_MAX_DEBUG_GROUP_DEPTH;
     }
     for (uint32_t gi = 0; gi < s->debug_group_count; gi++) {
-        gpa_shadow_get_debug_group_name(shadow, gi, s->debug_groups[gi],
-                                        GPA_MAX_DEBUG_GROUP_NAME);
+        bhdr_shadow_get_debug_group_name(shadow, gi, s->debug_groups[gi],
+                                        BHDR_MAX_DEBUG_GROUP_NAME);
     }
 
     /* FBO color attachments — look up the current bound FBO's MRT table.
      * Slot 0 is mirrored to `fbo_color_attachment_tex` for backward compat. */
     {
-        const GpaFboInfo* fbo = gpa_shadow_get_fbo_info(shadow, shadow->bound_fbo);
+        const BhdrFboInfo* fbo = bhdr_shadow_get_fbo_info(shadow, shadow->bound_fbo);
         if (fbo) {
-            for (uint32_t i = 0; i < GPA_MAX_COLOR_ATTACHMENTS; i++) {
+            for (uint32_t i = 0; i < BHDR_MAX_COLOR_ATTACHMENTS; i++) {
                 s->fbo_color_attachments[i] = fbo->color_attachments[i];
             }
         } else {
-            for (uint32_t i = 0; i < GPA_MAX_COLOR_ATTACHMENTS; i++) {
+            for (uint32_t i = 0; i < BHDR_MAX_COLOR_ATTACHMENTS; i++) {
                 s->fbo_color_attachments[i] = 0;
             }
         }
         s->fbo_color_attachment_tex = s->fbo_color_attachments[0];
     }
 
-    gpa_draw_call_count++;
+    bhdr_draw_call_count++;
 }
 
 /* -------------------------------------------------------------------------
@@ -235,11 +235,11 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
 
     /* draw_call_count field */
     if (p + 4 > end) return 0;
-    uint32_t n = gpa_draw_call_count;
+    uint32_t n = bhdr_draw_call_count;
     memcpy(p, &n, 4); p += 4;
 
     for (uint32_t i = 0; i < n; i++) {
-        const GpaDrawCallSnapshot* s = &gpa_draw_call_buf[i];
+        const BhdrDrawCallSnapshot* s = &bhdr_draw_call_buf[i];
 
         /* Fixed-size header: 6*uint32 + 4*int32 + 4*int32 + 4 bytes + 1*uint32
          *                   + 4 bytes + 2*uint32 + 4 bytes + 2*uint32
@@ -297,7 +297,7 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         if (p + 4 + (uint64_t)pc * 76 > end) break;
         memcpy(p, &pc, 4); p += 4;
         for (uint32_t j = 0; j < pc; j++) {
-            const GpaShadowUniform* u = &s->params[j];
+            const BhdrShadowUniform* u = &s->params[j];
             memcpy(p, &u->location,  4); p += 4;
             memcpy(p, &u->type,      4); p += 4;
             memcpy(p, &u->data_size, 4); p += 4;
@@ -310,7 +310,7 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
         /* Wire format: uint16 debug_group_count, then for each:
          *   uint16 name_len + name_len chars (no null terminator). */
         uint16_t group_count = (uint16_t)s->debug_group_count;
-        /* Worst-case sizing check: 2 + group_count * (2 + GPA_MAX_DEBUG_GROUP_NAME). */
+        /* Worst-case sizing check: 2 + group_count * (2 + BHDR_MAX_DEBUG_GROUP_NAME). */
         size_t worst = 2;
         for (uint16_t gi = 0; gi < group_count; gi++) {
             worst += 2 + strlen(s->debug_groups[gi]);
@@ -337,7 +337,7 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
 
         /* Full MRT attachment array (8 * uint32 = 32 bytes) */
         if (p + 32 > end) break;
-        for (uint32_t k = 0; k < GPA_MAX_COLOR_ATTACHMENTS; k++) {
+        for (uint32_t k = 0; k < BHDR_MAX_COLOR_ATTACHMENTS; k++) {
             memcpy(p, &s->fbo_color_attachments[k], 4); p += 4;
         }
     }
@@ -355,13 +355,13 @@ static size_t serialise_draw_calls(uint8_t* buf, size_t buf_max) {
  * Returns bytes written.
  * ---------------------------------------------------------------------- */
 
-static size_t serialise_clear_records(const GpaShadowState* shadow,
+static size_t serialise_clear_records(const BhdrShadowState* shadow,
                                        uint8_t* buf, size_t buf_max) {
     uint8_t* p   = buf;
     uint8_t* end = buf + buf_max;
 
     uint32_t n = shadow->clear_count;
-    if (n > GPA_MAX_CLEARS_PER_FRAME) n = GPA_MAX_CLEARS_PER_FRAME;
+    if (n > BHDR_MAX_CLEARS_PER_FRAME) n = BHDR_MAX_CLEARS_PER_FRAME;
 
     /* Need 4 (count) + n * 8 bytes */
     if (p + 4 + (uint64_t)n * 8 > end) {
@@ -372,7 +372,7 @@ static size_t serialise_clear_records(const GpaShadowState* shadow,
 
     memcpy(p, &n, 4); p += 4;
     for (uint32_t i = 0; i < n; i++) {
-        const GpaClearRecord* r = &shadow->clear_records[i];
+        const BhdrClearRecord* r = &shadow->clear_records[i];
         memcpy(p, &r->mask,             4); p += 4;
         memcpy(p, &r->draw_call_before, 4); p += 4;
     }
@@ -383,25 +383,25 @@ static size_t serialise_clear_records(const GpaShadowState* shadow,
  * Public: on swap — capture framebuffer + draw calls into SHM slot
  * ---------------------------------------------------------------------- */
 
-void gpa_frame_on_swap(void) {
+void bhdr_frame_on_swap(void) {
     /* Lazy IPC init — only the process that actually renders will connect */
-    gpa_ensure_ipc();
-    if (!gpa_ipc_is_connected()) return;
+    bhdr_ensure_ipc();
+    if (!bhdr_ipc_is_connected()) return;
 
     uint32_t slot_index;
-    void* slot = gpa_ipc_claim_slot(&slot_index);
+    void* slot = bhdr_ipc_claim_slot(&slot_index);
     if (!slot) return;   /* ring buffer full — skip this frame */
 
     /* Query current viewport dimensions */
     GLint viewport[4];
-    gpa_real_gl.glGetIntegerv(GL_VIEWPORT, viewport);
+    bhdr_real_gl.glGetIntegerv(GL_VIEWPORT, viewport);
     int width  = (int)viewport[2];
     int height = (int)viewport[3];
 
     /* Guard against degenerate viewports */
     if (width <= 0 || height <= 0) {
-        gpa_ipc_commit_slot(slot_index, 0);
-        gpa_ipc_send_frame_ready(gpa_shadow.frame_number, slot_index);
+        bhdr_ipc_commit_slot(slot_index, 0);
+        bhdr_ipc_send_frame_ready(bhdr_shadow.frame_number, slot_index);
         return;
     }
 
@@ -420,11 +420,11 @@ void gpa_frame_on_swap(void) {
     ptr += 8;
 
     /* Color buffer */
-    gpa_real_gl.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
+    bhdr_real_gl.glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, ptr);
     ptr += (size_t)width * (size_t)height * 4u;
 
     /* Depth buffer */
-    gpa_real_gl.glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, ptr);
+    bhdr_real_gl.glReadPixels(0, 0, width, height, GL_DEPTH_COMPONENT, GL_FLOAT, ptr);
     ptr += (size_t)width * (size_t)height * 4u;
 
     /* Draw call metadata — serialise into remaining slot space */
@@ -444,21 +444,21 @@ void gpa_frame_on_swap(void) {
         ptr += written;
 
         /* Clear records — append immediately after draw calls */
-        const size_t kClearBudget = 4u + (size_t)GPA_MAX_CLEARS_PER_FRAME * 8u;
+        const size_t kClearBudget = 4u + (size_t)BHDR_MAX_CLEARS_PER_FRAME * 8u;
         size_t remaining = (kDrawCallBudget > written) ? (kDrawCallBudget - written) : 0;
         if (remaining >= kClearBudget) {
-            size_t cwritten = serialise_clear_records(&gpa_shadow, ptr, remaining);
+            size_t cwritten = serialise_clear_records(&bhdr_shadow, ptr, remaining);
             ptr += cwritten;
         }
     }
 
     uint64_t total_size = (uint64_t)((uintptr_t)ptr - (uintptr_t)slot);
 
-    gpa_ipc_commit_slot(slot_index, total_size);
-    gpa_ipc_send_frame_ready(gpa_shadow.frame_number, slot_index);
+    bhdr_ipc_commit_slot(slot_index, total_size);
+    bhdr_ipc_send_frame_ready(bhdr_shadow.frame_number, slot_index);
 
     /* Check for pause request from engine (non-blocking) */
-    if (gpa_ipc_should_pause()) {
-        gpa_ipc_wait_resume();
+    if (bhdr_ipc_should_pause()) {
+        bhdr_ipc_wait_resume();
     }
 }

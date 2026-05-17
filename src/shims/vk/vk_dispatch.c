@@ -21,14 +21,14 @@
 
 typedef struct {
     void               *key;
-    GpaInstanceDispatch disp;
+    BhdrInstanceDispatch disp;
 } InstanceEntry;
 
 static InstanceEntry g_inst_table[DISPATCH_TABLE_CAPACITY];
 static pthread_mutex_t g_inst_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void gpa_instance_dispatch_store(VkInstance instance, GpaInstanceDispatch *disp) {
-    void *key = gpa_dispatch_key(instance);
+void bhdr_instance_dispatch_store(VkInstance instance, BhdrInstanceDispatch *disp) {
+    void *key = bhdr_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     /* Linear probe insertion */
@@ -46,8 +46,8 @@ void gpa_instance_dispatch_store(VkInstance instance, GpaInstanceDispatch *disp)
     pthread_mutex_unlock(&g_inst_mutex);
 }
 
-GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance) {
-    void *key = gpa_dispatch_key(instance);
+BhdrInstanceDispatch *bhdr_instance_dispatch_get(VkInstance instance) {
+    void *key = bhdr_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -55,7 +55,7 @@ GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance) {
         size_t idx = (slot + i) & DISPATCH_TABLE_MASK;
         if (g_inst_table[idx].key == NULL) break;
         if (g_inst_table[idx].key == key) {
-            GpaInstanceDispatch *ret = &g_inst_table[idx].disp;
+            BhdrInstanceDispatch *ret = &g_inst_table[idx].disp;
             pthread_mutex_unlock(&g_inst_mutex);
             return ret;
         }
@@ -64,8 +64,8 @@ GpaInstanceDispatch *gpa_instance_dispatch_get(VkInstance instance) {
     return NULL;
 }
 
-void gpa_instance_dispatch_remove(VkInstance instance) {
-    void *key = gpa_dispatch_key(instance);
+void bhdr_instance_dispatch_remove(VkInstance instance) {
+    void *key = bhdr_dispatch_key(instance);
     pthread_mutex_lock(&g_inst_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -86,14 +86,14 @@ void gpa_instance_dispatch_remove(VkInstance instance) {
 
 typedef struct {
     void             *key;
-    GpaDeviceDispatch disp;
+    BhdrDeviceDispatch disp;
 } DeviceEntry;
 
 static DeviceEntry     g_dev_table[DISPATCH_TABLE_CAPACITY];
 static pthread_mutex_t g_dev_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void gpa_device_dispatch_store(VkDevice device, GpaDeviceDispatch *disp) {
-    void *key = gpa_dispatch_key(device);
+void bhdr_device_dispatch_store(VkDevice device, BhdrDeviceDispatch *disp) {
+    void *key = bhdr_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -110,8 +110,8 @@ void gpa_device_dispatch_store(VkDevice device, GpaDeviceDispatch *disp) {
     pthread_mutex_unlock(&g_dev_mutex);
 }
 
-GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device) {
-    void *key = gpa_dispatch_key(device);
+BhdrDeviceDispatch *bhdr_device_dispatch_get(VkDevice device) {
+    void *key = bhdr_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -119,7 +119,7 @@ GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device) {
         size_t idx = (slot + i) & DISPATCH_TABLE_MASK;
         if (g_dev_table[idx].key == NULL) break;
         if (g_dev_table[idx].key == key) {
-            GpaDeviceDispatch *ret = &g_dev_table[idx].disp;
+            BhdrDeviceDispatch *ret = &g_dev_table[idx].disp;
             pthread_mutex_unlock(&g_dev_mutex);
             return ret;
         }
@@ -128,8 +128,8 @@ GpaDeviceDispatch *gpa_device_dispatch_get(VkDevice device) {
     return NULL;
 }
 
-void gpa_device_dispatch_remove(VkDevice device) {
-    void *key = gpa_dispatch_key(device);
+void bhdr_device_dispatch_remove(VkDevice device) {
+    void *key = bhdr_dispatch_key(device);
     pthread_mutex_lock(&g_dev_mutex);
 
     size_t slot = ((uintptr_t)key >> 3) & DISPATCH_TABLE_MASK;
@@ -144,12 +144,12 @@ void gpa_device_dispatch_remove(VkDevice device) {
     pthread_mutex_unlock(&g_dev_mutex);
 }
 
-void gpa_dispatch_init(void) {
+void bhdr_dispatch_init(void) {
     memset(g_inst_table, 0, sizeof(g_inst_table));
     memset(g_dev_table,  0, sizeof(g_dev_table));
 }
 
-void gpa_dispatch_cleanup(void) {
+void bhdr_dispatch_cleanup(void) {
     memset(g_inst_table, 0, sizeof(g_inst_table));
     memset(g_dev_table,  0, sizeof(g_dev_table));
 }

@@ -12,7 +12,7 @@
 #include <thread>
 #include <chrono>
 
-static const std::string kSockPath = "/tmp/gpa_test_ctrl.sock";
+static const std::string kSockPath = "/tmp/bhdr_test_ctrl.sock";
 
 // Helper: remove socket file before each test to keep tests hermetic.
 class ControlSocketTest : public ::testing::Test {

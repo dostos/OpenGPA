@@ -26,7 +26,7 @@ def _make_scenario(*, bug_class: str, fix_files: list = None) -> ScenarioMetadat
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
     )

@@ -43,7 +43,7 @@ def _client(**extra_paths) -> _CapturingClient:
 
 
 def test_list_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = passes_mod.run_list(client=client, frame=None, print_stream=buf)
@@ -52,7 +52,7 @@ def test_list_hits_correct_url(monkeypatch):
 
 
 def test_list_output_is_json_passthrough(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     payload = {"frame_id": _CURRENT_FID, "passes": [{"name": "shadows"}]}
     path = f"/api/v1/frames/{_CURRENT_FID}/passes"
     client = _client(**{path: payload})
@@ -67,7 +67,7 @@ def test_list_output_is_json_passthrough(monkeypatch):
 
 
 def test_get_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = passes_mod.run_get(client=client, frame=None, name="shadows", print_stream=buf)
@@ -76,7 +76,7 @@ def test_get_hits_correct_url(monkeypatch):
 
 
 def test_get_with_explicit_frame(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     path = "/api/v1/frames/3/passes/opaque"
     client = _client(**{path: {"name": "opaque"}})
     buf = io.StringIO()

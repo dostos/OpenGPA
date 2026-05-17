@@ -83,10 +83,10 @@ Agent (via MCP):
 ### Phase 2 — Open3D offline (batch debug)
 
 ```
-User runs: LD_PRELOAD=libgpa_gl.so python scripts/render_scene.py --scene 006 ...
+User runs: LD_PRELOAD=libbhdr_gl.so python scripts/render_scene.py --scene 006 ...
    │
    ├─► Open3D renders frame (joint markers added by joint_markers.py via config flag)
-   │     └─► GL calls captured by libgpa_gl.so → engine ingests via Unix socket
+   │     └─► GL calls captured by libbhdr_gl.so → engine ingests via Unix socket
    │
    ├─► Sidecar polls GET /api/v1/frames/current/overview → reads engine_frame_id
    │

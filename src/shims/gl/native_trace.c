@@ -27,12 +27,12 @@
 #define DEFAULT_ENDPOINT_PORT 18080
 
 typedef struct {
-    GpaDwarfGlobals globals;
+    BhdrDwarfGlobals globals;
     char*           module_path;   /* malloced */
     uintptr_t       load_bias;
     /* Phase 2: per-module subprogram + locals index. Populated iff the
      * stack scanner was enabled at init time; otherwise zero. */
-    GpaDwarfSubprograms subs;
+    BhdrDwarfSubprograms subs;
     int             subs_loaded;
 } TracedModule;
 
@@ -56,7 +56,7 @@ static struct {
     /* Budget-shrink state: max globals to walk this scan. */
     size_t          scan_limit;
     /* Phase 2: PC→subprogram index, built from every module's subs. */
-    GpaPcIndex      pc_index;
+    BhdrPcIndex      pc_index;
 } G = {
     .port = DEFAULT_ENDPOINT_PORT,
     .scan_limit = (size_t)-1,
@@ -74,7 +74,7 @@ static const char* basename_of(const char* path) {
     return s ? s + 1 : path;
 }
 
-int gpa_native_trace_is_system_module(const char* path) {
+int bhdr_native_trace_is_system_module(const char* path) {
     if (!path || !*path) return 1;
     const char* base = basename_of(path);
     /* Hardcoded system-lib prefixes we don't want to scan. */
@@ -150,7 +150,7 @@ static void number_to_js_base36(double v, char* out, size_t n) {
     snprintf(out, n, "f:%016llx", (unsigned long long)bits);
 }
 
-char* gpa_trace_hash_double(double v) {
+char* bhdr_trace_hash_double(double v) {
     char s[64]; number_to_js_base36(v, s, sizeof(s));
     /* "n:" prefix matches hashValue() in gpa-trace.js. */
     size_t sl = strlen(s);
@@ -160,14 +160,14 @@ char* gpa_trace_hash_double(double v) {
     return with_prefix;
 }
 
-char* gpa_trace_hash_int64(int64_t v) {
-    return gpa_trace_hash_double((double)v);
+char* bhdr_trace_hash_int64(int64_t v) {
+    return bhdr_trace_hash_double((double)v);
 }
-char* gpa_trace_hash_uint64(uint64_t v) {
-    return gpa_trace_hash_double((double)v);
+char* bhdr_trace_hash_uint64(uint64_t v) {
+    return bhdr_trace_hash_double((double)v);
 }
 
-char* gpa_trace_hash_string(const char* s) {
+char* bhdr_trace_hash_string(const char* s) {
     if (!s) return NULL;
     size_t n = strlen(s);
     char* lower = (char*)malloc(n + 1);
@@ -197,35 +197,35 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
         main_path[r] = '\0';
         path = main_path;
     }
-    if (gpa_native_trace_is_system_module(path)) return 0;
+    if (bhdr_native_trace_is_system_module(path)) return 0;
 
-    GpaDwarfGlobals gl = {0};
-    int rc = gpa_dwarf_parse_module(path, (uintptr_t)info->dlpi_addr, &gl);
-    if (rc != GPA_DWARF_OK) {
+    BhdrDwarfGlobals gl = {0};
+    int rc = bhdr_dwarf_parse_module(path, (uintptr_t)info->dlpi_addr, &gl);
+    if (rc != BHDR_DWARF_OK) {
         fprintf(stderr,
                 "[OpenGPA] native-trace: skipping %s (%s)\n",
-                path, gpa_dwarf_strerror(rc));
-        gpa_dwarf_globals_free(&gl);
+                path, bhdr_dwarf_strerror(rc));
+        bhdr_dwarf_globals_free(&gl);
         return 0;
     }
 
     /* Phase 2: opt-in subprogram index. Failures are non-fatal — we keep
      * the module's globals even if the subprogram walk bails. */
-    GpaDwarfSubprograms subs = {0};
+    BhdrDwarfSubprograms subs = {0};
     int subs_ok = 0;
     if (want_subs) {
-        int sub_rc = gpa_dwarf_parse_subprograms(path, (uintptr_t)info->dlpi_addr, &subs);
-        if (sub_rc == GPA_DWARF_OK) subs_ok = 1;
+        int sub_rc = bhdr_dwarf_parse_subprograms(path, (uintptr_t)info->dlpi_addr, &subs);
+        if (sub_rc == BHDR_DWARF_OK) subs_ok = 1;
         else {
             fprintf(stderr,
                     "[OpenGPA] native-trace: subprogram index failed for %s (%s)\n",
-                    path, gpa_dwarf_strerror(sub_rc));
-            gpa_dwarf_subprograms_free(&subs);
+                    path, bhdr_dwarf_strerror(sub_rc));
+            bhdr_dwarf_subprograms_free(&subs);
         }
     }
 
     if (gl.count == 0 && !subs_ok) {
-        gpa_dwarf_globals_free(&gl);
+        bhdr_dwarf_globals_free(&gl);
         return 0;
     }
 
@@ -240,8 +240,8 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
             fprintf(stderr,
                     "[OpenGPA] native-trace: OOM growing modules array; "
                     "skipping %s\n", path);
-            gpa_dwarf_globals_free(&gl);
-            if (subs_ok) gpa_dwarf_subprograms_free(&subs);
+            bhdr_dwarf_globals_free(&gl);
+            if (subs_ok) bhdr_dwarf_subprograms_free(&subs);
             return 0;
         }
         G.modules = tmp;
@@ -260,25 +260,25 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
 
 /* ---- lifecycle -------------------------------------------------------- */
 
-void gpa_native_trace_init(void) {
+void bhdr_native_trace_init(void) {
     if (G.initialized) return;
     G.initialized = 1;
     pthread_rwlock_init(&G.lock, NULL);
-    gpa_pc_index_init(&G.pc_index);
+    bhdr_pc_index_init(&G.pc_index);
 
-    int want_globals = env_flag("GPA_TRACE_NATIVE");
-    int want_stack   = env_flag("GPA_TRACE_NATIVE_STACK");
+    int want_globals = env_flag("BHDR_TRACE_NATIVE");
+    int want_stack   = env_flag("BHDR_TRACE_NATIVE_STACK");
     if (!want_globals && !want_stack) {
         return;  /* opt-in only */
     }
 
     /* Endpoint config: overrideable via env. Defaults mirror the JS
      * scanner (127.0.0.1:18080). */
-    const char* host = getenv("GPA_TRACE_HOST");
+    const char* host = getenv("BHDR_TRACE_HOST");
     snprintf(G.host, sizeof(G.host), "%s", host && *host ? host : DEFAULT_ENDPOINT_HOST);
-    const char* portstr = getenv("GPA_TRACE_PORT");
+    const char* portstr = getenv("BHDR_TRACE_PORT");
     G.port = portstr && *portstr ? atoi(portstr) : DEFAULT_ENDPOINT_PORT;
-    const char* tok = getenv("GPA_TOKEN");
+    const char* tok = getenv("BHDR_TOKEN");
     if (tok && *tok) snprintf(G.token, sizeof(G.token), "%s", tok);
 
     struct timeval t0, t1;
@@ -291,10 +291,10 @@ void gpa_native_trace_init(void) {
     if (want_stack) {
         for (size_t i = 0; i < G.module_count; i++) {
             if (G.modules[i].subs_loaded) {
-                gpa_pc_index_add_module(&G.pc_index, &G.modules[i].subs);
+                bhdr_pc_index_add_module(&G.pc_index, &G.modules[i].subs);
             }
         }
-        gpa_pc_index_sort(&G.pc_index);
+        bhdr_pc_index_sort(&G.pc_index);
     }
 
     G.enabled       = want_globals && (G.total_globals > 0);
@@ -306,8 +306,8 @@ void gpa_native_trace_init(void) {
             G.module_count, G.total_globals, G.total_subprograms, ms);
 }
 
-int gpa_native_trace_is_enabled(void) { return G.enabled; }
-int gpa_native_trace_stack_is_enabled(void) { return G.stack_enabled; }
+int bhdr_native_trace_is_enabled(void) { return G.enabled; }
+int bhdr_native_trace_stack_is_enabled(void) { return G.stack_enabled; }
 
 /* ---- scan + POST ------------------------------------------------------ */
 
@@ -406,23 +406,23 @@ static int safe_read(void* dst, const void* src, size_t nbytes) {
 }
 
 /* Return the count of derefs that SIGSEGV'd since process start. Test hook. */
-size_t gpa_native_trace_test_segv_skip_count(void) {
+size_t bhdr_native_trace_test_segv_skip_count(void) {
     return (size_t)g_segv_skips;
 }
 
 static const char* enc_name(uint32_t enc, uint64_t sz) {
     switch (enc) {
-    case GPA_DW_ATE_FLOAT:         return sz == 8 ? "double" : "float";
-    case GPA_DW_ATE_SIGNED:        return sz == 8 ? "int64" : sz == 4 ? "int32" : sz == 2 ? "int16" : "int";
-    case GPA_DW_ATE_UNSIGNED:      return sz == 8 ? "uint64" : sz == 4 ? "uint32" : sz == 2 ? "uint16" : "uint";
-    case GPA_DW_ATE_SIGNED_CHAR:   return "char";
-    case GPA_DW_ATE_UNSIGNED_CHAR: return "uchar";
-    case GPA_DW_ATE_BOOLEAN:       return "bool";
+    case BHDR_DW_ATE_FLOAT:         return sz == 8 ? "double" : "float";
+    case BHDR_DW_ATE_SIGNED:        return sz == 8 ? "int64" : sz == 4 ? "int32" : sz == 2 ? "int16" : "int";
+    case BHDR_DW_ATE_UNSIGNED:      return sz == 8 ? "uint64" : sz == 4 ? "uint32" : sz == 2 ? "uint16" : "uint";
+    case BHDR_DW_ATE_SIGNED_CHAR:   return "char";
+    case BHDR_DW_ATE_UNSIGNED_CHAR: return "uchar";
+    case BHDR_DW_ATE_BOOLEAN:       return "bool";
     default:                        return "unknown";
     }
 }
 
-void gpa_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
+void bhdr_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
     if (!G.enabled) return;
     G.last_truncated = 0;
 
@@ -443,7 +443,7 @@ void gpa_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
     int truncated = 0;
     int first_entry = 1;
     for (size_t mi = 0; mi < G.module_count && !truncated; mi++) {
-        GpaDwarfGlobals* gl = &G.modules[mi].globals;
+        BhdrDwarfGlobals* gl = &G.modules[mi].globals;
         for (size_t i = 0; i < gl->count; i++) {
             if (scanned >= limit) { truncated = 1; break; }
             /* Budget check every 64 items to avoid gettimeofday overhead. */
@@ -455,7 +455,7 @@ void gpa_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
                 }
             }
             scanned++;
-            const GpaDwarfGlobal* g = &gl->items[i];
+            const BhdrDwarfGlobal* g = &gl->items[i];
             if (!g->address || !g->byte_size) continue;
             /* SIGSEGV-guarded deref: read the value into a stack buffer
              * first. If the deref crashes (unmapped .bss, dangling GOT,
@@ -467,24 +467,24 @@ void gpa_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
             }
             char* hash = NULL;
             switch (g->type_encoding) {
-            case GPA_DW_ATE_FLOAT:
-                if (g->byte_size == 8)      { double dv; memcpy(&dv, &raw64, 8); hash = gpa_trace_hash_double(dv); }
-                else if (g->byte_size == 4) { float fv; memcpy(&fv, &raw64, 4); hash = gpa_trace_hash_double((double)fv); }
+            case BHDR_DW_ATE_FLOAT:
+                if (g->byte_size == 8)      { double dv; memcpy(&dv, &raw64, 8); hash = bhdr_trace_hash_double(dv); }
+                else if (g->byte_size == 4) { float fv; memcpy(&fv, &raw64, 4); hash = bhdr_trace_hash_double((double)fv); }
                 break;
-            case GPA_DW_ATE_SIGNED:
-                if (g->byte_size == 8)      hash = gpa_trace_hash_int64((int64_t)raw64);
-                else if (g->byte_size == 4) hash = gpa_trace_hash_int64((int64_t)(int32_t)(uint32_t)raw64);
-                else if (g->byte_size == 2) hash = gpa_trace_hash_int64((int64_t)(int16_t)(uint16_t)raw64);
-                else if (g->byte_size == 1) hash = gpa_trace_hash_int64((int64_t)(int8_t)(uint8_t)raw64);
+            case BHDR_DW_ATE_SIGNED:
+                if (g->byte_size == 8)      hash = bhdr_trace_hash_int64((int64_t)raw64);
+                else if (g->byte_size == 4) hash = bhdr_trace_hash_int64((int64_t)(int32_t)(uint32_t)raw64);
+                else if (g->byte_size == 2) hash = bhdr_trace_hash_int64((int64_t)(int16_t)(uint16_t)raw64);
+                else if (g->byte_size == 1) hash = bhdr_trace_hash_int64((int64_t)(int8_t)(uint8_t)raw64);
                 break;
-            case GPA_DW_ATE_UNSIGNED:
-                if (g->byte_size == 8)      hash = gpa_trace_hash_uint64(raw64);
-                else if (g->byte_size == 4) hash = gpa_trace_hash_uint64((uint32_t)raw64);
-                else if (g->byte_size == 2) hash = gpa_trace_hash_uint64((uint16_t)raw64);
-                else if (g->byte_size == 1) hash = gpa_trace_hash_uint64((uint8_t)raw64);
+            case BHDR_DW_ATE_UNSIGNED:
+                if (g->byte_size == 8)      hash = bhdr_trace_hash_uint64(raw64);
+                else if (g->byte_size == 4) hash = bhdr_trace_hash_uint64((uint32_t)raw64);
+                else if (g->byte_size == 2) hash = bhdr_trace_hash_uint64((uint16_t)raw64);
+                else if (g->byte_size == 1) hash = bhdr_trace_hash_uint64((uint8_t)raw64);
                 break;
-            case GPA_DW_ATE_BOOLEAN:
-                hash = gpa_trace_hash_uint64((uint8_t)raw64 ? 1 : 0);
+            case BHDR_DW_ATE_BOOLEAN:
+                hash = bhdr_trace_hash_uint64((uint8_t)raw64 ? 1 : 0);
                 break;
             default: break;
             }
@@ -521,7 +521,7 @@ void gpa_native_trace_scan(uint64_t frame_id, uint32_t dc_id) {
     snprintf(path, sizeof(path),
              "/api/v1/frames/%lu/drawcalls/%u/sources",
              (unsigned long)frame_id, dc_id);
-    gpa_http_post_json(G.host, G.port, path,
+    bhdr_http_post_json(G.host, G.port, path,
                        G.token[0] ? G.token : NULL,
                        buf, len);
     free(buf);
@@ -534,44 +534,44 @@ static void hash_from_bytes(uint32_t enc, uint64_t sz,
     *out_hash = NULL;
     if (!bytes) return;
     switch (enc) {
-    case GPA_DW_ATE_FLOAT:
-        if (sz == 8) { double d; memcpy(&d, bytes, 8); *out_hash = gpa_trace_hash_double(d); }
-        else if (sz == 4) { float f; memcpy(&f, bytes, 4); *out_hash = gpa_trace_hash_double((double)f); }
+    case BHDR_DW_ATE_FLOAT:
+        if (sz == 8) { double d; memcpy(&d, bytes, 8); *out_hash = bhdr_trace_hash_double(d); }
+        else if (sz == 4) { float f; memcpy(&f, bytes, 4); *out_hash = bhdr_trace_hash_double((double)f); }
         break;
-    case GPA_DW_ATE_SIGNED: {
+    case BHDR_DW_ATE_SIGNED: {
         int64_t v = 0;
         if      (sz == 8) { int64_t t; memcpy(&t, bytes, 8); v = t; }
         else if (sz == 4) { int32_t t; memcpy(&t, bytes, 4); v = t; }
         else if (sz == 2) { int16_t t; memcpy(&t, bytes, 2); v = t; }
         else if (sz == 1) { int8_t  t; memcpy(&t, bytes, 1); v = t; }
         else return;
-        *out_hash = gpa_trace_hash_int64(v);
+        *out_hash = bhdr_trace_hash_int64(v);
         break;
     }
-    case GPA_DW_ATE_UNSIGNED: {
+    case BHDR_DW_ATE_UNSIGNED: {
         uint64_t v = 0;
         if      (sz == 8) { uint64_t t; memcpy(&t, bytes, 8); v = t; }
         else if (sz == 4) { uint32_t t; memcpy(&t, bytes, 4); v = t; }
         else if (sz == 2) { uint16_t t; memcpy(&t, bytes, 2); v = t; }
         else if (sz == 1) { v = bytes[0]; }
         else return;
-        *out_hash = gpa_trace_hash_uint64(v);
+        *out_hash = bhdr_trace_hash_uint64(v);
         break;
     }
-    case GPA_DW_ATE_BOOLEAN:
-        *out_hash = gpa_trace_hash_uint64(bytes[0] ? 1 : 0);
+    case BHDR_DW_ATE_BOOLEAN:
+        *out_hash = bhdr_trace_hash_uint64(bytes[0] ? 1 : 0);
         break;
     default: break;
     }
 }
 
-void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
+void bhdr_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
     if (!G.stack_enabled) return;
     long start_us = now_us();
 
-    GpaStackSnapshot snap;
-    gpa_stack_walk_current(&snap);
-    if (snap.frame_count == 0) { gpa_stack_snapshot_free(&snap); return; }
+    BhdrStackSnapshot snap;
+    bhdr_stack_walk_current(&snap);
+    if (snap.frame_count == 0) { bhdr_stack_snapshot_free(&snap); return; }
 
     char* buf = NULL; size_t cap = 0, len = 0;
     len = json_append(&buf, &cap, len, "{\"frame_id\":");
@@ -595,7 +595,7 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
      * and libunwind stopped early". Treat both as truncated so downstream
      * tools know the trace may be incomplete. Budget-overrun truncation
      * is tracked separately below so it can terminate the scan loop. */
-    int frame_cap_truncated = (snap.frame_count == GPA_STACK_MAX_FRAMES);
+    int frame_cap_truncated = (snap.frame_count == BHDR_STACK_MAX_FRAMES);
 
     pthread_rwlock_rdlock(&G.lock);
     for (size_t fi = 0; fi < snap.frame_count && !budget_truncated; fi++) {
@@ -606,8 +606,8 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
                 budget_truncated = 1; break;
             }
         }
-        GpaStackFrame* f = &snap.frames[fi];
-        const GpaDwarfSubprogram* sp = gpa_pc_index_lookup(&G.pc_index, f->pc);
+        BhdrStackFrame* f = &snap.frames[fi];
+        const BhdrDwarfSubprogram* sp = bhdr_pc_index_lookup(&G.pc_index, f->pc);
         if (!sp || sp->local_count == 0) continue;
 
         char root[128];
@@ -618,23 +618,23 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
         root_first = 0;
         len = json_esc(&buf, &cap, len, root);
 
-        GpaLocCtx ctx = {
+        BhdrLocCtx ctx = {
             .registers = f->registers,
             .reg_valid = f->reg_valid,
-            .reg_count = GPA_STACK_REG_COUNT,
+            .reg_count = BHDR_STACK_REG_COUNT,
             .frame_base = f->cfa,
         };
 
         for (size_t li = 0; li < sp->local_count; li++) {
-            const GpaDwarfLocal* L = &sp->locals[li];
+            const BhdrDwarfLocal* L = &sp->locals[li];
             if (L->byte_size == 0 || L->byte_size > 8) continue; /* V1 primitive limit */
-            GpaLocResult r;
-            if (gpa_dwarf_eval_location(L->location_expr, L->location_len,
-                                        &ctx, &r) != GPA_LOCEVAL_OK) {
+            BhdrLocResult r;
+            if (bhdr_dwarf_eval_location(L->location_expr, L->location_len,
+                                        &ctx, &r) != BHDR_LOCEVAL_OK) {
                 continue;
             }
             uint8_t bytes[16] = {0};
-            if (gpa_dwarf_read_value(&r, (size_t)L->byte_size, &ctx,
+            if (bhdr_dwarf_read_value(&r, (size_t)L->byte_size, &ctx,
                                      bytes, sizeof(bytes)) < 0) {
                 continue;
             }
@@ -689,20 +689,20 @@ void gpa_native_trace_scan_stack(uint64_t frame_id, uint32_t dc_id) {
     snprintf(path, sizeof(path),
              "/api/v1/frames/%lu/drawcalls/%u/sources",
              (unsigned long)frame_id, dc_id);
-    gpa_http_post_json(G.host, G.port, path,
+    bhdr_http_post_json(G.host, G.port, path,
                        G.token[0] ? G.token : NULL,
                        buf, len);
     free(buf);
-    gpa_stack_snapshot_free(&snap);
+    bhdr_stack_snapshot_free(&snap);
 }
 
-void gpa_native_trace_shutdown(void) {
+void bhdr_native_trace_shutdown(void) {
     if (!G.initialized) return;
-    gpa_pc_index_free(&G.pc_index);
+    bhdr_pc_index_free(&G.pc_index);
     for (size_t i = 0; i < G.module_count; i++) {
-        gpa_dwarf_globals_free(&G.modules[i].globals);
+        bhdr_dwarf_globals_free(&G.modules[i].globals);
         if (G.modules[i].subs_loaded) {
-            gpa_dwarf_subprograms_free(&G.modules[i].subs);
+            bhdr_dwarf_subprograms_free(&G.modules[i].subs);
         }
         free(G.modules[i].module_path);
     }
@@ -717,15 +717,15 @@ void gpa_native_trace_shutdown(void) {
     G.initialized = 0;
 }
 
-void gpa_native_trace_test_set_budget_overrun(int fake_ms) {
+void bhdr_native_trace_test_set_budget_overrun(int fake_ms) {
     G.test_budget_overrun_ms = fake_ms;
 }
 
-int gpa_native_trace_test_was_truncated(void) {
+int bhdr_native_trace_test_was_truncated(void) {
     return G.last_truncated;
 }
 
-void gpa_native_trace_test_inject_global(const char* name, uintptr_t addr,
+void bhdr_native_trace_test_inject_global(const char* name, uintptr_t addr,
                                          uint64_t byte_size, uint32_t encoding) {
     if (!G.initialized) {
         pthread_rwlock_init(&G.lock, NULL);
@@ -748,8 +748,8 @@ void gpa_native_trace_test_inject_global(const char* name, uintptr_t addr,
     memset(m, 0, sizeof(*m));
     m->module_path = strdup("<test-injected>");
     m->load_bias = 0;
-    GpaDwarfGlobals* gl = &m->globals;
-    gl->items = (GpaDwarfGlobal*)realloc(NULL, sizeof(GpaDwarfGlobal));
+    BhdrDwarfGlobals* gl = &m->globals;
+    gl->items = (BhdrDwarfGlobal*)realloc(NULL, sizeof(BhdrDwarfGlobal));
     gl->count = 1;
     gl->cap = 1;
     gl->strpool = strdup(name ? name : "inj");

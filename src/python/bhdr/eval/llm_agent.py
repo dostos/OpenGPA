@@ -13,8 +13,8 @@ import warnings
 
 from bhdr.eval.agents.api_agent import (
     ApiAgent as EvalAgent,
-    GpaToolExecutor,
-    GPA_TOOLS,
+    BhdrToolExecutor,
+    BHDR_TOOLS,
     CODE_ONLY_TOOLS,
     SNAPSHOT_TOOLS,
     build_agent_fn,
@@ -29,8 +29,8 @@ warnings.warn(
 
 __all__ = [
     "EvalAgent",
-    "GpaToolExecutor",
-    "GPA_TOOLS",
+    "BhdrToolExecutor",
+    "BHDR_TOOLS",
     "CODE_ONLY_TOOLS",
     "SNAPSHOT_TOOLS",
     "build_agent_fn",

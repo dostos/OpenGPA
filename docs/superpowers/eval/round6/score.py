@@ -294,8 +294,8 @@ def main():
     for f in sorted(RESULTS_DIR.glob("*_*.json")):
         name = f.stem
         # Parse scenario, mode, model
-        # mode is code_only or with_gpa
-        m = re.match(r"^(.*?)_(code_only|with_gpa)_(haiku|sonnet)$", name)
+        # mode is code_only or with_bhdr
+        m = re.match(r"^(.*?)_(code_only|with_bhdr)_(haiku|sonnet)$", name)
         if not m: continue
         scen, mode, model = m.group(1), m.group(2), m.group(3)
         if scen not in GT: continue
@@ -320,7 +320,7 @@ def main():
             "turns": turns,
             "cost_usd": cost,
             "framework_files_opened": diag.get("framework_files_opened", None),
-            "gpa_queries_made": diag.get("gpa_queries_made", None),
+            "bhdr_queries_made": diag.get("bhdr_queries_made", None),
             "confidence": diag.get("confidence", ""),
             "offending_symbol": diag.get("offending_symbol", ""),
             "root_cause": (diag.get("root_cause", "") or "")[:300],
@@ -349,8 +349,8 @@ def main():
         d = {(r["mode"], r["model"]): r["correct"] for r in by_scen[scen]}
         co_h = "Y" if d.get(("code_only","haiku")) else "N" if ("code_only","haiku") in d else "-"
         co_s = "Y" if d.get(("code_only","sonnet")) else "N" if ("code_only","sonnet") in d else "-"
-        gp_h = "Y" if d.get(("with_gpa","haiku")) else "N" if ("with_gpa","haiku") in d else "-"
-        gp_s = "Y" if d.get(("with_gpa","sonnet")) else "N" if ("with_gpa","sonnet") in d else "-"
+        gp_h = "Y" if d.get(("with_bhdr","haiku")) else "N" if ("with_bhdr","haiku") in d else "-"
+        gp_s = "Y" if d.get(("with_bhdr","sonnet")) else "N" if ("with_bhdr","sonnet") in d else "-"
         print(f"{scen:<50} {co_h:>5} {co_s:>5} {gp_h:>5} {gp_s:>5}")
 
 

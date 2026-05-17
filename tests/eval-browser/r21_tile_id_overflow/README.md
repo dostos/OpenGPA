@@ -2,7 +2,7 @@
 
 This scenario exists to validate the `gpa run-browser` pipeline
 end-to-end. The `index.html` posts a synthetic `sources` payload to the
-engine and sets `window.__gpa_done = true`; it does **not** load the
+engine and sets `window.__bhdr_done = true`; it does **not** load the
 real `mapbox-gl-js` bundle yet.
 
 Phase 2 replaces `index.html` with a real mapbox render that trips the

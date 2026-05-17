@@ -120,26 +120,26 @@ def test_env_exports_block(tmp_path: Path) -> None:
     block = sess.env_exports()
 
     for key in (
-        "GPA_SESSION",
-        "GPA_SOCKET_PATH",
-        "GPA_SHM_NAME",
-        "GPA_TOKEN",
-        "GPA_PORT",
-        "GPA_SOCKET_PATH",
-        "GPA_SHM_NAME",
-        "GPA_TOKEN",
+        "BHDR_SESSION",
+        "BHDR_SOCKET_PATH",
+        "BHDR_SHM_NAME",
+        "BHDR_TOKEN",
+        "BHDR_PORT",
+        "BHDR_SOCKET_PATH",
+        "BHDR_SHM_NAME",
+        "BHDR_TOKEN",
     ):
         assert f"export {key}=" in block
-    assert f"export GPA_PORT=9000" in block
+    assert f"export BHDR_PORT=9000" in block
 
 
 def test_child_env_contains_session_vars(tmp_path: Path) -> None:
     sess = Session.create(dir=tmp_path / "s", port=9000)
     env = sess.child_env({"PATH": "/usr/bin"})
     assert env["PATH"] == "/usr/bin"
-    assert env["GPA_SESSION"] == str(sess.dir)
-    assert env["GPA_TOKEN"] == sess.read_token()
-    assert env["GPA_SOCKET_PATH"] == str(sess.socket_path)
+    assert env["BHDR_SESSION"] == str(sess.dir)
+    assert env["BHDR_TOKEN"] == sess.read_token()
+    assert env["BHDR_SOCKET_PATH"] == str(sess.socket_path)
 
 
 def test_discover_prefers_explicit(tmp_path: Path) -> None:
@@ -151,7 +151,7 @@ def test_discover_prefers_explicit(tmp_path: Path) -> None:
 
 def test_discover_env_var(tmp_path: Path, monkeypatch) -> None:
     sess = Session.create(dir=tmp_path / "b", port=1)
-    monkeypatch.setenv("GPA_SESSION", str(sess.dir))
+    monkeypatch.setenv("BHDR_SESSION", str(sess.dir))
     # make sure the current-session link doesn't win
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK", str(tmp_path / "nope"))
     found = Session.discover()
@@ -160,7 +160,7 @@ def test_discover_env_var(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_discover_returns_none_when_nothing(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     monkeypatch.setattr(
         session_mod, "CURRENT_SESSION_LINK", str(tmp_path / "no-link")
     )
@@ -171,7 +171,7 @@ def test_discover_via_current_symlink(tmp_path: Path, monkeypatch) -> None:
     sess = Session.create(dir=tmp_path / "c", port=1)
     link = tmp_path / "current"
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK", str(link))
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     os.symlink(str(sess.dir), str(link))
 
     found = Session.discover()

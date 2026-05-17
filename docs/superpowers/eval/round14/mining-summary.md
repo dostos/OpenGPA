@@ -73,4 +73,4 @@ Run the same `code_only` Explore subagent against these 9 scenarios
 with the upstream snapshot at each `fix_parent_sha`, and compare
 file-level hit rate to R13. R13 hit 5/5; if R14 hits noticeably less
 (say ≤6/9), then runtime capture has measurable headroom on these
-bugs and we can move to running them with `with_gpa`.
+bugs and we can move to running them with `with_bhdr`.

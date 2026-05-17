@@ -52,7 +52,7 @@ One engine per session. Session = directory containing socket, shm name, auth to
 - Current-session pointer: `/tmp/gpa-session-current` (symlink to the active session dir)
 - `gpa run` creates a session, tears it down on command exit.
 - `gpa start` creates a session and leaves it running; `gpa stop` removes it.
-- `GPA_SESSION` env overrides auto-discovery.
+- `BHDR_SESSION` env overrides auto-discovery.
 
 ## Command surface
 
@@ -97,10 +97,10 @@ Start a session without launching a target. Useful for interactive workflows, CI
 ```bash
 $ gpa start --daemon
 /tmp/gpa-session-1000-1713495600/
-export GPA_SESSION=/tmp/gpa-session-1000-1713495600/
-export LD_PRELOAD=/usr/lib/gpa/libgpa_gl.so
-export GPA_SOCKET_PATH=/tmp/gpa-session-.../socket
-export GPA_SHM_NAME=gpa-shm-abc123
+export BHDR_SESSION=/tmp/gpa-session-1000-1713495600/
+export LD_PRELOAD=/usr/lib/gpa/libbhdr_gl.so
+export BHDR_SOCKET_PATH=/tmp/gpa-session-.../socket
+export BHDR_SHM_NAME=gpa-shm-abc123
 ```
 
 **Exit:** 0 on successful startup, 1 on port/socket conflict.
@@ -121,10 +121,10 @@ Print shell-eval'able env exports for the current session. Separate command from
 
 **Stdout:**
 ```
-export GPA_SESSION=/tmp/gpa-session-.../
-export LD_PRELOAD=/usr/lib/gpa/libgpa_gl.so
-export GPA_SOCKET_PATH=/tmp/gpa-session-.../socket
-export GPA_SHM_NAME=gpa-shm-abc123
+export BHDR_SESSION=/tmp/gpa-session-.../
+export LD_PRELOAD=/usr/lib/gpa/libbhdr_gl.so
+export BHDR_SOCKET_PATH=/tmp/gpa-session-.../socket
+export BHDR_SHM_NAME=gpa-shm-abc123
 ```
 
 **Exit:** 0 if session found, 2 if not.
@@ -270,11 +270,11 @@ Apply to all subcommands:
 
 | Var | Purpose | Default |
 |---|---|---|
-| `GPA_SESSION` | Explicit session dir | auto-discover |
-| `GPA_SOCKET_PATH` | Unix socket for REST | `$GPA_SESSION/socket` |
-| `GPA_SHM_NAME` | POSIX shm id | `$GPA_SESSION/shm-name` |
-| `GPA_TOKEN` | Bearer token | `$GPA_SESSION/token` |
-| `GPA_PORT` | TCP REST port (optional — UDS is default) | unset |
+| `BHDR_SESSION` | Explicit session dir | auto-discover |
+| `BHDR_SOCKET_PATH` | Unix socket for REST | `$BHDR_SESSION/socket` |
+| `BHDR_SHM_NAME` | POSIX shm id | `$BHDR_SESSION/shm-name` |
+| `BHDR_TOKEN` | Bearer token | `$BHDR_SESSION/token` |
+| `BHDR_PORT` | TCP REST port (optional — UDS is default) | unset |
 | `NO_COLOR` | Disable ANSI in report output | unset |
 
 ---
@@ -318,8 +318,8 @@ Phase 1 — minimum viable CLI (rough: 1–2 days):
 3. `gpa check <name>`, `gpa dump <what>` — thin REST wrappers
 
 Phase 2 — MCP wrap:
-4. One MCP tool `gpa_report(frame_id)` that execs `gpa report --json`
-5. One MCP tool `gpa_check(frame_id, check_name)` that execs `gpa check`
+4. One MCP tool `bhdr_report(frame_id)` that execs `gpa report --json`
+5. One MCP tool `bhdr_check(frame_id, check_name)` that execs `gpa check`
 
 Phase 3 — measurement:
 6. Re-run Round 5 eval with the CLI available (alongside REST), non-directive prompt
@@ -332,10 +332,10 @@ Phase 3 — measurement:
 1. **Should `gpa report` be deterministic across checks?** — order of warnings, check ordering for reproducibility. Proposed: fixed order per check name.
 2. **Daemon vs embedded engine for `gpa run`?** — simpler is embedded (engine child-process dies with target). Daemon wins for multi-query interactive flows. Propose: `gpa run` = embedded; `gpa start/stop` = daemon.
 3. **Authenticate between CLI and engine?** — token in file works; consider SO_PEERCRED on the UDS for even simpler auth within same UID.
-4. **Multi-session?** — MVP is single-session (one active at a time per UID). Multi-session via `GPA_SESSION` explicit is fine.
+4. **Multi-session?** — MVP is single-session (one active at a time per UID). Multi-session via `BHDR_SESSION` explicit is fine.
 
 ---
 
 ## Non-feature: `gpa attach <pid>`
 
-Explicitly deferred. Native GL cannot be retroactively hooked without gdb-level process injection (`ptrace` + `call dlopen("libgpa_gl.so")`), which is fragile, requires debug symbols, and fights ASLR. **Recommendation in error messages: "attach not supported; stop the process and `gpa run -- <cmd>` instead."**
+Explicitly deferred. Native GL cannot be retroactively hooked without gdb-level process injection (`ptrace` + `call dlopen("libbhdr_gl.so")`), which is fragile, requires debug symbols, and fights ASLR. **Recommendation in error messages: "attach not supported; stop the process and `gpa run -- <cmd>` instead."**

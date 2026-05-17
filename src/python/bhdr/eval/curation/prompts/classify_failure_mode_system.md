@@ -6,7 +6,7 @@ You are a failure-mode analyst. Given an eval scenario where the with_gla mode d
 - `driver_specific`
 - `bug_requires_multi_frame_capture`
 - `scorer_ambiguous`
-- `gpa_query_insufficient`
+- `bhdr_query_insufficient`
 - `other`
 
 If none fit, use `other` and propose a new category name in `suggested_new_category`.

@@ -11,7 +11,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(_gpa_core, m) {
+PYBIND11_MODULE(_bhdr_core, m) {
     m.doc() = "GPA core Python bindings";
 
     // -------------------------------------------------------------------------

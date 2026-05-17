@@ -30,7 +30,7 @@ def _make_scenario(**overrides) -> ScenarioMetadata:
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
     )

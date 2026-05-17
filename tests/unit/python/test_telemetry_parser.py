@@ -86,7 +86,7 @@ def test_single_tool_call_counted(tmp_path):
     assert out["result_text"] == "ok"
 
 
-def test_gpa_bash_classified_as_gpa(tmp_path):
+def test_bhdr_bash_classified_as_gpa(tmp_path):
     lines = [
         json.dumps({
             "type": "assistant",
@@ -103,7 +103,7 @@ def test_gpa_bash_classified_as_gpa(tmp_path):
     assert out["tool_calls"][0]["tool"] == "gpa"
 
 
-def test_gpa_piped_still_classified_as_gpa(tmp_path):
+def test_bhdr_piped_still_classified_as_gpa(tmp_path):
     # gpa appearing inside a compound command — subcommand regex still catches it.
     lines = [
         json.dumps({
@@ -115,12 +115,12 @@ def test_gpa_piped_still_classified_as_gpa(tmp_path):
             },
         }),
     ]
-    p = _write_lines(tmp_path, "gpa_pipe.jsonl", lines)
+    p = _write_lines(tmp_path, "bhdr_pipe.jsonl", lines)
     out = parse_stream_json(str(p))
     assert out["tool_counts"] == {"gpa": 1}
 
 
-def test_curl_gpa_bash_classified_as_curl(tmp_path):
+def test_curl_bhdr_bash_classified_as_curl(tmp_path):
     lines = [
         json.dumps({
             "type": "assistant",
@@ -152,7 +152,7 @@ def test_unrelated_bash_stays_bash(tmp_path):
     assert out["tool_counts"] == {"Bash": 1}
 
 
-def test_curl_without_gpa_port_stays_bash(tmp_path):
+def test_curl_without_bhdr_port_stays_bash(tmp_path):
     # curl to some other site — not counted as gpa-curl.
     lines = [
         json.dumps({

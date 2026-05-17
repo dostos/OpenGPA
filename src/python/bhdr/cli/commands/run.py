@@ -14,11 +14,11 @@ from bhdr.cli.commands.start import _spawn_engine
 from bhdr.cli.session import Session, wait_for_port
 
 
-DEFAULT_SHIM_PATH = "bazel-bin/src/shims/gl/libgpa_gl.so"
+DEFAULT_SHIM_PATH = "bazel-bin/src/shims/gl/libbhdr_gl.so"
 
 
 def _resolve_shim_path() -> str:
-    return os.environ.get("GPA_SHIM_PATH", DEFAULT_SHIM_PATH)
+    return os.environ.get("BHDR_SHIM_PATH", DEFAULT_SHIM_PATH)
 
 
 def _prepend_ld_preload(env: dict, shim: str) -> dict:

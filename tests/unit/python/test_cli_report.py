@@ -62,7 +62,7 @@ def test_report_plain_text_against_live_app(
     session_dir, injected_rest, monkeypatch
 ):
     # Point discover at our fake session dir.
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     monkeypatch.delenv("NO_COLOR", raising=False)
 
     buf = io.StringIO()
@@ -85,7 +85,7 @@ def test_report_plain_text_against_live_app(
 
 
 def test_report_json(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = report_cmd.run(
         frame=1, json_output=True, client=injected_rest, print_stream=buf
@@ -101,7 +101,7 @@ def test_report_json(session_dir, injected_rest, monkeypatch):
 
 
 def test_report_only_filter(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     report_cmd.run(
         frame=1, only=["empty-capture"],
@@ -113,7 +113,7 @@ def test_report_only_filter(session_dir, injected_rest, monkeypatch):
 
 
 def test_report_skip_filter(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     report_cmd.run(
         frame=1, skip=["feedback-loops", "nan-uniforms"],
@@ -127,7 +127,7 @@ def test_report_skip_filter(session_dir, injected_rest, monkeypatch):
 
 def test_report_no_session_returns_2(tmp_path, monkeypatch):
     # Ensure discovery fails.
-    monkeypatch.delenv("GPA_SESSION", raising=False)
+    monkeypatch.delenv("BHDR_SESSION", raising=False)
     from bhdr.cli import session as session_mod
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK",
                         str(tmp_path / "no-such-link"))
@@ -142,7 +142,7 @@ def test_report_no_session_returns_2(tmp_path, monkeypatch):
 
 
 def test_check_feedback_loops_detailed(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = check_cmd.run(
         name="feedback-loops", frame=1,
@@ -157,7 +157,7 @@ def test_check_feedback_loops_detailed(session_dir, injected_rest, monkeypatch):
 
 
 def test_check_empty_capture_ok(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = check_cmd.run(
         name="empty-capture", frame=1,
@@ -168,7 +168,7 @@ def test_check_empty_capture_ok(session_dir, injected_rest, monkeypatch):
 
 
 def test_check_unknown_name(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     rc = check_cmd.run(
         name="does-not-exist", frame=1,
@@ -273,7 +273,7 @@ def test_report_hint_dedupes_by_dc():
 
 
 def test_report_no_hints_in_json_mode(session_dir, injected_rest, monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     report_cmd.run(
         frame=1, json_output=True, client=injected_rest, print_stream=buf
@@ -329,7 +329,7 @@ def test_report_json_mode_has_no_closure_text(
     session_dir, injected_rest, monkeypatch
 ):
     """JSON output already carries warning_count; closure string must not leak in."""
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     # Use only=[empty-capture] to force a clean (0-warning) JSON payload
     # against the mock app.
@@ -385,7 +385,7 @@ def test_report_json_mode_has_no_tier2_closure(
     session_dir, injected_rest, monkeypatch
 ):
     """JSON output with warnings must not contain the tier-2 hint string."""
-    monkeypatch.setenv("GPA_SESSION", str(session_dir))
+    monkeypatch.setenv("BHDR_SESSION", str(session_dir))
     buf = io.StringIO()
     report_cmd.run(
         frame=1, json_output=True, client=injected_rest, print_stream=buf

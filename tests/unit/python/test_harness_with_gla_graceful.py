@@ -22,7 +22,7 @@ def _make_scenario(**overrides) -> ScenarioMetadata:
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
     )
@@ -99,9 +99,9 @@ def test_native_with_gla_keeps_effective_mode_with_gla(tmp_path):
     assert tools["effective_mode"] == "with_gla"
 
 
-def test_browser_tier_with_gla_drops_gpa_only_block_from_prompt(tmp_path):
+def test_browser_tier_with_gla_drops_bhdr_only_block_from_prompt(tmp_path):
     """The system_prompt for a browser-tier with_gla scenario should be
-    rendered in code_only mode — i.e. should NOT contain the WITH_GPA_ONLY-
+    rendered in code_only mode — i.e. should NOT contain the WITH_BHDR_ONLY-
     gated content (e.g. 'gpa report --frame latest --json')."""
     from bhdr.eval.harness import EvalHarness
 
@@ -111,7 +111,7 @@ def test_browser_tier_with_gla_drops_gpa_only_block_from_prompt(tmp_path):
     prompt = tools.get("system_prompt") or ""
     # Sanity: the prompt is non-empty
     assert prompt.strip()
-    # The WITH_GPA_ONLY block contains 'gpa report --frame latest';
+    # The WITH_BHDR_ONLY block contains 'gpa report --frame latest';
     # it must not appear when effective_mode is code_only.
     assert "gpa report --frame latest" not in prompt
 
@@ -143,7 +143,7 @@ def _make_browser_scenario(tmp_path):
         expected_output="", actual_output="",
         ground_truth_diagnosis="", ground_truth_fix="",
         difficulty=2, adversarial_principles=[],
-        gpa_advantage="", source_path="",
+        bhdr_advantage="", source_path="",
         binary_name="", scenario_dir=str(sd),
         fix=FixMetadata(
             fix_pr_url="https://github.com/o/r/pull/1",
@@ -165,7 +165,7 @@ def _make_native_scenario(tmp_path):
         expected_output="", actual_output="",
         ground_truth_diagnosis="", ground_truth_fix="",
         difficulty=2, adversarial_principles=[],
-        gpa_advantage="", source_path="",
+        bhdr_advantage="", source_path="",
         binary_name="", scenario_dir=str(sd),
         fix=FixMetadata(
             fix_pr_url="https://github.com/o/r/pull/1",
@@ -178,7 +178,7 @@ def _make_native_scenario(tmp_path):
 # ---------------------------------------------------------------------------
 # R16 P0: source-less scenarios skip with_gla mode entirely (deletion).
 # Pre-R16 the harness ran both modes for every scenario, but for mined-
-# without-source scenarios the comparison is theater — GPA_FRAME_ID is
+# without-source scenarios the comparison is theater — BHDR_FRAME_ID is
 # never set so `gpa frames overview` returns empty. Net result: 2x cohort
 # cost for zero signal. R16 deletes the with_gla run for source-less.
 # ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ def test_run_all_skips_with_gla_for_source_less_scenarios(tmp_path, monkeypatch)
         expected_output="", actual_output="",
         ground_truth_diagnosis="", ground_truth_fix="",
         difficulty=2, adversarial_principles=[],
-        gpa_advantage="", source_path="",  # the key — source-less
+        bhdr_advantage="", source_path="",  # the key — source-less
         binary_name="", scenario_dir=str(tmp_path / "scn"),
         fix=FixMetadata(
             fix_pr_url="https://github.com/o/r/pull/1",
@@ -214,7 +214,7 @@ def test_run_all_skips_with_gla_for_source_less_scenarios(tmp_path, monkeypatch)
         expected_output="", actual_output="",
         ground_truth_diagnosis="", ground_truth_fix="",
         difficulty=2, adversarial_principles=[],
-        gpa_advantage="", source_path=str(src_path),
+        bhdr_advantage="", source_path=str(src_path),
         binary_name="synth-slug", scenario_dir=str(tmp_path),
         fix=None,  # legacy
     )

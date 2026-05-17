@@ -57,7 +57,7 @@ def _client(**extra_paths) -> _CapturingClient:
 
 
 def test_list_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_list(client=client, frame=None, print_stream=buf)
@@ -69,7 +69,7 @@ def test_list_hits_correct_url(monkeypatch):
 
 
 def test_list_with_explicit_frame(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_list(client=client, frame="3", print_stream=buf)
@@ -78,7 +78,7 @@ def test_list_with_explicit_frame(monkeypatch):
 
 
 def test_list_with_limit_and_offset(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_list(client=client, frame="5", limit=10, offset=20, print_stream=buf)
@@ -87,7 +87,7 @@ def test_list_with_limit_and_offset(monkeypatch):
 
 
 def test_list_output_is_json(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     payload = [{"id": 0, "primitive_type": "TRIANGLES"}]
     client = _client(**{f"/api/v1/frames/{_CURRENT_FID}/drawcalls": payload})
     buf = io.StringIO()
@@ -103,7 +103,7 @@ def test_list_output_is_json(monkeypatch):
 
 
 def test_get_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_get(client=client, frame=None, dc=42, print_stream=buf)
@@ -117,7 +117,7 @@ def test_get_hits_correct_url(monkeypatch):
 
 
 def test_shader_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_shader(client=client, frame=None, dc=3, print_stream=buf)
@@ -131,7 +131,7 @@ def test_shader_hits_correct_url(monkeypatch):
 
 
 def test_textures_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_textures(client=client, frame=None, dc=5, print_stream=buf)
@@ -145,7 +145,7 @@ def test_textures_hits_correct_url(monkeypatch):
 
 
 def test_vertices_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_vertices(client=client, frame=None, dc=2, print_stream=buf)
@@ -159,7 +159,7 @@ def test_vertices_hits_correct_url(monkeypatch):
 
 
 def test_attachments_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_attachments(client=client, frame=None, dc=8, print_stream=buf)
@@ -173,7 +173,7 @@ def test_attachments_hits_correct_url(monkeypatch):
 
 
 def test_nan_uniforms_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_nan_uniforms(client=client, frame=None, dc=11, print_stream=buf)
@@ -187,7 +187,7 @@ def test_nan_uniforms_hits_correct_url(monkeypatch):
 
 
 def test_feedback_loops_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_feedback_loops(client=client, frame=None, dc=6, print_stream=buf)
@@ -201,7 +201,7 @@ def test_feedback_loops_hits_correct_url(monkeypatch):
 
 
 def test_explain_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_explain(client=client, frame=None, dc=9, print_stream=buf)
@@ -215,7 +215,7 @@ def test_explain_hits_correct_url(monkeypatch):
 
 
 def test_diff_hits_correct_url_default_scope(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_diff(client=client, frame=None, a=0, b=1, print_stream=buf)
@@ -224,7 +224,7 @@ def test_diff_hits_correct_url_default_scope(monkeypatch):
 
 
 def test_diff_with_explicit_scope(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_diff(client=client, frame="2", a=3, b=4, scope="uniforms", print_stream=buf)
@@ -238,7 +238,7 @@ def test_diff_with_explicit_scope(monkeypatch):
 
 
 def test_sources_get_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = dc_mod.run_sources_get(client=client, frame=None, dc=7, print_stream=buf)
@@ -247,7 +247,7 @@ def test_sources_get_hits_correct_url(monkeypatch):
 
 
 def test_sources_set_body_json(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     body = {"x": 1}
@@ -266,7 +266,7 @@ def test_sources_set_body_json(monkeypatch):
 
 
 def test_sources_set_file(monkeypatch, tmp_path):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     body = {"vertex_src": "void main() {}"}
     f = tmp_path / "src.json"
     f.write_text(json.dumps(body))
@@ -286,12 +286,12 @@ def test_sources_set_file(monkeypatch, tmp_path):
 
 
 # --------------------------------------------------------------------------- #
-# GPA_FRAME_ID env default
+# BHDR_FRAME_ID env default
 # --------------------------------------------------------------------------- #
 
 
 def test_frame_defaults_from_env(monkeypatch):
-    monkeypatch.setenv("GPA_FRAME_ID", "99")
+    monkeypatch.setenv("BHDR_FRAME_ID", "99")
     client = _CapturingClient({"ok": True})
     buf = io.StringIO()
     rc = dc_mod.run_get(client=client, frame=None, dc=1, print_stream=buf)
@@ -308,7 +308,7 @@ def test_explain_draw_deprecation_warning(monkeypatch, capsys):
     """gpa explain-draw should emit a deprecation warning to stderr."""
     from bhdr.cli.main import main as cli_main
 
-    monkeypatch.setenv("GPA_SESSION", "nonexistent_session_path_xyz")
+    monkeypatch.setenv("BHDR_SESSION", "nonexistent_session_path_xyz")
     # We just need the warning; the command itself will fail (no session).
     cli_main(["explain-draw", "0"])
     err = capsys.readouterr().err
@@ -320,7 +320,7 @@ def test_diff_draws_deprecation_warning(monkeypatch, capsys):
     """gpa diff-draws should emit a deprecation warning to stderr."""
     from bhdr.cli.main import main as cli_main
 
-    monkeypatch.setenv("GPA_SESSION", "nonexistent_session_path_xyz")
+    monkeypatch.setenv("BHDR_SESSION", "nonexistent_session_path_xyz")
     cli_main(["diff-draws", "0", "1"])
     err = capsys.readouterr().err
     assert "deprecated" in err

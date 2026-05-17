@@ -50,7 +50,7 @@
   },
   {
     "scenario": "r10_feedback_loop_error_with_transmission_an",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -74,7 +74,7 @@
   },
   {
     "scenario": "r10_feedback_loop_error_with_transmission_an",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -146,7 +146,7 @@
   },
   {
     "scenario": "r13_cubecamera_render_target_displaying_rand",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": false,
     "hits": 0,
@@ -171,7 +171,7 @@
   },
   {
     "scenario": "r13_cubecamera_render_target_displaying_rand",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -438,7 +438,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -463,7 +463,7 @@
   },
   {
     "scenario": "r22_point_sprite_rendering_issues_with_three",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -539,7 +539,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -568,7 +568,7 @@
   },
   {
     "scenario": "r25_filters_with_backbuffers_seem_not_to_wor",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 2,
@@ -642,7 +642,7 @@
   },
   {
     "scenario": "r28_crash_if_using_scene_background_hdr_volu",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -666,7 +666,7 @@
   },
   {
     "scenario": "r28_crash_if_using_scene_background_hdr_volu",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -739,7 +739,7 @@
   },
   {
     "scenario": "r30_incomplete_lines_problem_with_mixing_lay",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 2,
@@ -764,7 +764,7 @@
   },
   {
     "scenario": "r30_incomplete_lines_problem_with_mixing_lay",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -837,7 +837,7 @@
   },
   {
     "scenario": "r33_latest_build_6_38_1_got_glitchy_opacity_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -861,7 +861,7 @@
   },
   {
     "scenario": "r33_latest_build_6_38_1_got_glitchy_opacity_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -937,7 +937,7 @@
   },
   {
     "scenario": "r4_3d_map_black_screen",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -962,7 +962,7 @@
   },
   {
     "scenario": "r4_3d_map_black_screen",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1035,7 +1035,7 @@
   },
   {
     "scenario": "r4_msaa_does_not_always_work_when_doing_rtt",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1061,7 +1061,7 @@
   },
   {
     "scenario": "r4_msaa_does_not_always_work_when_doing_rtt",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1134,7 +1134,7 @@
   },
   {
     "scenario": "r7_webglbackend_copytexturetotexture_doesn_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1161,7 +1161,7 @@
   },
   {
     "scenario": "r7_webglbackend_copytexturetotexture_doesn_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,
@@ -1235,7 +1235,7 @@
   },
   {
     "scenario": "r9_transparent_objects_brighten_when_using_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "correct": true,
     "hits": 3,
@@ -1260,7 +1260,7 @@
   },
   {
     "scenario": "r9_transparent_objects_brighten_when_using_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "correct": true,
     "hits": 3,

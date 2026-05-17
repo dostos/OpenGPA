@@ -1,7 +1,7 @@
 load("@rules_cc//cc:defs.bzl", "cc_library", "cc_shared_library")
 
 cc_shared_library(
-    name = "VkLayer_gpa_capture",
+    name = "VkLayer_bhdr_capture",
     deps = [":vk_layer_impl"],
     visibility = ["//visibility:public"],
 )
@@ -9,13 +9,13 @@ cc_shared_library(
 cc_library(
     name = "vk_layer_impl",
     srcs = [
-        "gpa_layer.c",
+        "bhdr_layer.c",
         "vk_dispatch.c",
         "vk_capture.c",
         "vk_ipc_client.c",
     ],
     hdrs = [
-        "gpa_layer.h",
+        "bhdr_layer.h",
         "vk_dispatch.h",
         "vk_capture.h",
         "vk_ipc_client.h",

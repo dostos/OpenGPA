@@ -68,7 +68,7 @@ def _scan_tool_calls_for_trace(jsonl_path: Path) -> tuple[bool, list[str], int, 
     any_trace = False
     urls = []
     curl_calls = 0
-    gpa_calls = 0
+    bhdr_calls = 0
     try:
         with open(jsonl_path) as fh:
             for line in fh:
@@ -99,10 +99,10 @@ def _scan_tool_calls_for_trace(jsonl_path: Path) -> tuple[bool, list[str], int, 
                         curl_calls += 1
                     # gpa CLI invocations.
                     if re.search(r"\bgpa\b", cmd):
-                        gpa_calls += 1
+                        bhdr_calls += 1
     except Exception:
         pass
-    return any_trace, urls, curl_calls, gpa_calls
+    return any_trace, urls, curl_calls, bhdr_calls
 
 
 def _breadcrumb_value_seen(urls: list[str], scenario: str) -> bool:
@@ -154,9 +154,9 @@ def main() -> None:
 
         tool_counts = parsed.get("tool_counts") or {}
 
-        any_trace, trace_urls, curl_calls, gpa_cli_calls = _scan_tool_calls_for_trace(jsonl_path)
+        any_trace, trace_urls, curl_calls, bhdr_cli_calls = _scan_tool_calls_for_trace(jsonl_path)
         # GPA-effective calls = trace + raw API calls (we count both curl and gpa).
-        gpa_calls = curl_calls + gpa_cli_calls
+        bhdr_calls = curl_calls + bhdr_cli_calls
 
         run = {
             "parsed_json": tail is not None,
@@ -190,7 +190,7 @@ def main() -> None:
             "cache_read": parsed.get("cache_read", 0),
             "cache_creation": parsed.get("cache_creation", 0),
             "tool_counts": tool_counts,
-            "gpa_calls": gpa_calls,
+            "bhdr_calls": bhdr_calls,
             "trace_value_called": any_trace,
             "breadcrumb_value_seen": _breadcrumb_value_seen(trace_urls, scen),
             "trace_urls": trace_urls,

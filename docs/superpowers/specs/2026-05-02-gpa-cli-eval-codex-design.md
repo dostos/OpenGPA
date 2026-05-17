@@ -22,7 +22,7 @@ Make the OpenGPA evaluation pipeline backend-agnostic. Today it is hard-wired to
 ## Background — what already exists
 
 - `gpa` CLI at `src/python/bhdr/cli/`, wired in `pyproject.toml` as `[project.scripts] gpa = "gpa.cli.main:main"`. Existing commands: `start`, `stop`, `env`, `run`, `run-browser`, `report`, `check`, `dump {frame|drawcalls|pixel}`, `frames`, `check-config`, `explain-draw`, `diff-draws`, `scene-find`, `scene-explain`, `trace {uniform|value}`. Naming is mixed: top-level verbs, hyphenated multiword commands, and one `noun verb` (`trace`).
-- Eval agent at `src/python/bhdr/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `GPA_TOOLS` (5 OpenGPA tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
+- Eval agent at `src/python/bhdr/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `BHDR_TOOLS` (5 OpenGPA tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
 - Curation LLM client at `src/python/bhdr/eval/curation/llm_client.py`: `LLMClient` (Anthropic SDK) and `ClaudeCodeLLMClient` (shell out to `claude -p`). `gen_queries.py` selects between them via `--llm-backend {api,claude-cli}`.
 - MCP server at `src/python/bhdr/mcp/server.py`: ~17 tools, JSON-RPC over stdio. Substantially broader than what the eval agent calls today.
 
@@ -41,7 +41,7 @@ Adopt the codex `cli-creator` shape: every data command is `gpa <noun> [<sub-nou
 | Data nouns | `frames`, `drawcalls`, `pixel`, `scene`, `diff`, `trace`, `passes`, `annotations`, `control`, `source`, `upstream` | The agent's main surface |
 | Escape hatch | `request` *(deferred — not in this iteration)* | YAGNI for now |
 
-**Frame addressing:** keep the existing `--frame N` int flag (default = latest). Don't switch to positional `<frame>`. Also accept `--frame latest` as a no-op for clarity. When `GPA_FRAME_ID` is set in the environment and `--frame` is omitted, the CLI uses `GPA_FRAME_ID` as the default *before* falling back to "latest". The eval harness uses this so a scenario's agent always pins to its captured frame without one resolution call per command. Explicit `--frame N` always wins over the env var.
+**Frame addressing:** keep the existing `--frame N` int flag (default = latest). Don't switch to positional `<frame>`. Also accept `--frame latest` as a no-op for clarity. When `BHDR_FRAME_ID` is set in the environment and `--frame` is omitted, the CLI uses `BHDR_FRAME_ID` as the default *before* falling back to "latest". The eval harness uses this so a scenario's agent always pins to its captured frame without one resolution call per command. Explicit `--frame N` always wins over the env var.
 
 **Renames (old → new, with one-release deprecation aliases):**
 
@@ -96,7 +96,7 @@ gpa upstream list SUBDIR
 gpa upstream grep PATTERN [--subdir P] [--glob G] [--max-matches N]
 ```
 
-Backed by `GPA_SOURCE_ROOT` and `GPA_UPSTREAM_ROOT` env vars set per-scenario by the eval harness. Both have hard caps (default `--max-bytes 200000`, `--max-matches 50`, hard `--max-matches` cap 500), reject absolute paths and `..` traversal, return JSON: `{"path": ..., "bytes": N, "text": ...}` for reads, `{"matches": [{path, line, text}], "truncated": bool}` for grep, `{"subdir": ..., "entries": [{name, type}]}` for list.
+Backed by `BHDR_SOURCE_ROOT` and `BHDR_UPSTREAM_ROOT` env vars set per-scenario by the eval harness. Both have hard caps (default `--max-bytes 200000`, `--max-matches 50`, hard `--max-matches` cap 500), reject absolute paths and `..` traversal, return JSON: `{"path": ..., "bytes": N, "text": ...}` for reads, `{"matches": [{path, line, text}], "truncated": bool}` for grep, `{"subdir": ..., "entries": [{name, type}]}` for list.
 
 **JSON policy (decided):**
 
@@ -104,7 +104,7 @@ Backed by `GPA_SOURCE_ROOT` and `GPA_UPSTREAM_ROOT` env vars set per-scenario by
 - Existing `--json` commands keep their current default for backward compatibility but are documented as "set `--json` for agent use."
 - REST-backed commands pass through API JSON verbatim (no `{"ok":..., "data":...}` envelope on success).
 - Errors: stable envelope only on stderr, with nonzero exit code. No envelope on stdout for successes.
-- Redaction: never print `GPA_TOKEN` or `Authorization` headers.
+- Redaction: never print `BHDR_TOKEN` or `Authorization` headers.
 
 **Deferred:** `gpa doctor`, `gpa request {get,post,head}`. Both are useful but not blocking the eval-backend work. Reopen after we see how the agent backends use the CLI in practice.
 
@@ -121,9 +121,9 @@ src/python/bhdr/eval/agents/
   factory.py         — build_agent_fn(backend, model, max_turns, api_key)
 ```
 
-`AgentResult` and `GpaToolExecutor` move to this package. `gpa.eval.llm_agent` becomes a thin compatibility shim that re-exports from `gpa.eval.agents` for one release.
+`AgentResult` and `BhdrToolExecutor` move to this package. `gpa.eval.llm_agent` becomes a thin compatibility shim that re-exports from `gpa.eval.agents` for one release.
 
-**`api_agent.ApiAgent`:** the existing `EvalAgent`, no behaviour changes. Continues using the Anthropic SDK with native tool-use against `GPA_TOOLS` and `SNAPSHOT_TOOLS`. Remains the reference backend.
+**`api_agent.ApiAgent`:** the existing `EvalAgent`, no behaviour changes. Continues using the Anthropic SDK with native tool-use against `BHDR_TOOLS` and `SNAPSHOT_TOOLS`. Remains the reference backend.
 
 **`cli_agent.CliAgent`:** a generic subprocess-driven agent. Spec object:
 
@@ -147,7 +147,7 @@ Two presets:
 
 `CliAgent.run(scenario, mode, tools)` flow:
 
-1. Compute env: `GPA_BASE_URL`, `GPA_TOKEN` from process env; `GPA_SOURCE_ROOT` from scenario source dir; `GPA_UPSTREAM_ROOT` from snapshot dir if present; `GPA_FRAME_ID` from the captured frame id (with-gla mode).
+1. Compute env: `BHDR_BASE_URL`, `BHDR_TOKEN` from process env; `BHDR_SOURCE_ROOT` from scenario source dir; `BHDR_UPSTREAM_ROOT` from snapshot dir if present; `BHDR_FRAME_ID` from the captured frame id (with-gla mode).
 2. With-gla mode only: invoke `tools["run_with_capture"]()` to build + run the scenario binary and store the frame id.
 3. Render the prompt: scenario description, the source-path hint, list of available `gpa` subcommands (one-line each, generated from `gpa --help`), instruction to end with `DIAGNOSIS:` and `FIX:`. Code-only mode swaps in a prompt that lists only `gpa source` / `gpa upstream`.
 4. `subprocess.run([binary, *base_args, prompt-on-stdin])` with the env, capture stdout/stderr.
@@ -217,8 +217,8 @@ Single source of truth at `docs/cli/agent-integration.md`. Two thin wrappers sym
 Skill content (from codex's design, lightly trimmed):
 
 - When to use (debugging an OpenGPA-captured frame)
-- Auth and env (`GPA_BASE_URL`, `GPA_TOKEN`, `GPA_SOURCE_ROOT`, `GPA_UPSTREAM_ROOT`, `GPA_FRAME_ID`)
-- Frame workflow (`gpa frames overview --frame $GPA_FRAME_ID --json` first)
+- Auth and env (`BHDR_BASE_URL`, `BHDR_TOKEN`, `BHDR_SOURCE_ROOT`, `BHDR_UPSTREAM_ROOT`, `BHDR_FRAME_ID`)
+- Frame workflow (`gpa frames overview --frame $BHDR_FRAME_ID --json` first)
 - Drawcall workflow (`gpa drawcalls list`, then `drawcalls explain` / `drawcalls diff`)
 - Pixel and scene workflow
 - Source and upstream workflow

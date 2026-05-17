@@ -49,7 +49,7 @@ static void locate_fixture(void) {
     exit(2);
 }
 
-static const GpaDwarfGlobal* find_global(const GpaDwarfGlobals* g, const char* name) {
+static const BhdrDwarfGlobal* find_global(const BhdrDwarfGlobals* g, const char* name) {
     for (size_t i = 0; i < g->count; i++) {
         if (strcmp(g->items[i].name, name) == 0) return &g->items[i];
     }
@@ -59,15 +59,15 @@ static const GpaDwarfGlobal* find_global(const GpaDwarfGlobals* g, const char* n
 /* ------------------------------------------------------------------------ */
 
 static void test_dwarf_parser_reads_globals(void) {
-    GpaDwarfGlobals g = {0};
-    int rc = gpa_dwarf_parse_module(fixture_path, 0, &g);
-    assert(rc == GPA_DWARF_OK);
+    BhdrDwarfGlobals g = {0};
+    int rc = bhdr_dwarf_parse_module(fixture_path, 0, &g);
+    assert(rc == BHDR_DWARF_OK);
     assert(g.count > 0);
 
-    const GpaDwarfGlobal* d = find_global(&g, "g_test_double");
+    const BhdrDwarfGlobal* d = find_global(&g, "g_test_double");
     assert(d != NULL);
     assert(d->byte_size == 8);
-    assert(d->type_encoding == GPA_DW_ATE_FLOAT);
+    assert(d->type_encoding == BHDR_DW_ATE_FLOAT);
 
     /* Read the value through the reported address and check it's 16.58.
      * Note: parsing with load_bias=0 gives us the absolute link-time address.
@@ -75,27 +75,27 @@ static void test_dwarf_parser_reads_globals(void) {
      * test process — but the fixture binary is separate, so we instead use
      * the byte_size + encoding assertions. Address correctness is covered
      * by the scan-hash test below. */
-    gpa_dwarf_globals_free(&g);
+    bhdr_dwarf_globals_free(&g);
     printf("PASS test_dwarf_parser_reads_globals\n");
 }
 
 static void test_dwarf_parser_reads_primitive_types(void) {
-    GpaDwarfGlobals g = {0};
-    int rc = gpa_dwarf_parse_module(fixture_path, 0, &g);
-    assert(rc == GPA_DWARF_OK);
+    BhdrDwarfGlobals g = {0};
+    int rc = bhdr_dwarf_parse_module(fixture_path, 0, &g);
+    assert(rc == BHDR_DWARF_OK);
 
-    const GpaDwarfGlobal* td = find_global(&g, "g_test_double");
-    const GpaDwarfGlobal* ti = find_global(&g, "g_test_int");
-    const GpaDwarfGlobal* tf = find_global(&g, "g_test_float");
-    const GpaDwarfGlobal* tp = find_global(&g, "g_public_double");
+    const BhdrDwarfGlobal* td = find_global(&g, "g_test_double");
+    const BhdrDwarfGlobal* ti = find_global(&g, "g_test_int");
+    const BhdrDwarfGlobal* tf = find_global(&g, "g_test_float");
+    const BhdrDwarfGlobal* tp = find_global(&g, "g_public_double");
     assert(td && ti && tf && tp);
 
-    assert(td->type_encoding == GPA_DW_ATE_FLOAT  && td->byte_size == 8);
-    assert(ti->type_encoding == GPA_DW_ATE_SIGNED && ti->byte_size == 4);
-    assert(tf->type_encoding == GPA_DW_ATE_FLOAT  && tf->byte_size == 4);
-    assert(tp->type_encoding == GPA_DW_ATE_FLOAT  && tp->byte_size == 8);
+    assert(td->type_encoding == BHDR_DW_ATE_FLOAT  && td->byte_size == 8);
+    assert(ti->type_encoding == BHDR_DW_ATE_SIGNED && ti->byte_size == 4);
+    assert(tf->type_encoding == BHDR_DW_ATE_FLOAT  && tf->byte_size == 4);
+    assert(tp->type_encoding == BHDR_DW_ATE_FLOAT  && tp->byte_size == 8);
 
-    gpa_dwarf_globals_free(&g);
+    bhdr_dwarf_globals_free(&g);
     printf("PASS test_dwarf_parser_reads_primitive_types\n");
 }
 
@@ -109,7 +109,7 @@ static void test_dwarf_parser_rejects_dwarf5(void) {
      * in the right section names. Simplest: produce a bare ELF with a
      * single SHT_PROGBITS section named .debug_info holding the v5 header,
      * plus a one-byte .debug_abbrev. */
-    char path[] = "/tmp/gpa_dwarf5_XXXXXX";
+    char path[] = "/tmp/bhdr_dwarf5_XXXXXX";
     int fd = mkstemp(path);
     assert(fd >= 0);
 
@@ -187,10 +187,10 @@ static void test_dwarf_parser_rejects_dwarf5(void) {
     assert(wrote == (ssize_t)total);
     close(fd);
 
-    GpaDwarfGlobals g = {0};
-    int rc = gpa_dwarf_parse_module(path, 0, &g);
-    assert(rc == GPA_DWARF_UNSUPPORTED_VERSION);
-    gpa_dwarf_globals_free(&g);
+    BhdrDwarfGlobals g = {0};
+    int rc = bhdr_dwarf_parse_module(path, 0, &g);
+    assert(rc == BHDR_DWARF_UNSUPPORTED_VERSION);
+    bhdr_dwarf_globals_free(&g);
     unlink(path);
     printf("PASS test_dwarf_parser_rejects_dwarf5\n");
 }
@@ -204,26 +204,26 @@ static void test_scan_hashes_values_match_js_scanner(void) {
      *   other finite double      -> "f:" + IEEE-754 big-endian hex (16 chars)
      */
     /* Integer fast path. 100 -> "100". */
-    char* h_int = gpa_trace_hash_double(100.0);
+    char* h_int = bhdr_trace_hash_double(100.0);
     assert(strcmp(h_int, "n:100") == 0);
     free(h_int);
 
-    char* h_neg_int = gpa_trace_hash_double(-42.0);
+    char* h_neg_int = bhdr_trace_hash_double(-42.0);
     assert(strcmp(h_neg_int, "n:-42") == 0);
     free(h_neg_int);
 
-    char* h_zero = gpa_trace_hash_double(0.0);
+    char* h_zero = bhdr_trace_hash_double(0.0);
     assert(strcmp(h_zero, "n:0") == 0);
     free(h_zero);
 
     /* -0 normalizes to "n:0". */
-    char* h_negz = gpa_trace_hash_double(-0.0);
+    char* h_negz = bhdr_trace_hash_double(-0.0);
     assert(strcmp(h_negz, "n:0") == 0);
     free(h_negz);
 
     /* Fractional → IEEE-754 hex. 16.58 has well-known bits
      * 0x4030940A3D70A3D7. */
-    char* h_frac = gpa_trace_hash_double(16.58);
+    char* h_frac = bhdr_trace_hash_double(16.58);
     assert(strncmp(h_frac, "n:f:", 4) == 0);
     assert(strlen(h_frac) == 4 + 16);
     uint64_t frac_bits;
@@ -236,28 +236,28 @@ static void test_scan_hashes_values_match_js_scanner(void) {
     free(h_frac);
 
     /* Stability: same input, same hash. */
-    char* h1 = gpa_trace_hash_double(3.14159);
-    char* h2 = gpa_trace_hash_double(3.14159);
+    char* h1 = bhdr_trace_hash_double(3.14159);
+    char* h2 = bhdr_trace_hash_double(3.14159);
     assert(strcmp(h1, h2) == 0);
     free(h1); free(h2);
 
     /* NaN / Inf sentinels. */
-    char* h_nan = gpa_trace_hash_double(0.0 / 0.0);
+    char* h_nan = bhdr_trace_hash_double(0.0 / 0.0);
     assert(strcmp(h_nan, "n:NaN") == 0);
     free(h_nan);
 
     double inf_val = 1.0; for (int i = 0; i < 4; i++) inf_val *= 1e200;
-    char* h_inf = gpa_trace_hash_double(inf_val);
+    char* h_inf = bhdr_trace_hash_double(inf_val);
     assert(strcmp(h_inf, "n:Inf") == 0);
     free(h_inf);
 
-    char* h_ninf = gpa_trace_hash_double(-inf_val);
+    char* h_ninf = bhdr_trace_hash_double(-inf_val);
     assert(strcmp(h_ninf, "n:-Inf") == 0);
     free(h_ninf);
 
     /* String hash — djb2 lowercased. "Hello" → djb2("hello") = 261238937 →
      * base36 = "4bbdlt". */
-    char* hs = gpa_trace_hash_string("Hello");
+    char* hs = bhdr_trace_hash_string("Hello");
     assert(hs);
     assert(strncmp(hs, "s:", 2) == 0);
     /* djb2 of "hello": ((((5381*33)+'h')*33+'e')*33+'l')*33+'l')*33+'o' */
@@ -277,17 +277,17 @@ static void test_scan_hashes_values_match_js_scanner(void) {
 }
 
 static void test_scan_excludes_system_libs(void) {
-    assert(gpa_native_trace_is_system_module("/lib/x86_64-linux-gnu/libc.so.6"));
-    assert(gpa_native_trace_is_system_module("/usr/lib/x86_64-linux-gnu/libm.so.6"));
-    assert(gpa_native_trace_is_system_module("/lib64/ld-linux-x86-64.so.2"));
-    assert(gpa_native_trace_is_system_module("linux-vdso.so.1"));
-    assert(gpa_native_trace_is_system_module(""));
-    assert(gpa_native_trace_is_system_module("libpthread.so.0"));
+    assert(bhdr_native_trace_is_system_module("/lib/x86_64-linux-gnu/libc.so.6"));
+    assert(bhdr_native_trace_is_system_module("/usr/lib/x86_64-linux-gnu/libm.so.6"));
+    assert(bhdr_native_trace_is_system_module("/lib64/ld-linux-x86-64.so.2"));
+    assert(bhdr_native_trace_is_system_module("linux-vdso.so.1"));
+    assert(bhdr_native_trace_is_system_module(""));
+    assert(bhdr_native_trace_is_system_module("libpthread.so.0"));
 
     /* Non-system paths should pass through. */
-    assert(!gpa_native_trace_is_system_module("/home/me/app"));
-    assert(!gpa_native_trace_is_system_module("/tmp/my_bin"));
-    assert(!gpa_native_trace_is_system_module("/opt/myapp/lib/mylib.so"));
+    assert(!bhdr_native_trace_is_system_module("/home/me/app"));
+    assert(!bhdr_native_trace_is_system_module("/tmp/my_bin"));
+    assert(!bhdr_native_trace_is_system_module("/opt/myapp/lib/mylib.so"));
 
     printf("PASS test_scan_excludes_system_libs\n");
 }
@@ -303,35 +303,35 @@ static void test_scan_respects_budget(void) {
      * Shortcut: assert that without enabling, scan is a no-op and the
      * truncated flag stays 0. Then exercise the budget hook via the env
      * variable for the next-process case. */
-    gpa_native_trace_test_set_budget_overrun(0);
-    gpa_native_trace_scan(1, 0);
-    assert(gpa_native_trace_test_was_truncated() == 0);
+    bhdr_native_trace_test_set_budget_overrun(0);
+    bhdr_native_trace_scan(1, 0);
+    assert(bhdr_native_trace_test_was_truncated() == 0);
 
     /* Force the enabled flag by initializing with our fixture. */
-    setenv("GPA_TRACE_NATIVE", "1", 1);
-    setenv("GPA_TRACE_HOST", "127.0.0.1", 1);
-    setenv("GPA_TRACE_PORT", "1", 1);  /* unused port → fail-open */
-    gpa_native_trace_init();  /* self-scan; may or may not find globals */
+    setenv("BHDR_TRACE_NATIVE", "1", 1);
+    setenv("BHDR_TRACE_HOST", "127.0.0.1", 1);
+    setenv("BHDR_TRACE_PORT", "1", 1);  /* unused port → fail-open */
+    bhdr_native_trace_init();  /* self-scan; may or may not find globals */
 
-    if (gpa_native_trace_is_enabled()) {
-        gpa_native_trace_test_set_budget_overrun(10);
-        gpa_native_trace_scan(2, 0);
-        assert(gpa_native_trace_test_was_truncated() == 1);
+    if (bhdr_native_trace_is_enabled()) {
+        bhdr_native_trace_test_set_budget_overrun(10);
+        bhdr_native_trace_scan(2, 0);
+        assert(bhdr_native_trace_test_was_truncated() == 1);
     } else {
         /* Our own test binary has no scannable globals — skip the positive
          * check but still verify the budget hook writes its field. */
         printf("  (no scannable globals in this binary; partial coverage)\n");
     }
-    gpa_native_trace_test_set_budget_overrun(0);
-    gpa_native_trace_shutdown();
+    bhdr_native_trace_test_set_budget_overrun(0);
+    bhdr_native_trace_shutdown();
 
     printf("PASS test_scan_respects_budget\n");
 }
 
 static void test_dwarf_parse_subprograms_lists_main(void) {
-    GpaDwarfSubprograms s = {0};
-    int rc = gpa_dwarf_parse_subprograms(fixture_path, 0, &s);
-    assert(rc == GPA_DWARF_OK);
+    BhdrDwarfSubprograms s = {0};
+    int rc = bhdr_dwarf_parse_subprograms(fixture_path, 0, &s);
+    assert(rc == BHDR_DWARF_OK);
     assert(s.count >= 1);
 
     /* main() should appear with at least an inclusive range. */
@@ -345,27 +345,27 @@ static void test_dwarf_parse_subprograms_lists_main(void) {
     }
     assert(found_main);
 
-    gpa_dwarf_subprograms_free(&s);
+    bhdr_dwarf_subprograms_free(&s);
     printf("PASS test_dwarf_parse_subprograms_lists_main\n");
 }
 
 static void test_pc_index_lookup_roundtrip(void) {
-    GpaDwarfSubprograms s = {0};
-    int rc = gpa_dwarf_parse_subprograms(fixture_path, 0, &s);
-    assert(rc == GPA_DWARF_OK);
+    BhdrDwarfSubprograms s = {0};
+    int rc = bhdr_dwarf_parse_subprograms(fixture_path, 0, &s);
+    assert(rc == BHDR_DWARF_OK);
 
-    GpaPcIndex idx;
-    gpa_pc_index_init(&idx);
-    gpa_pc_index_add_module(&idx, &s);
-    gpa_pc_index_sort(&idx);
+    BhdrPcIndex idx;
+    bhdr_pc_index_init(&idx);
+    bhdr_pc_index_add_module(&idx, &s);
+    bhdr_pc_index_sort(&idx);
 
     /* Every subprogram's low_pc (within its own range) should resolve
      * back to itself. */
     int checks = 0;
     for (size_t i = 0; i < s.count; i++) {
         if (s.items[i].high_pc <= s.items[i].low_pc) continue;
-        const GpaDwarfSubprogram* hit =
-            gpa_pc_index_lookup(&idx, s.items[i].low_pc);
+        const BhdrDwarfSubprogram* hit =
+            bhdr_pc_index_lookup(&idx, s.items[i].low_pc);
         assert(hit != NULL);
         assert(hit->low_pc == s.items[i].low_pc);
         checks++;
@@ -374,10 +374,10 @@ static void test_pc_index_lookup_roundtrip(void) {
     assert(checks >= 1);
 
     /* A PC below every range should miss. */
-    assert(gpa_pc_index_lookup(&idx, 0x1) == NULL);
+    assert(bhdr_pc_index_lookup(&idx, 0x1) == NULL);
 
-    gpa_pc_index_free(&idx);
-    gpa_dwarf_subprograms_free(&s);
+    bhdr_pc_index_free(&idx);
+    bhdr_dwarf_subprograms_free(&s);
     printf("PASS test_pc_index_lookup_roundtrip\n");
 }
 
@@ -402,18 +402,18 @@ static void test_scan_survives_unmapped_address(void) {
     /* A second valid global we can prove is still reached after the crash. */
     static volatile double live_double = 16.58;
 
-    size_t skips_before = gpa_native_trace_test_segv_skip_count();
-    gpa_native_trace_test_inject_global(
-        "g_unmapped", (uintptr_t)p, 8, GPA_DW_ATE_FLOAT
+    size_t skips_before = bhdr_native_trace_test_segv_skip_count();
+    bhdr_native_trace_test_inject_global(
+        "g_unmapped", (uintptr_t)p, 8, BHDR_DW_ATE_FLOAT
     );
-    gpa_native_trace_test_inject_global(
-        "g_live", (uintptr_t)&live_double, 8, GPA_DW_ATE_FLOAT
+    bhdr_native_trace_test_inject_global(
+        "g_live", (uintptr_t)&live_double, 8, BHDR_DW_ATE_FLOAT
     );
 
     /* Must not crash. */
-    gpa_native_trace_scan(9999, 0);
+    bhdr_native_trace_scan(9999, 0);
 
-    size_t skips_after = gpa_native_trace_test_segv_skip_count();
+    size_t skips_after = bhdr_native_trace_test_segv_skip_count();
     /* At least one SIGSEGV-skip must have occurred on the unmapped entry. */
     assert(skips_after > skips_before);
 

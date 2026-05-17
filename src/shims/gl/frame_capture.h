@@ -1,5 +1,5 @@
-#ifndef GPA_FRAME_CAPTURE_H
-#define GPA_FRAME_CAPTURE_H
+#ifndef BHDR_FRAME_CAPTURE_H
+#define BHDR_FRAME_CAPTURE_H
 
 #include "shadow_state.h"
 #include <stdint.h>
@@ -7,7 +7,7 @@
 /* Called from glXSwapBuffers wrapper. Captures the current framebuffer (color
  * + depth) into a shared memory slot and notifies the engine via the IPC
  * socket. No-op when the IPC client is not connected (passthrough mode). */
-void gpa_frame_on_swap(void);
+void bhdr_frame_on_swap(void);
 
 /* Record draw call metadata from the current shadow state snapshot.
  * Call from each draw call wrapper (glDrawArrays, glDrawElements, etc.)
@@ -21,7 +21,7 @@ void gpa_frame_on_swap(void);
  *                    0 for non-indexed draws
  *   instance_count - instance count (1 for non-instanced draws)
  */
-void gpa_frame_record_draw_call(const GpaShadowState* shadow,
+void bhdr_frame_record_draw_call(const BhdrShadowState* shadow,
                                  uint32_t primitive,
                                  uint32_t vertex_count,
                                  uint32_t index_count,
@@ -29,7 +29,7 @@ void gpa_frame_record_draw_call(const GpaShadowState* shadow,
                                  uint32_t instance_count);
 
 /* Reset per-frame draw call recording buffer. Called at the start of each
- * frame (i.e. when gpa_shadow_new_frame is called). */
-void gpa_frame_reset_draw_calls(void);
+ * frame (i.e. when bhdr_shadow_new_frame is called). */
+void bhdr_frame_reset_draw_calls(void);
 
-#endif /* GPA_FRAME_CAPTURE_H */
+#endif /* BHDR_FRAME_CAPTURE_H */

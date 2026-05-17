@@ -24,7 +24,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
    full framework snapshot, both modes get 75–100 % on most scenarios. GPA
    is not a raw-accuracy lever on this setup; it's a *cost* lever.
 
-3. **A stub `main.c` is a dead scenario for `with_gpa`.** (R4 r27, R5 r29)
+3. **A stub `main.c` is a dead scenario for `with_bhdr`.** (R4 r27, R5 r29)
    If the capture contains zero draw calls or undifferentiated state, the
    agent gets no signal and invents plausible-but-wrong hypotheses. A
    scenario qualifies for eval only when its captured frame has ≥1 draw call
@@ -39,10 +39,10 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
 
 5. **Live runtime evidence can be a red herring.** (R5 r27) When the visible
    artifact has multiple pathways (e.g. NaN→black patches from anisotropic
-   GGX), `with_gpa` agents over-weight the vivid runtime signal and anchor
+   GGX), `with_bhdr` agents over-weight the vivid runtime signal and anchor
    on a plausible but wrong local fix, while code-only agents are forced to
    read the shader and reason about the semantic diff. This is the first
-   round where GPA *regressed* accuracy — 0/4 on r27 with_gpa vs 2/2
+   round where GPA *regressed* accuracy — 0/4 on r27 with_bhdr vs 2/2
    code-only. Mitigation: richer runtime evidence that actually
    discriminates between hypotheses (NaN-origin instruction traces), or
    prompting that forces runtime+source triangulation.
@@ -50,7 +50,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
 6. **The Haiku+GPA force-multiplier seen in R4 did not replicate at R5 scale.**
    R4 (n=4) showed Haiku+GPA 3/4 vs Haiku+code_only 2/4, and the rescue
    cell (r10 feedback loop) was exactly the "no heuristic required" case.
-   R5 (n=20) showed Haiku code_only 20/20 and Haiku with_gpa 17/19 — the
+   R5 (n=20) showed Haiku code_only 20/20 and Haiku with_bhdr 17/19 — the
    small-model rescue effect washed out. Working interpretation: R4's
    force-multiplier was scenario-selection bias, not a robust model-tier
    interaction. To measure it again, future rounds must deliberately select
@@ -59,7 +59,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
 
 7. **GPA is a token-cost lever, not an accuracy lever — and only for the
    larger model.** (R6) After shipping the `gpa` CLI that bundles diagnostic
-   checks into one Bash call, Sonnet with_gpa flipped from +$0.005/run to
+   checks into one Bash call, Sonnet with_bhdr flipped from +$0.005/run to
    **−$0.022/run** vs code_only (first time ever cheaper). Haiku deltas
    halved (+$0.048 → +$0.019) but did not flip — the narrower context eats
    the CLI's ~500-token prompt overhead.
@@ -67,7 +67,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
 8. **R7's Haiku 65 % accuracy unpacks as ~20 % WRONG + ~15 % TIMEOUT, not
    35 % undifferentiated failure.** Retroactive verdict classification across
    R5-R8 (see `docs/eval-results.md`, "Verdict breakdown" per round) shows
-   R7 Haiku with_gpa was 7/20 timeout + 0/20 wrong, while R7 Sonnet with_gpa
+   R7 Haiku with_bhdr was 7/20 timeout + 0/20 wrong, while R7 Sonnet with_bhdr
    was the mirror image (0/20 timeout + 5/20 wrong). Timeout-class failures
    respond to closure signals and narrower tools; wrong-class failures need
    better data quality. R8 validated the split: closure signal drove R8
@@ -86,12 +86,12 @@ traceability.
 | 1 | Tier 3 framework plugins (mapbox-gl-js, three.js) — POST scene-graph / source-cache metadata per frame | R4 r27, R5 r28/r29, R6 r27/r28/r29 all 0/4 or 0/2; `SourceCache.maxzoom`, `TriangleIndexArray` type, symbol-layer placement state are purely JS-side and invisible to the GL shim | ❌ not shipped — spec at `docs/superpowers/plans/2026-04-18-framework-integration.md`. `b720e9c` shipped minimal Tier-3 annotations endpoint (foundation, no framework uses it yet) |
 | 2 | NaN/Inf instruction-origin traces on framebuffer pixels (shader step-debug) | R5 r27: GPA *regressed* accuracy because NaN→black has two pathways (`D_GGX` vs `V_GGX`) that GPA can't distinguish; agents over-weighted vivid runtime signal | ❌ not planned — would require per-fragment dataflow capture. Partial mitigation via `b9dc91e` (NaN/Inf uniforms surfaced) |
 | 3 | Tool-call transcript capture in eval harness | R6: cannot distinguish curl vs `gpa report` invocations from `claude -p --output-format json`; CLI-substitution hypothesis relied on self-reported counters | ✅ shipped in `2ccff06` (stream-json parser for per-turn telemetry) |
-| 4 | `indexBufferType` / `index_type` on draw-call queries | R5 r28 Mapbox GLB 65 K index overflow: 0/3 with_gpa, type truncation invisible | ✅ shipped in `198773b` |
+| 4 | `indexBufferType` / `index_type` on draw-call queries | R5 r28 Mapbox GLB 65 K index overflow: 0/3 with_bhdr, type truncation invisible | ✅ shipped in `198773b` |
 | 5 | NaN/Inf uniforms surfaced on draw-call detail | R5 r27 adjacent: agents could not see at a glance which uniform was NaN | ✅ shipped in `b9dc91e` |
 | 6 | Full MRT attachment array on draw-call | R5 r32 three.js points-material MRT: sonnet code_only missed it | ✅ shipped in `9cb4eee` (R6 result: both modes 3/4 — still not universal, see gap 7) |
 | 7 | Fragment output ↔ `glDrawBuffers` mismatch as a derived boolean | R5 r32 surfaced the need; `9cb4eee` exposed the raw data but agents don't yet cross-reference it | ❌ not shipped — add `fragment_outputs_mismatch_attachments: bool` from GLSL `layout(location=X) out` parse |
 | 8 | Derived "texture is both bound sampler and current-FBO attachment" field | R4 r10 three.js feedback loop: Haiku+GPA had to cross-reference GL names manually | ✅ shipped in `8b7ad05` (derived feedback-loop detection endpoint) |
-| 9 | `gpa` CLI bundling diagnostic checks into one Bash call | R5 token gap: with_gpa averaged +241 K cache_read and +$0.048/run vs code_only | ✅ shipped in `e28937a` + `eb5357c` + `5da024a` (MCP wrap). R6 measured impact: sonnet went net-cheaper; haiku halved |
+| 9 | `gpa` CLI bundling diagnostic checks into one Bash call | R5 token gap: with_bhdr averaged +241 K cache_read and +$0.048/run vs code_only | ✅ shipped in `e28937a` + `eb5357c` + `5da024a` (MCP wrap). R6 measured impact: sonnet went net-cheaper; haiku halved |
 | 10 | Prompt-footprint reduction: snapshot directory gated behind a `gpa dump source` tool, not dumped as-is into prompt | R6 haiku: still +251 K cache_read with CLI; re-reading framework files on top of `gpa report` | ❌ not planned — next-highest-leverage haiku-tier fix |
 | 11 | Metal capture backend | R4 r15 Godot mobile macOS | ❌ out of scope (platform) — Vulkan/GL Godot builds would re-expose the pattern |
 | 12 | JS / native call-stack attribution per GL call | Proposed R4 backlog; would skip "grep randomly through framework source" phase | ❌ not planned — `Error().stack` for WebGL, libunwind for native GL |
@@ -123,7 +123,7 @@ mapbox-gl-js). 4 scenarios × 2 modes × 2 models = 16 runs via `claude -p`.
   `source_cache.ts` instead of the one-line `Math.ceil` in `terrain.ts`.
   GPA has no visibility into JS-side state upstream of GL.
 - **r27 stub revealed the "dead scenario" problem.** `main.c` was a
-  black-frame stub → `with_gpa` had nothing to work with.
+  black-frame stub → `with_bhdr` had nothing to work with.
 - **r15 Godot Metal — all 4/4 correct despite GPA providing nothing.**
   Metal is unreachable by OpenGPA's GL/Vulkan shims; agents succeeded
   purely from framework source reading. Confirms GPA scope boundary.
@@ -134,10 +134,10 @@ Source: `eval-results.md` §Round 4, `round4-capture-gaps.md`.
 
 First statistically meaningful run. Contamination-validated scenarios.
 
-- **No GPA accuracy advantage.** code_only Haiku 20/20 (100 %), with_gpa
+- **No GPA accuracy advantage.** code_only Haiku 20/20 (100 %), with_bhdr
   Haiku 17/19 (89.5 %); Sonnet 17/20 vs 16/19. R4's force-multiplier was
   sample-of-one.
-- **r27 anisotropic GGX: GPA *regressed* accuracy.** Both with_gpa agents
+- **r27 anisotropic GGX: GPA *regressed* accuracy.** Both with_bhdr agents
   anchored on NaN-denominator hypothesis from live pixel evidence and
   missed the actual semantic change (`saturate()` removal on
   `V_GGX_SmithCorrelated_Anisotropic`). Code-only agents read the shader
@@ -145,7 +145,7 @@ First statistically meaningful run. Contamination-validated scenarios.
 - **r28 GLB 65 K index overflow: 1/4.** The bug is JS-side
   `Uint16Array`, the GL stream shows truncated indices but no error.
   Direct motivation for `index_type` endpoint (shipped `198773b`).
-- **with_gpa pays a token tax.** Haiku with_gpa averaged +$0.048/run and
+- **with_bhdr pays a token tax.** Haiku with_bhdr averaged +$0.048/run and
   +384 K cache_read tokens vs code_only — not sustainable for production.
   Motivated the R6 `gpa` CLI experiment.
 
@@ -157,10 +157,10 @@ Shipped `gpa` CLI (`e28937a`, `eb5357c`, `5da024a`) + narrow REST
 endpoints (`feedback-loops`, `nan-uniforms`, `attachments`) before the run.
 Measured whether one-call `gpa report` substitutes for curl sequences.
 
-- **Sonnet hypothesis confirmed.** with_gpa Sonnet is now the **cheapest
+- **Sonnet hypothesis confirmed.** with_bhdr Sonnet is now the **cheapest
   cell in the matrix** ($0.555 vs $0.577 code_only, Δ = −$0.022/run,
   Δ cache_read = −64 K, Δ turns = −1.6). First time any round has had
-  with_gpa beat code_only on cost.
+  with_bhdr beat code_only on cost.
 - **Haiku hypothesis partially confirmed.** Δ cost halved (+$0.048 →
   +$0.019), Δ cache_read down 34 % (384 K → 251 K), but still positive.
   Narrower context eats the ~500-token CLI doc block.
@@ -238,7 +238,7 @@ opus), both modes → 108 runs × $60.70. First round with native
 
 ### Lessons
 
-1. **Native trace shipped but not discovered.** In 48 with_gpa runs,
+1. **Native trace shipped but not discovered.** In 48 with_bhdr runs,
    `gpa trace` was invoked **once** total. The prompt listed it as
    "preferred step 2" but agents consistently went `report → dump`,
    skipping it. Root causes: (a) scenarios pass clean `gpa report`, so
@@ -251,7 +251,7 @@ opus), both modes → 108 runs × $60.70. First round with native
    value N` first."
 
 2. **Source-logical category is not as hard as R5-R8 suggested.** R9's
-   with_gpa numbers: haiku 6/8, sonnet 6/8, opus 8/8. Prior rounds hit
+   with_bhdr numbers: haiku 6/8, sonnet 6/8, opus 8/8. Prior rounds hit
    0/4 on a smaller subset. The gap closed without the tool we shipped
    to close it — `gpa report`'s flagged warnings + the agent's own
    Grep/Read of snapshot source are sufficient for most source-logical
@@ -260,7 +260,7 @@ opus), both modes → 108 runs × $60.70. First round with native
    numeric value that's the breadcrumb. R10 should mine for that
    specific pattern.
 
-3. **Opus adds capability, not cost-efficiency.** 100% with_gpa on 16
+3. **Opus adds capability, not cost-efficiency.** 100% with_bhdr on 16
    scenarios, 90% code_only on 20. Zero regressions vs sonnet. Cost
    premium is 1.4× sonnet (not 5× as list pricing would suggest) and
    timeouts dropped to 0 (vs sonnet 1, haiku 4). Good "insurance tier"
@@ -273,7 +273,7 @@ opus), both modes → 108 runs × $60.70. First round with native
    signal). Pattern: GPA's Δcost sign aligns with whether the bug
    expresses itself in GL state vs. in code branches.
 
-5. **Haiku turn-cap hit 4/16 with_gpa.** Same rate as R8 (2/11). The
+5. **Haiku turn-cap hit 4/16 with_bhdr.** Same rate as R8 (2/11). The
    report closure hint didn't close this gap — the remaining haiku
    timeouts are on scenarios where report is clean and haiku loops on
    dump/pixel-grid exploration. For R10: enforce a "try source first
@@ -281,7 +281,7 @@ opus), both modes → 108 runs × $60.70. First round with native
 
 6. **Browser pilot pipeline works in MVP form.** Chromium launches,
    extension POSTs sources, engine accepts them. Phase 1 is scaffold;
-   Phase 2 needs real WebGL capture (frame != 0) before a with_gpa
+   Phase 2 needs real WebGL capture (frame != 0) before a with_bhdr
    agent run can be evaluated against a browser scenario.
 
 ### R9 token / cost deep-dive (post-run analysis)
@@ -291,7 +291,7 @@ opus), both modes → 108 runs × $60.70. First round with native
 | Mode | Haiku | Sonnet | Opus |
 |---|---|---|---|
 | code_only | $0.37 | $0.53 | $0.75 |
-| with_gpa | $0.37 | $0.61 | $0.75 |
+| with_bhdr | $0.37 | $0.61 | $0.75 |
 
 **Opus multiplier recalibrated 5.0 → 1.4** in `src/python/bhdr/eval/models.py`
 (list pricing says ~5× raw input tokens, but Opus terminates faster on
@@ -306,8 +306,8 @@ less restrictive.
 | Source-logical | 4 | −$0.019/pair |
 | R5-R8 carryover (framework-consumer) | 4 | **+$0.389/pair** |
 
-The aggregate "+$0.11/pair" with_gpa regression is **entirely driven by
-the R5-R8 carryover bucket**. Drop those → with_gpa wins. Insight:
+The aggregate "+$0.11/pair" with_bhdr regression is **entirely driven by
+the R5-R8 carryover bucket**. Drop those → with_bhdr wins. Insight:
 framework-consumer bugs are net-negative with GPA; state-collision +
 source-logical are net-positive. Forward mining should avoid
 framework-consumer issues unless they exhibit a state collision.
@@ -316,13 +316,13 @@ framework-consumer issues unless they exhibit a state collision.
 
 | | R5 Δ | R7 Δ | R9 Δ |
 |---|---|---|---|
-| Haiku with_gpa − code_only | +384K | +251K | +151K |
-| Sonnet with_gpa − code_only | +57K | +121K | **−261K** |
+| Haiku with_bhdr − code_only | +384K | +251K | +151K |
+| Sonnet with_bhdr − code_only | +57K | +121K | **−261K** |
 
 Narrow-endpoints + CLI + closure-signal stack finally paid off on token
 efficiency for Sonnet. Haiku still over-reads but improving.
 
-**Opus with_gpa: cleanest cell ever recorded** — 16/16 solved, 0 timeouts,
+**Opus with_bhdr: cleanest cell ever recorded** — 16/16 solved, 0 timeouts,
 0 wrong-class. Opus is a reliability tier, not a cost premium.
 
 ### R10 asks (preliminary)
@@ -380,7 +380,7 @@ methodology, agent/system improvements). Per-area detail in
     binaries, no engine), yet the prompt block in `cli_agent.py:80-96`
     lists 11 commands of which only 3 (`gpa upstream read|grep|list`)
     actually work, and ends with the literally-false line
-    `"GPA_FRAME_ID is set so --frame is automatic."` Agent worked
+    `"BHDR_FRAME_ID is set so --frame is automatic."` Agent worked
     around the noise but ~75% of the prompt's tool block was unusable.
 15. **Free signal is dropped at multiple layers.** The harness loads
     `scenario.framework`, `upstream_snapshot_repo`, `fix.fix_pr_url`,
@@ -406,7 +406,7 @@ methodology, agent/system improvements). Per-area detail in
    → `eval-lessons-scoring.md` §2a.
 3. **Stop lying in the with_gla prompt about live capture.** Branch
    the prompt block on `tools.get("snapshot_root")` vs runtime
-   capture availability. Drop the "GPA_FRAME_ID is set" line when
+   capture availability. Drop the "BHDR_FRAME_ID is set" line when
    `frame_id is None`. Add a one-line "scenario blurb" with
    framework + repo + `fix_pr_url` + bug-summary so the agent doesn't
    re-derive context. → `eval-lessons-system.md` §5 fix #1 (~40 LoC).

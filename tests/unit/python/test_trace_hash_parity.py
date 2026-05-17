@@ -114,12 +114,12 @@ def _have_node() -> bool:
     return shutil.which("node") is not None
 
 
-JS_TEST = REPO_ROOT / "tests" / "unit" / "shims" / "test_gpa_trace_js_hash.js"
+JS_TEST = REPO_ROOT / "tests" / "unit" / "shims" / "test_bhdr_trace_js_hash.js"
 
 
 @pytest.mark.skipif(not _have_node(), reason="node not installed")
 def test_js_canonical_matches_python_mirror():
-    """Run tests/unit/shims/test_gpa_trace_js_hash.js under node and
+    """Run tests/unit/shims/test_bhdr_trace_js_hash.js under node and
     assert it exits 0. That test loads gpa-trace.js into a VM sandbox
     and verifies `window.gpa.trace._hashValue()` emits the same
     canonical strings the C shim + Python parser use, for 12

@@ -52,7 +52,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="control_cmd", required=True)

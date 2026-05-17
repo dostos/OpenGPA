@@ -1,6 +1,6 @@
 """Integration smoke test: codex-cli backend on a real eval scenario.
 
-Skipped by default. Enable with `GPA_RUN_LIVE_EVAL=1` env var, OR run with
+Skipped by default. Enable with `BHDR_RUN_LIVE_EVAL=1` env var, OR run with
 the `slow` marker explicitly.
 
 Why skipped: the test launches the real `codex` CLI which:
@@ -26,8 +26,8 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.mark.skipif(
-    not os.environ.get("GPA_RUN_LIVE_EVAL"),
-    reason="live eval disabled (set GPA_RUN_LIVE_EVAL=1 to enable)",
+    not os.environ.get("BHDR_RUN_LIVE_EVAL"),
+    reason="live eval disabled (set BHDR_RUN_LIVE_EVAL=1 to enable)",
 )
 @pytest.mark.slow
 def test_codex_eval_code_only_smoke(tmp_path):

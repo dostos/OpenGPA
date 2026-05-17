@@ -4,26 +4,26 @@
 #include <stdlib.h>
 #include <string.h>
 
-void gpa_pc_index_init(GpaPcIndex* idx) {
+void bhdr_pc_index_init(BhdrPcIndex* idx) {
     memset(idx, 0, sizeof(*idx));
 }
 
-void gpa_pc_index_add_module(GpaPcIndex* idx, const GpaDwarfSubprograms* subs) {
+void bhdr_pc_index_add_module(BhdrPcIndex* idx, const BhdrDwarfSubprograms* subs) {
     if (!idx || !subs) return;
     size_t need = idx->count + subs->count;
     if (need > idx->cap) {
         size_t nc = idx->cap ? idx->cap : 64;
         while (nc < need) nc *= 2;
-        GpaPcRange* nb = (GpaPcRange*)realloc(idx->ranges,
-                                               nc * sizeof(GpaPcRange));
+        BhdrPcRange* nb = (BhdrPcRange*)realloc(idx->ranges,
+                                               nc * sizeof(BhdrPcRange));
         if (!nb) return;
         idx->ranges = nb; idx->cap = nc;
     }
     for (size_t i = 0; i < subs->count; i++) {
-        const GpaDwarfSubprogram* sp = &subs->items[i];
+        const BhdrDwarfSubprogram* sp = &subs->items[i];
         /* Skip empty ranges (declaration-only or unresolved high_pc). */
         if (sp->high_pc <= sp->low_pc) continue;
-        idx->ranges[idx->count++] = (GpaPcRange){
+        idx->ranges[idx->count++] = (BhdrPcRange){
             .low_pc = sp->low_pc,
             .high_pc = sp->high_pc,
             .sub = sp,
@@ -32,19 +32,19 @@ void gpa_pc_index_add_module(GpaPcIndex* idx, const GpaDwarfSubprograms* subs) {
 }
 
 static int cmp_range(const void* a, const void* b) {
-    const GpaPcRange* ra = (const GpaPcRange*)a;
-    const GpaPcRange* rb = (const GpaPcRange*)b;
+    const BhdrPcRange* ra = (const BhdrPcRange*)a;
+    const BhdrPcRange* rb = (const BhdrPcRange*)b;
     if (ra->low_pc < rb->low_pc) return -1;
     if (ra->low_pc > rb->low_pc) return  1;
     return 0;
 }
 
-void gpa_pc_index_sort(GpaPcIndex* idx) {
+void bhdr_pc_index_sort(BhdrPcIndex* idx) {
     if (!idx || idx->count < 2) return;
-    qsort(idx->ranges, idx->count, sizeof(GpaPcRange), cmp_range);
+    qsort(idx->ranges, idx->count, sizeof(BhdrPcRange), cmp_range);
 }
 
-const GpaDwarfSubprogram* gpa_pc_index_lookup(const GpaPcIndex* idx,
+const BhdrDwarfSubprogram* bhdr_pc_index_lookup(const BhdrPcIndex* idx,
                                               uintptr_t pc) {
     if (!idx || idx->count == 0) return NULL;
     /* Binary search for the largest low_pc <= pc, then bounds check. Ranges
@@ -58,12 +58,12 @@ const GpaDwarfSubprogram* gpa_pc_index_lookup(const GpaPcIndex* idx,
     }
     if (lo == 0) return NULL;
     size_t k = lo - 1;
-    const GpaPcRange* r = &idx->ranges[k];
+    const BhdrPcRange* r = &idx->ranges[k];
     if (pc >= r->low_pc && pc < r->high_pc) return r->sub;
     return NULL;
 }
 
-void gpa_pc_index_free(GpaPcIndex* idx) {
+void bhdr_pc_index_free(BhdrPcIndex* idx) {
     if (!idx) return;
     free(idx->ranges);
     memset(idx, 0, sizeof(*idx));

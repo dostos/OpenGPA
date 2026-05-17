@@ -1,6 +1,6 @@
 """``gpa upstream read|list|grep`` — upstream repository access.
 
-Operates inside ``$GPA_UPSTREAM_ROOT``. All paths are validated by
+Operates inside ``$BHDR_UPSTREAM_ROOT``. All paths are validated by
 ``bhdr.cli.local_roots`` before any filesystem access.
 """
 from __future__ import annotations
@@ -24,19 +24,19 @@ from bhdr.cli.local_roots import (
 _DEFAULT_MAX_BYTES = 512_000  # raised from 200 K — godot files run 369–402 KB
 _DEFAULT_MAX_MATCHES = 50
 _HARD_MAX_MATCHES = 500
-_ENV_NAME = "GPA_UPSTREAM_ROOT"
+_ENV_NAME = "BHDR_UPSTREAM_ROOT"
 
 
 def add_subparser(subparsers) -> None:
     p = subparsers.add_parser(
         "upstream",
-        help="Upstream repository access (under $GPA_UPSTREAM_ROOT)",
+        help="Upstream repository access (under $BHDR_UPSTREAM_ROOT)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     sub = p.add_subparsers(dest="upstream_cmd", required=True)
 
     p_read = sub.add_parser("read", help="Read an upstream file as JSON")
-    p_read.add_argument("path", help="Path relative to $GPA_UPSTREAM_ROOT")
+    p_read.add_argument("path", help="Path relative to $BHDR_UPSTREAM_ROOT")
     p_read.add_argument(
         "--max-bytes", type=int, default=_DEFAULT_MAX_BYTES,
         help=f"Truncation cap (default {_DEFAULT_MAX_BYTES})",
@@ -53,7 +53,7 @@ def add_subparser(subparsers) -> None:
     p_list = sub.add_parser("list", help="List entries in an upstream directory")
     p_list.add_argument(
         "subdir", nargs="?", default="",
-        help="Subdirectory relative to $GPA_UPSTREAM_ROOT (default: root)",
+        help="Subdirectory relative to $BHDR_UPSTREAM_ROOT (default: root)",
     )
 
     p_grep = sub.add_parser("grep", help="Regex search across the upstream root")
@@ -79,7 +79,7 @@ def add_subparser(subparsers) -> None:
             "outlines into ~5 KB. Then `read` only the range you need."
         ),
     )
-    p_outline.add_argument("path", help="Path relative to $GPA_UPSTREAM_ROOT")
+    p_outline.add_argument("path", help="Path relative to $BHDR_UPSTREAM_ROOT")
     p_outline.add_argument(
         "--max-definitions", type=int, default=500,
         help="Cap on definitions returned (default 500).",

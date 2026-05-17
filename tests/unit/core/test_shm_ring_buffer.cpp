@@ -21,7 +21,7 @@ static bool shm_exists(const std::string& name) {
 
 // Use a unique name per test to avoid cross-test pollution.
 static std::string unique_shm_name(const char* suffix) {
-    return std::string("/gpa_test_") + suffix;
+    return std::string("/bhdr_test_") + suffix;
 }
 
 // ── 1. CreateAndDestroy ───────────────────────────────────────────────────────

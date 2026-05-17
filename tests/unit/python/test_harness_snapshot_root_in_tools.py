@@ -1,6 +1,6 @@
 """When a scenario references an upstream snapshot, the harness should
 expose the resolved snapshot root via tools["snapshot_root"] so the
-cli_agent can pin GPA_UPSTREAM_ROOT for `gpa upstream` shell calls.
+cli_agent can pin BHDR_UPSTREAM_ROOT for `gpa upstream` shell calls.
 
 Lazy callable shape (matching tools["run_with_capture"]): returns Path
 on success, None on fetch error."""
@@ -26,7 +26,7 @@ def _make_scenario(**overrides) -> ScenarioMetadata:
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="test_id",
     )

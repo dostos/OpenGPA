@@ -16,7 +16,7 @@ def _make_root(tmp_path: Path) -> Path:
 
 def test_source_read_returns_json(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_read(path="main.c", max_bytes=200000, print_stream=buf)
     assert rc == 0
@@ -28,7 +28,7 @@ def test_source_read_returns_json(tmp_path, monkeypatch):
 
 def test_source_read_max_bytes(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_read(path="main.c", max_bytes=5, print_stream=buf)
     assert rc == 0
@@ -39,7 +39,7 @@ def test_source_read_max_bytes(tmp_path, monkeypatch):
 
 def test_source_read_traversal_rejected(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     err = io.StringIO()
     rc = source_cmd.run_read(
@@ -52,7 +52,7 @@ def test_source_read_traversal_rejected(tmp_path, monkeypatch):
 
 def test_source_grep_finds_pattern(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=50, print_stream=buf,
@@ -66,7 +66,7 @@ def test_source_grep_finds_pattern(tmp_path, monkeypatch):
 
 def test_source_grep_max_matches(tmp_path, monkeypatch):
     root = _make_root(tmp_path)
-    monkeypatch.setenv("GPA_SOURCE_ROOT", str(root))
+    monkeypatch.setenv("BHDR_SOURCE_ROOT", str(root))
     buf = io.StringIO()
     rc = source_cmd.run_grep(
         pattern="hello", subdir="", glob="", max_matches=1, print_stream=buf,
@@ -78,7 +78,7 @@ def test_source_grep_max_matches(tmp_path, monkeypatch):
 
 
 def test_source_no_root_set(monkeypatch):
-    monkeypatch.delenv("GPA_SOURCE_ROOT", raising=False)
+    monkeypatch.delenv("BHDR_SOURCE_ROOT", raising=False)
     buf = io.StringIO()
     err = io.StringIO()
     rc = source_cmd.run_read(
@@ -86,4 +86,4 @@ def test_source_no_root_set(monkeypatch):
         print_stream=buf, err_stream=err,
     )
     assert rc == 2
-    assert "GPA_SOURCE_ROOT" in err.getvalue()
+    assert "BHDR_SOURCE_ROOT" in err.getvalue()

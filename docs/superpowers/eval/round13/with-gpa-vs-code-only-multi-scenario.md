@@ -1,4 +1,4 @@
-# with_gpa vs code_only — multi-scenario (4 buggy GL apps, single tier)
+# with_bhdr vs code_only — multi-scenario (4 buggy GL apps, single tier)
 
 *Run: 2026-04-30. Model: Opus 4.7 (1M context) via Claude Code subagent
 dispatch. Extends [r10-with-gpa-vs-code-only.md](./r10-with-gpa-vs-code-only.md).*
@@ -6,7 +6,7 @@ dispatch. Extends [r10-with-gpa-vs-code-only.md](./r10-with-gpa-vs-code-only.md)
 ## Setup
 
 Six parallel `general-purpose` subagents — one pair (`code_only` /
-`with_gpa`) per scenario, 3 new synthetic scenarios + the R10 result
+`with_bhdr`) per scenario, 3 new synthetic scenarios + the R10 result
 re-stated for comparison. All agents got:
 
 - The user-report section verbatim from `scenario.md` (Ground Truth /
@@ -15,7 +15,7 @@ re-stated for comparison. All agents got:
 - A 20-tool-call budget cap.
 - Required output: `DIAGNOSIS:` + `FILE:<path>:<line>`.
 
-`with_gpa` agents additionally got `curl` access (no auth) to a running
+`with_bhdr` agents additionally got `curl` access (no auth) to a running
 OpenGPA engine at `localhost:18080` with the per-scenario captured
 frames documented up-front (frame_id, draw_call layout, available
 endpoints).
@@ -33,7 +33,7 @@ endpoints).
 
 ### Diagnosis accuracy
 
-**6/6 correct** (3/3 code_only, 3/3 with_gpa). All agents named the
+**6/6 correct** (3/3 code_only, 3/3 with_bhdr). All agents named the
 right root cause; all fix lines exact. **No accuracy delta** at this
 sample size.
 
@@ -42,15 +42,15 @@ sample size.
 | Scenario | Mode | Tool calls | Tokens | Wall (s) |
 |---|---|---|---|---|
 | R10 | code_only | 5 | 21,266 | 37 |
-| R10 | with_gpa  | 4 | 19,313 | 24 |
+| R10 | with_bhdr  | 4 | 19,313 | 24 |
 | e1  | code_only | 2 | 23,555 | 16 |
-| e1  | with_gpa  | 5 | 25,945 | 29 |
+| e1  | with_bhdr  | 5 | 25,945 | 29 |
 | e22 | code_only | 2 | 23,101 | 22 |
-| e22 | with_gpa  | 4 | 24,619 | 22 |
+| e22 | with_bhdr  | 4 | 24,619 | 22 |
 | e26 | code_only | 2 | 23,145 | 20 |
-| e26 | with_gpa  | 5 | 24,803 | 27 |
+| e26 | with_bhdr  | 5 | 24,803 | 27 |
 
-### Per-scenario Δ (with_gpa vs code_only)
+### Per-scenario Δ (with_bhdr vs code_only)
 
 | Scenario | Δ calls | Δ tokens | Δ wall |
 |---|---|---|---|
@@ -61,7 +61,7 @@ sample size.
 
 ### Mean across the 3 synthetic single-file scenarios
 
-| | code_only | with_gpa | Δ |
+| | code_only | with_bhdr | Δ |
 |---|---|---|---|
 | Tool calls | 2.0 | 4.7 | **+135%** |
 | Tokens | 23,267 | 25,122 | +8% |
@@ -119,11 +119,11 @@ sample size.
 ## Open follow-ups
 
 - **Capture frames for R13 maintainer-framing scenarios** (run the
-  buggy three.js examples under the OpenGPA shim) to get a with_gpa
+  buggy three.js examples under the OpenGPA shim) to get a with_bhdr
   measurement on the framework-bug scenario shape.
 - **Multi-tier matrix** on a balanced scenario mix (1× R10-shape +
   3× e-shape + 4× R13-shape) once the API key is available.
   Estimated cost ~$25 based on R10v2/R11 means.
 - **Stress-test the −LoC-aware suggestion logic** — once added, run
-  the same 4-scenario set and confirm with_gpa mode now declines on
+  the same 4-scenario set and confirm with_bhdr mode now declines on
   e1/e22/e26 and only fires on R10.

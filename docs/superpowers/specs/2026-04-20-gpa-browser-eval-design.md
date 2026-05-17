@@ -75,7 +75,7 @@ tests/eval-browser/
     └── ...
 ```
 
-- `index.html` self-triggers the bug on load — renders ~30 frames then posts `window.__gpa_done = true` so the runner knows to tear down.
+- `index.html` self-triggers the bug on load — renders ~30 frames then posts `window.__bhdr_done = true` so the runner knows to tear down.
 - `scenario.md` uses the same format as C repros (User Report / Ground Truth / Tier / Framework / etc.) — the eval harness already parses this.
 - `framework/` contains a pinned bundle so scenarios are reproducible years from now. Licensed libs (MIT/BSD) only; document the license per scenario.
 
@@ -92,7 +92,7 @@ New CLI subcommand mirroring `gpa run`:
    - `--disable-gpu-sandbox`
    - `--enable-unsafe-swiftshader` (software WebGL for Xvfb)
    - URL pointing at `http://localhost:<port>/<scenario>/index.html`
-4. Poll `TraceStore` + `/frames/latest/overview` until `window.__gpa_done` equivalent (a sentinel in the trace annotations) or timeout
+4. Poll `TraceStore` + `/frames/latest/overview` until `window.__bhdr_done` equivalent (a sentinel in the trace annotations) or timeout
 5. Terminate Chromium; tear down engine (unless daemon mode)
 6. Print session + frame count, exit 0
 
@@ -108,9 +108,9 @@ The extension needs a way to target the local engine. Currently hardcoded in `gp
 
 ```html
 <script>
-  localStorage.GPA_TRACE_MODE = 'gated';
-  localStorage.GPA_TRACE_ENDPOINT = 'http://127.0.0.1:18080/api/v1';
-  localStorage.GPA_TRACE_TOKEN = '<injected-by-runner>';
+  localStorage.BHDR_TRACE_MODE = 'gated';
+  localStorage.BHDR_TRACE_ENDPOINT = 'http://127.0.0.1:18080/api/v1';
+  localStorage.BHDR_TRACE_TOKEN = '<injected-by-runner>';
 </script>
 ```
 
@@ -123,7 +123,7 @@ The runner injects the token into the scenario page via a query-string (`?token=
 Models: Haiku + Sonnet + Opus. Each gets the same user-report prompt. Tools include `gpa trace *` (which is the point of this whole thing).
 
 Success criteria for R9 browser subset:
-- `gpa trace` is invoked ≥ 1×/run on with_gpa runs
+- `gpa trace` is invoked ≥ 1×/run on with_bhdr runs
 - At least 1/3 of the pilot scenarios go from "0/4 unsolvable" (historical for similar C repros) to "solved by at least one model" with trace data
 - Capture overhead ≤ 500 ms per frame (browsers are slow anyway; relaxed vs C-shim)
 
@@ -153,7 +153,7 @@ Success criteria for R9 browser subset:
 1. **Chromium install** — assume user has chromium/google-chrome. Fail gracefully with install instructions if not. Use `which chromium || which google-chrome` autodetect.
 2. **Framework bundle licensing** — MIT/BSD fine; document per scenario. Avoid copying anything GPL.
 3. **swiftshader vs real GL** — Xvfb + swiftshader is easy but slow; real GL via Xvfb's glx would be faster but fragile. Default swiftshader; document how to swap.
-4. **Scenario sentinel** — `window.__gpa_done = true` + annotation POST is the simplest completion signal. Consider a timeout floor (5s minimum) even if the scenario claims done, so short pages still capture meaningful state.
+4. **Scenario sentinel** — `window.__bhdr_done = true` + annotation POST is the simplest completion signal. Consider a timeout floor (5s minimum) even if the scenario claims done, so short pages still capture meaningful state.
 5. **What if `gpa trace` finds nothing in the scenario?** — would mean reflection isn't reaching the relevant state. In that case, the scenario's HTML can `gpa.trace.addRoot(suspectObject)` manually. We won't hide this from scenario authors; it's part of the debugging story.
 
 ## Non-feature: full Puppeteer / Playwright

@@ -78,7 +78,7 @@ def test_diff_frames_depth_pixels():
 
 
 def test_diff_frames_no_session(monkeypatch):
-    monkeypatch.setenv("GPA_SESSION", "")
+    monkeypatch.setenv("BHDR_SESSION", "")
     import bhdr.cli.session as _sess
     monkeypatch.setattr(_sess.Session, "discover", staticmethod(lambda **kw: None))
     buf = io.StringIO()

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Dispatch all 80 R5 subagents in parallel.
-# Reads /tmp/eval_round5/captures.txt; skips with_gpa for scenarios marked NOCAPTURE.
+# Reads /tmp/eval_round5/captures.txt; skips with_bhdr for scenarios marked NOCAPTURE.
 set -u
 cd /tmp/eval_round5
 
@@ -15,11 +15,11 @@ while IFS=, read -r scen fid draws; do
         >/tmp/eval_round5/dispatch_${scen}_code_only_${model}.log 2>&1 &
       PIDS+=($!)
     fi
-    # with_gpa only if we have a frame
+    # with_bhdr only if we have a frame
     if [ "$fid" != "NOCAPTURE" ] && [ "$fid" != "ERROR_NOBIN" ]; then
       out=/tmp/eval_round5/${scen}_with_gpa_${model}.json
       if [ ! -s "$out" ]; then
-        MAX_TURNS=40 ./run_subagent.sh "$scen" with_gpa "$model" "$fid" \
+        MAX_TURNS=40 ./run_subagent.sh "$scen" with_bhdr "$model" "$fid" \
           >/tmp/eval_round5/dispatch_${scen}_with_gpa_${model}.log 2>&1 &
         PIDS+=($!)
       fi

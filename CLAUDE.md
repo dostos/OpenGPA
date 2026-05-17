@@ -46,7 +46,7 @@ PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m gpa.launcher \
 
 # 4. Capture a scenario
 LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    GPA_SOCKET_PATH=/tmp/gpa.sock GPA_SHM_NAME=/gpa \
+    BHDR_SOCKET_PATH=/tmp/gpa.sock BHDR_SHM_NAME=/gpa \
     bazel-bin/tests/eval/synthetic/state-leak/e1_state_leak/e1_state_leak
 
 # 5. Query
@@ -103,10 +103,10 @@ Spec: `docs/superpowers/specs/2026-05-01-single-path-mining-design.md`.
 
 ## Adding a New GL Function to Intercept
 
-1. `src/shims/gl/gl_wrappers.h` — add function pointer to `GpaRealGlFuncs`
-2. `src/shims/gl/gl_wrappers.c` — add dlsym in `gpa_wrappers_init()`, add wrapper function, add to `gpa_resolve_wrapper()`
+1. `src/shims/gl/gl_wrappers.h` — add function pointer to `BhdrRealGlFuncs`
+2. `src/shims/gl/gl_wrappers.c` — add dlsym in `bhdr_wrappers_init()`, add wrapper function, add to `bhdr_resolve_wrapper()`
 3. `src/shims/gl/shadow_state.h/c` — add state tracking if needed
-4. `src/shims/gl/frame_capture.c` — add to `GpaDrawCallSnapshot` if serialized per draw call
+4. `src/shims/gl/frame_capture.c` — add to `BhdrDrawCallSnapshot` if serialized per draw call
 5. `src/core/engine.cpp` — add deserialization in `ingest_frame()`
 6. `src/core/normalize/normalized_types.h` — add to `NormalizedDrawCall`
 7. `src/bindings/py_gpa.cpp` — expose to Python

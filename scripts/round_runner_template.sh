@@ -17,7 +17,7 @@
 #   ROUND_NUMBER      required, integer identifier for this round
 #   SCENARIOS_FILE    required, newline-delimited scenario names
 #   TIERS             default: "haiku sonnet opus"
-#   MODES             default: "code_only with_gpa"
+#   MODES             default: "code_only with_bhdr"
 #   MAX_BUDGET_USD    default: 150
 #   BASELINE_PER_RUN  default: 0.50 (sonnet per-run USD from prior round)
 #   PROMPT_FILE       optional, prompt template path (round wrapper supplies)
@@ -39,7 +39,7 @@ done
 : "${ROUND_NUMBER:?ROUND_NUMBER env var required}"
 : "${SCENARIOS_FILE:?SCENARIOS_FILE env var required}"
 TIERS="${TIERS:-haiku sonnet opus}"
-MODES="${MODES:-code_only with_gpa}"
+MODES="${MODES:-code_only with_bhdr}"
 MAX_BUDGET_USD="${MAX_BUDGET_USD:-150}"
 BASELINE_PER_RUN="${BASELINE_PER_RUN:-0.50}"
 REPO_ROOT="${REPO_ROOT:-$(git rev-parse --show-toplevel)}"
@@ -110,7 +110,7 @@ dispatch_one() {
     fi
 
     echo "[dispatch] scenario=$scenario mode=$mode tier=$tier model=$model_id -> $out" >&2
-    GPA_SCENARIO="$scenario" GPA_MODE="$mode" \
+    BHDR_SCENARIO="$scenario" BHDR_MODE="$mode" \
         claude "${prompt_args[@]}" \
             --output-format stream-json \
             --max-turns 40 \

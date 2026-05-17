@@ -146,8 +146,8 @@ python -m bhdr.launcher --socket /tmp/gpa.sock --shm /gpa --port 18080 \
     --token TOKEN
 
 # Capture scenario
-LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    GPA_SOCKET_PATH=/tmp/gpa.sock GPA_SHM_NAME=/gpa \
+LD_PRELOAD=bazel-bin/src/shims/gl/libbhdr_gl.so \
+    BHDR_SOCKET_PATH=/tmp/gpa.sock BHDR_SHM_NAME=/gpa \
     bazel-bin/tests/eval/<cat>/<fw>/<slug>/<slug>
 
 # Verify data captured
@@ -184,7 +184,7 @@ Dispatch eval agents with non-directive prompts:
 PYTHONPATH=src/python python3 -m bhdr.eval.cli run \
     --all --modes with_gla,code_only \
     --scenarios "$ID_LIST" \
-    --gpa-url http://127.0.0.1:18080 \
+    --bhdr-url http://127.0.0.1:18080 \
     --shim "$SHIM_PATH" \
     --agent-backend claude-cli \
     --agent-model 'claude-opus-4-7[1m]' \

@@ -3,7 +3,7 @@
 ## TL;DR
 
 All 14 round-12b scenarios ran **snapshot-only** — `run.log` shows
-`live capture unavailable` 14/14, so `GPA_FRAME_ID` was never set.
+`live capture unavailable` 14/14, so `BHDR_FRAME_ID` was never set.
 Yet `with_gla`'s prompt advertises 11 commands of which only 3
 (`gpa upstream read|grep|list`) actually work. The agent worked
 around the noise (web-map: 5/6 cited specific symbols) but the
@@ -66,9 +66,9 @@ Advisor mode = `upstream read|grep|list` only
 ## 3. Prompt structure improvements
 
 Current `gla_tools_block` (`cli_agent.py:80-96`) lists 11 commands
-as bullets and ends with: `"GPA_FRAME_ID is set so --frame is
+as bullets and ends with: `"BHDR_FRAME_ID is set so --frame is
 automatic."` That last line is **a lie 100% of the time** on
-round 12b — `cli_agent.py:33-38` silently leaves `GPA_FRAME_ID`
+round 12b — `cli_agent.py:33-38` silently leaves `BHDR_FRAME_ID`
 unset when capture fails.
 
 Proposed delta — switch on the harness signaling whether a

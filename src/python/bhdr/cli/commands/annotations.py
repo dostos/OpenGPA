@@ -49,7 +49,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="annotations_cmd", required=True)
@@ -57,12 +57,12 @@ def add_subparser(subparsers) -> None:
     # ---- list ----
     p_list = sub.add_parser("list", help="Get stored annotations for a frame (JSON)")
     p_list.add_argument("--frame", default=None,
-                        help="Frame id (default: GPA_FRAME_ID env or latest)")
+                        help="Frame id (default: BHDR_FRAME_ID env or latest)")
 
     # ---- add ----
     p_add = sub.add_parser("add", help="Post annotation JSON for a frame")
     p_add.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
     body_group = p_add.add_mutually_exclusive_group(required=True)
     body_group.add_argument(
         "--file", dest="file_path", default=None, metavar="PATH",

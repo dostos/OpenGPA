@@ -12,8 +12,8 @@ static void handle_signal(int /*sig*/) {
 }
 
 int main(int argc, char** argv) {
-    std::string socket_path = "/tmp/gpa_engine.sock";
-    std::string shm_name    = "/gpa_ipc";
+    std::string socket_path = "/tmp/bhdr_engine.sock";
+    std::string shm_name    = "/bhdr_ipc";
 
     if (argc > 1) socket_path = argv[1];
     if (argc > 2) shm_name    = argv[2];

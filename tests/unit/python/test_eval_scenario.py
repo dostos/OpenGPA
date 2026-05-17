@@ -74,7 +74,7 @@ class TestScenarioLoader:
         # At least one adversarial principle
         assert len(scenario.adversarial_principles) > 0
         # GPA advantage text present
-        assert len(scenario.gpa_advantage) > 0
+        assert len(scenario.bhdr_advantage) > 0
         # Source path now points to the scenario dir's main.c
         assert scenario.source_path.endswith("e1_state_leak/main.c")
         assert scenario.binary_name == "e1_state_leak"
@@ -97,7 +97,7 @@ class TestScenarioLoader:
         assert scenario.difficulty == 3  # Medium maps to 3
         assert "scissor" in scenario.ground_truth_diagnosis.lower()
         assert len(scenario.adversarial_principles) >= 2
-        assert len(scenario.gpa_advantage) > 0
+        assert len(scenario.bhdr_advantage) > 0
 
     def test_load_all_returns_synthetic_scenarios(self):
         """load_all() returns the original 10 synthetic (e1-e10) scenarios

@@ -86,12 +86,12 @@ First eval run where subagents must navigate full upstream framework snapshots
 Sonnet 4.5) = 16 non-directive diagnostic runs dispatched in parallel via
 `claude -p`. Agents receive only the user-report portion of each scenario
 plus `Read`/`Grep`/`Glob` tools over the snapshot dir, with `curl` added
-to the REST API in `with_gpa` mode. Ground truth withheld. Max 40 turns
+to the REST API in `with_bhdr` mode. Ground truth withheld. Max 40 turns
 (80 for retries that hit the limit).
 
 ### Setup
 - Xvfb :99 + OpenGPA engine on :18080 (token `EVALTOKEN`, socket
-  `/tmp/gpa_eval.sock`, shm `/gpa_eval`).
+  `/tmp/bhdr_eval.sock`, shm `/bhdr_eval`).
 - All 4 scenarios captured successfully into frames 1–4.
 - Snapshot cache pre-populated under `/data3/opengpa-snapshots/` (three.js
   @ `1f2fea76…`, three.js @ `c2c56858…` (symlink — original SHA not
@@ -104,20 +104,20 @@ to the REST API in `with_gpa` mode. Ground truth withheld. Max 40 turns
 |---|---|---|---|---|---|---|---|
 | r6  | code_only | haiku  | Y | 22 | 2 | 0 | $0.219 |
 | r6  | code_only | sonnet | Y |  7 | 2 | 0 | $0.121 |
-| r6  | with_gpa  | haiku  | Y | 23 | 4 | 5 | $0.223 |
-| r6  | with_gpa  | sonnet | Y | 15 | 3 | 5 | $0.267 |
+| r6  | with_bhdr  | haiku  | Y | 23 | 4 | 5 | $0.223 |
+| r6  | with_bhdr  | sonnet | Y | 15 | 3 | 5 | $0.267 |
 | r10 | code_only | haiku  | N | 29 | 3 | 0 | $0.328 |
 | r10 | code_only | sonnet | Y | 33 | 5 | 0 | $0.765 |
-| r10 | with_gpa  | haiku  | Y | 38 | 6 | 6 | $0.399 |
-| r10 | with_gpa  | sonnet | Y | 19 | 2 | 4 | $0.302 |
+| r10 | with_bhdr  | haiku  | Y | 38 | 6 | 6 | $0.399 |
+| r10 | with_bhdr  | sonnet | Y | 19 | 2 | 4 | $0.302 |
 | r15 | code_only | haiku  | Y | 48 | 8 | 0 | $0.492 |
 | r15 | code_only | sonnet | Y | 37 | 4 | 0 | $0.912 |
-| r15 | with_gpa  | haiku  | Y | 58 | 3 | 6 | $0.598 |
-| r15 | with_gpa  | sonnet | Y | 26 | 3 | 6 | $0.501 |
+| r15 | with_bhdr  | haiku  | Y | 58 | 3 | 6 | $0.598 |
+| r15 | with_bhdr  | sonnet | Y | 26 | 3 | 6 | $0.501 |
 | r27 | code_only | haiku  | N | 33 | 4 | 0 | $0.377 |
 | r27 | code_only | sonnet | N | 12 | 2 | 0 | $0.247 |
-| r27 | with_gpa  | haiku  | N | 21 | 6 | 0 | $0.216 |
-| r27 | with_gpa  | sonnet | N | 37 | 5 | 6 | $0.608 |
+| r27 | with_bhdr  | haiku  | N | 21 | 6 | 0 | $0.216 |
+| r27 | with_bhdr  | sonnet | N | 37 | 5 | 6 | $0.608 |
 
 "Correct" = keyword-match against `## Ground Truth` plus manual review of
 near-miss results (r10 / r15 groups reviewed by hand; r27 confirmed no
@@ -128,18 +128,18 @@ agent reached the `Math.ceil` fix).
 | Mode      | Correct | Total cost | Avg turns | Avg framework files | Avg GPA queries |
 |-----------|---------|-----------:|----------:|--------------------:|----------------:|
 | code_only | 5 / 8   | $3.46      | 27.6      | 3.8                 | 0.0             |
-| with_gpa  | 6 / 8   | $3.11      | 29.6      | 4.0                 | 4.8             |
+| with_bhdr  | 6 / 8   | $3.11      | 29.6      | 4.0                 | 4.8             |
 
 Per-model:
 
-| Model  | code_only | with_gpa |
+| Model  | code_only | with_bhdr |
 |--------|-----------|----------|
 | Haiku  | 2 / 4     | 3 / 4    |
 | Sonnet | 3 / 4     | 3 / 4    |
 
-Per-scenario (code_only | with_gpa):
+Per-scenario (code_only | with_bhdr):
 
-| Scenario | code_only | with_gpa |
+| Scenario | code_only | with_bhdr |
 |----------|-----------|----------|
 | r6  (three.js UBO overflow)    | 2/2 | 2/2 |
 | r10 (three.js feedback loop)   | 1/2 | 2/2 |
@@ -152,7 +152,7 @@ Per-scenario (code_only | with_gpa):
    texture object is both the FBO `COLOR_ATTACHMENT0` and the bound
    `transmissionSamplerMap` sampler." Haiku code-only made up a plausible
    but wrong root cause ("updateMultisampleRenderTarget unbinds the
-   framebuffer and fails to rebind"). Haiku with_gpa queried
+   framebuffer and fails to rebind"). Haiku with_bhdr queried
    `/frames/2/drawcalls/0/textures` and `/frames/2/drawcalls/0` and
    directly cross-referenced texture ID 1 appearing in both the bound
    sampler list and the FBO attachment list, then wrote "GPA frame
@@ -197,7 +197,7 @@ Per-scenario (code_only | with_gpa):
 
 5. **Sonnet dominates code-only; Haiku+GPA closes the gap.** The single
    cell where Haiku code-only failed (r10) is also the single cell where
-   Haiku with_gpa succeeded. In contrast, Sonnet got r10 correct even
+   Haiku with_bhdr succeeded. In contrast, Sonnet got r10 correct even
    without GPA by reading more framework source (5 files vs Haiku's 3).
    The working interpretation: GPA turns the smaller model's runtime
    evidence into what the bigger model would otherwise compensate for
@@ -246,7 +246,7 @@ Per-scenario (code_only | with_gpa):
 First statistically meaningful run. 20 real-world scenarios (pixijs, three.js,
 mapbox-gl-js, pmndrs/postprocessing, Pixelorama) × 2 modes × 2 models = 80 runs
 budgeted, 78 executed (r29 segfaulted at startup — no GL capture, so its
-`with_gpa` cells were skipped). 40-turn budget per run, 8 retries at 80 turns.
+`with_bhdr` cells were skipped). 40-turn budget per run, 8 retries at 80 turns.
 
 All scenarios pre-cleaned by the contamination validator: no hint comments,
 `## User Report` and `## Ground Truth` separated. Subagents received only
@@ -255,7 +255,7 @@ one — three.js, mapbox-gl-js, pixijs, postprocessing) + optional GPA curl.
 
 ### Setup
 
-- Xvfb on `:99`, engine on `:18080`, shim + shm `/gpa_eval`, token `EVALTOKEN`.
+- Xvfb on `:99`, engine on `:18080`, shim + shm `/bhdr_eval`, token `EVALTOKEN`.
 - Built all `tests/eval:*` targets. Captured 19/20 scenarios with non-empty
   draw-call counts (1–5 draws each); r29 segfaulted before any GL call and
   only ran in `code_only` mode.
@@ -269,12 +269,12 @@ one — three.js, mapbox-gl-js, pixijs, postprocessing) + optional GPA curl.
 |-----------|--------|----|---------|----------|
 | code_only | haiku  | 20 | 20      | 100.0%   |
 | code_only | sonnet | 20 | 17      | 85.0%    |
-| with_gpa  | haiku  | 19 | 17      | 89.5%    |
-| with_gpa  | sonnet | 19 | 16      | 84.2%    |
+| with_bhdr  | haiku  | 19 | 17      | 89.5%    |
+| with_bhdr  | sonnet | 19 | 16      | 84.2%    |
 
 - **Total cost: $30.94** across all 78 runs.
-- Avg turns: code_only 18–24; with_gpa 20–29.
-- Avg framework files opened: 2.6–5.3. Avg GPA queries (with_gpa only): 3.6–4.7.
+- Avg turns: code_only 18–24; with_bhdr 20–29.
+- Avg framework files opened: 2.6–5.3. Avg GPA queries (with_bhdr only): 3.6–4.7.
 
 #### Verdict breakdown
 
@@ -282,8 +282,8 @@ one — three.js, mapbox-gl-js, pixijs, postprocessing) + optional GPA curl.
 |-----------|--------|-------:|--------:|------:|------:|
 | code_only | haiku  |     20 |       0 |     0 |     0 |
 | code_only | sonnet |     17 |       0 |     3 |     0 |
-| with_gpa  | haiku  |     17 |       0 |     2 |     0 |
-| with_gpa  | sonnet |     16 |       0 |     3 |     0 |
+| with_bhdr  | haiku  |     17 |       0 |     2 |     0 |
+| with_bhdr  | sonnet |     16 |       0 |     3 |     0 |
 
 R5 had zero timeouts — every incorrect run was a confidently-wrong
 diagnosis. This is consistent with the rich-scenario hypothesis: once a
@@ -292,7 +292,7 @@ and any failure is a quality-of-evidence problem, not a budget problem.
 
 ### Per-Scenario Matrix
 
-`co_h / co_s` = code_only Haiku / Sonnet; `gp_h / gp_s` = with_gpa Haiku / Sonnet.
+`co_h / co_s` = code_only Haiku / Sonnet; `gp_h / gp_s` = with_bhdr Haiku / Sonnet.
 `-` = not applicable (capture failed).
 
 | Scenario | co_h | co_s | gp_h | gp_s |
@@ -365,10 +365,10 @@ See `docs/superpowers/eval/round5-capture-gaps.md`.
 
 ## Round 6 — `gpa` CLI token-efficiency measurement
 
-**Hypothesis**: giving with_gpa-mode agents the new `gpa` CLI (as a single
+**Hypothesis**: giving with_bhdr-mode agents the new `gpa` CLI (as a single
 Bash-invokable tool that bundles all diagnostic checks) will cause them to
 *substitute* curl/file-read sequences with one `gpa report` call, closing
-the Round 5 token gap where with_gpa averaged **+241 K** more cache_read
+the Round 5 token gap where with_bhdr averaged **+241 K** more cache_read
 tokens and **+$0.048** more per run than code_only.
 
 ### Setup
@@ -380,7 +380,7 @@ tokens and **+$0.048** more per run than code_only.
   `attachments`) now part of the OpenAPI surface.
 - Captured all 20/20 scenarios (R5 failed to capture r29; R6 succeeded
   after the r29 segfault fix landed).
-- `with_gpa` prompt replaced the curl boilerplate with the `gpa report
+- `with_bhdr` prompt replaced the curl boilerplate with the `gpa report
   --frame <id> --json` example first, `gpa check/dump` as drill-downs, and
   curl explicitly framed as fallback. `Bash(gpa:*)` added to the allow-list.
 
@@ -390,8 +390,8 @@ tokens and **+$0.048** more per run than code_only.
 |-----------|--------|----|---------|----------|
 | code_only | haiku  | 20 | 16      | 80.0%    |
 | code_only | sonnet | 20 | 17      | 85.0%    |
-| with_gpa  | haiku  | 20 | 17      | 85.0%    |
-| with_gpa  | sonnet | 20 | 15      | 75.0%    |
+| with_bhdr  | haiku  | 20 | 17      | 85.0%    |
+| with_bhdr  | sonnet | 20 | 15      | 75.0%    |
 
 **Total cost: $34.03** across 80 runs. Accuracy is noisier than R5 —
 haiku code_only regressed from 20/20 → 16/20 (this is the first time
@@ -407,8 +407,8 @@ it so code_only agents now see the same scenario file both modes see.
 |-----------|--------|-------:|--------:|------:|------:|
 | code_only | haiku  |     16 |       2 |     2 |     0 |
 | code_only | sonnet |     17 |       1 |     2 |     0 |
-| with_gpa  | haiku  |     17 |       1 |     2 |     0 |
-| with_gpa  | sonnet |     15 |       2 |     3 |     0 |
+| with_bhdr  | haiku  |     17 |       1 |     2 |     0 |
+| with_bhdr  | sonnet |     15 |       2 |     3 |     0 |
 
 Timeouts appear for the first time in R6 (6/80) — the new `gpa` CLI
 prompt overhead and the harder carryovers pushed a handful of runs past
@@ -418,7 +418,7 @@ data-quality limited.
 
 ### Token & Cost Deltas — R5 vs R6
 
-Δ = `with_gpa − code_only` averages per model:
+Δ = `with_bhdr − code_only` averages per model:
 
 | Round | Model  | Δ cost     | Δ turns | Δ cache_read    | Δ cache_create |
 |-------|--------|------------|---------|------------------|----------------|
@@ -427,14 +427,14 @@ data-quality limited.
 | R6    | haiku  | **+$0.019** | +4.1    | **+251 K**        | −3 K           |
 | R6    | sonnet | **−$0.022** | −1.6    | **−64 K**         | +0 K           |
 
-- **Sonnet flipped sign on both axes.** with_gpa is now *cheaper* and
+- **Sonnet flipped sign on both axes.** with_bhdr is now *cheaper* and
   *lower-cache* than code_only. Δ cache_read went −121 K in absolute change
   versus R5 — directly confirming the substitution hypothesis for sonnet.
 - **Haiku improved but did not flip.** Δ cost halved ($0.048 → $0.019);
   Δ cache_read down 34 % (384 K → 251 K). The CLI helps, but haiku still
   does enough extra work with GPA that it costs more overall.
 
-### Pair-wise cost deltas (with_gpa minus code_only, same scenario)
+### Pair-wise cost deltas (with_bhdr minus code_only, same scenario)
 
 | Round | Model  | cheaper | costlier | net Δ total cost |
 |-------|--------|---------|----------|------------------|
@@ -449,7 +449,7 @@ costlier pairs lose — first time this flipped.
 
 ### CLI tool adoption
 
-- 19/20 with_gpa-haiku runs invoked `gpa` at least once; 19/20 for sonnet.
+- 19/20 with_bhdr-haiku runs invoked `gpa` at least once; 19/20 for sonnet.
   One haiku (r29) and one sonnet (r34) self-reported 0 GPA queries.
 - Mean self-reported queries/run: haiku 3.15 (down from 3.63 in R5),
   sonnet 4.60 (up from 4.47). The haiku drop is consistent with the
@@ -489,10 +489,10 @@ costlier pairs lose — first time this flipped.
 
 ### Verdict
 
-- **Sonnet hypothesis confirmed**: CLI flipped with_gpa from +$0.005 to
+- **Sonnet hypothesis confirmed**: CLI flipped with_bhdr from +$0.005 to
   −$0.022 per run with matched accuracy (85 % → 75 % — a regression, but
   sample noise likely explains it; r32 and r34 sonnet both timed out
-  near the 40-turn budget with with_gpa).
+  near the 40-turn budget with with_bhdr).
 - **Haiku hypothesis partially confirmed**: cost and cache_read deltas
   halved, but did not go negative. Haiku's narrow context seems to eat
   the prompt expansion (CLI documentation in the prompt costs ~500 tokens).
@@ -513,7 +513,7 @@ See `docs/superpowers/eval/round6-findings.md` for the discussion.
 - **Same 20 scenarios** as Rounds 5/6 (`/tmp/round5_scenarios.txt`), 2 modes x
   2 models = 80 runs, 40-turn budget, dispatched in parallel.
 - **New this round**: `claude -p --output-format stream-json --verbose` gives
-  us ordered per-turn tool-call records. Self-reported `gpa_queries_made` /
+  us ordered per-turn tool-call records. Self-reported `bhdr_queries_made` /
   `framework_files_opened` from Rounds 5/6 are retired. Numbers below come
   from the new parser in `src/python/bhdr/eval/telemetry.py` (commits 2ccff06
   and 6549c53).
@@ -529,11 +529,11 @@ See `docs/superpowers/eval/round6-findings.md` for the discussion.
 |------|-------|--:|--------:|----:|--------:|---------:|-------------:|----------:|
 | code_only | haiku  | 20 | 16 | 80.0 % | $0.2705 | 23.4 | 1,537,059 | 12,007 |
 | code_only | sonnet | 20 | 16 | 80.0 % | $0.4900 | 19.6 |   662,426 |  9,594 |
-| with_gpa  | haiku  | 20 | 13 | 65.0 % | $0.2820 | 27.6 | 1,759,116 |  9,772 |
-| with_gpa  | sonnet | 20 | 15 | 75.0 % | $0.3513 | 16.1 |   457,852 |  6,779 |
+| with_bhdr  | haiku  | 20 | 13 | 65.0 % | $0.2820 | 27.6 | 1,759,116 |  9,772 |
+| with_bhdr  | sonnet | 20 | 15 | 75.0 % | $0.3513 | 16.1 |   457,852 |  6,779 |
 
 Total cost: **$27.88** (R6 was $34.03, a −18 % drop driven almost entirely
-by Sonnet with_gpa — $0.5552 → $0.3513).
+by Sonnet with_bhdr — $0.5552 → $0.3513).
 
 #### Verdict breakdown
 
@@ -541,13 +541,13 @@ by Sonnet with_gpa — $0.5552 → $0.3513).
 |-----------|--------|-------:|--------:|------:|------:|
 | code_only | haiku  |     16 |       3 |     1 |     0 |
 | code_only | sonnet |     16 |       1 |     3 |     0 |
-| with_gpa  | haiku  |     13 |       7 |     0 |     0 |
-| with_gpa  | sonnet |     15 |       0 |     5 |     0 |
+| with_bhdr  | haiku  |     13 |       7 |     0 |     0 |
+| with_bhdr  | sonnet |     15 |       0 |     5 |     0 |
 
-R7's Haiku 65 % with_gpa accuracy is **entirely timeout-driven** (7/20
+R7's Haiku 65 % with_bhdr accuracy is **entirely timeout-driven** (7/20
 timeouts, 0 wrong answers) — the headline number masks a
 budget/closure problem, not a tool-misleads-agent problem. Sonnet
-with_gpa is the mirror image: 0 timeouts, 5 confidently-wrong answers.
+with_bhdr is the mirror image: 0 timeouts, 5 confidently-wrong answers.
 This split directly motivated R8's closure-signal work.
 
 ### R5 / R6 / R7 Accuracy Comparison
@@ -556,8 +556,8 @@ This split directly motivated R8's closure-signal work.
 |----------------|-------:|-------:|-------:|
 | code_only haiku  | 75 % | 80 % | 80 % |
 | code_only sonnet | 85 % | 85 % | 80 % |
-| with_gpa  haiku  | 80 % | 85 % | **65 %** |
-| with_gpa  sonnet | 80 % | 75 % | 75 % |
+| with_bhdr  haiku  | 80 % | 85 % | **65 %** |
+| with_bhdr  sonnet | 80 % | 75 % | 75 % |
 
 ### Cost / cache_read deltas vs R6
 
@@ -565,15 +565,15 @@ This split directly motivated R8's closure-signal work.
 |------|--------:|--------:|--:|--------------------:|
 | code_only haiku  | 0.2751 | 0.2705 | −0.005 | 1.54 M |
 | code_only sonnet | 0.5772 | 0.4900 | −0.087 | 0.66 M |
-| with_gpa  haiku  | 0.2941 | 0.2820 | −0.012 | 1.76 M |
-| with_gpa  sonnet | 0.5552 | 0.3513 | **−0.204** | 0.46 M |
+| with_bhdr  haiku  | 0.2941 | 0.2820 | −0.012 | 1.76 M |
+| with_bhdr  sonnet | 0.5552 | 0.3513 | **−0.204** | 0.46 M |
 
 **Haiku drill-hint hypothesis: not confirmed.** The average-cost Δ did
 shrink slightly, but paired-scenario Δ (both correct) went from
 −$0.022 in R6's sonnet cell to **+$0.001** in R7's haiku cell — Haiku
 still costs more with gpa than without it, at matched accuracy.
 
-Even worse, `with_gpa` Haiku accuracy **dropped from 85 % to 65 %**. Root
+Even worse, `with_bhdr` Haiku accuracy **dropped from 85 % to 65 %**. Root
 cause (see below): 7/20 runs hit the 40-turn cap and returned empty
 diagnoses. In R6 the equivalent number was much lower (estimated from
 cost-per-turn). More `gpa` calls + more `Read` calls pushed Haiku over
@@ -585,11 +585,11 @@ budget.
 |------|-------|----:|-----:|-----:|-----:|-----:|-----:|
 | code_only | haiku  | 0.0 | 0.0 |  7.5 | 2.4 | 0.8 |  9.8 |
 | code_only | sonnet | 0.0 | 0.0 |  5.7 | 8.9 | 0.7 |  2.4 |
-| with_gpa  | haiku  | **6.0** | 0.0 |  7.3 | 0.0 | 0.1 | **11.8** |
-| with_gpa  | sonnet | **5.2** | 0.1 |  4.0 | 3.7 | 0.3 |  1.1 |
+| with_bhdr  | haiku  | **6.0** | 0.0 |  7.3 | 0.0 | 0.1 | **11.8** |
+| with_bhdr  | sonnet | **5.2** | 0.1 |  4.0 | 3.7 | 0.3 |  1.1 |
 
 **`gpa report` did NOT replace Read / Grep for Haiku.** It's additive.
-Haiku with_gpa makes *as many* Read calls (7.3) as code_only Haiku
+Haiku with_bhdr makes *as many* Read calls (7.3) as code_only Haiku
 (7.5), and *more* Bash calls (11.8 vs 9.8 — the extras are `find`/`grep`
 shell pipelines against the upstream snapshot). Every `gpa` call is net
 new. Sonnet behaves more like we hoped: Read drops from 5.7 → 4.0, Grep
@@ -635,7 +635,7 @@ not negative as hypothesised.
 
 ### Qualitative findings
 
-1. **Haiku with `gpa` hits the turn cap.** 7/20 with_gpa Haiku runs hit
+1. **Haiku with `gpa` hits the turn cap.** 7/20 with_bhdr Haiku runs hit
    turns=41 (one over 40; claude counts the initial user turn separately)
    and emit an empty result — auto-scored as incorrect. The same 4
    scenarios regressed from correct-in-code-only to empty-in-with-gpa
@@ -644,7 +644,7 @@ not negative as hypothesised.
    `Bash(find/grep)` pipelines against the snapshot. Adding `gpa` doesn't
    replace the source-reading phase for Haiku; it just adds upstream work.
 2. **Sonnet "replaces" upstream search with `gpa` more aggressively.**
-   Sonnet with_gpa cuts Grep (8.9 → 3.7), Read (5.7 → 4.0), Bash (2.4 → 1.1)
+   Sonnet with_bhdr cuts Grep (8.9 → 3.7), Read (5.7 → 4.0), Bash (2.4 → 1.1)
    while adding 5.2 gpa calls — net tool-use is lower. This explains the
    $0.204 cost drop vs R6: less cache churn, fewer tokens per turn. Drill
    hints land well for Sonnet because Sonnet actually *follows* them
@@ -689,7 +689,7 @@ not negative as hypothesised.
 ### Setup
 
 - 15 scenarios × 2 modes × 2 models = **52 runs** (8 skipped for
-  with_gpa due to missing capture). Cost: **$21.32**.
+  with_bhdr due to missing capture). Cost: **$21.32**.
 - Primary set: 10 new state-collision mining scenarios (commit `f9bb3d6`)
   — feedback loops, bind-point collisions, state leaks, per-layer
   copy bugs, format/clear mismatches, pipeline-attachment mismatches.
@@ -708,8 +708,8 @@ not negative as hypothesised.
 |------------------------|---------|---------|----------|----------|
 | code_only · haiku      | 80.0%   | 86.7%   | $0.2705  | $0.3100  |
 | code_only · sonnet     | 80.0%   | 100.0%  | $0.4900  | $0.4999  |
-| with_gpa · haiku       | 65.0%   | 81.8%   | $0.2820  | $0.3237  |
-| with_gpa · sonnet      | 75.0%   | 100.0%  | $0.3513  | $0.5102  |
+| with_bhdr · haiku       | 65.0%   | 81.8%   | $0.2820  | $0.3237  |
+| with_bhdr · sonnet      | 75.0%   | 100.0%  | $0.3513  | $0.5102  |
 
 Raw accuracy is higher across the board, partly because (a) the state-
 collision scenarios are, by design, easier for a diligent code reader —
@@ -723,12 +723,12 @@ cleanly.
 |-----------|--------|-------:|--------:|------:|------:|
 | code_only | haiku  |     13 |       2 |     0 |     0 |
 | code_only | sonnet |     15 |       0 |     0 |     0 |
-| with_gpa  | haiku  |      9 |       2 |     0 |     0 |
-| with_gpa  | sonnet |     11 |       0 |     0 |     0 |
+| with_bhdr  | haiku  |      9 |       2 |     0 |     0 |
+| with_bhdr  | sonnet |     11 |       0 |     0 |     0 |
 
 Every R8 failure is a timeout — zero wrong-class and zero infra. The
 closure signal converted R7's wrong-class Sonnet failures into solves
-(5 → 0) and cut Haiku with_gpa timeouts from 7 → 2. Remaining timeouts
+(5 → 0) and cut Haiku with_bhdr timeouts from 7 → 2. Remaining timeouts
 cluster on the two scenarios where the warning surfaces a symptom but
 not the root cause (see `r10_feedback_loop`, `r13_cubecamera`).
 
@@ -738,8 +738,8 @@ not the root cause (see `r10_feedback_loop`, `r13_cubecamera`).
 |-----------|--------|-----|------|------|------|------|------|
 | code_only | haiku  | 0.0 | 0.0  | 7.0  | 2.2  | 0.2  | 13.0 |
 | code_only | sonnet | 0.0 | 0.0  | 6.9  | 7.7  | 0.8  | 1.7  |
-| with_gpa  | haiku  | 3.7 | 0.7  | 7.4  | 1.7  | 0.1  | 11.8 |
-| with_gpa  | sonnet | 2.9 | 0.0  | 6.1  | 6.1  | 0.2  | 1.8  |
+| with_bhdr  | haiku  | 3.7 | 0.7  | 7.4  | 1.7  | 0.1  | 11.8 |
+| with_bhdr  | sonnet | 2.9 | 0.0  | 6.1  | 6.1  | 0.2  | 1.8  |
 
 R7→R8 deltas in mean `gpa` calls: haiku 6.0 → 3.7 (−2.3), sonnet
 5.2 → 2.9 (−2.3). The closure signal is doing exactly what it was
@@ -769,12 +769,12 @@ per run.
 
 ### Haiku timeout count
 
-| Round | with_gpa timeouts | total | rate  |
+| Round | with_bhdr timeouts | total | rate  |
 |-------|-------------------|-------|-------|
 | R7    | 7                 | 20    | 35%   |
 | R8    | 2                 | 11    | 18%   |
 
-Haiku with_gpa accuracy recovered from 65% → 81.8% (target was ≥85%).
+Haiku with_bhdr accuracy recovered from 65% → 81.8% (target was ≥85%).
 Two remaining timeouts are in `r10_feedback_loop` and
 `r13_cubecamera` — both ran 41 turns; both made 5–6 `gpa` calls but
 then fell into 20+ Bash(find/grep) calls on the three.js snapshot.
@@ -804,7 +804,7 @@ issue the current checks don't cover, so neither short-circuited.
 ### Remaining gaps
 
 1. **Haiku still adds, doesn't substitute.** Mean Bash count is
-   11.8 for Haiku with_gpa vs 13.0 code_only — barely a dent. Haiku's
+   11.8 for Haiku with_bhdr vs 13.0 code_only — barely a dent. Haiku's
    behavior after `gpa report` looks the same as its code-only
    behavior: walk the snapshot with grep/find. The closure signal
    reduces the count of *subsequent* gpa calls but doesn't convince
@@ -845,9 +845,9 @@ issue the current checks don't cover, so neither short-circuited.
 ## Round 9
 
 First three-model matrix (haiku + sonnet + opus) with native `gpa trace`
-available to with_gpa agents. 21 scenarios planned, 20 C-repros + 1 browser
-pilot. Native trace enabled via `GPA_TRACE_NATIVE=1
-GPA_TRACE_NATIVE_STACK=1` on every capture.
+available to with_bhdr agents. 21 scenarios planned, 20 C-repros + 1 browser
+pilot. Native trace enabled via `BHDR_TRACE_NATIVE=1
+BHDR_TRACE_NATIVE_STACK=1` on every capture.
 
 ### Setup
 
@@ -860,11 +860,11 @@ GPA_TRACE_NATIVE_STACK=1` on every capture.
   only in the matrix.
 - **Browser pilot.** `r21_tile_id_overflow` — Phase 1 MVP pipeline
   stub. `gpa run-browser` launched Chromium, extension POSTed synthetic
-  sources (`sources=1 frames=0 gpa_done=False` from the browser runner,
+  sources (`sources=1 frames=0 bhdr_done=False` from the browser runner,
   exit 0 = clean run). The pipeline works end-to-end; Phase 2 will add
   a real WebGL capture.
 - **Dispatch.** 108 total agent runs (20 code_only × 3 models + 16
-  with_gpa × 3 models). Heavy rate-limiting from all three tiers — the
+  with_bhdr × 3 models). Heavy rate-limiting from all three tiers — the
   108-way parallel dispatch took ~22 minutes; no runs exceeded the
   single-run 15-minute timeout.
 - **Total cost.** $60.70 — well under the $120 ceiling. Opus came in at
@@ -877,11 +877,11 @@ GPA_TRACE_NATIVE_STACK=1` on every capture.
 | code_only | haiku  | 20 | 15 | 75.0% | $0.3681 | 27.1 | 4 |
 | code_only | sonnet | 20 | 14 | 70.0% | $0.5335 | 13.7 | 2 |
 | code_only | opus   | 20 | 18 | 90.0% | $0.7472 | 12.9 | 1 |
-| with_gpa  | haiku  | 16 | 12 | 75.0% | $0.3711 | 29.4 | 4 |
-| with_gpa  | sonnet | 16 | 13 | 81.2% | $0.6067 | 15.1 | 1 |
-| with_gpa  | opus   | 16 | 16 |**100%**| $0.7553 | 15.4 | 0 |
+| with_bhdr  | haiku  | 16 | 12 | 75.0% | $0.3711 | 29.4 | 4 |
+| with_bhdr  | sonnet | 16 | 13 | 81.2% | $0.6067 | 15.1 | 1 |
+| with_bhdr  | opus   | 16 | 16 |**100%**| $0.7553 | 15.4 | 0 |
 
-Opus with_gpa is the first cell in any round to hit **100% accuracy**
+Opus with_bhdr is the first cell in any round to hit **100% accuracy**
 across its entire subset.
 
 ### Verdict breakdown (mode × model)
@@ -891,9 +891,9 @@ across its entire subset.
 | code_only | haiku  | 15 | 4 | 1 | 0 |
 | code_only | sonnet | 14 | 2 | 4 | 0 |
 | code_only | opus   | 18 | 1 | 1 | 0 |
-| with_gpa  | haiku  | 12 | 4 | 0 | 0 |
-| with_gpa  | sonnet | 13 | 1 | 2 | 0 |
-| with_gpa  | opus   | 16 | 0 | 0 | 0 |
+| with_bhdr  | haiku  | 12 | 4 | 0 | 0 |
+| with_bhdr  | sonnet | 13 | 1 | 2 | 0 |
+| with_bhdr  | opus   | 16 | 0 | 0 | 0 |
 
 ### Cache + tokens per cell
 
@@ -902,9 +902,9 @@ across its entire subset.
 | code_only | haiku  | $0.3681 | 1,809,281 | 13,089 | 209 |
 | code_only | sonnet | $0.5335 | 1,293,528 | 11,351 | 497 |
 | code_only | opus   | $0.7472 |   568,904 |  8,023 |  17 |
-| with_gpa  | haiku  | $0.3711 | 1,960,300 | 11,114 | 230 |
-| with_gpa  | sonnet | $0.6067 | 1,032,827 | 11,958 |  37 |
-| with_gpa  | opus   | $0.7553 |   593,754 |  7,867 |  18 |
+| with_bhdr  | haiku  | $0.3711 | 1,960,300 | 11,114 | 230 |
+| with_bhdr  | sonnet | $0.6067 | 1,032,827 | 11,958 |  37 |
+| with_bhdr  | opus   | $0.7553 |   593,754 |  7,867 |  18 |
 
 ### Tool-call breakdown (mean per run, mode × model)
 
@@ -913,11 +913,11 @@ across its entire subset.
 | code_only | haiku  | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |  9.3 | 3.9 | 10.7 |
 | code_only | sonnet | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 14.1 | 8.2 |  8.8 |
 | code_only | opus   | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 | 0.0 |  4.6 | 4.2 |  2.3 |
-| with_gpa  | haiku  | 3.6 | 0.9 | 0.0 | 0.0 | 2.6 | 0.0 |  8.6 | 0.4 | 14.1 |
-| with_gpa  | sonnet | 2.1 | 1.0 | 0.1 | 0.1 | 0.9 | 0.0 | 17.8 | 5.5 | 18.2 |
-| with_gpa  | opus   | 3.1 | 0.9 | 0.0 | 0.0 | 2.2 | 0.2 |  4.3 | 2.8 |  3.3 |
+| with_bhdr  | haiku  | 3.6 | 0.9 | 0.0 | 0.0 | 2.6 | 0.0 |  8.6 | 0.4 | 14.1 |
+| with_bhdr  | sonnet | 2.1 | 1.0 | 0.1 | 0.1 | 0.9 | 0.0 | 17.8 | 5.5 | 18.2 |
+| with_bhdr  | opus   | 3.1 | 0.9 | 0.0 | 0.0 | 2.2 | 0.2 |  4.3 | 2.8 |  3.3 |
 
-`gpa trace` was called **once across all 48 with_gpa runs** (one sonnet
+`gpa trace` was called **once across all 48 with_bhdr runs** (one sonnet
 invocation). Despite being listed as the Preferred Step 2 in the prompt,
 agents consistently jumped from `gpa report` (step 1, 0.9 calls/run) to
 `gpa dump` (step 3, 0.9-2.6 calls/run) skipping trace entirely. See
@@ -928,11 +928,11 @@ agents consistently jumped from `gpa report` (step 1, 0.9 calls/run) to
 | Category | Mode | Haiku | Sonnet | Opus |
 |---|---|---|---|---|
 | state_collision | code_only  | 7/8 87.5% | 6/8 75.0% | 8/8 100% |
-| state_collision | with_gpa   | 3/4 75.0% | 3/4 75.0% | 4/4 100% |
+| state_collision | with_bhdr   | 3/4 75.0% | 3/4 75.0% | 4/4 100% |
 | source_logical  | code_only  | 5/8 62.5% | 4/8 50.0% | 6/8 75.0% |
-| source_logical  | with_gpa   | 6/8 75.0% | 6/8 75.0% | 8/8 **100%** |
+| source_logical  | with_bhdr   | 6/8 75.0% | 6/8 75.0% | 8/8 **100%** |
 | carryover       | code_only  | 3/4 75.0% | 4/4 100%  | 4/4 100% |
-| carryover       | with_gpa   | 3/4 75.0% | 4/4 100%  | 4/4 100% |
+| carryover       | with_bhdr   | 3/4 75.0% | 4/4 100%  | 4/4 100% |
 
 ### Subset paired deltas (both modes correct)
 
@@ -962,7 +962,7 @@ Sonnet's state-collision −$0.088/pair win from R8 **holds at −$0.090**.
 `r21_tile_id_overflow`: `gpa run-browser` launched Chromium against the
 Phase 1 MVP index.html; the WebGL extension POSTed the synthetic
 `sources` payload to the engine's reflection endpoint, then the HTML
-terminated. The runner reported `frames=0 sources=1 gpa_done=False
+terminated. The runner reported `frames=0 sources=1 bhdr_done=False
 timed_out=False duration=0.5s exit=0` — the end-to-end pipeline is
 wired, but Phase 1 is a scaffolding stub. No agent run was issued
 against the browser pilot (it's a capture-pipeline test, not a
@@ -971,11 +971,11 @@ diagnosis test).
 ### Verdict
 
 - **Hypothesis 1 (trace closes source-logical gap): CONFIRMED even
-  without trace.** R5-R8 all showed 0-of-4 source-logical wins with_gpa
-  in sonnet; R9 with_gpa hit **6/8 (sonnet), 6/8 (haiku), 8/8 (opus)**.
+  without trace.** R5-R8 all showed 0-of-4 source-logical wins with_bhdr
+  in sonnet; R9 with_bhdr hit **6/8 (sonnet), 6/8 (haiku), 8/8 (opus)**.
   The improvement is driven by `gpa report` surfacing state evidence
   that narrows the source search, not by trace — which was invoked
-  once across 48 with_gpa runs. The source-logical category accuracy
+  once across 48 with_bhdr runs. The source-logical category accuracy
   jumped without the intended tool being used.
 - **Hypothesis 2 (Opus capability ceiling): CONFIRMED.** Opus solved
   2 scenarios neither Sonnet nor Haiku reached (r17_viewport,
@@ -1007,10 +1007,10 @@ multi-file fixes. 9 framework-maintenance scenarios from commit
 
 ### Setup notes
 
-- Capture pipeline was broken across all 27 with_gpa runs — the runner
+- Capture pipeline was broken across all 27 with_bhdr runs — the runner
   pre-created the session directory with `mkdir -p` before calling
   `gpa start --session`, which rejects existing directories with
-  `FileExistsError`. Agents in `with_gpa` mode saw no session and had
+  `FileExistsError`. Agents in `with_bhdr` mode saw no session and had
   no GPA endpoint to call; the mode is effectively code_only + one
   extra `# Runtime session` line in the prompt.
 - Port-collision workaround worked as designed: each run calls
@@ -1029,11 +1029,11 @@ multi-file fixes. 9 framework-maintenance scenarios from commit
 | mode | haiku | sonnet | opus |
 |------|-------|--------|------|
 | code_only | 5/9 (56%) | 5/9 (56%) | 5/9 (56%) |
-| with_gpa  | 5/9 (56%) | 7/9 (78%) | 5/9 (56%) |
+| with_bhdr  | 5/9 (56%) | 7/9 (78%) | 5/9 (56%) |
 
-The 78% sonnet-with_gpa cell is the only cell that beats 56%. Because
-all 27 with_gpa captures failed (see Setup notes) and sonnet invoked
-zero real GPA endpoints on its two with_gpa wins, the +2 solves come
+The 78% sonnet-with_bhdr cell is the only cell that beats 56%. Because
+all 27 with_bhdr captures failed (see Setup notes) and sonnet invoked
+zero real GPA endpoints on its two with_bhdr wins, the +2 solves come
 from pure variance (sonnet's extended thinking burning on harder
 mapbox scenarios), not from GPA telemetry.
 
@@ -1042,28 +1042,28 @@ mapbox scenarios), not from GPA telemetry.
 | mode | haiku | sonnet | opus |
 |------|-------|--------|------|
 | code_only | 0.50 | 0.46 | 0.57 |
-| with_gpa  | 0.52 | 0.75 | 0.52 |
+| with_bhdr  | 0.52 | 0.75 | 0.52 |
 
 ### File-score distribution (fs=0.0 / partial / fs=1.0)
 
 | mode | haiku | sonnet | opus |
 |------|-------|--------|------|
 | code_only | 2/4/3 | 3/3/3 | 3/1/5 |
-| with_gpa  | 3/2/4 | 1/2/6 | 3/2/4 |
+| with_bhdr  | 3/2/4 | 1/2/6 | 3/2/4 |
 
 Partial credit fired on 14/54 runs (26%) — these are real multi-file
 fixes where the agent nominated 1 of 2 (fs=0.5) or 1–2 of 6–7 (fs=0.14
 to 0.33) ground-truth files. R2 (2-file fix) shows the canonical
 pattern: haiku/sonnet code_only got 0.5 (bloom.frag, missed texture.frag);
-with_gpa both got 1.0. R24 (2-file fix) shows the same split — opus
-code_only and sonnet with_gpa got both, the rest got 0.5.
+with_bhdr both got 1.0. R24 (2-file fix) shows the same split — opus
+code_only and sonnet with_bhdr got both, the rest got 0.5.
 
 ### Out-of-tree violations
 
 | mode | haiku | sonnet | opus |
 |------|-------|--------|------|
 | code_only | 0 | 0 | 0 |
-| with_gpa  | 0 | 0 | 0 |
+| with_bhdr  | 0 | 0 | 0 |
 
 **Zero out-of-tree rejections across all 54 runs.** The prompt's
 "Files MUST be paths inside the framework repo" clause was sufficient
@@ -1078,9 +1078,9 @@ surface.
 | code_only | haiku  | $0.374 | 2,142,576 | 12,127 | 29.6 |
 | code_only | sonnet | $0.713 | 1,046,777 | 14,581 | 15.9 |
 | code_only | opus   | $0.612 |   355,494 |  5,040 |  9.8 |
-| with_gpa  | haiku  | $0.337 | 2,220,933 |  9,616 | 29.8 |
-| with_gpa  | sonnet | $0.842 |   561,992 | 19,610 | 17.6 |
-| with_gpa  | opus   | $0.749 |   576,908 |  6,812 | 14.9 |
+| with_bhdr  | haiku  | $0.337 | 2,220,933 |  9,616 | 29.8 |
+| with_bhdr  | sonnet | $0.842 |   561,992 | 19,610 | 17.6 |
+| with_bhdr  | opus   | $0.749 |   576,908 |  6,812 | 14.9 |
 
 - Haiku's cache_read is ~4–6× higher than opus/sonnet: it makes more
   tool calls per run (mean 29.6 turns vs opus's 9.8) and re-reads
@@ -1088,7 +1088,7 @@ surface.
 - Opus's per-run cost ($0.61–0.75) is only ~1.7× haiku's ($0.34–0.37)
   and **below** sonnet's ($0.71–0.84). The R9 recalibration
   (`5.0 → 1.4` opus multiplier) holds on this cat-3 workload.
-- Sonnet-with_gpa cost jumped to $0.842/run (from $0.713 code_only) —
+- Sonnet-with_bhdr cost jumped to $0.842/run (from $0.713 code_only) —
   this is the extended-thinking burn on r17_mapbox and r18_raster
   that eventually solved them.
 
@@ -1097,21 +1097,21 @@ surface.
 | mode | model | non-zero runs | total calls / 9 runs |
 |------|-------|--------------:|---------------------:|
 | code_only | all | 0 | 0 (as expected) |
-| with_gpa  | haiku  | 0 | 0 |
-| with_gpa  | sonnet | 0 | 0 |
-| with_gpa  | opus   | 1 | 2 |
+| with_bhdr  | haiku  | 0 | 0 |
+| with_bhdr  | sonnet | 0 | 0 |
+| with_bhdr  | opus   | 1 | 2 |
 
-**Of 27 with_gpa runs, 1 attempted a real `gpa` call** (opus on
+**Of 27 with_bhdr runs, 1 attempted a real `gpa` call** (opus on
 r17_mapbox, two `gpa report --json` invocations). Every other
-with_gpa agent — including both sonnet runs that solved an otherwise
+with_bhdr agent — including both sonnet runs that solved an otherwise
 unsolved scenario — used only `Read` / `Grep` / `Glob` / `Bash
 find|grep` on the snapshot. Given the capture-pipeline bug above,
 this is the worst-case outcome: even when the prompt promises GPA,
-agents with a readable snapshot ignore it. R9 saw 1/48 with_gpa
+agents with a readable snapshot ignore it. R9 saw 1/48 with_bhdr
 agents call `gpa trace`; R10 sees 1/27 call any GPA endpoint. Pattern
 is consistent.
 
-### Tool-call breakdown (mean / run, across with_gpa × model)
+### Tool-call breakdown (mean / run, across with_bhdr × model)
 
 | model | Read | Grep | Bash | Glob | Agent | gpa |
 |-------|-----:|-----:|-----:|-----:|------:|----:|
@@ -1141,7 +1141,7 @@ more aggressively, opus makes pointier picks. Haiku's high Bash count
   r24_logdepth. Easy — agent nominated the framework file the issue
   body already named.
 - **Single-cell solves** (2 scenarios): r17_mapbox and r18_raster,
-  both only by sonnet with_gpa. Sonnet burned 40+ turns and extended
+  both only by sonnet with_bhdr. Sonnet burned 40+ turns and extended
   thinking to triangulate these, with no GPA calls. The win is the
   thinking budget, not the telemetry surface.
 - **Zero-solve** (2 scenarios): r14_shadows and r17_clipping. The
@@ -1164,9 +1164,9 @@ more aggressively, opus makes pointier picks. Haiku's high Bash count
   reported file path in the issue body." 4 of the 5 six-way-solve
   scenarios contain the fix file path verbatim in the user report.
 - **Not the GPA signal we wanted:** the capture pipeline was broken
-  for all 27 with_gpa runs so we cannot compare with_gpa vs code_only
+  for all 27 with_bhdr runs so we cannot compare with_bhdr vs code_only
   in this round. The clean keyword-independence is a win; the
-  with_gpa–code_only delta is not a GPA result, and must be re-run
+  with_bhdr–code_only delta is not a GPA result, and must be re-run
   with working captures before any claim about GPA utility on
   maintenance workloads.
 
@@ -1199,8 +1199,8 @@ more aggressively, opus makes pointier picks. Haiku's high Bash count
 ## Round 10v2 + Round 11 — Maintainer-framing on real capture + breadcrumb design (2026-04-24)
 
 Combined dispatch of two scenario sets, **66 runs** total
-(11 scen × 3 tiers × 2 modes). First eval where with_gpa actually has GPA
-capture wired (after R10's silent capture failure that made all 27 with_gpa
+(11 scen × 3 tiers × 2 modes). First eval where with_bhdr actually has GPA
+capture wired (after R10's silent capture failure that made all 27 with_bhdr
 runs effectively code_only).
 
 **Set A — R10v2 keepers (6 scenarios):** R10's 9 minus 3 that leaked the
@@ -1217,7 +1217,7 @@ naming the value the agent should reverse-look-up.
   workaround completely — zero port conflicts across 66 parallel sessions.
 - Session-dir empty-existing fix (`587b3c5`) made `mkdir -p` + `gpa start`
   idempotent, fixing R10's primary capture-pipeline bug.
-- The runner injects a stronger breadcrumb-style hint into the with_gpa
+- The runner injects a stronger breadcrumb-style hint into the with_bhdr
   prompt at dispatch time (without modifying the in-repo
   `maintainer_framing.md` template), suggesting `trace/value?query=<literal>`
   as the recommended workflow.
@@ -1231,13 +1231,13 @@ naming the value the agent should reverse-look-up.
 
 The fix-applied infrastructure works for *single* runs but the GL shim's
 IPC handshake fails when many bazel-bin processes connect to per-session
-sockets simultaneously. **Of 33 with_gpa runs, only 9 (27%) had a frame
+sockets simultaneously. **Of 33 with_bhdr runs, only 9 (27%) had a frame
 captured**; the other 24 saw `[OpenGPA] handshake send failed` and the
 final-prompt logged "no frames captured" warning.
 
-Cross-tab on the 33 with_gpa runs:
+Cross-tab on the 33 with_bhdr runs:
 
-| capture state | n  | solved% | trace_called | gpa_calls (total) | avg_cost |
+| capture state | n  | solved% | trace_called | bhdr_calls (total) | avg_cost |
 |---------------|---:|--------:|-------------:|------------------:|---------:|
 | captured      |  9 |  56%    |     2/9 (22%) |              22    |  $0.46   |
 | no_capture    | 24 |  67%    |     0/24 (0%) |               9    |  $0.61   |
@@ -1258,9 +1258,9 @@ scenario) had 1/6.
 | code_only | haiku  |   50.0%  |  0.42  |  0/6    |     0     | $0.34    | 1.81M   |
 | code_only | sonnet |   66.7%  |  0.60  |  0/6    |     0     | $0.52    | 1.30M   |
 | code_only | opus   |   50.0%  |  0.50  |  0/6    |     0     | $0.61    | 0.35M   |
-| with_gpa  | haiku  |   50.0%  |  0.42  |  0/6    |     6     | $0.32    | 2.01M   |
-| with_gpa  | sonnet |   66.7%  |  0.67  |  0/6    |     1     | $0.60    | 1.13M   |
-| with_gpa  | opus   |   50.0%  |  0.52  |  0/6    |     2     | $0.78    | 0.63M   |
+| with_bhdr  | haiku  |   50.0%  |  0.42  |  0/6    |     6     | $0.32    | 2.01M   |
+| with_bhdr  | sonnet |   66.7%  |  0.67  |  0/6    |     1     | $0.60    | 1.13M   |
+| with_bhdr  | opus   |   50.0%  |  0.52  |  0/6    |     2     | $0.78    | 0.63M   |
 
 **R10v2 reproduces R10's per-scenario solve pattern exactly:**
 r2/r11_bloom/r11_ubo all 6/6, r14 0/6, r17_mapbox & r18_raster
@@ -1280,13 +1280,13 @@ leverage in either regime.
 | code_only | haiku  |   80.0%  |  0.70  |  0/5    |     0     | $0.31    | 1.72M   |
 | code_only | sonnet |   80.0%  |  0.80  |  0/5    |     0     | $0.41    | 0.08M   |
 | code_only | opus   |   80.0%  |  0.70  |  0/5    |     0     | $0.58    | 0.27M   |
-| with_gpa  | haiku  |   80.0%  |  0.70  |  **2/5** |    19    | $0.24    | 1.53M   |
-| with_gpa  | sonnet |   60.0%  |  0.57  |  0/5    |     1     | $0.67    | 0.58M   |
-| with_gpa  | opus   |   80.0%  |  0.70  |  0/5    |     2     | $0.78    | 0.65M   |
+| with_bhdr  | haiku  |   80.0%  |  0.70  |  **2/5** |    19    | $0.24    | 1.53M   |
+| with_bhdr  | sonnet |   60.0%  |  0.57  |  0/5    |     1     | $0.67    | 0.58M   |
+| with_bhdr  | opus   |   80.0%  |  0.70  |  0/5    |     2     | $0.78    | 0.65M   |
 
 **Per-scenario breadcrumb matrix (R11 set):**
 
-| scenario | code_h | code_s | code_o | gpa_h | gpa_s | gpa_o | trace_used? |
+| scenario | code_h | code_s | code_o | bhdr_h | bhdr_s | bhdr_o | trace_used? |
 |----------|:------:|:------:|:------:|:-----:|:-----:|:-----:|:------------|
 | r53 hemilightprobe   |  n  |  n  |  n  |  **Y**(Y) | n | n | haiku queried `intensity`; pinpointed both files |
 | r54 black_squares    |  Y  |  Y  |  Y  |  Y  |  Y  |  Y  | none |
@@ -1297,7 +1297,7 @@ leverage in either regime.
 (Y) marks the runs where `trace_value_called=True`.
 
 **The breadcrumb design works exactly as predicted on r53 haiku:**
-code_only Haiku failed (0/6 across modes/models), but with_gpa Haiku
+code_only Haiku failed (0/6 across modes/models), but with_bhdr Haiku
 called `gpa trace value query=intensity` and a `frames/latest/overview`,
 then nominated both `AmbientLightProbe.js` and `HemisphereLightProbe.js`
 correctly. file_score = 1.00. **r53 is the first time in any round where
@@ -1308,7 +1308,7 @@ this is the first GPA-evidence-driven solve in the eval history.
 **But it only worked on 1 of 5 R11 breadcrumb scenarios.** r54, r56, and
 r57 were already easy enough for code_only at 80%+ (the bug or fix file
 is named in the issue body or the framework structure makes search
-trivial). r55 had a code_only baseline of 100% so the `Y` for haiku-with_gpa
+trivial). r55 had a code_only baseline of 100% so the `Y` for haiku-with_bhdr
 isn't a flip, just a parallel solve that *also* used trace.
 
 ### Trace-value usage
@@ -1317,7 +1317,7 @@ isn't a flip, just a parallel solve that *also* used trace.
 |----------------------|------:|-------:|-----:|------:|
 | with frames captured |  2/2  |  0/3   |  0/4 |  2/9  |
 | no frames captured   |  0/9  |  0/8   |  0/7 |  0/24 |
-| **all with_gpa**     | **2/11** | **0/11** | **0/11** | **2/33 (6%)** |
+| **all with_bhdr**     | **2/11** | **0/11** | **0/11** | **2/33 (6%)** |
 
 **Only haiku used `trace value`.** Sonnet and opus made `gpa report`
 or `frames/<id>/overview` calls but never invoked `trace`. R9 had 1/48,
@@ -1334,35 +1334,35 @@ single-digit percentage even with explicit prompt encouragement.
 
 R11 set is *cheaper* per run because the bugs are simpler (single-file or
 2–3-file fixes vs R10v2's r17_mapbox 6-file ground truth). Sonnet
-with_gpa on R11 (60% vs code_only's 80%) and high cost ($0.67 avg) is the
+with_bhdr on R11 (60% vs code_only's 80%) and high cost ($0.67 avg) is the
 only regression cell — sonnet went down a wrong path on r55 (got 1/3
 files) and r57 (graded as wrong-class), and the extended-thinking retry
 burned tokens chasing it.
 
 ### Per-mode-model cache_read deltas (R10v2 + R11 combined, 11 runs/cell)
 
-| model  | code_only cache_M | with_gpa cache_M | delta |
+| model  | code_only cache_M | with_bhdr cache_M | delta |
 |--------|------------------:|-----------------:|------:|
 | haiku  |   1.77            |   1.79           |   +1% |
 | sonnet |   0.74            |   0.85           |  +14% |
 | opus   |   0.31            |   0.71           | +130% |
 
-Opus's 2.3× cache_read increase in with_gpa mode is the runtime-prompt
+Opus's 2.3× cache_read increase in with_bhdr mode is the runtime-prompt
 metadata (Runtime session block + capture status note + GPA workflow
 hint) being re-cached per turn. Even so, opus's absolute cache_read
 remains the lowest of the three tiers.
 
 ### Open scenarios in R11 (regressions or stuck cells)
 
-- **r53**: 5/6 cells failed. Only haiku-with_gpa solved via trace.
-  sonnet/opus with_gpa each had capture but didn't use trace, then went
+- **r53**: 5/6 cells failed. Only haiku-with_bhdr solved via trace.
+  sonnet/opus with_bhdr each had capture but didn't use trace, then went
   down `LightProbe.js` (the parent class) and missed both subclass files.
-- **r57 haiku with_gpa**: code_only solved at 100% on all 3 tiers, but
-  haiku-with_gpa got `wrong_class` (proposed editing
+- **r57 haiku with_bhdr**: code_only solved at 100% on all 3 tiers, but
+  haiku-with_bhdr got `wrong_class` (proposed editing
   `examples/jsm/transcoders/ktx2-transcoder.js` rather than
   `examples/jsm/loaders/KTX2Loader.js`). The capture prompt distracted
   the agent from the obvious source-grep path.
-- **r55 sonnet with_gpa**: code_only 100% on all 3 tiers, sonnet-with_gpa
+- **r55 sonnet with_bhdr**: code_only 100% on all 3 tiers, sonnet-with_bhdr
   fscore=0.33 (1 of 3 files). Same pattern: the runtime hint pushed the
   agent toward the shader chunk only, missing the two WebGL files.
 
@@ -1370,9 +1370,9 @@ remains the lowest of the three tiers.
 
 |                       | R10v2 (set A) | R11 (set B) |
 |-----------------------|--------------:|------------:|
-| mean solved% (with_gpa) |       55.6% |     73.3%  |
+| mean solved% (with_bhdr) |       55.6% |     73.3%  |
 | mean solved% (code_only)|       55.6% |     80.0%  |
-| trace usage (with_gpa)  |        0/18 |     2/15   |
+| trace usage (with_bhdr)  |        0/18 |     2/15   |
 | GPA tool calls (total)  |          9  |       22   |
 | total cost             |       $19.03 |    $14.94   |
 | avg cost per pair      |       $1.06  |    $0.99    |
@@ -1388,7 +1388,7 @@ effect for most cells.
 ### Top 3 findings
 
 1. **First GPA-evidence-driven solve in eval history (r53 haiku).**
-   Code_only could not solve at any tier; haiku-with_gpa called
+   Code_only could not solve at any tier; haiku-with_bhdr called
    `trace/value?query=intensity`, located both `*LightProbe.js` files,
    scored fscore=1.0. This is the proof of concept the breadcrumb
    design targeted. The same scenario was unsolved by sonnet/opus at
@@ -1592,7 +1592,7 @@ on these mined scenarios. This session's three fixes
 (`2d6dd94` graceful capture, `34e4472` loader scenario.yaml backfill,
 `3cf7920` parent-SHA + snapshot_root threading) unblocked the path:
 with_gla now clones the upstream repo at the bug state (`<fix_sha>^`)
-and pins `GPA_UPSTREAM_ROOT` so `gpa upstream read/grep/list` works
+and pins `BHDR_UPSTREAM_ROOT` so `gpa upstream read/grep/list` works
 against the actual buggy framework code.
 
 **Same 14 scenarios, same backend (`claude-cli` opus-4-7), with_gla

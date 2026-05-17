@@ -1,5 +1,5 @@
-#ifndef GPA_GL_WRAPPERS_H
-#define GPA_GL_WRAPPERS_H
+#ifndef BHDR_GL_WRAPPERS_H
+#define BHDR_GL_WRAPPERS_H
 
 #include <stdint.h>
 
@@ -77,13 +77,13 @@ typedef struct {
 
     // EGL (chromium / Wayland / Android-style stacks; opaque void* avoids EGL headers)
     unsigned int (*eglSwapBuffers)(void* dpy, void* surface);
-} GpaRealGlFuncs;
+} BhdrRealGlFuncs;
 
 // Global dispatch table (defined in gl_shim.c)
-extern GpaRealGlFuncs gpa_real_gl;
+extern BhdrRealGlFuncs bhdr_real_gl;
 
 // Initialize dispatch table (called from constructor)
-void gpa_wrappers_init(void);
+void bhdr_wrappers_init(void);
 
 /* Programmatic frame trigger.
  *
@@ -95,9 +95,9 @@ void gpa_wrappers_init(void);
  * Use case: offscreen GL contexts (headless-gl, EGL pbuffer, FBO-only
  * pipelines) that never call glXSwapBuffers and therefore would otherwise
  * never emit a frame. The host process dlopen()s the shim, dlsym()s
- * gpa_emit_frame, and calls it once per logical frame.
+ * bhdr_emit_frame, and calls it once per logical frame.
  *
  * Safe to call from any thread that owns the current GL context. */
-void gpa_emit_frame(void);
+void bhdr_emit_frame(void);
 
-#endif // GPA_GL_WRAPPERS_H
+#endif // BHDR_GL_WRAPPERS_H

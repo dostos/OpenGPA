@@ -104,7 +104,7 @@ def _injected(http_client: TestClient) -> RestClient:
 
 class TestFramesCli:
     def test_basic_invocation_lists_one_id(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=1, valid_ids={1})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -113,7 +113,7 @@ class TestFramesCli:
         assert buf.getvalue() == "1\n"
 
     def test_multiple_frames_one_per_line(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=4, valid_ids={2, 3, 4})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -122,7 +122,7 @@ class TestFramesCli:
         assert buf.getvalue() == "2\n3\n4\n"
 
     def test_json_output(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=3, valid_ids={1, 2, 3})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -135,7 +135,7 @@ class TestFramesCli:
 
     def test_empty_session_clean_exit(self, session_dir, monkeypatch):
         """No frames captured → empty output, exit 0 (not an error)."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=None, valid_ids=set())
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -145,7 +145,7 @@ class TestFramesCli:
 
     def test_empty_session_json_output(self, session_dir, monkeypatch):
         """Empty session in JSON mode emits ``{"frames": [], "count": 0}``."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=None, valid_ids=set())
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -159,7 +159,7 @@ class TestFramesCli:
     def test_missing_session_exit_2(self, tmp_path, monkeypatch):
         """No active session → exit 2."""
         from bhdr.cli import session as session_mod
-        monkeypatch.delenv("GPA_SESSION", raising=False)
+        monkeypatch.delenv("BHDR_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
             str(tmp_path / "no-such-link"),
@@ -175,7 +175,7 @@ class TestFramesCli:
 class TestFramesList:
     def test_list_default_json(self, session_dir, monkeypatch):
         """``frames list`` with no flags defaults to JSON output."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=3, valid_ids={1, 2, 3})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -189,7 +189,7 @@ class TestFramesList:
 
     def test_list_json_flag(self, session_dir, monkeypatch):
         """``frames list --json`` returns JSON envelope."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=2, valid_ids={1, 2})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -204,7 +204,7 @@ class TestFramesList:
 
     def test_list_text_flag(self, session_dir, monkeypatch):
         """``frames list --text`` returns one id per line."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=3, valid_ids={1, 2, 3})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -218,7 +218,7 @@ class TestFramesList:
 
     def test_list_text_overrides_json(self, session_dir, monkeypatch):
         """If both --text and --json, --text wins (text is the opt-in)."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=1, valid_ids={1})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -238,8 +238,8 @@ class TestFramesList:
 class TestFramesOverview:
     def test_overview_latest(self, session_dir, monkeypatch):
         """``frames overview`` with no --frame falls back to REST current."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
-        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
+        monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
         qe = _make_qe(latest_id=5, valid_ids={5})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -252,8 +252,8 @@ class TestFramesOverview:
 
     def test_overview_specific_frame(self, session_dir, monkeypatch):
         """``frames overview --frame 7`` calls the right URL."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
-        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
+        monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
         qe = _make_qe(latest_id=10, valid_ids={7, 10})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -265,9 +265,9 @@ class TestFramesOverview:
         assert data["frame_id"] == 7
 
     def test_overview_env_frame(self, session_dir, monkeypatch):
-        """GPA_FRAME_ID env var is used when --frame is not given."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
-        monkeypatch.setenv("GPA_FRAME_ID", "3")
+        """BHDR_FRAME_ID env var is used when --frame is not given."""
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_FRAME_ID", "3")
         qe = _make_qe(latest_id=5, valid_ids={3, 5})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -286,7 +286,7 @@ class TestFramesOverview:
 class TestFramesCheckConfig:
     def test_check_config_delegates(self, session_dir, injected_rest, monkeypatch):
         """``frames check-config --frame 1`` delegates to check_config.run()."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         stdin = io.StringIO("")  # prevent pytest stdin capture error
         rc = frames_cmd.run_check_config(
@@ -307,7 +307,7 @@ class TestFramesCheckConfig:
 
     def test_check_config_no_frame(self, session_dir, injected_rest, monkeypatch):
         """``frames check-config`` without --frame uses latest."""
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         buf = io.StringIO()
         stdin = io.StringIO("")  # prevent pytest stdin capture error
         rc = frames_cmd.run_check_config(
@@ -334,7 +334,7 @@ class TestBareFramesAlias:
     ):
         """Bare ``gpa frames`` emits deprecation warning to stderr."""
         import argparse
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=1, valid_ids={1})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -357,7 +357,7 @@ class TestBareFramesAlias:
     ):
         """Bare ``gpa frames`` still lists frames (alias behavior)."""
         import argparse
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         qe = _make_qe(latest_id=2, valid_ids={1, 2})
         http = _make_test_client(qe)
         buf = io.StringIO()
@@ -408,7 +408,7 @@ def _cap_client(**extra):
 
 class TestFramesMetadata:
     def test_metadata_get_hits_correct_url(self, monkeypatch):
-        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
         client = _cap_client()
         buf = io.StringIO()
         rc = frames_cmd.run_metadata_get(client=client, frame=None, print_stream=buf)
@@ -416,7 +416,7 @@ class TestFramesMetadata:
         assert ("GET", f"/api/v1/frames/{_CAP_FID}/metadata") in client.calls
 
     def test_metadata_set_via_body_json(self, monkeypatch):
-        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
         client = _cap_client()
         buf = io.StringIO()
         rc = frames_cmd.run_metadata_set(
@@ -430,7 +430,7 @@ class TestFramesMetadata:
                    for c in client.calls)
 
     def test_metadata_set_via_file(self, monkeypatch, tmp_path):
-        monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+        monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
         data = {"framework": "unity"}
         json_file = tmp_path / "meta.json"
         json_file.write_text(json.dumps(data))

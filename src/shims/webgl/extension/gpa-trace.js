@@ -20,7 +20,7 @@
   var BUDGET_MS = 2.0;
   var SECRET_RE = /token|apikey|api_key|password|secret|bearer/i;
   // POST target — relative to the engine's REST API. Hardcoded to the
-  // common dev port; users override via localStorage.GPA_TRACE_ENDPOINT.
+  // common dev port; users override via localStorage.BHDR_TRACE_ENDPOINT.
   var DEFAULT_ENDPOINT = 'http://127.0.0.1:18080/api/v1';
 
   // ---- state ---------------------------------------------------------
@@ -306,7 +306,7 @@
 
   function readMode() {
     try {
-      var m = window.localStorage && window.localStorage.GPA_TRACE_MODE;
+      var m = window.localStorage && window.localStorage.BHDR_TRACE_MODE;
       if (m === 'lazy' || m === 'gated' || m === 'eager') return m;
     } catch (_) { /* no localStorage */ }
     return 'gated';
@@ -314,7 +314,7 @@
 
   function readEndpoint() {
     try {
-      var e = window.localStorage && window.localStorage.GPA_TRACE_ENDPOINT;
+      var e = window.localStorage && window.localStorage.BHDR_TRACE_ENDPOINT;
       if (e) return e;
     } catch (_) { /* ignore */ }
     return DEFAULT_ENDPOINT;
@@ -322,7 +322,7 @@
 
   function readToken() {
     try {
-      var t = window.localStorage && window.localStorage.GPA_TRACE_TOKEN;
+      var t = window.localStorage && window.localStorage.BHDR_TRACE_TOKEN;
       if (t) return t;
     } catch (_) { /* ignore */ }
     return '';
@@ -352,9 +352,9 @@
     _hashValue: hashValue,
   };
 
-  // If the page sets GPA_TRACE_MODE before load, auto-enable.
+  // If the page sets BHDR_TRACE_MODE before load, auto-enable.
   try {
-    if (window.localStorage && window.localStorage.GPA_TRACE_MODE) {
+    if (window.localStorage && window.localStorage.BHDR_TRACE_MODE) {
       enable();
     }
   } catch (_) { /* ignore */ }

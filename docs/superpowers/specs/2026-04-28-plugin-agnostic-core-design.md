@@ -27,7 +27,7 @@ those boundaries:
 |---|------|----------|
 | 1 | `src/python/bhdr/api/trace_ranking.py:35-47` | `FRAMEWORK_HINT_PATTERNS` regex allowlist (`THREE.uniforms.*`, `map._transform.*`, `app.stage.*`) bumps confidence tier on framework-shaped paths |
 | 2 | `src/python/bhdr/cli/main.py:283-284` | `gpa trace value` help text: *"Requires the WebGL shim (gpa-trace.js)"* — implies WebGL-only when native DWARF backend also feeds the same endpoint |
-| 3 | `src/python/bhdr/mcp/server.py:189, 237` | MCP `gpa_trace_value` description mirrors the WebGL-only claim and gives JS-specific examples (mapbox tile cache) |
+| 3 | `src/python/bhdr/mcp/server.py:189, 237` | MCP `bhdr_trace_value` description mirrors the WebGL-only claim and gives JS-specific examples (mapbox tile cache) |
 | 4 | `src/python/bhdr/cli/commands/scene_find.py:83, 183` | CLI Examples block + error hint cite `src/python/bhdr/framework/threejs_link_plugin.js` by name |
 
 Phase 1 (this spec) removes the four couplings. Phase 2 (deferred) will

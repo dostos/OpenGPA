@@ -34,7 +34,7 @@ def render_prompt(
     rendering helpers (maintainer / advisor / config_advice). All three
     templates share the same ``{framework}`` / ``{user_report}`` /
     ``{upstream_snapshot.*}`` / ``{scope_hint_block}`` placeholders and
-    the same ``<!-- WITH_GPA_ONLY -->`` gating block; the differences
+    the same ``<!-- WITH_BHDR_ONLY -->`` gating block; the differences
     live entirely in the role intro, task body, and output JSON schema.
 
     Args:
@@ -61,17 +61,17 @@ def render_prompt(
     repo = upstream_snapshot_repo or "(no snapshot repo configured)"
     sha = upstream_snapshot_sha or "HEAD"
 
-    # Strip the ``<!-- WITH_GPA_ONLY -->`` gated block for code_only mode.
+    # Strip the ``<!-- WITH_BHDR_ONLY -->`` gated block for code_only mode.
     # The template uses HTML comments so we can handle the substitution
     # deterministically without a full templating engine.
     if mode == "with_gla":
-        template = template.replace("<!-- WITH_GPA_ONLY -->", "").replace(
-            "<!-- END_WITH_GPA_ONLY -->", ""
+        template = template.replace("<!-- WITH_BHDR_ONLY -->", "").replace(
+            "<!-- END_WITH_BHDR_ONLY -->", ""
         )
     else:
         import re as _re
         template = _re.sub(
-            r"<!-- WITH_GPA_ONLY -->.*?<!-- END_WITH_GPA_ONLY -->\n?",
+            r"<!-- WITH_BHDR_ONLY -->.*?<!-- END_WITH_BHDR_ONLY -->\n?",
             "",
             template,
             flags=_re.DOTALL,

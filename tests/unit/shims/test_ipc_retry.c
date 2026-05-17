@@ -1,7 +1,7 @@
 /* Unit tests for the IPC connect-with-backoff retry loop in
  * src/shims/gl/ipc_client.c.
  *
- * Background: under high parallel load (R10v2+R11 ran 33 with_gpa scenarios
+ * Background: under high parallel load (R10v2+R11 ran 33 with_bhdr scenarios
  * in parallel, 24/33 hit "[OpenGPA] handshake send failed") the original
  * single-shot connect() to the engine's Unix socket would fail under kernel
  * socket-backlog pressure with no recovery. We added a backoff retry loop
@@ -231,7 +231,7 @@ static void test_connect_succeeds_on_first_try(void) {
     while (!S.bound) { usleep(1000); }
 
     long long t0 = now_ms();
-    int rc = gpa_ipc_connect_socket_with_retry(S.path);
+    int rc = bhdr_ipc_connect_socket_with_retry(S.path);
     long long elapsed = now_ms() - t0;
 
     pthread_join(tid, NULL);
@@ -258,7 +258,7 @@ static void test_connect_succeeds_on_third_try(void) {
     while (!S.ready) { usleep(1000); }
 
     long long t0 = now_ms();
-    int rc = gpa_ipc_connect_socket_with_retry(S.path);
+    int rc = bhdr_ipc_connect_socket_with_retry(S.path);
     long long elapsed = now_ms() - t0;
 
     pthread_join(tid, NULL);
@@ -278,7 +278,7 @@ static void test_connect_exhausts_retries(void) {
     /* No listener at all — every connect() should fail with ENOENT. */
 
     long long t0 = now_ms();
-    int rc = gpa_ipc_connect_socket_with_retry(path);
+    int rc = bhdr_ipc_connect_socket_with_retry(path);
     long long elapsed = now_ms() - t0;
 
     assert(rc == -1);
@@ -300,7 +300,7 @@ static void test_no_logs_on_intermediate_failures(void) {
         return;
     }
 
-    int rc = gpa_ipc_connect_socket_with_retry(path);
+    int rc = bhdr_ipc_connect_socket_with_retry(path);
 
     char captured[2048];
     int  captured_len = restore_stderr(saved_fd, read_fd, captured, sizeof(captured));

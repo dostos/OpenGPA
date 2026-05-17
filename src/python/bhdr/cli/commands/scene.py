@@ -54,7 +54,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="scene_cmd", required=True)
@@ -62,17 +62,17 @@ def add_subparser(subparsers) -> None:
     # ---- get ----
     p_get = sub.add_parser("get", help="Full scene data from Tier 3 metadata (JSON)")
     p_get.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
 
     # ---- camera ----
     p_camera = sub.add_parser("camera", help="Camera parameters (JSON)")
     p_camera.add_argument("--frame", default=None,
-                          help="Frame id (default: GPA_FRAME_ID env or latest)")
+                          help="Frame id (default: BHDR_FRAME_ID env or latest)")
 
     # ---- objects ----
     p_objects = sub.add_parser("objects", help="Scene objects list (JSON)")
     p_objects.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_objects.add_argument("--limit", type=int, default=None,
                            help="Maximum number of objects to return")
     p_objects.add_argument("--offset", type=int, default=None,
@@ -81,7 +81,7 @@ def add_subparser(subparsers) -> None:
     # ---- find ----
     p_find = sub.add_parser("find", help="Predicate-driven scene-graph search (JSON)")
     p_find.add_argument("--frame", default=None,
-                        help="Frame id (default: GPA_FRAME_ID env or latest)")
+                        help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_find.add_argument("--predicate", required=True,
                         help="Comma-separated predicate(s) (e.g. material:transparent)")
     p_find.add_argument("--limit", type=int, default=10,
@@ -90,7 +90,7 @@ def add_subparser(subparsers) -> None:
     # ---- explain ----
     p_explain = sub.add_parser("explain", help="Pixel→draw→node trace (JSON)")
     p_explain.add_argument("--frame", default=None,
-                           help="Frame id (default: GPA_FRAME_ID env or latest)")
+                           help="Frame id (default: BHDR_FRAME_ID env or latest)")
     p_explain.add_argument("--x", type=int, required=True,
                            help="Pixel x coordinate")
     p_explain.add_argument("--y", type=int, required=True,

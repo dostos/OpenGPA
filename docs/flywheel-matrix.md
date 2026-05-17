@@ -125,8 +125,8 @@ Each row tags the dominant category + key finding. Full detail in
 | R6 (20 scen) | mixed (mis-labeled) | First Sonnet win (−$0.022/pair) after CLI shipped |
 | R7 (20 scen) | mixed (mis-labeled) | Stream-json telemetry revealed Haiku timeouts vs Sonnet wrong-class |
 | R8 (15 scen) | `graphics-lib-dev` state-collision | **−$0.088/pair** — cleanest win; reproducible |
-| R9 (21 scen, 3 tiers) | mixed | Sonnet state-collision −$0.090; carryover **+$0.389**; Opus 100% with_gpa; trace 1/48 uses |
-| R10 (9 scen, 3 tiers) | `framework-maintenance × web-3d` | Maintainer-framing baseline; capture broken on all 27 with_gpa; 1/27 GPA invocations |
+| R9 (21 scen, 3 tiers) | mixed | Sonnet state-collision −$0.090; carryover **+$0.389**; Opus 100% with_bhdr; trace 1/48 uses |
+| R10 (9 scen, 3 tiers) | `framework-maintenance × web-3d` | Maintainer-framing baseline; capture broken on all 27 with_bhdr; 1/27 GPA invocations |
 | R10v2 + R11 (11 scen, 3 tiers) | `framework-maintenance × web-3d` (breadcrumb-shaped) | First GPA-evidence-driven solve in eval history (r53 haiku via trace value); 24/33 captures still failed under parallel load; trace usage 2/33 — only haiku invokes it; code_only baseline reproduces R10 exactly |
 
 **The "mixed" label on R5–R7** is the biggest lesson: we evaluated two or

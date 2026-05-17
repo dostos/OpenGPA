@@ -25,14 +25,14 @@
 
 /* RingHeader — placed at byte 0 of the shm segment */
 typedef struct {
-    uint64_t magic;       /* GPA_SHM_MAGIC = 0x474C415F53484D00 */
+    uint64_t magic;       /* BHDR_SHM_MAGIC = 0x474C415F53484D00 */
     uint32_t num_slots;
     uint32_t _pad;
     uint64_t slot_size;   /* usable data bytes per slot */
     uint64_t total_size;  /* total mmap size (informational) */
 } RingHeader;
 
-#define GPA_SHM_MAGIC 0x474C415F53484D00ULL
+#define BHDR_SHM_MAGIC 0x474C415F53484D00ULL
 
 /* SlotHeader — 64 bytes, cache-line aligned, placed before each data region.
  * Layout (matches C++ definition):
@@ -197,15 +197,15 @@ static int recv_msg(void* buf, size_t buf_size, int flags) {
  * Background: under high parallel load (many LD_PRELOAD'd binaries racing
  * to connect to the same engine Unix socket) connect()/send()/recv() can
  * fail immediately under kernel socket-backlog pressure. R10v2+R11 saw
- * 24/33 with_gpa runs lose capture this way. The shim previously did a
+ * 24/33 with_bhdr runs lose capture this way. The shim previously did a
  * single-shot connect+handshake with no retry. We now retry up to
- * GPA_IPC_CONNECT_ATTEMPTS times with a fixed backoff schedule whose
+ * BHDR_IPC_CONNECT_ATTEMPTS times with a fixed backoff schedule whose
  * total worst-case wait stays under 2 seconds — just enough to ride out
  * a backlog burst without blocking the host program for an unreasonable
  * amount of time. The schedule is intentionally not exponential past the
  * first three steps: 50/100/200/400/800 ms = ~1.55 s total. */
 
-#define GPA_IPC_CONNECT_ATTEMPTS 5
+#define BHDR_IPC_CONNECT_ATTEMPTS 5
 
 /* Sleep delays between attempts. delays_ms[i] is the wait that fires
  * AFTER attempt i fails and BEFORE attempt i+1 starts. We never sleep
@@ -215,7 +215,7 @@ static int recv_msg(void* buf, size_t buf_size, int flags) {
  * Effective sleep budget = sum of indices [0..ATTEMPTS-2] = 750 ms,
  * comfortably under the 2 s host-startup-blocking ceiling even after
  * connect()'s own per-call timeout slop. */
-static const int gpa_ipc_backoff_delays_ms[GPA_IPC_CONNECT_ATTEMPTS] = {
+static const int bhdr_ipc_backoff_delays_ms[BHDR_IPC_CONNECT_ATTEMPTS] = {
     50, 100, 200, 400, 800,
 };
 
@@ -264,22 +264,22 @@ static int try_connect_handshake_once(const char* socket_path) {
     return 0;
 }
 
-int gpa_ipc_connect_socket_with_retry(const char* socket_path) {
+int bhdr_ipc_connect_socket_with_retry(const char* socket_path) {
     if (!socket_path) return -1;
 
-    for (int attempt = 0; attempt < GPA_IPC_CONNECT_ATTEMPTS; attempt++) {
+    for (int attempt = 0; attempt < BHDR_IPC_CONNECT_ATTEMPTS; attempt++) {
         if (try_connect_handshake_once(socket_path) == 0) {
             return 0;
         }
-        if (attempt < GPA_IPC_CONNECT_ATTEMPTS - 1) {
-            usleep((useconds_t)gpa_ipc_backoff_delays_ms[attempt] * 1000);
+        if (attempt < BHDR_IPC_CONNECT_ATTEMPTS - 1) {
+            usleep((useconds_t)bhdr_ipc_backoff_delays_ms[attempt] * 1000);
         }
     }
 
     /* Exhausted — log once, fall through to fail-open. */
     fprintf(stderr,
             "[OpenGPA] handshake failed after %d retries; capture disabled\n",
-            GPA_IPC_CONNECT_ATTEMPTS);
+            BHDR_IPC_CONNECT_ATTEMPTS);
     return -1;
 }
 
@@ -287,9 +287,9 @@ int gpa_ipc_connect_socket_with_retry(const char* socket_path) {
  * Public API
  * -------------------------------------------------------------------------- */
 
-int gpa_ipc_connect(void) {
-    const char* socket_path = getenv("GPA_SOCKET_PATH");
-    const char* shm_name    = getenv("GPA_SHM_NAME");
+int bhdr_ipc_connect(void) {
+    const char* socket_path = getenv("BHDR_SOCKET_PATH");
+    const char* shm_name    = getenv("BHDR_SHM_NAME");
 
     if (!socket_path || !shm_name) {
         /* Passthrough mode — engine not configured */
@@ -315,7 +315,7 @@ int gpa_ipc_connect(void) {
     memcpy(&hdr, hdr_map, sizeof(hdr));
     munmap(hdr_map, sizeof(RingHeader));
 
-    if (hdr.magic != GPA_SHM_MAGIC) {
+    if (hdr.magic != BHDR_SHM_MAGIC) {
         fprintf(stderr, "[OpenGPA] shm magic mismatch (got 0x%llx)\n",
                 (unsigned long long)hdr.magic);
         close(shm_fd);
@@ -340,7 +340,7 @@ int gpa_ipc_connect(void) {
      * retries; capture disabled"); on intermediate failures it stays
      * silent so a 33-parallel run doesn't spam stderr with hundreds of
      * lines. */
-    if (gpa_ipc_connect_socket_with_retry(socket_path) != 0) {
+    if (bhdr_ipc_connect_socket_with_retry(socket_path) != 0) {
         munmap(g_shm_base, g_shm_size);
         g_shm_base = NULL;
         return -1;
@@ -351,12 +351,12 @@ int gpa_ipc_connect(void) {
     return 0;
 }
 
-int gpa_ipc_is_connected(void) {
+int bhdr_ipc_is_connected(void) {
     return g_sock_fd >= 0 && g_shm_base != NULL;
 }
 
-void* gpa_ipc_claim_slot(uint32_t* slot_index) {
-    if (!gpa_ipc_is_connected()) return NULL;
+void* bhdr_ipc_claim_slot(uint32_t* slot_index) {
+    if (!bhdr_ipc_is_connected()) return NULL;
 
     /* Round-robin scan for a FREE slot; CAS it to WRITING */
     for (uint32_t i = 0; i < g_num_slots; i++) {
@@ -373,15 +373,15 @@ void* gpa_ipc_claim_slot(uint32_t* slot_index) {
     return NULL;   /* ring buffer full */
 }
 
-void gpa_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
-    if (!gpa_ipc_is_connected()) return;
+void bhdr_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
+    if (!bhdr_ipc_is_connected()) return;
     SlotHeader* hdr = slot_header(slot_index);
     hdr->data_size = size;
     atomic_store(&hdr->state, SLOT_READY);
 }
 
-void gpa_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
-    if (!gpa_ipc_is_connected()) return;
+void bhdr_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
+    if (!bhdr_ipc_is_connected()) return;
 
     FrameReadyPayload fr;
     /* FrameReadyPayload fields are sent as native endian to match the C++
@@ -391,12 +391,12 @@ void gpa_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
 
     if (send_msg(MSG_FRAME_READY, &fr, sizeof(fr)) != 0) {
         fprintf(stderr, "[OpenGPA] send FRAME_READY failed, disconnecting\n");
-        gpa_ipc_disconnect();
+        bhdr_ipc_disconnect();
     }
 }
 
-int gpa_ipc_should_pause(void) {
-    if (!gpa_ipc_is_connected()) return 0;
+int bhdr_ipc_should_pause(void) {
+    if (!bhdr_ipc_is_connected()) return 0;
 
     ControlPayload ctrl;
     int rtype = recv_msg(&ctrl, sizeof(ctrl), MSG_DONTWAIT);
@@ -406,8 +406,8 @@ int gpa_ipc_should_pause(void) {
     return 0;
 }
 
-void gpa_ipc_wait_resume(void) {
-    if (!gpa_ipc_is_connected()) return;
+void bhdr_ipc_wait_resume(void) {
+    if (!bhdr_ipc_is_connected()) return;
 
     ControlPayload ctrl;
     for (;;) {
@@ -422,7 +422,7 @@ void gpa_ipc_wait_resume(void) {
     }
 }
 
-void gpa_ipc_disconnect(void) {
+void bhdr_ipc_disconnect(void) {
     if (g_sock_fd >= 0) {
         close(g_sock_fd);
         g_sock_fd = -1;

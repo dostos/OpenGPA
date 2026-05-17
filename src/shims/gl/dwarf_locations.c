@@ -1,7 +1,7 @@
 /* Tiny DWARF location-expression interpreter for Phase 2 of `gpa trace`.
  *
  * Deliberately a ~200-line subset. Anything outside the supported opcodes
- * returns GPA_LOCEVAL_UNSUPPORTED and the caller silently skips the
+ * returns BHDR_LOCEVAL_UNSUPPORTED and the caller silently skips the
  * variable — we prefer graceful degradation over wrong answers. */
 
 #define _GNU_SOURCE
@@ -79,11 +79,11 @@ static int safe_read(uintptr_t addr, void* buf, size_t n) {
 
 #define STACK_MAX 32
 
-int gpa_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
-                            const GpaLocCtx* ctx,
-                            GpaLocResult* out) {
+int bhdr_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
+                            const BhdrLocCtx* ctx,
+                            BhdrLocResult* out) {
     memset(out, 0, sizeof(*out));
-    if (expr_len == 0) return GPA_LOCEVAL_EMPTY;
+    if (expr_len == 0) return BHDR_LOCEVAL_EMPTY;
 
     const uint8_t* p   = expr;
     const uint8_t* end = expr + expr_len;
@@ -98,11 +98,11 @@ int gpa_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
 
         if (op == DW_OP_addr) {
             /* DWARF 4 on x86-64 = 8-byte addr. */
-            if (p + 8 > end) return GPA_LOCEVAL_MALFORMED;
+            if (p + 8 > end) return BHDR_LOCEVAL_MALFORMED;
             uint64_t a = 0;
             memcpy(&a, p, 8);
             p += 8;
-            if (sp >= STACK_MAX) return GPA_LOCEVAL_MALFORMED;
+            if (sp >= STACK_MAX) return BHDR_LOCEVAL_MALFORMED;
             st[sp++] = (int64_t)a;
         }
         else if (op >= DW_OP_reg0 && op <= DW_OP_reg31) {
@@ -113,46 +113,46 @@ int gpa_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
         }
         else if (op == DW_OP_regx) {
             uint64_t r;
-            if (!rd_uleb(&p, end, &r)) return GPA_LOCEVAL_MALFORMED;
+            if (!rd_uleb(&p, end, &r)) return BHDR_LOCEVAL_MALFORMED;
             have_regloc = 1;
             regloc_no = (int)r;
         }
         else if (op >= DW_OP_breg0 && op <= DW_OP_breg31) {
             int reg = op - DW_OP_breg0;
             int64_t off;
-            if (!rd_sleb(&p, end, &off)) return GPA_LOCEVAL_MALFORMED;
+            if (!rd_sleb(&p, end, &off)) return BHDR_LOCEVAL_MALFORMED;
             if (reg >= (int)ctx->reg_count || !ctx->reg_valid[reg])
-                return GPA_LOCEVAL_UNSUPPORTED;
-            if (sp >= STACK_MAX) return GPA_LOCEVAL_MALFORMED;
+                return BHDR_LOCEVAL_UNSUPPORTED;
+            if (sp >= STACK_MAX) return BHDR_LOCEVAL_MALFORMED;
             st[sp++] = (int64_t)ctx->registers[reg] + off;
         }
         else if (op == DW_OP_fbreg) {
             int64_t off;
-            if (!rd_sleb(&p, end, &off)) return GPA_LOCEVAL_MALFORMED;
-            if (sp >= STACK_MAX) return GPA_LOCEVAL_MALFORMED;
+            if (!rd_sleb(&p, end, &off)) return BHDR_LOCEVAL_MALFORMED;
+            if (sp >= STACK_MAX) return BHDR_LOCEVAL_MALFORMED;
             st[sp++] = (int64_t)ctx->frame_base + off;
         }
         else if (op == DW_OP_const1u) {
-            if (p + 1 > end) return GPA_LOCEVAL_MALFORMED;
-            if (sp >= STACK_MAX) return GPA_LOCEVAL_MALFORMED;
+            if (p + 1 > end) return BHDR_LOCEVAL_MALFORMED;
+            if (sp >= STACK_MAX) return BHDR_LOCEVAL_MALFORMED;
             st[sp++] = (int64_t)*p++;
         }
         else if (op == DW_OP_const1s) {
-            if (p + 1 > end) return GPA_LOCEVAL_MALFORMED;
-            if (sp >= STACK_MAX) return GPA_LOCEVAL_MALFORMED;
+            if (p + 1 > end) return BHDR_LOCEVAL_MALFORMED;
+            if (sp >= STACK_MAX) return BHDR_LOCEVAL_MALFORMED;
             st[sp++] = (int64_t)(int8_t)*p++;
         }
         else if (op == DW_OP_plus_uconst) {
             uint64_t v;
-            if (!rd_uleb(&p, end, &v)) return GPA_LOCEVAL_MALFORMED;
-            if (sp < 1) return GPA_LOCEVAL_MALFORMED;
+            if (!rd_uleb(&p, end, &v)) return BHDR_LOCEVAL_MALFORMED;
+            if (sp < 1) return BHDR_LOCEVAL_MALFORMED;
             st[sp - 1] += (int64_t)v;
         }
         else if (op == DW_OP_deref) {
-            if (sp < 1) return GPA_LOCEVAL_MALFORMED;
+            if (sp < 1) return BHDR_LOCEVAL_MALFORMED;
             uintptr_t a = (uintptr_t)st[sp - 1];
             uintptr_t v;
-            if (safe_read(a, &v, sizeof(v)) < 0) return GPA_LOCEVAL_UNREADABLE;
+            if (safe_read(a, &v, sizeof(v)) < 0) return BHDR_LOCEVAL_UNREADABLE;
             st[sp - 1] = (int64_t)v;
         }
         else if (op == DW_OP_piece) {
@@ -162,42 +162,42 @@ int gpa_dwarf_eval_location(const uint8_t* expr, size_t expr_len,
         }
         else if (op == DW_OP_implicit_value) {
             uint64_t len;
-            if (!rd_uleb(&p, end, &len)) return GPA_LOCEVAL_MALFORMED;
-            if (p + len > end) return GPA_LOCEVAL_MALFORMED;
-            out->kind = GPA_LOCKIND_IMPLICIT;
+            if (!rd_uleb(&p, end, &len)) return BHDR_LOCEVAL_MALFORMED;
+            if (p + len > end) return BHDR_LOCEVAL_MALFORMED;
+            out->kind = BHDR_LOCKIND_IMPLICIT;
             out->implicit.data = p;
             out->implicit.len  = (size_t)len;
-            return GPA_LOCEVAL_OK;
+            return BHDR_LOCEVAL_OK;
         }
         else {
             /* Opcode outside our subset — bail. */
-            return GPA_LOCEVAL_UNSUPPORTED;
+            return BHDR_LOCEVAL_UNSUPPORTED;
         }
     }
 
     if (have_regloc) {
-        out->kind  = GPA_LOCKIND_REGISTER;
+        out->kind  = BHDR_LOCKIND_REGISTER;
         out->regno = regloc_no;
-        return GPA_LOCEVAL_OK;
+        return BHDR_LOCEVAL_OK;
     }
     if (sp >= 1) {
-        out->kind    = GPA_LOCKIND_ADDRESS;
+        out->kind    = BHDR_LOCKIND_ADDRESS;
         out->address = (uintptr_t)st[sp - 1];
-        return GPA_LOCEVAL_OK;
+        return BHDR_LOCEVAL_OK;
     }
-    return GPA_LOCEVAL_MALFORMED;
+    return BHDR_LOCEVAL_MALFORMED;
 }
 
-int gpa_dwarf_read_value(const GpaLocResult* loc, size_t byte_size,
-                         const GpaLocCtx* ctx,
+int bhdr_dwarf_read_value(const BhdrLocResult* loc, size_t byte_size,
+                         const BhdrLocCtx* ctx,
                          void* buf, size_t buf_cap) {
     if (byte_size == 0 || byte_size > buf_cap) return -1;
     switch (loc->kind) {
-    case GPA_LOCKIND_ADDRESS: {
+    case BHDR_LOCKIND_ADDRESS: {
         if (safe_read(loc->address, buf, byte_size) < 0) return -1;
         return (int)byte_size;
     }
-    case GPA_LOCKIND_REGISTER: {
+    case BHDR_LOCKIND_REGISTER: {
         if (!ctx || loc->regno < 0 ||
             (size_t)loc->regno >= ctx->reg_count ||
             !ctx->reg_valid[loc->regno]) return -1;
@@ -207,7 +207,7 @@ int gpa_dwarf_read_value(const GpaLocResult* loc, size_t byte_size,
         memcpy(buf, &rv, n);
         return (int)byte_size;
     }
-    case GPA_LOCKIND_IMPLICIT: {
+    case BHDR_LOCKIND_IMPLICIT: {
         size_t n = byte_size <= loc->implicit.len ? byte_size : loc->implicit.len;
         memset(buf, 0, byte_size);
         memcpy(buf, loc->implicit.data, n);

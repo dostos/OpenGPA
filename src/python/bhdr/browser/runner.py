@@ -14,7 +14,7 @@ Design notes:
   ``/<scenario_name>/index.html``.
 - Completion signals (any one is sufficient):
     1. frame count > 0 AND at least one ``sources`` payload POSTed.
-    2. annotations on *any* frame contain ``{"gpa_done": true}``.
+    2. annotations on *any* frame contain ``{"bhdr_done": true}``.
     3. timeout.
 """
 
@@ -220,7 +220,7 @@ class BrowserRunResult:
     duration_sec: float
     static_port: int
     url: str = ""
-    gpa_done: bool = False
+    bhdr_done: bool = False
 
 
 # --------------------------------------------------------------------------- #
@@ -282,7 +282,7 @@ class BrowserRunner:
         frames_captured = 0
         sources_captured = 0
         timed_out = False
-        gpa_done = False
+        bhdr_done = False
         chromium_exit_code: Optional[int] = None
 
         try:
@@ -300,9 +300,9 @@ class BrowserRunner:
                 status = self._poll_status(opts.session)
                 frames_captured = max(frames_captured, status["frame_count"])
                 sources_captured = max(sources_captured, status["sources_count"])
-                gpa_done = gpa_done or status["gpa_done"]
+                bhdr_done = bhdr_done or status["bhdr_done"]
 
-                if gpa_done:
+                if bhdr_done:
                     break
                 if frames_captured > 0 and sources_captured > 0:
                     break
@@ -350,7 +350,7 @@ class BrowserRunner:
             duration_sec=duration,
             static_port=static.port,
             url=url,
-            gpa_done=gpa_done,
+            bhdr_done=bhdr_done,
         )
 
     # ------------------------------------------------------------------ #
@@ -416,7 +416,7 @@ class BrowserRunner:
 
     @staticmethod
     def _poll_status(session: Session) -> Dict[str, Any]:
-        """Return ``{frame_count, sources_count, gpa_done}`` from the engine.
+        """Return ``{frame_count, sources_count, bhdr_done}`` from the engine.
 
         All network errors are swallowed and returned as zeros — the
         engine may still be warming up.
@@ -425,14 +425,14 @@ class BrowserRunner:
             port = session.read_port()
             token = session.read_token()
         except Exception:
-            return {"frame_count": 0, "sources_count": 0, "gpa_done": False}
+            return {"frame_count": 0, "sources_count": 0, "bhdr_done": False}
 
         base = f"http://127.0.0.1:{port}/api/v1"
         headers = {"Authorization": f"Bearer {token}"}
 
         frame_count = 0
         sources_count = 0
-        gpa_done = False
+        bhdr_done = False
 
         # --- Frame count (and latest id if any) --------------------------- #
         latest_id: Optional[int] = None
@@ -491,7 +491,7 @@ class BrowserRunner:
             except (urllib.error.URLError, OSError, ValueError):
                 continue
 
-        # --- gpa_done annotation probe ------------------------------------ #
+        # --- bhdr_done annotation probe ------------------------------------ #
         if latest_id is not None:
             try:
                 import json
@@ -504,19 +504,19 @@ class BrowserRunner:
                     data = json.loads(resp.read())
                 # Annotations can be list of {key, value} or dict
                 if isinstance(data, dict):
-                    if data.get("gpa_done") is True:
-                        gpa_done = True
+                    if data.get("bhdr_done") is True:
+                        bhdr_done = True
                     ann = data.get("annotations")
-                    if isinstance(ann, dict) and ann.get("gpa_done") is True:
-                        gpa_done = True
+                    if isinstance(ann, dict) and ann.get("bhdr_done") is True:
+                        bhdr_done = True
                     elif isinstance(ann, list):
                         for entry in ann:
                             if (
                                 isinstance(entry, dict)
-                                and entry.get("key") == "gpa_done"
+                                and entry.get("key") == "bhdr_done"
                                 and entry.get("value") in (True, "true", 1, "1")
                             ):
-                                gpa_done = True
+                                bhdr_done = True
                                 break
             except (urllib.error.URLError, OSError, ValueError):
                 pass
@@ -524,5 +524,5 @@ class BrowserRunner:
         return {
             "frame_count": frame_count,
             "sources_count": sources_count,
-            "gpa_done": gpa_done,
+            "bhdr_done": bhdr_done,
         }

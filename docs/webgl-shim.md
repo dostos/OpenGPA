@@ -68,8 +68,8 @@ WebGL frame is rendered in the browser).
 
 | Variable          | Default          | Description                              |
 |-------------------|------------------|------------------------------------------|
-| `GPA_SOCKET_PATH` | `/tmp/gpa.sock`  | Unix socket path to the OpenGPA engine   |
-| `GPA_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
+| `BHDR_SOCKET_PATH` | `/tmp/gpa.sock`  | Unix socket path to the OpenGPA engine   |
+| `BHDR_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
 
 ## Validation Status (as of 2026-04-16)
 

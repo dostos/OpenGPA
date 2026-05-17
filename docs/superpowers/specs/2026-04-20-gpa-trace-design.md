@@ -110,7 +110,7 @@ Per draw call (or periodically — see § Open questions):
    - Three.js: `window.THREE`, discovered `scene`, `renderer`, `camera` via heuristic walk
    - mapbox-gl-js: `window.mapboxgl`, `map`
    - PIXI: `window.PIXI`, `app`
-   - User custom: `GPA_TRACE_ROOTS=map,scene,myApp` env var or `gpa.trace.addRoot("myGlobal")` SDK call
+   - User custom: `BHDR_TRACE_ROOTS=map,scene,myApp` env var or `gpa.trace.addRoot("myGlobal")` SDK call
 
 2. **Traversal:** BFS from each root.
    - Depth cap: 4 hops
@@ -123,7 +123,7 @@ Per draw call (or periodically — see § Open questions):
    - **gated**: scan only on `glUniform*` and `glBindTexture` (the two state-changing calls that most often need tracing). Balanced.
    - **eager**: scan before every draw call. Slowest; most accurate.
 
-   Default: **gated**. Flag: `GPA_TRACE_MODE=lazy|gated|eager`.
+   Default: **gated**. Flag: `BHDR_TRACE_MODE=lazy|gated|eager`.
 
 ### Value matching
 
@@ -168,7 +168,7 @@ GET /frames/{id}/trace/value?query=<literal>   # frame-wide, any drawcall
 
 ### MCP
 
-One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the CLI. Description:
+One new tool `bhdr_trace_value(frame_id, field?, value?, dc_id?)` that wraps the CLI. Description:
 
 > "Reverse-lookup app-level fields whose value matches a captured uniform / texture ID / literal. Answers 'where in the framework state did this value come from?' Useful when a uniform looks wrong and you need to find the deeper field that set it."
 
@@ -198,7 +198,7 @@ One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the 
   number (IEEE 754 round-trip, float32-tolerant) rather than by
   re-hashing the query literal — re-implementing JS's
   `Number.prototype.toString(36)` exactly is fiddly and unnecessary.
-- MCP tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` in
+- MCP tool `bhdr_trace_value(frame_id, field?, value?, dc_id?)` in
   `src/python/bhdr/mcp/server.py`.
 
 ### Phase 3 — confidence + ranking (shipped)
@@ -262,7 +262,7 @@ Early versions of this doc imagined a route where the agent describes the value 
 
 After Phase 4 (Round 9):
 
-- `gpa trace` invocation count across R9 with_gpa runs ≥ 1.0/run avg
+- `gpa trace` invocation count across R9 with_bhdr runs ≥ 1.0/run avg
 - At least 2 previously-unsolvable source-logical scenarios (r27/r28/r29/similar) correctly diagnosed with `gpa trace` in the tool trace
 - No regression on state-collision scenarios (R8 Sonnet Δ of −$0.088/pair holds)
 - Capture-time overhead ≤ 5% on a three.js demo

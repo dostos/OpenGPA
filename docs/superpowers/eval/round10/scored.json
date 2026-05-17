@@ -12,7 +12,7 @@
       "Bash": 3,
       "Read": 4
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "src/effects/glsl/bloom.frag"
@@ -40,7 +40,7 @@
       "Glob": 3,
       "Read": 16
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "src/effects/glsl/bloom.frag"
@@ -69,7 +69,7 @@
       "Grep": 1,
       "Bash": 4
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/effects/glsl/bloom.frag",
@@ -84,7 +84,7 @@
   },
   {
     "scenario": "r2_certain_effects_produce_invalid_alpha_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 18,
     "cost_usd": 0.19214605,
@@ -95,7 +95,7 @@
       "Bash": 12,
       "Read": 5
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/effects/glsl/bloom.frag",
@@ -110,7 +110,7 @@
   },
   {
     "scenario": "r2_certain_effects_produce_invalid_alpha_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 14,
     "cost_usd": 0.49236750000000007,
@@ -124,7 +124,7 @@
       "Grep": 4,
       "Bash": 26
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/effects/glsl/bloom.frag",
@@ -139,7 +139,7 @@
   },
   {
     "scenario": "r2_certain_effects_produce_invalid_alpha_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 26,
     "cost_usd": 1.0096077499999998,
@@ -150,7 +150,7 @@
       "Bash": 18,
       "Read": 7
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/effects/glsl/bloom.frag",
@@ -175,7 +175,7 @@
     "tool_counts": {
       "Bash": 72
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -201,7 +201,7 @@
       "Bash": 16,
       "Read": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -226,7 +226,7 @@
       "Bash": 11,
       "Grep": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -240,7 +240,7 @@
   },
   {
     "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 34,
     "cost_usd": 0.36784490000000003,
@@ -251,7 +251,7 @@
       "Bash": 30,
       "Read": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -265,7 +265,7 @@
   },
   {
     "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 8,
     "cost_usd": 0.2213512,
@@ -279,7 +279,7 @@
       "Read": 3,
       "Bash": 12
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -293,7 +293,7 @@
   },
   {
     "scenario": "r6_to_create_an_orm_texture_an_incorrect_va",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 21,
     "cost_usd": 0.58960675,
@@ -304,7 +304,7 @@
       "Bash": 17,
       "Grep": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/shader-chunks/shaders/gbuffer-metalness.frag"
@@ -329,7 +329,7 @@
       "Bash": 3,
       "Read": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -353,7 +353,7 @@
     "tool_counts": {
       "Grep": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -377,7 +377,7 @@
     "tool_counts": {
       "Grep": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -391,7 +391,7 @@
   },
   {
     "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 9,
     "cost_usd": 0.08423775,
@@ -402,7 +402,7 @@
       "Bash": 7,
       "Read": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -416,7 +416,7 @@
   },
   {
     "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 3,
     "cost_usd": 0.11732234999999999,
@@ -426,7 +426,7 @@
     "tool_counts": {
       "Grep": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -440,7 +440,7 @@
   },
   {
     "scenario": "r11_screen_glitch_with_bloom_on_m1_mac",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 3,
     "cost_usd": 0.25944549999999994,
@@ -451,7 +451,7 @@
       "Grep": 1,
       "Read": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/shaders/ShaderChunk/lights_pars_begin.glsl.js"
@@ -476,7 +476,7 @@
       "Bash": 11,
       "Read": 5
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -504,7 +504,7 @@
       "Read": 8,
       "Bash": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -529,7 +529,7 @@
       "Grep": 1,
       "Read": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -543,7 +543,7 @@
   },
   {
     "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 17,
     "cost_usd": 0.24317990000000003,
@@ -555,7 +555,7 @@
       "Bash": 10,
       "Read": 4
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -569,7 +569,7 @@
   },
   {
     "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 5,
     "cost_usd": 0.48221844999999997,
@@ -583,7 +583,7 @@
       "Read": 11,
       "Bash": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -597,7 +597,7 @@
   },
   {
     "scenario": "r11_webglrenderer_ubo_uniform_buffer_object_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 3,
     "cost_usd": 0.3196475,
@@ -608,7 +608,7 @@
       "Glob": 1,
       "Read": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/renderers/webgl/WebGLUniformsGroups.js"
@@ -634,7 +634,7 @@
       "Bash": 43,
       "Read": 22
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -665,7 +665,7 @@
       "Bash": 42,
       "Grep": 4
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -695,7 +695,7 @@
       "Grep": 1,
       "Read": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -712,7 +712,7 @@
   },
   {
     "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 65,
     "cost_usd": 0.7674641,
@@ -723,7 +723,7 @@
       "Bash": 42,
       "Read": 22
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -740,7 +740,7 @@
   },
   {
     "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 7,
     "cost_usd": 0.9073074999999999,
@@ -753,7 +753,7 @@
       "Read": 15,
       "Glob": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -771,7 +771,7 @@
   },
   {
     "scenario": "r14_webgpurenderer_make_colored_shadows_opti",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 5,
     "cost_usd": 0.39436725,
@@ -783,7 +783,7 @@
       "Grep": 1,
       "Read": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -812,7 +812,7 @@
       "Bash": 10,
       "Read": 10
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.3333333333333333,
     "file_hits": [
       "src/renderers/WebGLRenderer.js",
@@ -844,7 +844,7 @@
       "Bash": 6,
       "Read": 14
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.16666666666666666,
     "file_hits": [
       "src/renderers/WebGLRenderer.js"
@@ -877,7 +877,7 @@
       "Grep": 2,
       "Read": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.16666666666666666,
     "file_hits": [
       "src/renderers/WebGLRenderer.js"
@@ -899,7 +899,7 @@
   },
   {
     "scenario": "r17_incorrect_clipping_with_global_clipping_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 18,
     "cost_usd": 0.1844155,
@@ -910,7 +910,7 @@
       "Bash": 9,
       "Read": 8
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.16666666666666666,
     "file_hits": [
       "src/renderers/WebGLRenderer.js"
@@ -932,7 +932,7 @@
   },
   {
     "scenario": "r17_incorrect_clipping_with_global_clipping_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 15,
     "cost_usd": 0.58983,
@@ -945,7 +945,7 @@
       "Read": 27,
       "Grep": 3
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.16666666666666666,
     "file_hits": [
       "src/renderers/WebGLRenderer.js"
@@ -967,7 +967,7 @@
   },
   {
     "scenario": "r17_incorrect_clipping_with_global_clipping_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 7,
     "cost_usd": 0.5176489999999999,
@@ -979,7 +979,7 @@
       "Read": 3,
       "Grep": 2
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.16666666666666666,
     "file_hits": [
       "src/renderers/WebGLRenderer.js"
@@ -1011,7 +1011,7 @@
       "Bash": 13,
       "Read": 8
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.14285714285714285,
     "file_hits": [
       "src/shaders/raster.vertex.glsl"
@@ -1046,7 +1046,7 @@
       "Glob": 5,
       "Grep": 13
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [],
@@ -1069,7 +1069,7 @@
       "Bash": 7,
       "Read": 5
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1091,7 +1091,7 @@
   },
   {
     "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 40,
     "cost_usd": 0.43406934999999996,
@@ -1106,7 +1106,7 @@
       "Grep": 17,
       "Read": 12
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1128,7 +1128,7 @@
   },
   {
     "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 26,
     "cost_usd": 1.70428415,
@@ -1141,7 +1141,7 @@
       "Grep": 12,
       "Read": 28
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5714285714285714,
     "file_hits": [
       "src/render/draw_raster.js",
@@ -1162,7 +1162,7 @@
   },
   {
     "scenario": "r17_mapbox_gl_js_image_overlay_coordinates_p",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 15,
     "cost_usd": 0.9859557500000001,
@@ -1175,7 +1175,7 @@
       "Grep": 2,
       "gpa": 2
     },
-    "gpa_calls": 2,
+    "bhdr_calls": 2,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1209,7 +1209,7 @@
       "Bash": 12,
       "Read": 10
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1240,7 +1240,7 @@
       "Glob": 2,
       "Grep": 15
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1271,7 +1271,7 @@
       "Grep": 7,
       "Bash": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1289,7 +1289,7 @@
   },
   {
     "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 21,
     "cost_usd": 0.2912043000000001,
@@ -1301,7 +1301,7 @@
       "Bash": 10,
       "Read": 8
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1318,7 +1318,7 @@
   },
   {
     "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 40,
     "cost_usd": 1.6450563999999996,
@@ -1331,7 +1331,7 @@
       "Bash": 50,
       "Read": 34
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "src/geo/transform.js",
@@ -1346,7 +1346,7 @@
   },
   {
     "scenario": "r18_raster_tiles_aren_t_perfectly_crisp_at_i",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 23,
     "cost_usd": 1.2074510999999994,
@@ -1358,7 +1358,7 @@
       "Agent": 1,
       "Read": 15
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.0,
     "file_hits": [],
     "file_misses": [
@@ -1390,7 +1390,7 @@
       "Read": 12,
       "Grep": 8
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "examples/jsm/objects/Reflector.js"
@@ -1420,7 +1420,7 @@
       "Grep": 8,
       "Bash": 5
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "examples/jsm/objects/Reflector.js"
@@ -1449,7 +1449,7 @@
       "Grep": 4,
       "Bash": 13
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "examples/js/objects/Reflector.js",
@@ -1464,7 +1464,7 @@
   },
   {
     "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "haiku",
     "turns": 46,
     "cost_usd": 0.4723151500000001,
@@ -1476,7 +1476,7 @@
       "Bash": 31,
       "Read": 12
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "examples/jsm/objects/Reflector.js"
@@ -1492,7 +1492,7 @@
   },
   {
     "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "sonnet",
     "turns": 40,
     "cost_usd": 1.4194357000000002,
@@ -1506,7 +1506,7 @@
       "Grep": 1,
       "Glob": 1
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 1.0,
     "file_hits": [
       "examples/js/objects/Reflector.js",
@@ -1521,7 +1521,7 @@
   },
   {
     "scenario": "r24_logarithmicdepthbuffer_causes_reflector_",
-    "mode": "with_gpa",
+    "mode": "with_bhdr",
     "model": "opus",
     "turns": 31,
     "cost_usd": 1.4586810000000001,
@@ -1534,7 +1534,7 @@
       "Grep": 9,
       "Bash": 10
     },
-    "gpa_calls": 0,
+    "bhdr_calls": 0,
     "file_score": 0.5,
     "file_hits": [
       "examples/jsm/objects/Reflector.js"

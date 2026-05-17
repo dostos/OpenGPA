@@ -35,10 +35,10 @@ def _cmd_run(args: argparse.Namespace) -> int:
             config = json.load(fh)
 
     # Override config with CLI flags
-    if args.gpa_url:
-        config["gpa_base_url"] = args.gpa_url
+    if args.bhdr_url:
+        config["bhdr_base_url"] = args.bhdr_url
     if args.token:
-        config["gpa_token"] = args.token
+        config["bhdr_token"] = args.token
     if args.shim:
         config["shim_path"] = args.shim
     if args.model:
@@ -191,7 +191,7 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Comma-separated modes when using --all")
     run_p.add_argument("--output", "-o", help="Output path for results JSON (default: results.json)")
     run_p.add_argument("--config", help="Path to JSON config file")
-    run_p.add_argument("--gpa-url", help="OpenGPA server base URL")
+    run_p.add_argument("--bhdr-url", help="OpenGPA server base URL")
     run_p.add_argument("--token", help="OpenGPA auth token")
     run_p.add_argument("--shim", help="Path to OpenGPA shim shared library")
     run_p.add_argument("--model", help="LLM model identifier (for metadata)")

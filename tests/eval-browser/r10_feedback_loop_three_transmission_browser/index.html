@@ -34,15 +34,15 @@
     const token  = params.get("token") || "";
     const port   = params.get("port")  || "18080";
     try {
-      localStorage.setItem("GPA_TRACE_TOKEN", token);
-      localStorage.setItem("GPA_TRACE_ENDPOINT",
+      localStorage.setItem("BHDR_TRACE_TOKEN", token);
+      localStorage.setItem("BHDR_TRACE_ENDPOINT",
                            "http://127.0.0.1:" + port + "/api/v1");
-      localStorage.setItem("GPA_TRACE_MODE", "gated");
+      localStorage.setItem("BHDR_TRACE_MODE", "gated");
     } catch (e) { /* ignore */ }
     // Tier-3 link plugin reads these directly (not via localStorage).
-    window.GPA_AUTH_TOKEN = token;
-    window.GPA_ENDPOINT   = "http://127.0.0.1:" + port;
-    window.GPA_FRAME_ID   = 0;
+    window.BHDR_AUTH_TOKEN = token;
+    window.BHDR_ENDPOINT   = "http://127.0.0.1:" + port;
+    window.BHDR_FRAME_ID   = 0;
   })();
 
   function setStatus(s) {
@@ -152,8 +152,8 @@
   if (installGpaLinkPlugin) {
     installGpaLinkPlugin({
       scene, renderer,
-      endpoint: window.GPA_ENDPOINT,
-      token:    window.GPA_AUTH_TOKEN,
+      endpoint: window.BHDR_ENDPOINT,
+      token:    window.BHDR_AUTH_TOKEN,
     });
   }
 
@@ -169,24 +169,24 @@
     if (framesRendered < TARGET_FRAMES) {
       requestAnimationFrame(tick);
     } else {
-      setStatus("done — " + framesRendered + " frames; signaling __gpa_done");
+      setStatus("done — " + framesRendered + " frames; signaling __bhdr_done");
       // Give the link-plugin's deferred POSTs (one per render() call,
       // queued via requestAnimationFrame) a moment to flush before we
-      // POST the gpa_done sentinel so the runner waits for everything.
+      // POST the bhdr_done sentinel so the runner waits for everything.
       setTimeout(function () {
-        // POST gpa_done to a high frame id so it doesn't clobber the
+        // POST bhdr_done to a high frame id so it doesn't clobber the
         // link-plugin's annotations on frames 0..3.
         try {
-          fetch(window.GPA_ENDPOINT + "/api/v1/frames/9999/annotations", {
+          fetch(window.BHDR_ENDPOINT + "/api/v1/frames/9999/annotations", {
             method:  "POST",
             headers: {
               "Content-Type":  "application/json",
-              "Authorization": "Bearer " + (window.GPA_AUTH_TOKEN || ""),
+              "Authorization": "Bearer " + (window.BHDR_AUTH_TOKEN || ""),
             },
-            body: JSON.stringify({ gpa_done: true }),
+            body: JSON.stringify({ bhdr_done: true }),
           }).catch(() => {});
         } catch (e) { /* ignore */ }
-        window.__gpa_done = true;
+        window.__bhdr_done = true;
       }, 500);
     }
   }

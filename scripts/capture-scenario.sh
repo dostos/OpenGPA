@@ -11,8 +11,8 @@ if [ -z "$SCENARIO" ]; then
 fi
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-SOCKET_PATH="${GPA_SOCKET_PATH:-/tmp/gpa_eval.sock}"
-SHM_NAME="${GPA_SHM_NAME:-/gpa_eval}"
+SOCKET_PATH="${BHDR_SOCKET_PATH:-/tmp/bhdr_eval.sock}"
+SHM_NAME="${BHDR_SHM_NAME:-/bhdr_eval}"
 
 # Scenarios live under nested taxonomy packages (tests/eval/<cat>/<fw>/<slug>/);
 # resolve the package via the source layout rather than assuming a flat package.
@@ -30,9 +30,9 @@ if [ ! -f "$BINARY" ]; then
 fi
 
 echo "Running ${SCENARIO} under OpenGPA capture..."
-LD_PRELOAD="${REPO_ROOT}/bazel-bin/src/shims/gl/libgpa_gl.so" \
-    GPA_SOCKET_PATH="${SOCKET_PATH}" \
-    GPA_SHM_NAME="${SHM_NAME}" \
+LD_PRELOAD="${REPO_ROOT}/bazel-bin/src/shims/gl/libbhdr_gl.so" \
+    BHDR_SOCKET_PATH="${SOCKET_PATH}" \
+    BHDR_SHM_NAME="${SHM_NAME}" \
     "${BINARY}"
 
 echo "Done. Frame captured. Query via REST API or MCP tools."

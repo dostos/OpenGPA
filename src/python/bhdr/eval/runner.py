@@ -48,15 +48,15 @@ class ScenarioRunner:
 
     def __init__(
         self,
-        gpa_base_url: str = "http://127.0.0.1:18080",
-        gpa_token: str = "",
+        bhdr_base_url: str = "http://127.0.0.1:18080",
+        bhdr_token: str = "",
         shim_path: str = "",
         bazel_bin: str = "bazel",
         repo_root: Optional[str] = None,
         capture_timeout: float = 5.0,
     ):
-        self._base_url = gpa_base_url
-        self._token = gpa_token
+        self._base_url = bhdr_base_url
+        self._token = bhdr_token
         self._shim_path = shim_path
         self._bazel = bazel_bin
         self._capture_timeout = capture_timeout
@@ -78,18 +78,18 @@ class ScenarioRunner:
         """Construct a ScenarioRunner from environment variables.
 
         Reads:
-          - GPA_BASE_URL (default: http://127.0.0.1:18080)
-          - GPA_TOKEN    (default: empty)
-          - GPA_SHIM_PATH (default: empty)
+          - BHDR_BASE_URL (default: http://127.0.0.1:18080)
+          - BHDR_TOKEN    (default: empty)
+          - BHDR_SHIM_PATH (default: empty)
           - BAZEL         (default: bazel)
-          - GPA_REPO_ROOT (default: None, auto-detect)
+          - BHDR_REPO_ROOT (default: None, auto-detect)
         """
         return cls(
-            gpa_base_url=os.environ.get("GPA_BASE_URL", "http://127.0.0.1:18080"),
-            gpa_token=os.environ.get("GPA_TOKEN", ""),
-            shim_path=os.environ.get("GPA_SHIM_PATH", ""),
+            bhdr_base_url=os.environ.get("BHDR_BASE_URL", "http://127.0.0.1:18080"),
+            bhdr_token=os.environ.get("BHDR_TOKEN", ""),
+            shim_path=os.environ.get("BHDR_SHIM_PATH", ""),
             bazel_bin=os.environ.get("BAZEL", "bazel"),
-            repo_root=os.environ.get("GPA_REPO_ROOT"),
+            repo_root=os.environ.get("BHDR_REPO_ROOT"),
         )
 
     # ------------------------------------------------------------------
@@ -146,8 +146,8 @@ class ScenarioRunner:
 
         Sets up the environment required by the OpenGPA shim:
           - LD_PRELOAD: path to the OpenGPA interceptor shared library
-          - GPA_BASE_URL: HTTP endpoint for the GPA server
-          - GPA_TOKEN: bearer token for authentication
+          - BHDR_BASE_URL: HTTP endpoint for the GPA server
+          - BHDR_TOKEN: bearer token for authentication
 
         Waits up to self._capture_timeout seconds for frames to appear,
         then queries the OpenGPA server for the latest frame_id.
@@ -162,9 +162,9 @@ class ScenarioRunner:
                 if existing_preload
                 else self._shim_path
             )
-        env["GPA_BASE_URL"] = self._base_url
+        env["BHDR_BASE_URL"] = self._base_url
         if self._token:
-            env["GPA_TOKEN"] = self._token
+            env["BHDR_TOKEN"] = self._token
 
         proc = subprocess.run(
             [binary_path],
@@ -203,7 +203,7 @@ class ScenarioRunner:
         env = {
             "DISPLAY": ":99",
             "LD_PRELOAD": str(self._shim_path),
-            "GPA_TOKEN": self._token,
+            "BHDR_TOKEN": self._token,
         }
         proc = subprocess.Popen(
             ["xvfb-run", "-a", str(bin_path)],

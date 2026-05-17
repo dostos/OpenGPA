@@ -25,28 +25,28 @@
 /* Map DWARF register numbers (0..16) to libunwind's UNW_X86_64_*. */
 static int dwarf_to_unw_reg(int dw) {
     switch (dw) {
-    case GPA_REG_RAX: return UNW_X86_64_RAX;
-    case GPA_REG_RDX: return UNW_X86_64_RDX;
-    case GPA_REG_RCX: return UNW_X86_64_RCX;
-    case GPA_REG_RBX: return UNW_X86_64_RBX;
-    case GPA_REG_RSI: return UNW_X86_64_RSI;
-    case GPA_REG_RDI: return UNW_X86_64_RDI;
-    case GPA_REG_RBP: return UNW_X86_64_RBP;
-    case GPA_REG_RSP: return UNW_X86_64_RSP;
-    case GPA_REG_R8:  return UNW_X86_64_R8;
-    case GPA_REG_R9:  return UNW_X86_64_R9;
-    case GPA_REG_R10: return UNW_X86_64_R10;
-    case GPA_REG_R11: return UNW_X86_64_R11;
-    case GPA_REG_R12: return UNW_X86_64_R12;
-    case GPA_REG_R13: return UNW_X86_64_R13;
-    case GPA_REG_R14: return UNW_X86_64_R14;
-    case GPA_REG_R15: return UNW_X86_64_R15;
-    case GPA_REG_RIP: return UNW_X86_64_RIP;
+    case BHDR_REG_RAX: return UNW_X86_64_RAX;
+    case BHDR_REG_RDX: return UNW_X86_64_RDX;
+    case BHDR_REG_RCX: return UNW_X86_64_RCX;
+    case BHDR_REG_RBX: return UNW_X86_64_RBX;
+    case BHDR_REG_RSI: return UNW_X86_64_RSI;
+    case BHDR_REG_RDI: return UNW_X86_64_RDI;
+    case BHDR_REG_RBP: return UNW_X86_64_RBP;
+    case BHDR_REG_RSP: return UNW_X86_64_RSP;
+    case BHDR_REG_R8:  return UNW_X86_64_R8;
+    case BHDR_REG_R9:  return UNW_X86_64_R9;
+    case BHDR_REG_R10: return UNW_X86_64_R10;
+    case BHDR_REG_R11: return UNW_X86_64_R11;
+    case BHDR_REG_R12: return UNW_X86_64_R12;
+    case BHDR_REG_R13: return UNW_X86_64_R13;
+    case BHDR_REG_R14: return UNW_X86_64_R14;
+    case BHDR_REG_R15: return UNW_X86_64_R15;
+    case BHDR_REG_RIP: return UNW_X86_64_RIP;
     default:          return -1;
     }
 }
 
-static const char* strpool_dup(GpaStackSnapshot* s, const char* src, size_t n) {
+static const char* strpool_dup(BhdrStackSnapshot* s, const char* src, size_t n) {
     if (s->strpool_len + n + 1 > s->strpool_cap) {
         size_t nc = s->strpool_cap ? s->strpool_cap * 2 : 512;
         while (nc < s->strpool_len + n + 1) nc *= 2;
@@ -71,7 +71,7 @@ static const char* strpool_dup(GpaStackSnapshot* s, const char* src, size_t n) {
     return dst;
 }
 
-int gpa_stack_walk_current(GpaStackSnapshot* out) {
+int bhdr_stack_walk_current(BhdrStackSnapshot* out) {
     memset(out, 0, sizeof(*out));
 
     unw_context_t uc;
@@ -79,8 +79,8 @@ int gpa_stack_walk_current(GpaStackSnapshot* out) {
     unw_cursor_t cursor;
     if (unw_init_local(&cursor, &uc) != 0) return 0;
 
-    while (out->frame_count < GPA_STACK_MAX_FRAMES) {
-        GpaStackFrame* f = &out->frames[out->frame_count];
+    while (out->frame_count < BHDR_STACK_MAX_FRAMES) {
+        BhdrStackFrame* f = &out->frames[out->frame_count];
 
         unw_word_t pc = 0, cfa = 0;
         if (unw_get_reg(&cursor, UNW_REG_IP, &pc) != 0) break;
@@ -98,7 +98,7 @@ int gpa_stack_walk_current(GpaStackSnapshot* out) {
         }
 
         /* Copy the GP register file. */
-        for (int dw = 0; dw < GPA_STACK_REG_COUNT; dw++) {
+        for (int dw = 0; dw < BHDR_STACK_REG_COUNT; dw++) {
             int uw = dwarf_to_unw_reg(dw);
             if (uw < 0) continue;
             unw_word_t v = 0;
@@ -128,7 +128,7 @@ int gpa_stack_walk_current(GpaStackSnapshot* out) {
     return 0;
 }
 
-void gpa_stack_snapshot_free(GpaStackSnapshot* s) {
+void bhdr_stack_snapshot_free(BhdrStackSnapshot* s) {
     if (!s) return;
     free(s->strpool);
     memset(s, 0, sizeof(*s));
@@ -146,7 +146,7 @@ void gpa_stack_snapshot_free(GpaStackSnapshot* s) {
 
 #include <stdio.h>
 
-int gpa_stack_walk_current(GpaStackSnapshot* out) {
+int bhdr_stack_walk_current(BhdrStackSnapshot* out) {
     memset(out, 0, sizeof(*out));
     static int warned = 0;
     if (!warned) {
@@ -158,7 +158,7 @@ int gpa_stack_walk_current(GpaStackSnapshot* out) {
     return 0;
 }
 
-void gpa_stack_snapshot_free(GpaStackSnapshot* s) {
+void bhdr_stack_snapshot_free(BhdrStackSnapshot* s) {
     if (!s) return;
     free(s->strpool);
     memset(s, 0, sizeof(*s));

@@ -13,8 +13,8 @@
 #include <string>
 #include <thread>
 
-static const std::string kSockPath = "/tmp/gpa_test_engine.sock";
-static const std::string kShmName  = "/gpa_test_engine_shm";
+static const std::string kSockPath = "/tmp/bhdr_test_engine.sock";
+static const std::string kShmName  = "/bhdr_test_engine_shm";
 
 // ---------------------------------------------------------------------------
 // Fixture — owns Engine running in a background thread

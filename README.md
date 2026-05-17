@@ -18,15 +18,15 @@ pip install -e ".[dev]"
 # Start OpenGPA engine (native capture mode)
 python -m gpa.launcher --port 18080
 # Prints:
-#   GPA_SOCKET_PATH=/tmp/gpa.sock
-#   GPA_SHM_NAME=/gpa_capture
-#   GPA_AUTH_TOKEN=<token>
+#   BHDR_SOCKET_PATH=/tmp/gpa.sock
+#   BHDR_SHM_NAME=/bhdr_capture
+#   BHDR_AUTH_TOKEN=<token>
 
 # Run your OpenGL app with capture
 LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    GPA_SOCKET_PATH=/tmp/gpa.sock \
-    GPA_SHM_NAME=/gpa_capture \
-    GPA_AUTH_TOKEN=<token> \
+    BHDR_SOCKET_PATH=/tmp/gpa.sock \
+    BHDR_SHM_NAME=/bhdr_capture \
+    BHDR_AUTH_TOKEN=<token> \
     ./your_gl_app
 
 # Query via REST
@@ -166,7 +166,7 @@ Six tools optimized for LLM interaction:
 ## MCP Integration (Claude Code)
 
 Add to your project's `.mcp.json` to use OpenGPA tools directly from Claude Code.
-Start OpenGPA first, then note the printed `GPA_AUTH_TOKEN`.
+Start OpenGPA first, then note the printed `BHDR_AUTH_TOKEN`.
 
 ```json
 {
@@ -175,8 +175,8 @@ Start OpenGPA first, then note the printed `GPA_AUTH_TOKEN`.
       "command": "python",
       "args": ["-m", "gpa.mcp.server"],
       "env": {
-        "GPA_BASE_URL": "http://127.0.0.1:18080/api/v1",
-        "GPA_TOKEN": "<paste GPA_AUTH_TOKEN here>"
+        "BHDR_BASE_URL": "http://127.0.0.1:18080/api/v1",
+        "BHDR_TOKEN": "<paste BHDR_AUTH_TOKEN here>"
       }
     }
   }
@@ -242,7 +242,7 @@ bazel build //...
 bazel build //src/shims/gl:libgpa_gl
 
 # Build only the C++ core
-bazel build //src/core:gpa_engine
+bazel build //src/core:bhdr_engine
 
 # Build Python bindings
 bazel build //src/bindings:_gpa_core

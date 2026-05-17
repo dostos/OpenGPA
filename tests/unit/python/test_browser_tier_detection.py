@@ -17,7 +17,7 @@ def _make_scenario(scenario_dir: str | None) -> ScenarioMetadata:
         ground_truth_fix="",
         difficulty=1,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="",
         binary_name="",
         scenario_dir=scenario_dir,

@@ -13,16 +13,16 @@ agent uses `gpa` shell calls to inspect the frame.
 
 The eval harness pre-sets these env vars:
 
-- `GPA_BASE_URL` — REST API endpoint (default `http://127.0.0.1:18080`)
-- `GPA_TOKEN`    — bearer token (set by the engine's `gpa start`)
-- `GPA_FRAME_ID` — pinned frame for this scenario (so `--frame` is automatic)
-- `GPA_SOURCE_ROOT`   — root for `gpa source read|grep`
-- `GPA_UPSTREAM_ROOT` — root for `gpa upstream read|list|grep`
+- `BHDR_BASE_URL` — REST API endpoint (default `http://127.0.0.1:18080`)
+- `BHDR_TOKEN`    — bearer token (set by the engine's `gpa start`)
+- `BHDR_FRAME_ID` — pinned frame for this scenario (so `--frame` is automatic)
+- `BHDR_SOURCE_ROOT`   — root for `gpa source read|grep`
+- `BHDR_UPSTREAM_ROOT` — root for `gpa upstream read|list|grep`
 
 ## Frame workflow
 
 ```bash
-gpa frames overview              # current frame summary (uses GPA_FRAME_ID)
+gpa frames overview              # current frame summary (uses BHDR_FRAME_ID)
 gpa frames list --json           # all captured frame ids
 gpa frames check-config          # run config-rule checks on the frame
 ```

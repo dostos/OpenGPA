@@ -2,8 +2,8 @@
 
 ## Summary
 
-The OpenGPA Vulkan capture layer (`VK_LAYER_GPA_capture` /
-`libVkLayer_gpa_capture.so`) **builds clean** and **captures frames
+The OpenGPA Vulkan capture layer (`VK_LAYER_BHDR_capture` /
+`libVkLayer_bhdr_capture.so`) **builds clean** and **captures frames
 end-to-end** against the engine. Verified with a minimal `xlib_surface`
 present app on Mesa lvp (CPU swrast over Xvfb). 5 `vkQueuePresentKHR`
 calls produced 5 captured frames in the engine, each with the correct
@@ -17,14 +17,14 @@ drafted in this round.
 
 - Build: `bazel build //src/shims/vk/...` — succeeds in 8.6s on a clean
   cache.
-- Engine: own engine on port 18081 (`/tmp/gpa_b.sock`, `/gpa_b`) so the
+- Engine: own engine on port 18081 (`/tmp/bhdr_b.sock`, `/bhdr_b`) so the
   long-lived port-18080 engine wasn't disturbed.
 - Test app: `/tmp/vk_present_test.c` (xlib_surface + minimal render pass
   via `vkCmdPipelineBarrier` to layout-transition the swapchain image
   to `PRESENT_SRC_KHR`, then `vkQueuePresentKHR`). 5 frames.
-- Layer dir: `/tmp/gpa_vk_layer/{libVkLayer_gpa_capture.so,gpa_layer.json}`
-  with `VK_LAYER_PATH=/tmp/gpa_vk_layer
-  VK_INSTANCE_LAYERS=VK_LAYER_GPA_capture`.
+- Layer dir: `/tmp/bhdr_vk_layer/{libVkLayer_bhdr_capture.so,bhdr_layer.json}`
+  with `VK_LAYER_PATH=/tmp/bhdr_vk_layer
+  VK_INSTANCE_LAYERS=VK_LAYER_BHDR_capture`.
 - Result: `curl localhost:18081/api/v1/frames` returned
   `{"frames":[1,2,3,4,5],"count":5}` after the test app exited.
 - Per-frame overview reflects the swapchain extent correctly:
@@ -37,12 +37,12 @@ drafted in this round.
    `src/shims/vk/libVkLayer_gla_capture.so` is a symlink to a
    non-existent `bazel-bin/src/shims/vk/libVkLayer_gla_capture.so`. The
    actual artefact has the **gpa** spelling
-   (`libVkLayer_gpa_capture.so`). This is a pre-existing rename
+   (`libVkLayer_bhdr_capture.so`). This is a pre-existing rename
    inconsistency; not blocking, but the broken symlink should be
    removed or repointed.
 
-2. **`gpa_layer.json` library_path**: the manifest in
-   `src/shims/vk/gpa_layer.json` references `./libVkLayer_gpa_capture.so`
+2. **`bhdr_layer.json` library_path**: the manifest in
+   `src/shims/vk/bhdr_layer.json` references `./libVkLayer_bhdr_capture.so`
    (relative). When loading via `VK_LAYER_PATH` this works as long as
    the manifest sits next to the shared object. We sidestepped this in
    testing by writing a manifest with the absolute path.
@@ -85,14 +85,14 @@ intercept causes infinite recursion because the loader trampoline routes
 extension-function lookups through every loaded layer (including us).
 The fix is to resolve all instance-level extension functions ONCE at
 `vkCreateInstance` time via `next_gipa` and store them on
-`GpaInstanceDispatch`. Same recursion was hiding the
+`BhdrInstanceDispatch`. Same recursion was hiding the
 `vkGetPhysicalDeviceMemoryProperties` "cannot resolve" warning in
 `vk_capture.c`; that's now fixed via the same cached-pointer approach.
 
 **Verified end-to-end with real chromium**:
 
 ```bash
-GPA_VULKAN_CAPTURE=1 \
+BHDR_VULKAN_CAPTURE=1 \
 VK_LAYER_PATH=/tmp/gpa-vk-layer \
 chrome --headless=new --use-vulkan --use-angle=vulkan \
   --no-sandbox --disable-gpu-sandbox \

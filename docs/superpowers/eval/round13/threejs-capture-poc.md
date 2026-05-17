@@ -2,7 +2,7 @@
 
 *Investigation: 2026-04-30. Goal: make R13 maintainer-framing scenarios
 (r1, r3, r6, r13) runnable under the OpenGPA OpenGL shim so we can
-generate captured frames and run with_gpa eval mode against them.*
+generate captured frames and run with_bhdr eval mode against them.*
 
 ## TL;DR
 
@@ -33,7 +33,7 @@ Test script clears to red, reads back pixels, exits cleanly.
 *offscreen* context with no swapchain and never calls
 `glXSwapBuffers`. The shim's frame-emit path is gated on
 `glXSwapBuffers` (`src/shims/gl/gl_wrappers.c:358-364` —
-`gpa_frame_on_swap()` is the only call site that flushes a frame to
+`bhdr_frame_on_swap()` is the only call site that flushes a frame to
 the engine). No swap = no frame.
 
 ### Path 2: chromium-headless + LD_PRELOAD (not tested)
@@ -50,15 +50,15 @@ similar to drive the page. Probably 2-4 hours of additional work.
 ### Path 3: Programmatic frame trigger (not implemented)
 
 Add a small exported C symbol to the shim — e.g.
-`extern void gpa_emit_frame(void);` — that does the same work as the
+`extern void bhdr_emit_frame(void);` — that does the same work as the
 inside of the `glXSwapBuffers` wrapper:
 
 ```c
-void gpa_emit_frame(void) {
-    gpa_init();
-    gpa_frame_on_swap();
-    gpa_frame_reset_draw_calls();
-    gpa_shadow_new_frame(&gpa_shadow);
+void bhdr_emit_frame(void) {
+    bhdr_init();
+    bhdr_frame_on_swap();
+    bhdr_frame_reset_draw_calls();
+    bhdr_shadow_new_frame(&bhdr_shadow);
 }
 ```
 
@@ -78,7 +78,7 @@ three.js examples in a browser harness.
 For the R13 maintainer-framing eval specifically:
 - r1, r3, r6 reproduce on three.js WebGL — once Path 3 lands, port the
   buggy three.js commit's WebGL example into a Node.js + headless-gl
-  + three.js Node-render harness, call `gpa_emit_frame()` between
+  + three.js Node-render harness, call `bhdr_emit_frame()` between
   rendering steps, capture.
 - r13 (autoClear + WebGPURenderer) is WebGPU-only and headless-gl
   doesn't support WebGPU. r13 stays blocked until either (a) we add

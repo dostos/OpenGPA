@@ -17,7 +17,7 @@ minimal repro.
 - Framework source at {upstream_snapshot.repo}@{upstream_snapshot.sha},
   accessible via Read / Grep / Glob (or the harness-provided
   `read_upstream` / `list_upstream_files` / `grep_upstream` tools).
-<!-- WITH_GPA_ONLY -->
+<!-- WITH_BHDR_ONLY -->
 - OpenGPA live capture. Prefer:
   - `gpa report --frame latest --json` — all diagnostics in one call.
   - `gpa trace value <literal> --json` — reverse-lookup framework fields
@@ -25,7 +25,7 @@ minimal repro.
     Especially valuable when the bug's symptom is a specific numeric
     value whose origin points at the fix.
   - `gpa check <name>` / `gpa dump <aspect>` for drill-down.
-<!-- END_WITH_GPA_ONLY -->
+<!-- END_WITH_BHDR_ONLY -->
 
 # Task
 

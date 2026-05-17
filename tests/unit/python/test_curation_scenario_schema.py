@@ -115,7 +115,7 @@ def test_scenario_metadata_has_new_fields():
         ground_truth_fix="fix",
         difficulty=3,
         adversarial_principles=[],
-        gpa_advantage="",
+        bhdr_advantage="",
         source_path="/tmp/x.c",
         binary_name="r1_test",
         # New fields — all optional
@@ -152,7 +152,7 @@ def test_scenario_metadata_upstream_snapshot_fields_default():
     s = ScenarioMetadata(
         id="x", title="x", bug_description="x", expected_output="x",
         actual_output="x", ground_truth_diagnosis="x", ground_truth_fix="x",
-        difficulty=1, adversarial_principles=[], gpa_advantage="",
+        difficulty=1, adversarial_principles=[], bhdr_advantage="",
         source_path="", binary_name="x",
     )
     assert s.upstream_snapshot_repo is None

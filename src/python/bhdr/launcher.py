@@ -5,9 +5,9 @@ Usage:
     python -m bhdr.launcher [options]
 
 The launcher prints environment variables needed to connect a shim:
-    GPA_SOCKET_PATH=/tmp/gpa.sock
-    GPA_SHM_NAME=/gpa_capture
-    GPA_AUTH_TOKEN=<random token>
+    BHDR_SOCKET_PATH=/tmp/gpa.sock
+    BHDR_SHM_NAME=/bhdr_capture
+    BHDR_AUTH_TOKEN=<random token>
 """
 import argparse
 import atexit
@@ -25,7 +25,7 @@ def main():
                         help="Path to a .rdc capture file (renderdoc backend only)")
     parser.add_argument("--socket", default="/tmp/gpa.sock",
                         help="Unix socket path for shim connections")
-    parser.add_argument("--shm", default="/gpa_capture",
+    parser.add_argument("--shm", default="/bhdr_capture",
                         help="POSIX shared memory name")
     parser.add_argument("--shm-slots", type=int, default=4,
                         help="Number of ring buffer slots")
@@ -41,10 +41,10 @@ def main():
 
     if args.backend == "native":
         # Import C++ bindings
-        import _gpa_core
+        import _bhdr_core
 
         # Create engine
-        engine = _gpa_core.Engine(args.socket, args.shm, args.shm_slots, args.slot_size)
+        engine = _bhdr_core.Engine(args.socket, args.shm, args.shm_slots, args.slot_size)
 
         # Start engine in background thread
         engine_thread = threading.Thread(target=engine.run, daemon=True, name="opengpa-engine")
@@ -57,8 +57,8 @@ def main():
         atexit.register(_shutdown)
 
         # Create query engine
-        normalizer = _gpa_core.Normalizer()
-        qe = _gpa_core.QueryEngine(engine.frame_store(), normalizer)
+        normalizer = _bhdr_core.Normalizer()
+        qe = _bhdr_core.QueryEngine(engine.frame_store(), normalizer)
 
         from bhdr.backends.native import NativeBackend
         provider = NativeBackend(qe, engine=engine)
@@ -81,9 +81,9 @@ def main():
 
     # Print connection info
     if args.backend == "native":
-        print(f"GPA_SOCKET_PATH={args.socket}")
-        print(f"GPA_SHM_NAME={args.shm}")
-    print(f"GPA_AUTH_TOKEN={token}")
+        print(f"BHDR_SOCKET_PATH={args.socket}")
+        print(f"BHDR_SHM_NAME={args.shm}")
+    print(f"BHDR_AUTH_TOKEN={token}")
     print(f"OpenGPA listening on http://127.0.0.1:{args.port}")
     sys.stdout.flush()
 

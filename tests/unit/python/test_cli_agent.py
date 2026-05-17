@@ -42,15 +42,15 @@ def test_run_with_gla_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     result = agent.run(scenario, "with_gla", tools)
     assert result.diagnosis.startswith("DIAGNOSIS:")
     assert result.tool_calls == 2
-    assert captured["env"]["GPA_FRAME_ID"] == "42"
-    assert captured["env"]["GPA_SOURCE_ROOT"] == str(tmp_path)
+    assert captured["env"]["BHDR_FRAME_ID"] == "42"
+    assert captured["env"]["BHDR_SOURCE_ROOT"] == str(tmp_path)
     assert "--model" in captured["argv"]
 
 
 def test_with_gla_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_path):
     """When neither live capture nor a snapshot is available, the with_gla
     prompt must NOT advertise the 11-command tool block (most are
-    unusable). And it must NOT lie about GPA_FRAME_ID being set."""
+    unusable). And it must NOT lie about BHDR_FRAME_ID being set."""
     captured = {}
     def fake_run(argv, *, input, capture_output, text, env, timeout):
         captured["input"] = input
@@ -60,7 +60,7 @@ def test_with_gla_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_pat
     scenario = _Scenario()
     tools = {"run_with_capture": lambda: None}  # no frame, no snapshot key
     agent.run(scenario, "with_gla", tools)
-    assert "GPA_FRAME_ID is set" not in captured["input"]
+    assert "BHDR_FRAME_ID is set" not in captured["input"]
     assert "gpa drawcalls" not in captured["input"]  # live-frame tools omitted
     assert "gpa pixel" not in captured["input"]
 
@@ -83,7 +83,7 @@ def test_with_gla_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_pa
     }
     agent.run(scenario, "with_gla", tools)
     text = captured["input"]
-    assert "GPA_FRAME_ID is set" not in text
+    assert "BHDR_FRAME_ID is set" not in text
     assert "gpa upstream read" in text
     assert "gpa upstream grep" in text
     # Live-frame commands should not appear in advisor block
@@ -163,9 +163,9 @@ def test_scenario_blurb_omits_missing_fields(monkeypatch, tmp_path):
     assert "None" not in text or text.count("None") < 3  # tolerant
 
 
-def test_snapshot_root_callable_pins_gpa_upstream_root(monkeypatch, tmp_path):
+def test_snapshot_root_callable_pins_bhdr_upstream_root(monkeypatch, tmp_path):
     """The cli_agent resolves tools["snapshot_root"] (a callable) and pins
-    GPA_UPSTREAM_ROOT so `gpa upstream read/grep` shell calls work."""
+    BHDR_UPSTREAM_ROOT so `gpa upstream read/grep` shell calls work."""
     captured = {}
     def fake_run(argv, *, input, capture_output, text, env, timeout):
         captured["env"] = env
@@ -181,12 +181,12 @@ def test_snapshot_root_callable_pins_gpa_upstream_root(monkeypatch, tmp_path):
         "snapshot_root": lambda: snap_dir,
     }
     agent.run(scenario, "with_gla", tools)
-    assert captured["env"]["GPA_UPSTREAM_ROOT"] == str(snap_dir)
+    assert captured["env"]["BHDR_UPSTREAM_ROOT"] == str(snap_dir)
 
 
-def test_snapshot_root_none_skips_gpa_upstream_root(monkeypatch, tmp_path):
+def test_snapshot_root_none_skips_bhdr_upstream_root(monkeypatch, tmp_path):
     """When the snapshot fetch failed, the callable returns None and the
-    agent must skip pinning GPA_UPSTREAM_ROOT (no env var set)."""
+    agent must skip pinning BHDR_UPSTREAM_ROOT (no env var set)."""
     captured = {}
     def fake_run(argv, *, input, capture_output, text, env, timeout):
         captured["env"] = env
@@ -200,13 +200,13 @@ def test_snapshot_root_none_skips_gpa_upstream_root(monkeypatch, tmp_path):
         "snapshot_root": lambda: None,
     }
     agent.run(scenario, "with_gla", tools)
-    assert "GPA_UPSTREAM_ROOT" not in captured["env"]
+    assert "BHDR_UPSTREAM_ROOT" not in captured["env"]
 
 
 def test_run_with_gla_graceful_when_capture_returns_none(monkeypatch, tmp_path):
     """When run_with_capture returns None (e.g. no Bazel target / build
     failure), the agent should still run the with_gla prompt but skip
-    pinning GPA_FRAME_ID. GPA_BASE_URL is still set so any gpa CLI
+    pinning BHDR_FRAME_ID. BHDR_BASE_URL is still set so any gpa CLI
     invocations the agent attempts get a sensible default."""
     captured = {}
     def fake_run(argv, *, input, capture_output, text, env, timeout):
@@ -221,8 +221,8 @@ def test_run_with_gla_graceful_when_capture_returns_none(monkeypatch, tmp_path):
     tools = {"run_with_capture": lambda: None}
     result = agent.run(scenario, "with_gla", tools)
     assert result.diagnosis.startswith("DIAGNOSIS:")
-    assert "GPA_FRAME_ID" not in captured["env"]
-    assert captured["env"].get("GPA_BASE_URL")  # default applied
+    assert "BHDR_FRAME_ID" not in captured["env"]
+    assert captured["env"].get("BHDR_BASE_URL")  # default applied
     # The agent still produces output. With no frame and no snapshot,
     # the live-frame tools should NOT appear in the prompt (they'd be
     # advertising commands the agent can't successfully invoke).

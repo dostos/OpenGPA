@@ -85,7 +85,7 @@ def test_plan_round_under_budget_no_pruning():
     plan = plan_round(
         scenarios=["a", "b"],
         tiers=["haiku", "sonnet", "opus"],
-        modes=["code_only", "with_gpa"],
+        modes=["code_only", "with_bhdr"],
         max_budget_usd=50.0,
         baseline_per_run=0.50,
     )
@@ -103,7 +103,7 @@ def test_plan_round_drops_opus_when_over_budget():
     plan = plan_round(
         scenarios=[f"s{i}" for i in range(30)],
         tiers=["haiku", "sonnet", "opus"],
-        modes=["code_only", "with_gpa"],
+        modes=["code_only", "with_bhdr"],
         max_budget_usd=60.0,
         baseline_per_run=0.50,
     )
@@ -123,7 +123,7 @@ def test_plan_round_drops_scenarios_when_still_over_after_opus():
     plan = plan_round(
         scenarios=[f"s{i}" for i in range(40)],
         tiers=["haiku", "sonnet", "opus"],
-        modes=["code_only", "with_gpa"],
+        modes=["code_only", "with_bhdr"],
         max_budget_usd=10.0,
         baseline_per_run=0.50,
     )
@@ -198,7 +198,7 @@ def test_plan_cli_pruned_exits_two():
             sys.executable, "-m", "bhdr.eval.plan",
             "--scenarios", *[f"s{i}" for i in range(20)],
             "--tiers", "haiku", "sonnet", "opus",
-            "--modes", "code_only", "with_gpa",
+            "--modes", "code_only", "with_bhdr",
             "--max-budget-usd", "15",
             "--baseline-per-run", "0.50",
         ],

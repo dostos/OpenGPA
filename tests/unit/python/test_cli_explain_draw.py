@@ -82,7 +82,7 @@ def _injected(http_client):
 
 class TestExplainDrawCli:
     def test_basic_human(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["Scene", "Helmet"]
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -95,7 +95,7 @@ class TestExplainDrawCli:
         assert "Scene/Helmet" in out
 
     def test_json_output(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["A"]
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -109,7 +109,7 @@ class TestExplainDrawCli:
         assert data["scene_node_path"] == "A"
 
     def test_field_filter(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["A"]
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -124,18 +124,18 @@ class TestExplainDrawCli:
         assert "state" in out
 
     def test_unknown_field_exit_2(self, session_dir, monkeypatch, capsys):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = ed_cmd.run(draw_id=0, field="bogus")
         assert rc == 2
 
     def test_invalid_frame_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = ed_cmd.run(draw_id=0, frame="abc")
         assert rc == 2
 
     def test_missing_session_exit_2(self, tmp_path, monkeypatch):
         from bhdr.cli import session as session_mod
-        monkeypatch.delenv("GPA_SESSION", raising=False)
+        monkeypatch.delenv("BHDR_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
             str(tmp_path / "no-such-link"),
@@ -144,7 +144,7 @@ class TestExplainDrawCli:
         assert rc == 2
 
     def test_missing_draw_exit_1(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         http_client = _make_test_client([_make_drawcall(0)])
         rc = ed_cmd.run(
             draw_id=999, client=_injected(http_client),
@@ -153,7 +153,7 @@ class TestExplainDrawCli:
         assert rc == 1
 
     def test_stdin_pipeline(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["A"]
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -181,7 +181,7 @@ def _draw(dc_id, *, blend=False, depth_test=True, prog=7, debug_groups=None):
 
 class TestDiffDrawsCli:
     def test_state_default(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         a = _draw(0, blend=False)
         b = _draw(1, blend=True)
         http_client = _make_test_client([a, b])
@@ -193,7 +193,7 @@ class TestDiffDrawsCli:
         assert "GL_BLEND" in buf.getvalue()
 
     def test_uniforms_scope(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         u_a = MagicMock(); u_a.name = "uOpacity"; u_a.type = 0x1406
         u_a.data = struct.pack("<f", 1.0)
         u_b = MagicMock(); u_b.name = "uOpacity"; u_b.type = 0x1406
@@ -210,7 +210,7 @@ class TestDiffDrawsCli:
         assert "uOpacity" in buf.getvalue()
 
     def test_same_draw_empty(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         a = _draw(0)
         http_client = _make_test_client([a])
         buf = io.StringIO()
@@ -221,7 +221,7 @@ class TestDiffDrawsCli:
         assert "no differences" in buf.getvalue()
 
     def test_missing_draw_exit_1(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         a = _draw(0)
         http_client = _make_test_client([a])
         rc = diff_cmd.run(
@@ -231,12 +231,12 @@ class TestDiffDrawsCli:
         assert rc == 1
 
     def test_invalid_scope_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = diff_cmd.run(a=0, b=1, scope="xyz")
         assert rc == 2
 
     def test_json_output(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         a = _draw(0, blend=False); b = _draw(1, blend=True)
         http_client = _make_test_client([a, b])
         buf = io.StringIO()

@@ -87,22 +87,22 @@ def _annotation(nodes):
 
 class TestSceneFindCli:
     def test_missing_predicate_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = sf_cmd.run(predicates=[])
         assert rc == 2
 
     def test_negative_limit_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = sf_cmd.run(predicates=["material:transparent"], limit=0)
         assert rc == 2
 
     def test_invalid_frame_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = sf_cmd.run(predicates=["material:transparent"], frame="abc")
         assert rc == 2
 
     def test_no_annotation_exit_1(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         http_client = _make_test_client([_make_drawcall(0)])
         rc = sf_cmd.run(
             predicates=["material:transparent"],
@@ -111,7 +111,7 @@ class TestSceneFindCli:
         assert rc == 1
 
     def test_match_human(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["Helmet"]
         annotation = _annotation([
             {"path": "Helmet", "type": "Mesh",
@@ -127,7 +127,7 @@ class TestSceneFindCli:
         assert "Helmet" in buf.getvalue()
 
     def test_match_json(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _make_drawcall(0); dc.debug_groups = ["Helmet"]
         annotation = _annotation([
             {"path": "Helmet", "type": "Mesh",
@@ -144,7 +144,7 @@ class TestSceneFindCli:
         assert data["match_count"] == 1
 
     def test_unknown_predicate_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         annotation = _annotation([{"path": "X"}])
         http_client = _make_test_client([_make_drawcall(0)],
                                         annotation=annotation)
@@ -170,7 +170,7 @@ def _draw_at(dc_id, x, y, w, h, debug_groups=None):
 
 class TestSceneExplainCli:
     def test_basic_human(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _draw_at(0, 0, 0, 800, 600, debug_groups=["A"])
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -181,7 +181,7 @@ class TestSceneExplainCli:
         assert "draw      0" in buf.getvalue()
 
     def test_basic_json(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _draw_at(0, 0, 0, 800, 600, debug_groups=["A"])
         http_client = _make_test_client([dc])
         buf = io.StringIO()
@@ -194,17 +194,17 @@ class TestSceneExplainCli:
         assert data["resolved"] == "approximate"
 
     def test_invalid_pixel_format_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = se_cmd.run(pixel="abc")
         assert rc == 2
 
     def test_negative_pixel_exit_2(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         rc = se_cmd.run(pixel="-1,5")
         assert rc == 2
 
     def test_out_of_viewport_exit_3(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         dc = _draw_at(0, 0, 0, 800, 600)
         http_client = _make_test_client([dc])
         rc = se_cmd.run(
@@ -214,7 +214,7 @@ class TestSceneExplainCli:
         assert rc == 3
 
     def test_no_match_exit_1(self, session_dir, monkeypatch):
-        monkeypatch.setenv("GPA_SESSION", str(session_dir))
+        monkeypatch.setenv("BHDR_SESSION", str(session_dir))
         # Draw covers x<400; pixel at (700, 300) misses.
         dc = _draw_at(0, 0, 0, 400, 600)
         http_client = _make_test_client([dc])

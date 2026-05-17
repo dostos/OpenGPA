@@ -62,7 +62,7 @@ cat >> "$TMPPROMPT" <<EOF
 EOF
 fi
 
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
 cat >> "$TMPPROMPT" <<EOF
 - OpenGPA live capture of the rendered frame. A reproduction has been captured as frame #$FRAME_ID.
   Query via curl with Authorization header. Example endpoints:
@@ -90,13 +90,13 @@ When done, output a SINGLE JSON object on the last line (no markdown, no trailin
   "offending_symbol": "<function/file/field name where the bug lives, if identifiable>",
   "confidence": "high|medium|low",
   "framework_files_opened": <integer count of distinct framework source files you read>,
-  "gpa_queries_made": <integer count of distinct GPA REST queries, 0 in code-only mode>,
+  "bhdr_queries_made": <integer count of distinct GPA REST queries, 0 in code-only mode>,
   "reasoning": "<2-4 sentence chain explaining how you converged on the diagnosis>"
 }
 EOF
 
 ALLOW="Read Grep Glob"
-if [ "$MODE" = "with_gpa" ]; then
+if [ "$MODE" = "with_bhdr" ]; then
   ALLOW="Read Grep Glob Bash(curl:*)"
 fi
 

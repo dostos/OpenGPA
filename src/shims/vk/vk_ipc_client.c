@@ -30,7 +30,7 @@ typedef struct {
     uint64_t total_size;
 } RingHeader;
 
-#define GPA_SHM_MAGIC 0x474C415F53484D00ULL
+#define BHDR_SHM_MAGIC 0x474C415F53484D00ULL
 
 typedef struct {
     _Atomic uint32_t state;
@@ -171,9 +171,9 @@ static int recv_msg(void *buf, size_t buf_size, int flags) {
  * Public API
  * -------------------------------------------------------------------------- */
 
-int gpa_vk_ipc_connect(void) {
-    const char *socket_path = getenv("GPA_SOCKET_PATH");
-    const char *shm_name    = getenv("GPA_SHM_NAME");
+int bhdr_vk_ipc_connect(void) {
+    const char *socket_path = getenv("BHDR_SOCKET_PATH");
+    const char *shm_name    = getenv("BHDR_SHM_NAME");
 
     if (!socket_path || !shm_name) {
         /* Engine not configured — run in passthrough mode. */
@@ -200,7 +200,7 @@ int gpa_vk_ipc_connect(void) {
     memcpy(&hdr, hdr_map, sizeof(hdr));
     munmap(hdr_map, sizeof(RingHeader));
 
-    if (hdr.magic != GPA_SHM_MAGIC) {
+    if (hdr.magic != BHDR_SHM_MAGIC) {
         fprintf(stderr, "[OpenGPA-VK] shm magic mismatch (got 0x%llx)\n",
                 (unsigned long long)hdr.magic);
         close(shm_fd);
@@ -277,12 +277,12 @@ fail_connected:
     return -1;
 }
 
-int gpa_vk_ipc_is_connected(void) {
+int bhdr_vk_ipc_is_connected(void) {
     return g_sock_fd >= 0 && g_shm_base != NULL;
 }
 
-void *gpa_vk_ipc_claim_slot(uint32_t *slot_index) {
-    if (!gpa_vk_ipc_is_connected()) return NULL;
+void *bhdr_vk_ipc_claim_slot(uint32_t *slot_index) {
+    if (!bhdr_vk_ipc_is_connected()) return NULL;
 
     for (uint32_t i = 0; i < g_num_slots; i++) {
         uint32_t idx = (g_next_write + i) % g_num_slots;
@@ -298,15 +298,15 @@ void *gpa_vk_ipc_claim_slot(uint32_t *slot_index) {
     return NULL; /* ring buffer full */
 }
 
-void gpa_vk_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
-    if (!gpa_vk_ipc_is_connected()) return;
+void bhdr_vk_ipc_commit_slot(uint32_t slot_index, uint64_t size) {
+    if (!bhdr_vk_ipc_is_connected()) return;
     SlotHeader *hdr = slot_header(slot_index);
     hdr->data_size  = size;
     atomic_store(&hdr->state, SLOT_READY);
 }
 
-void gpa_vk_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
-    if (!gpa_vk_ipc_is_connected()) return;
+void bhdr_vk_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
+    if (!bhdr_vk_ipc_is_connected()) return;
 
     FrameReadyPayload fr;
     fr.frame_id       = frame_id;
@@ -314,12 +314,12 @@ void gpa_vk_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
 
     if (send_msg(MSG_FRAME_READY, &fr, sizeof(fr)) != 0) {
         fprintf(stderr, "[OpenGPA-VK] send FRAME_READY failed, disconnecting\n");
-        gpa_vk_ipc_disconnect();
+        bhdr_vk_ipc_disconnect();
     }
 }
 
-int gpa_vk_ipc_should_pause(void) {
-    if (!gpa_vk_ipc_is_connected()) return 0;
+int bhdr_vk_ipc_should_pause(void) {
+    if (!bhdr_vk_ipc_is_connected()) return 0;
 
     ControlPayload ctrl;
     int rtype = recv_msg(&ctrl, sizeof(ctrl), MSG_DONTWAIT);
@@ -329,8 +329,8 @@ int gpa_vk_ipc_should_pause(void) {
     return 0;
 }
 
-void gpa_vk_ipc_wait_resume(void) {
-    if (!gpa_vk_ipc_is_connected()) return;
+void bhdr_vk_ipc_wait_resume(void) {
+    if (!bhdr_vk_ipc_is_connected()) return;
 
     ControlPayload ctrl;
     for (;;) {
@@ -340,7 +340,7 @@ void gpa_vk_ipc_wait_resume(void) {
     }
 }
 
-void gpa_vk_ipc_disconnect(void) {
+void bhdr_vk_ipc_disconnect(void) {
     if (g_sock_fd >= 0) {
         close(g_sock_fd);
         g_sock_fd = -1;

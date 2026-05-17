@@ -48,7 +48,7 @@ def _client(**extra_paths) -> _CapturingClient:
 
 
 def test_list_hits_correct_url(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = ann_mod.run_list(client=client, frame=None, print_stream=buf)
@@ -57,7 +57,7 @@ def test_list_hits_correct_url(monkeypatch):
 
 
 def test_list_output_is_json_passthrough(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     payload = {"note": "some annotation"}
     path = f"/api/v1/frames/{_CURRENT_FID}/annotations"
     client = _client(**{path: payload})
@@ -72,7 +72,7 @@ def test_list_output_is_json_passthrough(monkeypatch):
 
 
 def test_add_via_body_json(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = ann_mod.run_add(
@@ -90,7 +90,7 @@ def test_add_via_body_json(monkeypatch):
 
 
 def test_add_via_file(monkeypatch, tmp_path):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     data = {"key": "value"}
     json_file = tmp_path / "ann.json"
     json_file.write_text(json.dumps(data))
@@ -112,7 +112,7 @@ def test_add_via_file(monkeypatch, tmp_path):
 
 
 def test_add_invalid_body_json_returns_2(monkeypatch):
-    monkeypatch.delenv("GPA_FRAME_ID", raising=False)
+    monkeypatch.delenv("BHDR_FRAME_ID", raising=False)
     client = _client()
     buf = io.StringIO()
     rc = ann_mod.run_add(

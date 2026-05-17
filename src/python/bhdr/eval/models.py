@@ -90,7 +90,7 @@ def plan_round(
     Args:
         scenarios: scenario names to run.
         tiers: tier keys to evaluate.
-        modes: mode keys (typically ``["code_only", "with_gpa"]``).
+        modes: mode keys (typically ``["code_only", "with_bhdr"]``).
         max_budget_usd: hard ceiling in USD.
         baseline_per_run: sonnet per-run USD cost used as the scale factor.
 

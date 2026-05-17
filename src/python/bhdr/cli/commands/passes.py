@@ -49,7 +49,7 @@ def add_subparser(subparsers) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
     sub = p.add_subparsers(dest="passes_cmd", required=True)
@@ -57,13 +57,13 @@ def add_subparser(subparsers) -> None:
     # ---- list ----
     p_list = sub.add_parser("list", help="List render passes for a frame (JSON)")
     p_list.add_argument("--frame", default=None,
-                        help="Frame id (default: GPA_FRAME_ID env or latest)")
+                        help="Frame id (default: BHDR_FRAME_ID env or latest)")
 
     # ---- get ----
     p_get = sub.add_parser("get", help="Get a single render pass by name (JSON)")
     p_get.add_argument("name", help="Render pass name")
     p_get.add_argument("--frame", default=None,
-                       help="Frame id (default: GPA_FRAME_ID env or latest)")
+                       help="Frame id (default: BHDR_FRAME_ID env or latest)")
 
 
 # --------------------------------------------------------------------------- #

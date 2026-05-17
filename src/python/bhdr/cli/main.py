@@ -54,7 +54,7 @@ def _add_session_arg(p: argparse.ArgumentParser) -> None:
         dest="session",
         type=Path,
         default=None,
-        help="Session directory (overrides $GPA_SESSION and the current-session link)",
+        help="Session directory (overrides $BHDR_SESSION and the current-session link)",
     )
 
 
@@ -107,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  gpa stop                                        # 1) stop active session\n"
             "  gpa stop --session /tmp/gpa-abc                 # 2) stop a specific session\n"
-            "  GPA_SESSION=/tmp/gpa-abc gpa stop               # 3) via env\n"
+            "  BHDR_SESSION=/tmp/gpa-abc gpa stop               # 3) via env\n"
         ),
     )
     _add_session_arg(p_stop)

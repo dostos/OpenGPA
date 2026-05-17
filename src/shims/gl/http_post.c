@@ -24,18 +24,18 @@ static int send_all(int fd, const char* buf, size_t n) {
         ssize_t w = send(fd, buf + off, n - off, MSG_NOSIGNAL);
         if (w < 0) {
             if (errno == EINTR) continue;
-            return GPA_HTTP_ERR_SEND;
+            return BHDR_HTTP_ERR_SEND;
         }
         off += (size_t)w;
     }
-    return GPA_HTTP_OK;
+    return BHDR_HTTP_OK;
 }
 
-int gpa_http_post_json(const char* host, int port,
+int bhdr_http_post_json(const char* host, int port,
                        const char* path,
                        const char* auth_token,
                        const char* body, size_t body_len) {
-    if (!host || !path || (body_len > 0 && !body)) return GPA_HTTP_ERR_INVAL;
+    if (!host || !path || (body_len > 0 && !body)) return BHDR_HTTP_ERR_INVAL;
 
     /* Resolve (numeric first, then getaddrinfo). We only support IPv4 for
      * simplicity — engine runs on 127.0.0.1 by default. */
@@ -49,7 +49,7 @@ int gpa_http_post_json(const char* host, int port,
         hints.ai_socktype = SOCK_STREAM;
         if (getaddrinfo(host, NULL, &hints, &res) != 0 || !res) {
             if (res) freeaddrinfo(res);
-            return GPA_HTTP_ERR_DNS;
+            return BHDR_HTTP_ERR_DNS;
         }
         memcpy(&sa.sin_addr,
                &((struct sockaddr_in*)res->ai_addr)->sin_addr,
@@ -58,7 +58,7 @@ int gpa_http_post_json(const char* host, int port,
     }
 
     int fd = socket(AF_INET, SOCK_STREAM | SOCK_CLOEXEC, 0);
-    if (fd < 0) return GPA_HTTP_ERR_CONNECT;
+    if (fd < 0) return BHDR_HTTP_ERR_CONNECT;
 
     /* 2s send + recv timeouts — we fail open if engine is slow. */
     struct timeval tv = {2, 0};
@@ -69,7 +69,7 @@ int gpa_http_post_json(const char* host, int port,
 
     if (connect(fd, (struct sockaddr*)&sa, sizeof(sa)) < 0) {
         close(fd);
-        return GPA_HTTP_ERR_CONNECT;
+        return BHDR_HTTP_ERR_CONNECT;
     }
 
     /* Build and send the request. */
@@ -97,16 +97,16 @@ int gpa_http_post_json(const char* host, int port,
     }
     if (hlen < 0 || hlen >= (int)sizeof(header)) {
         close(fd);
-        return GPA_HTTP_ERR_INVAL;
+        return BHDR_HTTP_ERR_INVAL;
     }
 
     int rc = send_all(fd, header, (size_t)hlen);
-    if (rc == GPA_HTTP_OK && body_len > 0) {
+    if (rc == BHDR_HTTP_OK && body_len > 0) {
         rc = send_all(fd, body, body_len);
     }
 
     /* Drain response so the server can reset cleanly; ignore content. */
-    if (rc == GPA_HTTP_OK) {
+    if (rc == BHDR_HTTP_OK) {
         char scratch[512];
         for (int i = 0; i < 4; i++) {
             ssize_t r = recv(fd, scratch, sizeof(scratch), 0);

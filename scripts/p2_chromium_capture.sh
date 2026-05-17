@@ -33,14 +33,14 @@ PROFILE_DIR="$(mktemp -d -p "$PROFILE_ROOT" prof-XXXXXX)"
 # bazel-bin symlink resolves to whichever bazel cache built it last.
 # We resolve to a real file path so LD_PRELOAD survives chromium's
 # zygote fork.
-SHIM_REAL=$(find /home/jingyulee/.cache/bazel -name 'libgpa_gl.so' -path '*/src/shims/gl/*' 2>/dev/null | head -1)
+SHIM_REAL=$(find /home/jingyulee/.cache/bazel -name 'libbhdr_gl.so' -path '*/src/shims/gl/*' 2>/dev/null | head -1)
 if [[ -z "$SHIM_REAL" ]]; then
-  echo "ERROR: libgpa_gl.so not found in bazel cache; build with 'bazel build //src/shims/gl/...' first" >&2
+  echo "ERROR: libbhdr_gl.so not found in bazel cache; build with 'bazel build //src/shims/gl/...' first" >&2
   exit 1
 fi
 # Copy to /tmp because some sandboxed chromium builds (snap) cannot read
 # arbitrary $HOME paths but /tmp is always allowed.
-SHIM=/tmp/libgpa_gl_p2.so
+SHIM=/tmp/libbhdr_gl_p2.so
 cp -f "$SHIM_REAL" "$SHIM"
 chmod 0755 "$SHIM"
 
@@ -120,8 +120,8 @@ LOG="$LOG_DIR/chromium-$(date +%H%M%S).log"
 #                               three.js can render.
 
 LD_PRELOAD="$SHIM" \
-GPA_SOCKET_PATH="${GPA_SOCKET_PATH:-/tmp/gpa_p2.sock}" \
-GPA_SHM_NAME="${GPA_SHM_NAME:-/gpa_p2}" \
+BHDR_SOCKET_PATH="${BHDR_SOCKET_PATH:-/tmp/bhdr_p2.sock}" \
+BHDR_SHM_NAME="${BHDR_SHM_NAME:-/bhdr_p2}" \
 DISPLAY="${DISPLAY:-:99}" \
 "$CHROME_BIN" \
   --headless=new \
@@ -148,7 +148,7 @@ GPU_PID=$(ps -ef | awk -v p="$PROFILE_DIR" \
   '$0 ~ "--type=gpu-process" && $0 ~ p { print $2; exit }')
 if [[ -n "$GPU_PID" && -d "/proc/$GPU_PID" ]]; then
   echo "=== gpu-process ($GPU_PID) maps (filtered) ===" | tee -a "$LOG"
-  grep -E 'libGL\.|libEGL\.|libGLX|libGLES|libgpa_gl|swiftshader|libvulkan' "/proc/$GPU_PID/maps" 2>/dev/null \
+  grep -E 'libGL\.|libEGL\.|libGLX|libGLES|libbhdr_gl|swiftshader|libvulkan' "/proc/$GPU_PID/maps" 2>/dev/null \
     | awk '{print $NF}' | sort -u | tee -a "$LOG"
 fi
 

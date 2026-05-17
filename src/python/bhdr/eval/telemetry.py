@@ -25,7 +25,7 @@ from typing import Any
 # contains a recognised gpa subcommand with a word boundary. We list the
 # subcommands explicitly so that "gpa" appearing as a filename fragment inside
 # an unrelated bash pipeline does not count.
-_GPA_SUBCOMMANDS = (
+_BHDR_SUBCOMMANDS = (
     "start",
     "stop",
     "env",
@@ -37,8 +37,8 @@ _GPA_SUBCOMMANDS = (
     "annotate",
     "annotations",
 )
-_GPA_RE = re.compile(r"\bgpa\s+(" + "|".join(_GPA_SUBCOMMANDS) + r")\b")
-_CURL_GPA_RE = re.compile(r"^\s*curl\b[^\n]*(?::18080|/api/v1|\$GPA_PORT)", re.MULTILINE)
+_BHDR_RE = re.compile(r"\bgpa\s+(" + "|".join(_BHDR_SUBCOMMANDS) + r")\b")
+_CURL_BHDR_RE = re.compile(r"^\s*curl\b[^\n]*(?::18080|/api/v1|\$BHDR_PORT)", re.MULTILINE)
 
 # Some runs route file access through MCP servers (serena) even when Read is
 # allowed. Map those to the equivalent first-class tool so per-mode aggregate
@@ -60,9 +60,9 @@ def _classify_bash(command: str) -> str:
         return "Bash"
     stripped = command.lstrip()
     # `gpa ` prefix or any `gpa <subcommand>` fragment
-    if stripped.startswith("gpa ") or _GPA_RE.search(command):
+    if stripped.startswith("gpa ") or _BHDR_RE.search(command):
         return "gpa"
-    if _CURL_GPA_RE.search(command):
+    if _CURL_BHDR_RE.search(command):
         return "curl"
     return "Bash"
 

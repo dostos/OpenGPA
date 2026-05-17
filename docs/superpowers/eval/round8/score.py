@@ -186,7 +186,7 @@ def main() -> None:
     rows = []
     for f in sorted(RESULTS_DIR.glob("*_*.jsonl")):
         name = f.stem
-        m = re.match(r"^(.*?)_(code_only|with_gpa)_(haiku|sonnet)$", name)
+        m = re.match(r"^(.*?)_(code_only|with_bhdr)_(haiku|sonnet)$", name)
         if not m:
             continue
         scen, mode, model = m.group(1), m.group(2), m.group(3)
@@ -263,8 +263,8 @@ def main() -> None:
         d = {(r["mode"], r["model"]): r["correct"] for r in by_scen[scen]}
         co_h = "Y" if d.get(("code_only","haiku")) else "N" if ("code_only","haiku") in d else "-"
         co_s = "Y" if d.get(("code_only","sonnet")) else "N" if ("code_only","sonnet") in d else "-"
-        gp_h = "Y" if d.get(("with_gpa","haiku")) else "N" if ("with_gpa","haiku") in d else "-"
-        gp_s = "Y" if d.get(("with_gpa","sonnet")) else "N" if ("with_gpa","sonnet") in d else "-"
+        gp_h = "Y" if d.get(("with_bhdr","haiku")) else "N" if ("with_bhdr","haiku") in d else "-"
+        gp_s = "Y" if d.get(("with_bhdr","sonnet")) else "N" if ("with_bhdr","sonnet") in d else "-"
         out.append(f"{scen:<50} {co_h:>5} {co_s:>5} {gp_h:>5} {gp_s:>5}")
 
     out.append("\n## Mean Tool Calls per Run (mode x model)")
@@ -286,7 +286,7 @@ def main() -> None:
         for scen, rs in by_scen.items():
             d = {(r["mode"], r["model"]): r for r in rs}
             co = d.get(("code_only", model))
-            gp = d.get(("with_gpa", model))
+            gp = d.get(("with_bhdr", model))
             if not co or not gp:
                 continue
             if not (co["correct"] and gp["correct"]):
@@ -319,7 +319,7 @@ def main() -> None:
                     continue
                 d = {(r["mode"], r["model"]): r for r in rs}
                 co = d.get(("code_only", model))
-                gp = d.get(("with_gpa", model))
+                gp = d.get(("with_bhdr", model))
                 if not co or not gp:
                     continue
                 if not (co["correct"] and gp["correct"]):
@@ -348,13 +348,13 @@ def main() -> None:
     # Haiku timeout count
     haiku_gp_to = sum(
         1 for r in rows
-        if r["model"] == "haiku" and r["mode"] == "with_gpa" and r["timed_out"]
+        if r["model"] == "haiku" and r["mode"] == "with_bhdr" and r["timed_out"]
     )
     haiku_gp_total = sum(
         1 for r in rows
-        if r["model"] == "haiku" and r["mode"] == "with_gpa"
+        if r["model"] == "haiku" and r["mode"] == "with_bhdr"
     )
-    out.append(f"\n## Haiku with_gpa timeout count: {haiku_gp_to} / {haiku_gp_total}")
+    out.append(f"\n## Haiku with_bhdr timeout count: {haiku_gp_to} / {haiku_gp_total}")
 
     text = "\n".join(out) + "\n"
     (RESULTS_DIR / "summary.txt").write_text(text)
