@@ -85,10 +85,91 @@
   });
 
   /* ---------- Render ---------- */
+  renderCorpus();
   renderKPIs();
   renderFacets();
   renderGrid();
   renderCards();
+
+  /* =================================================================
+     CORPUS — dataset overview (independent of eval results)
+     ================================================================= */
+
+  function renderCorpus() {
+    const c = state.data.corpus || { total: 0 };
+    const host = document.getElementById("corpus-grid");
+    if (!host) return;
+    host.textContent = "";
+    if (!c.total) {
+      const empty = document.createElement("div");
+      empty.className = "corpus-empty";
+      empty.textContent = "(corpus stats unavailable — tests/eval/ not present in this checkout)";
+      host.appendChild(empty);
+      return;
+    }
+    // Headline tile: total + headline annotations
+    const headline = document.createElement("div");
+    headline.className = "corpus-headline";
+    const num = document.createElement("div");
+    num.className = "corpus-headline-value";
+    num.textContent = c.total;
+    headline.appendChild(num);
+    const lab = document.createElement("div");
+    lab.className = "corpus-headline-label";
+    lab.innerHTML =
+      `scenarios total<br>` +
+      `<span>${c.with_fix_metadata || 0} fix-annotated · ` +
+      `${c.with_upstream_snapshot || 0} with snapshot · ` +
+      `${c.with_expected_failure || 0} stable-failure</span>`;
+    headline.appendChild(lab);
+    host.appendChild(headline);
+
+    // Distribution tiles — each is a sparkbar list
+    host.appendChild(distTile("By category", c.by_category, "category"));
+    host.appendChild(distTile("By framework", c.by_framework, "framework"));
+    host.appendChild(distTile("By backend api", c.by_backend_api, "api"));
+    host.appendChild(distTile("By bug class (fix)", c.by_md_bug_class, "bug-class"));
+    host.appendChild(distTile("By source type", c.by_source_type, "source"));
+    host.appendChild(distTile("By status", c.by_status, "status"));
+    host.appendChild(distTile("Fix scope", c.fix_scope_distribution, "scope"));
+  }
+
+  function distTile(label, counter, kind) {
+    const tile = document.createElement("div");
+    tile.className = "corpus-tile";
+    const head = document.createElement("div");
+    head.className = "corpus-tile-label";
+    head.textContent = label;
+    tile.appendChild(head);
+    const rows = document.createElement("div");
+    rows.className = "corpus-rows";
+    if (!counter) {
+      tile.appendChild(rows);
+      return tile;
+    }
+    const entries = Object.entries(counter);
+    const max = entries.reduce((m, [, v]) => Math.max(m, v), 1);
+    for (const [key, val] of entries) {
+      const row = document.createElement("div");
+      row.className = "corpus-row";
+      const k = document.createElement("span");
+      k.className = "corpus-key";
+      k.textContent = key;
+      const bar = document.createElement("span");
+      bar.className = "corpus-bar";
+      const fill = document.createElement("span");
+      fill.className = `corpus-fill kind-${kind}`;
+      fill.style.width = `${(val / max) * 100}%`;
+      bar.appendChild(fill);
+      const n = document.createElement("span");
+      n.className = "corpus-n";
+      n.textContent = val;
+      row.append(k, bar, n);
+      rows.appendChild(row);
+    }
+    tile.appendChild(rows);
+    return tile;
+  }
 
   /* =================================================================
      KPI STRIP — paired CO vs GLA aggregate

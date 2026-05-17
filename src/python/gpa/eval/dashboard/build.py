@@ -13,6 +13,7 @@ from typing import Any
 from gpa.eval.dashboard._layout import (
     extract_date, fold_rerun_dirs, pick_result_files,
 )
+from gpa.eval.dashboard._corpus import compute_corpus_stats
 from gpa.eval.dashboard._narrative import extract_headline, find_narrative
 from gpa.eval.dashboard._results import (
     enrich_results, load_and_merge_results, load_or_seed_tier_meta,
@@ -22,6 +23,7 @@ from gpa.eval.scenario import ScenarioLoader
 
 _DATA3_ROOT = Path("/data3/gla-eval-results")
 _ROUNDS_DIR = Path("docs/eval-rounds")
+_EVAL_ROOT = Path("tests/eval")
 _OUTPUT_PATH = Path("dashboard/index.json")
 
 
@@ -31,6 +33,7 @@ def build_index(
     rounds_dir: Path,
     output_path: Path,
     scenario_loader,
+    eval_root: Path | None = None,
 ) -> None:
     """Build ``output_path`` from ``data3_root`` + ``rounds_dir``.
 
@@ -90,10 +93,24 @@ def build_index(
     # Sort rounds chronologically by date (ascending).
     rounds_out.sort(key=lambda r: r["date"] or "")
 
+    # Corpus stats — independent walk of tests/eval/ for dataset overview.
+    # Best-effort: if the eval root is absent (e.g. running from a stripped
+    # checkout), emit an empty corpus block rather than failing the build.
+    corpus = {"total": 0}
+    if eval_root is not None:
+        try:
+            corpus = compute_corpus_stats(eval_root)
+        except Exception as exc:
+            print(
+                f"warning: corpus stats unavailable ({type(exc).__name__}: {exc})",
+                file=sys.stderr,
+            )
+
     payload = {
         "built_at": datetime.now(tz=timezone.utc).isoformat(),
         "rounds": rounds_out,
         "scenario_types": sorted(scenario_types),
+        "corpus": corpus,
     }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -110,6 +127,7 @@ def main() -> int:
         rounds_dir=_ROUNDS_DIR,
         output_path=_OUTPUT_PATH,
         scenario_loader=ScenarioLoader(),
+        eval_root=_EVAL_ROOT,
     )
     return 0
 

@@ -87,6 +87,90 @@ html, body {
 }
 .masthead-meta div:first-child { color: var(--terra); }
 
+/* === Corpus overview ============================================ */
+
+.corpus-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.3fr) repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.corpus-headline {
+  border: 1px solid var(--rule);
+  background: var(--ink);
+  color: var(--paper);
+  padding: 18px 18px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.corpus-headline-value {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 68px;
+  line-height: 0.9;
+  color: var(--paper);
+  letter-spacing: -0.03em;
+}
+.corpus-headline-label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--paper-3);
+}
+.corpus-headline-label span {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  margin-top: 6px;
+  color: var(--ink-fade);
+  line-height: 1.55;
+}
+
+.corpus-tile {
+  background: rgba(26,20,16,0.02);
+  border: 1px solid var(--rule-soft);
+  padding: 12px 14px 14px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.corpus-tile-label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--terra);
+  border-bottom: 1px dotted var(--rule-dot);
+  padding-bottom: 4px;
+}
+.corpus-rows { display: flex; flex-direction: column; gap: 3px; }
+.corpus-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 24px;
+  gap: 6px;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+.corpus-key { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.corpus-bar { height: 6px; background: rgba(26,20,16,0.06); border: 1px solid var(--rule-soft); position: relative; }
+.corpus-fill { display: block; height: 100%; }
+.corpus-fill.kind-category { background: var(--indigo); }
+.corpus-fill.kind-framework { background: var(--ink); }
+.corpus-fill.kind-api { background: var(--gla); }
+.corpus-fill.kind-bug-class { background: var(--terra); }
+.corpus-fill.kind-source { background: var(--forest); }
+.corpus-fill.kind-status { background: var(--indigo); }
+.corpus-fill.kind-scope { background: var(--ink-soft); }
+.corpus-n { font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); text-align: right; }
+.corpus-empty {
+  grid-column: 1 / -1;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--ink-fade);
+  padding: 14px 0;
+}
+
 /* === Lede ============================================ */
 
 .lede {
