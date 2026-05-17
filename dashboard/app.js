@@ -1,21 +1,22 @@
 // dashboard/app.js
-// OpenGPA Evaluation Ledger — editorial monograph renderer.
+// OpenGPA Evaluation Ledger — comparison renderer.
 //
-// Three sections render from a single index.json:
-//   1. KPI strip   — four hero metrics with deltas vs previous round
-//   2. Faceted view — per-capability mini-tiles with sparklines
-//   3. Timeline grid + narrative cards
+// SPINE: code_only vs with_gla, per capability bucket. The dashboard
+// answers the project's foundational question — "does GPA help the
+// agent solve graphics bugs?" — by pairing every (round, scenario)
+// that ran in both modes and aggregating CO vs GLA side-by-side.
 //
-// No framework. Plain DOM + a tiny set of pure-function aggregators.
+// Round-over-round trends are NOT the headline. Aggregating across
+// rounds (instead of charting per-round trajectories) lets the
+// dashboard show the comparison directly. Per-scenario history still
+// lives in the timeline grid further down.
 
 (async function main() {
-  /* ---------- State ---------- */
   const state = {
     data: null,
-    axis: "scenario_type",   // active capability dimension
+    axis: "scenario_type",
   };
 
-  /* ---------- Fetch ---------- */
   try {
     const resp = await fetch("index.json", { cache: "no-store" });
     state.data = await resp.json();
@@ -25,21 +26,53 @@
     return;
   }
 
-  /* ---------- Pre-compute round order + latest ---------- */
   const rounds = [...state.data.rounds].sort((a, b) =>
     (a.date || "").localeCompare(b.date || ""));
-  const latest = rounds[rounds.length - 1];
-  const prior  = rounds[rounds.length - 2] || null;
+
+  /* ---------- Pair CO/GLA rows within each round ---------- */
+  // A "pair" is one (round, scenario) where BOTH modes ran. That's
+  // the unit of CO-vs-GLA comparison; rows with only one mode
+  // contribute to the CO-only or GLA-only buckets but not to lift.
+  const allRows = [];           // every result row, flattened
+  const pairs = [];             // { round_id, scenario_id, CO, GLA }
+  const pairedRoundIds = new Set();
+  for (const round of rounds) {
+    const byScenario = new Map();
+    for (const r of round.results) {
+      allRows.push({ ...r, round_id: round.id });
+      if (!byScenario.has(r.scenario_id)) byScenario.set(r.scenario_id, {});
+      byScenario.get(r.scenario_id)[r.mode] = r;
+    }
+    for (const [sid, modes] of byScenario.entries()) {
+      if (modes.code_only && modes.with_gla) {
+        pairs.push({
+          round_id: round.id,
+          scenario_id: sid,
+          scenario_type: modes.code_only.scenario_type,
+          inferred_api: modes.code_only.inferred_api,
+          bug_nature: modes.code_only.bug_nature,
+          depth_bucket: modes.code_only.depth_bucket,
+          fix_scope: modes.code_only.fix_scope,
+          expected_failure: modes.code_only.expected_failure,
+          CO: modes.code_only,
+          GLA: modes.with_gla,
+        });
+        pairedRoundIds.add(round.id);
+      }
+    }
+  }
 
   /* ---------- Header ---------- */
-  document.getElementById("built-at").textContent =
-    formatBuildTimestamp(state.data.built_at);
-  document.getElementById("volume-range").textContent =
-    rounds.length
-      ? `Vol. ${rounds[0].id} → ${latest.id} · ${rounds[0].date} → ${latest.date}`
-      : "no data";
+  document.getElementById("built-at").textContent = formatBuildTimestamp(state.data.built_at);
+  const subtitle = document.getElementById("volume-range");
+  const pairedList = [...pairedRoundIds].sort();
+  const coOnlyRounds = rounds.filter(r => !pairedRoundIds.has(r.id)).map(r => r.id);
+  subtitle.innerHTML = pairedList.length
+    ? `paired rounds <em>${pairedList[0]} → ${pairedList[pairedList.length - 1]}</em>`
+      + (coOnlyRounds.length ? ` · code-only only: <em>${coOnlyRounds.join(", ")}</em>` : "")
+    : "no paired data";
   document.getElementById("round-count").textContent =
-    `${rounds.length} round${rounds.length === 1 ? "" : "s"} · ${state.data.scenario_types.length} types`;
+    `${pairs.length} CO×GLA pairs across ${pairedList.length} rounds`;
 
   /* ---------- Capability nav ---------- */
   const nav = document.getElementById("capability-nav");
@@ -51,68 +84,59 @@
     renderFacets();
   });
 
-  /* ---------- Render everything ---------- */
+  /* ---------- Render ---------- */
   renderKPIs();
   renderFacets();
   renderGrid();
   renderCards();
 
   /* =================================================================
-     KPI STRIP
+     KPI STRIP — paired CO vs GLA aggregate
      ================================================================= */
 
   function renderKPIs() {
-    const co = (r) => r.results.filter(x => x.mode === "code_only");
-    const m = computeMetrics(co(latest));
-    const mPrior = prior ? computeMetrics(co(prior)) : null;
-
-    setKPI("kpi-solved",
-      `${m.solved}<span class="unit">/${m.n}</span>`,
-      mPrior ? formatDelta(m.solved - mPrior.solved, "vs " + prior.id, true) : "");
-    setKPI("kpi-cost",
-      m.tokPerSolve != null
-        ? `${(m.tokPerSolve / 1000).toFixed(1)}<span class="unit">k</span>`
-        : `<span class="pending">—</span>`,
-      mPrior && mPrior.tokPerSolve != null && m.tokPerSolve != null
-        ? formatDelta(m.tokPerSolve - mPrior.tokPerSolve, "vs " + prior.id, false)
+    const m = aggregate(pairs);
+    renderPairedKPI("kpi-solved",
+      m.n ? `${m.coSolved}/${m.n}` : "—",
+      m.n ? `${m.glaSolved}/${m.n}` : "—",
+      m.n ? formatLift(m.glaSolved - m.coSolved, m.n, "pp") : "");
+    renderPairedKPI("kpi-cost",
+      m.coTokPerSolve != null ? `${(m.coTokPerSolve / 1000).toFixed(1)}k` : "—",
+      m.glaTokPerSolve != null ? `${(m.glaTokPerSolve / 1000).toFixed(1)}k` : "—",
+      (m.coTokPerSolve && m.glaTokPerSolve)
+        ? `ratio ${(m.glaTokPerSolve / m.coTokPerSolve).toFixed(2)}×`
         : "");
-    setKPI("kpi-qualified",
-      m.n ? `${Math.round(100 * m.qualified / m.n)}<span class="unit">%</span>` : "—",
-      mPrior && mPrior.n
-        ? formatDelta(
-            Math.round(100 * m.qualified / m.n) - Math.round(100 * mPrior.qualified / mPrior.n),
-            "vs " + prior.id, true, "pp")
+    renderPairedKPI("kpi-qualified",
+      m.n ? `${Math.round(100 * m.coQualified / m.n)}%` : "—",
+      m.n ? `${Math.round(100 * m.glaQualified / m.n)}%` : "—",
+      m.n
+        ? formatLift(m.glaQualified - m.coQualified, m.n, "pp")
         : "");
-    // GPA lift stays "pending" until any with_gla data shows up.
-    const hasGla = latest.results.some(x => x.mode === "with_gla");
-    if (hasGla) {
-      const gla = computeMetrics(latest.results.filter(x => x.mode === "with_gla"));
-      const liftPct = 100 * gla.solved / Math.max(1, gla.n) - 100 * m.solved / Math.max(1, m.n);
-      setKPI("kpi-lift",
-        `${liftPct >= 0 ? "+" : ""}${liftPct.toFixed(0)}<span class="unit">pp</span>`,
-        "GLA − CO @ " + latest.id);
-    }
+    // Final tile: scope footprint — how much of the data is paired
+    const totalPairsPotential = allRows.filter(r => r.mode === "code_only").length;
+    renderPairedKPI("kpi-coverage",
+      `${pairs.length}/${totalPairsPotential}`,
+      coOnlyRounds.length ? `+${coOnlyRounds.length} co-only` : "—",
+      `${Math.round(100 * pairs.length / Math.max(1, totalPairsPotential))}% paired`);
   }
 
-  function setKPI(id, html, delta) {
+  function renderPairedKPI(id, coValue, glaValue, footnote) {
     const el = document.getElementById(id);
-    el.querySelector(".kpi-value").innerHTML = html;
-    const deltaEl = el.querySelector(".kpi-delta");
-    if (!delta) { deltaEl.textContent = ""; return; }
-    deltaEl.innerHTML = delta;
+    if (!el) return;
+    const slots = el.querySelectorAll(".kpi-pair-value");
+    if (slots[0]) slots[0].textContent = coValue;
+    if (slots[1]) slots[1].textContent = glaValue;
+    const fn = el.querySelector(".kpi-note");
+    if (fn) fn.innerHTML = footnote || "";
   }
 
-  function formatDelta(diff, label, betterIsHigher, unit = "") {
-    if (diff === 0) return `<span>±0${unit} ${label}</span>`;
-    const sign = diff > 0 ? "+" : "";
-    const cls = ((diff > 0) === betterIsHigher) ? "pos" : "neg";
-    const arrow = diff > 0 ? "▲" : "▼";
-    const num = unit === "pp"
-      ? `${sign}${diff}pp`
-      : (Math.abs(diff) > 1000
-          ? `${sign}${(diff / 1000).toFixed(1)}k`
-          : `${sign}${diff}`);
-    return `<span class="${cls}">${arrow} ${num}  ${label}</span>`;
+  function formatLift(diff, n, unit = "") {
+    if (n === 0) return "—";
+    const pct = (diff / n) * 100;
+    const sign = pct >= 0 ? "+" : "";
+    const cls = diff >= 0 ? "pos" : "neg";
+    const arrow = diff > 0 ? "▲" : (diff < 0 ? "▼" : "·");
+    return `lift <span class="${cls}">${arrow} ${sign}${pct.toFixed(0)}${unit}</span>`;
   }
 
   function formatBuildTimestamp(iso) {
@@ -125,26 +149,23 @@
   }
 
   /* =================================================================
-     FACETS  (per-capability mini-tiles + sparklines)
+     FACETS — per-bucket CO vs GLA paired comparison
      ================================================================= */
 
   function renderFacets() {
     const host = document.getElementById("facets");
     host.textContent = "";
 
-    // Collect all bucket values for the active axis (across all rounds)
-    const buckets = new Map(); // bucket -> {label, sub, results-by-round}
-    for (const round of rounds) {
-      for (const r of round.results) {
-        if (r.mode !== "code_only") continue;  // baseline only; GLA shows in grid
-        const key = String(r[state.axis] ?? "unknown");
-        if (!buckets.has(key)) buckets.set(key, []);
-        buckets.get(key).push({ round, row: r });
-      }
+    // Buckets from PAIRED data only — the comparison view excludes
+    // CO-only rounds. Buckets that only exist in CO-only data are
+    // surfaced in an "unpaired" note below.
+    const buckets = new Map(); // bucket -> [pair, pair, ...]
+    for (const p of pairs) {
+      const key = String(p[state.axis] ?? "unknown");
+      if (!buckets.has(key)) buckets.set(key, []);
+      buckets.get(key).push(p);
     }
 
-    // Stable display order: framework follows alpha; api/depth/scope/nature
-    // each have a canonical order.
     const order = orderForAxis(state.axis);
     const keys = [...buckets.keys()].sort((a, b) => {
       const ai = order.indexOf(a), bi = order.indexOf(b);
@@ -154,21 +175,40 @@
       return ai - bi;
     });
 
+    if (keys.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "facet-empty";
+      empty.innerHTML =
+        '<em>No paired CO×GLA data for the active axis.</em><br>' +
+        'R16+ rounds dropped <code>with_gla</code> on source-less ' +
+        'scenarios; only r12c–r15 currently produce paired rows.';
+      host.appendChild(empty);
+      return;
+    }
+
     for (const key of keys) {
-      const entries = buckets.get(key);
-      // Group entries by round id
-      const byRound = new Map();
-      for (const { round, row } of entries) {
-        if (!byRound.has(round.id)) byRound.set(round.id, []);
-        byRound.get(round.id).push(row);
-      }
-      // Sort round ids by chronological order matching `rounds`
-      const orderedRoundIds = rounds.map(r => r.id).filter(rid => byRound.has(rid));
-      const series = orderedRoundIds.map(rid => ({
-        round_id: rid,
-        ...computeMetrics(byRound.get(rid)),
-      }));
-      host.appendChild(buildFacet(key, series));
+      host.appendChild(buildFacet(key, buckets.get(key)));
+    }
+
+    // CO-only addendum (scenarios that only ever ran without GLA)
+    const coOnlyBuckets = new Map();
+    for (const r of allRows) {
+      if (r.mode !== "code_only") continue;
+      if (pairs.some(p => p.round_id === r.round_id && p.scenario_id === r.scenario_id)) continue;
+      const key = String(r[state.axis] ?? "unknown");
+      if (!coOnlyBuckets.has(key)) coOnlyBuckets.set(key, []);
+      coOnlyBuckets.get(key).push(r);
+    }
+    if (coOnlyBuckets.size > 0) {
+      const note = document.createElement("div");
+      note.className = "facet-empty";
+      note.innerHTML =
+        `<em>Code-only without paired GLA:</em> ` +
+        [...coOnlyBuckets.entries()]
+          .map(([k, v]) => `${k} (${v.length})`)
+          .join(" · ") +
+        '. These rows are visible in the timeline grid below but cannot contribute to lift.';
+      host.appendChild(note);
     }
   }
 
@@ -182,21 +222,8 @@
     }
   }
 
-  function describeBucket(axis, value, series) {
-    // Subtitle below the facet name: total scenarios in the bucket
-    // observed in the latest round + axis-specific annotation.
-    const latestSeries = series[series.length - 1];
-    const n = latestSeries ? latestSeries.n : 0;
-    const apiTag = {
-      "scenario_type": axis === "scenario_type" && value.startsWith("web-")
-        ? "webgl"
-        : (value.startsWith("native-engine/") ? "vulkan or opengl" : ""),
-    }[axis];
-    const tag = apiTag ? ` · ${apiTag}` : "";
-    return `n = ${n}${tag}`;
-  }
-
-  function buildFacet(key, series) {
+  function buildFacet(key, bucketPairs) {
+    const m = aggregate(bucketPairs);
     const facet = document.createElement("div");
     facet.className = "facet";
 
@@ -205,108 +232,120 @@
     name.textContent = key;
     const sub = document.createElement("span");
     sub.className = "sub";
-    sub.textContent = describeBucket(state.axis, key, series);
+    sub.textContent = `${m.n} pair${m.n === 1 ? "" : "s"}`;
     name.appendChild(sub);
     facet.appendChild(name);
 
-    const charts = document.createElement("div");
-    charts.className = "facet-charts";
-    charts.appendChild(buildMini("Solved", series.map(s => ({
-      value: s.n ? (s.solved / s.n) : null,
-      raw: s.n ? `${s.solved}/${s.n}` : "—",
-      pct: true,
-      round_id: s.round_id,
-    }))));
-    charts.appendChild(buildMini("Tokens / Solve", series.map(s => ({
-      value: s.tokPerSolve != null ? s.tokPerSolve : null,
-      raw: s.tokPerSolve != null ? `${(s.tokPerSolve / 1000).toFixed(1)}k` : "—",
-      round_id: s.round_id,
-    }))));
-    charts.appendChild(buildMini("Qualified", series.map(s => ({
-      value: s.n ? (s.qualified / s.n) : null,
-      raw: s.n ? `${Math.round(100 * s.qualified / s.n)}%` : "—",
-      pct: true,
-      round_id: s.round_id,
-    }))));
-    facet.appendChild(charts);
+    const grid = document.createElement("div");
+    grid.className = "facet-pair";
+
+    grid.appendChild(buildMetricRow("Solved",
+      m.coSolved, m.glaSolved, m.n,
+      v => `${v}/${m.n}`,
+      m.glaSolved - m.coSolved,
+      "pp", m.n));
+    grid.appendChild(buildMetricRow("Tokens / Solve",
+      m.coTokPerSolve != null ? Math.round(m.coTokPerSolve) : null,
+      m.glaTokPerSolve != null ? Math.round(m.glaTokPerSolve) : null,
+      null,
+      v => v == null ? "—" : `${(v / 1000).toFixed(1)}k`,
+      null, "", null,
+      (m.coTokPerSolve && m.glaTokPerSolve)
+        ? `${(m.glaTokPerSolve / m.coTokPerSolve).toFixed(2)}× ratio`
+        : null));
+    grid.appendChild(buildMetricRow("Qualified",
+      m.coQualified, m.glaQualified, m.n,
+      v => `${Math.round(100 * v / Math.max(1, m.n))}%`,
+      m.glaQualified - m.coQualified,
+      "pp", m.n));
+
+    facet.appendChild(grid);
     return facet;
   }
 
-  function buildMini(label, points) {
-    const tile = document.createElement("div");
-    tile.className = "mini";
+  function buildMetricRow(label, coVal, glaVal, denom, fmt, diff, unit, total, ratioStr) {
+    const row = document.createElement("div");
+    row.className = "metric-row";
+
     const lab = document.createElement("div");
-    lab.className = "mini-label";
+    lab.className = "metric-label";
     lab.textContent = label;
-    tile.appendChild(lab);
+    row.appendChild(lab);
 
-    const latestPoint = points[points.length - 1] || {};
-    const val = document.createElement("div");
-    val.className = "mini-value";
-    val.innerHTML = latestPoint.raw && latestPoint.raw !== "—"
-      ? latestPoint.raw
-      : '<span class="mini-value empty">—</span>';
-    tile.appendChild(val);
+    const co = document.createElement("div");
+    co.className = "metric-cell co";
+    co.innerHTML = `<span class="metric-mode">CO</span><span class="metric-value">${fmt(coVal)}</span>`;
+    row.appendChild(co);
 
-    // Sparkline: bar per round, height ~ normalized value.
-    const validValues = points.map(p => p.value).filter(v => v != null && !Number.isNaN(v));
-    const maxV = validValues.length ? Math.max(...validValues) : 1;
-    const spark = document.createElement("div");
-    spark.className = "mini-spark";
-    points.forEach((p, i) => {
-      const bar = document.createElement("div");
-      const isLatest = i === points.length - 1;
-      if (p.value == null || Number.isNaN(p.value)) {
-        bar.className = "bar empty";
-      } else {
-        bar.className = isLatest ? "bar latest" : "bar";
-        const h = maxV > 0 ? Math.max(4, Math.round((p.value / maxV) * 32)) : 1;
-        bar.style.height = `${h}px`;
-      }
-      bar.title = `${p.round_id}: ${p.raw}`;
-      spark.appendChild(bar);
-    });
-    tile.appendChild(spark);
+    const gla = document.createElement("div");
+    gla.className = "metric-cell gla";
+    gla.innerHTML = `<span class="metric-mode">GLA</span><span class="metric-value">${fmt(glaVal)}</span>`;
+    row.appendChild(gla);
 
-    // Axis stamp: first/last round id under the sparkline
-    if (points.length > 1) {
-      const axis = document.createElement("div");
-      axis.className = "mini-axis";
-      const first = document.createElement("span");
-      first.textContent = points[0].round_id;
-      const last = document.createElement("span");
-      last.textContent = points[points.length - 1].round_id;
-      axis.appendChild(first);
-      axis.appendChild(last);
-      tile.appendChild(axis);
+    // Visual bar pair (CO blue rule, GLA terracotta rule). Width
+    // proportional to value; missing values show a stippled track.
+    const bar = document.createElement("div");
+    bar.className = "metric-bar";
+    const maxV = Math.max(coVal ?? 0, glaVal ?? 0) || 1;
+    const coBar = document.createElement("div");
+    coBar.className = "bar-track co" + (coVal == null ? " empty" : "");
+    if (coVal != null) {
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      fill.style.width = `${(coVal / maxV) * 100}%`;
+      coBar.appendChild(fill);
     }
-    return tile;
+    const glaBar = document.createElement("div");
+    glaBar.className = "bar-track gla" + (glaVal == null ? " empty" : "");
+    if (glaVal != null) {
+      const fill = document.createElement("div");
+      fill.className = "bar-fill";
+      fill.style.width = `${(glaVal / maxV) * 100}%`;
+      glaBar.appendChild(fill);
+    }
+    bar.appendChild(coBar);
+    bar.appendChild(glaBar);
+    row.appendChild(bar);
+
+    const liftCell = document.createElement("div");
+    liftCell.className = "metric-lift";
+    if (ratioStr) {
+      liftCell.innerHTML = `<span class="ratio">${ratioStr}</span>`;
+    } else if (diff != null && total) {
+      const pct = (diff / total) * 100;
+      const sign = pct >= 0 ? "+" : "";
+      const cls = diff > 0 ? "pos" : (diff < 0 ? "neg" : "");
+      const arrow = diff > 0 ? "▲" : (diff < 0 ? "▼" : "·");
+      liftCell.innerHTML = `<span class="${cls}">${arrow} ${sign}${pct.toFixed(0)}${unit}</span>`;
+    }
+    row.appendChild(liftCell);
+
+    return row;
   }
 
-  /* =================================================================
-     AGGREGATORS
-     ================================================================= */
+  /* ---------- Aggregator ---------- */
 
-  function computeMetrics(rows) {
-    const n = rows.length;
-    let solved = 0, qualified = 0, totalTokens = 0;
-    for (const r of rows) {
-      if (r.solved) {
-        solved += 1;
-        totalTokens += r.output_tokens || 0;
-      }
-      if (r.qualified) qualified += 1;
+  function aggregate(pairList) {
+    let n = 0, coSolved = 0, glaSolved = 0, coQual = 0, glaQual = 0;
+    let coTok = 0, glaTok = 0;
+    for (const p of pairList) {
+      n += 1;
+      if (p.CO.solved) { coSolved += 1; coTok += p.CO.output_tokens || 0; }
+      if (p.GLA.solved) { glaSolved += 1; glaTok += p.GLA.output_tokens || 0; }
+      if (p.CO.qualified) coQual += 1;
+      if (p.GLA.qualified) glaQual += 1;
     }
     return {
       n,
-      solved,
-      qualified,
-      tokPerSolve: solved > 0 ? totalTokens / solved : null,
+      coSolved, glaSolved,
+      coQualified: coQual, glaQualified: glaQual,
+      coTokPerSolve: coSolved > 0 ? coTok / coSolved : null,
+      glaTokPerSolve: glaSolved > 0 ? glaTok / glaSolved : null,
     };
   }
 
   /* =================================================================
-     SCENARIO TIMELINE GRID
+     SCENARIO TIMELINE GRID  (kept — already a CO|GLA view)
      ================================================================= */
 
   function renderGrid() {
@@ -315,7 +354,6 @@
     const table = document.createElement("table");
     table.className = "timeline";
 
-    // Group: scenario_id -> { latest scenario_type, rows by `${round}|${mode}` }
     const byScenario = new Map();
     for (const round of rounds) {
       for (const r of round.results) {
@@ -330,11 +368,10 @@
       }
     }
 
-    // Header: scenario col + each round × {CO, GLA}
     const thead = document.createElement("thead");
     const trHead = document.createElement("tr");
     trHead.appendChild(elem("th", "scenario"));
-    const colKeys = []; // {round_id, mode}
+    const colKeys = [];
     for (const round of rounds) {
       for (const mode of ["code_only", "with_gla"]) {
         colKeys.push({ round_id: round.id, mode });
@@ -346,7 +383,6 @@
     thead.appendChild(trHead);
     table.appendChild(thead);
 
-    // Body — grouped by latest scenario_type
     const byType = new Map();
     for (const [sid, s] of byScenario.entries()) {
       if (!byType.has(s.type)) byType.set(s.type, []);
@@ -399,11 +435,9 @@
   }
 
   function shortenSid(sid) {
-    // Drop the mining-prefix (rfc2ac5 / r5211bd) and keep the descriptive tail.
     const parts = sid.split("_");
     if (parts.length <= 4) return sid;
-    const tail = parts.slice(-4).join(" "); // descriptive end words
-    return tail;
+    return parts.slice(-4).join(" ");
   }
 
   function attachTooltip(el, r) {
@@ -442,13 +476,13 @@
   }
 
   /* =================================================================
-     ROUND NARRATIVE CARDS
+     ROUND NOTES (collapsed; now a minor section)
      ================================================================= */
 
   function renderCards() {
     const container = document.getElementById("card-container");
     container.textContent = "";
-    const ordered = [...rounds].reverse();   // newest first
+    const ordered = [...rounds].reverse();
     ordered.forEach((round, i) => {
       const card = document.createElement("div");
       card.className = "card" + (i === 0 ? " expanded" : "");

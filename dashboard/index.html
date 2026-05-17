@@ -24,36 +24,55 @@
       </div>
     </header>
 
+    <p class="lede">
+      Does OpenGPA help an LLM agent diagnose graphics bugs? Each tile below
+      pairs the agent's <em>code-only</em> baseline against the same agent
+      with <em>GPA</em> capture available — only on scenarios where both
+      modes ran. Lift &gt; 0 means GPA helped; &lt; 0 means it hurt.
+    </p>
+
     <section class="kpi-strip">
-      <div class="kpi" id="kpi-solved">
-        <span class="kpi-label">Solved · latest</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-delta"></span>
+      <div class="kpi paired" id="kpi-solved">
+        <div class="kpi-label">Solved</div>
+        <div class="kpi-pair">
+          <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+        </div>
+        <div class="kpi-note"></div>
       </div>
-      <div class="kpi" id="kpi-cost">
-        <span class="kpi-label">Tokens / Solve</span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-delta"></span>
+      <div class="kpi paired" id="kpi-cost">
+        <div class="kpi-label">Tokens / Solve</div>
+        <div class="kpi-pair">
+          <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+        </div>
+        <div class="kpi-note"></div>
       </div>
-      <div class="kpi" id="kpi-qualified">
-        <span class="kpi-label">Qualified<sup>1</sup></span>
-        <span class="kpi-value">—</span>
-        <span class="kpi-delta"></span>
+      <div class="kpi paired" id="kpi-qualified">
+        <div class="kpi-label">Qualified<sup>1</sup></div>
+        <div class="kpi-pair">
+          <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+        </div>
+        <div class="kpi-note"></div>
       </div>
-      <div class="kpi" id="kpi-lift">
-        <span class="kpi-label">GPA Lift</span>
-        <span class="kpi-value pending">Awaiting<br><em>with_gla</em></span>
-        <span class="kpi-delta"></span>
+      <div class="kpi paired" id="kpi-coverage">
+        <div class="kpi-label">Paired coverage</div>
+        <div class="kpi-pair">
+          <div class="kpi-pair-side"><div class="side-tag">pairs</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side"><div class="side-tag">extra CO</div><div class="kpi-pair-value">—</div></div>
+        </div>
+        <div class="kpi-note"></div>
       </div>
     </section>
 
     <section class="capability">
-      <h2 class="section-title">By Capability</h2>
+      <h2 class="section-title">CO vs GLA, by capability</h2>
       <p class="section-meta">
-        Slice the cohort by what is actually being measured. Each row of
-        small tiles shows the metric trajectory across r12c → r18 for one
-        capability bucket. Bars are sparklines; height encodes value;
-        right-most bar is the latest round.
+        Reslice the paired data by what's being measured. Each row in a
+        facet shows one metric with <em>code-only</em> and <em>with_gla</em>
+        side by side; the bar pair below gives the proportion at a glance.
+        The right-hand <em>lift</em> column is GLA − CO — green when GPA helps.
       </p>
 
       <nav class="capability-nav" id="capability-nav">
@@ -68,24 +87,24 @@
     </section>
 
     <section class="timeline">
-      <h2 class="section-title">Scenario · Round</h2>
+      <h2 class="section-title">Per-scenario trace</h2>
       <p class="section-meta">
-        Each row is one scenario; columns are rounds × mode (CO = code_only,
-        GLA = with_gla). Cell glyphs:
-        <span class="legend-cell cell-qualified">●</span> qualified solve,
-        <span class="legend-cell cell-rescued">◐</span> rescued solve (judge/prose),
+        Every scenario × round × mode as a single cell. Useful for spot
+        checks (which scenarios changed verdict across rounds?), not for
+        the headline comparison.
+        <span class="legend-cell cell-qualified">●</span> qualified,
+        <span class="legend-cell cell-rescued">◐</span> rescued (judge / prose),
         <span class="legend-cell cell-failed">○</span> failed,
         <span class="legend-cell cell-absent">—</span> not run.
-        Empty GLA columns surface the <em>missing-comparison</em> condition.
       </p>
       <div id="grid-container"></div>
     </section>
 
     <section class="notes">
-      <h2 class="section-title">Round Notes</h2>
+      <h2 class="section-title">Round notes</h2>
       <p class="section-meta">
-        Per-round commentary from <code>docs/eval-rounds/*.md</code>.
-        Newest round expanded by default.
+        Per-round commentary from <code>docs/eval-rounds/*.md</code> — for
+        context behind the numbers above. Newest expanded by default.
       </p>
       <div id="card-container"></div>
     </section>
@@ -93,17 +112,19 @@
     <footer class="footnotes">
       <ol>
         <li id="fn-qualified">
-          <em>Qualified</em> = the verdict orchestrator's strongest signal:
-          <code>solved · scorer=file_level · confidence=high</code>. Anything
-          weaker — rescued by <code>judge</code> or <code>prose</code>, or
-          file-level at low confidence — is a candidate false positive.
-          R18-P2's prompt-dispatch deletion shifted 5 solves from rescued
-          to qualified; that's why the headline metric jumped.
+          <em>Qualified</em> = <code>solved · scorer=file_level · confidence=high</code>.
+          The complement (<em>rescued</em>) is a solve salvaged by the
+          <code>judge</code> or <code>prose</code> scorer — a proxy for
+          false positives in the maintainer-framing pipeline. The GLA column
+          can shrink even when GLA solves grow if GPA-mode rescues collapse
+          into qualified — that's the desired direction.
         </li>
         <li>
-          Pre-R12c rounds use a legacy scoring schema (<code>correct_diagnosis</code>)
-          and are excluded from chart data. Their narratives, if any,
-          would still appear under Round Notes.
+          <em>Paired data</em>: only (round, scenario) combinations where
+          both <code>code_only</code> and <code>with_gla</code> ran are used
+          in lift calculations. R16-R18 dropped GLA on source-less cohorts;
+          those rows are visible in the per-scenario trace but excluded
+          from lift.
         </li>
       </ol>
     </footer>
