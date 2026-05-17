@@ -120,6 +120,7 @@ process gap.
 | [R16](2026-05-05-r16.md)   | 2026-05-05 | First deletion-shipping round: with_bhdr skip works perfectly; rate-limit invalidates code_only validation |
 | [R17](2026-05-05-r17.md)   | 2026-05-05 | Audit-driven deletions: DiagnosisScorer dead chain (-131 lines) + outline-recipe; partial run shows 2/3 R15+ regressions recovered |
 | [R18](2026-05-14-r18.md)   | 2026-05-14 | Bug_class prompt dispatch deleted; world_environment recovered; 11/13 solved, signal shifts to high-confidence file_level (10/11) but cost 4× R17 |
+| [R19](2026-05-17-r19.md)   | 2026-05-17 | Beholder rename + native pipeline unblocked; tiered prompt depth (P0) **regressed** to 9/13 with ~0 cost saving — revert in R20; sandbox (P5) ships |
 
 Older rounds (R1–R12b) predate this convention; their narrative lives
 in `docs/eval-results.md` as legacy reference.
