@@ -111,15 +111,38 @@ class EvalHarness:
         # Build tool set for the agent
         tools = self._build_tools(scenario, mode)
 
-        # Invoke the agent
-        (
-            diagnosis_text,
-            input_tokens,
-            output_tokens,
-            tool_calls,
-            num_turns,
-            elapsed,
-        ) = agent_fn(scenario, mode, tools)
+        # R19-P5: build a per-scenario filesystem sandbox so the agent
+        # cannot read scenario.md (Ground Truth), other scenarios, prior
+        # eval results, or the project CLAUDE.md via incidental Read /
+        # Glob calls. Sandbox builds a tmpdir tree, copies agent-visible
+        # source files into source/, redirects HOME, and symlinks the
+        # upstream snapshot. The agent backend reads tools["sandbox"]
+        # to set cwd + env overrides.
+        from bhdr.eval.sandbox import build_sandbox
+        snap_provider = tools.get("snapshot_root")
+        snap_root = None
+        try:
+            snap_val = snap_provider() if callable(snap_provider) else snap_provider
+            if snap_val is not None:
+                snap_root = Path(snap_val)
+        except Exception:
+            snap_root = None
+        sandbox = build_sandbox(scenario, snapshot_root=snap_root)
+        tools["sandbox"] = sandbox
+
+        # Invoke the agent — wrapped in try/finally so the sandbox always
+        # gets cleaned up, even on agent crash / timeout / rate-limit.
+        try:
+            (
+                diagnosis_text,
+                input_tokens,
+                output_tokens,
+                tool_calls,
+                num_turns,
+                elapsed,
+            ) = agent_fn(scenario, mode, tools)
+        finally:
+            sandbox.cleanup()
 
         # Maintainer-framing scorer (Phase 4): run when the scenario has
         # a parseable `## Fix` section with a non-legacy bug_class that

@@ -27,7 +27,7 @@ _SPEC = CliBackendSpec(
 
 def test_run_with_bhdr_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["argv"] = argv
         captured["input"] = input
         captured["env"] = env
@@ -52,7 +52,7 @@ def test_with_bhdr_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_pa
     prompt must NOT advertise the 11-command tool block (most are
     unusable). And it must NOT lie about BHDR_FRAME_ID being set."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -69,7 +69,7 @@ def test_with_bhdr_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_p
     """With snapshot but no live frame, the prompt should be an advisor
     block: list/grep/read of upstream only, NOT the live-frame commands."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -95,7 +95,7 @@ def test_with_bhdr_full_capture_keeps_full_block(monkeypatch, tmp_path):
     """When live capture succeeded AND snapshot is present, we get the
     full block (live-frame tools + upstream tools)."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -119,7 +119,7 @@ def test_scenario_blurb_injected_when_metadata_present(monkeypatch, tmp_path):
     fix_pr_url, bug_class) must be injected into the prompt so the
     agent doesn't waste turns sniffing it via list/grep."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -150,7 +150,7 @@ def test_scenario_blurb_injected_when_metadata_present(monkeypatch, tmp_path):
 def test_scenario_blurb_omits_missing_fields(monkeypatch, tmp_path):
     """Fields that aren't set should silently drop, not show as 'None'."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -167,7 +167,7 @@ def test_snapshot_root_callable_pins_bhdr_upstream_root(monkeypatch, tmp_path):
     """The cli_agent resolves tools["snapshot_root"] (a callable) and pins
     BHDR_UPSTREAM_ROOT so `gpa upstream read/grep` shell calls work."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["env"] = env
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -188,7 +188,7 @@ def test_snapshot_root_none_skips_bhdr_upstream_root(monkeypatch, tmp_path):
     """When the snapshot fetch failed, the callable returns None and the
     agent must skip pinning BHDR_UPSTREAM_ROOT (no env var set)."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["env"] = env
         return subprocess.CompletedProcess(argv, 0, "", "")
     monkeypatch.setattr(subprocess, "run", fake_run)
@@ -209,7 +209,7 @@ def test_run_with_bhdr_graceful_when_capture_returns_none(monkeypatch, tmp_path)
     pinning BHDR_FRAME_ID. BHDR_BASE_URL is still set so any gpa CLI
     invocations the agent attempts get a sensible default."""
     captured = {}
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["argv"] = argv
         captured["env"] = env
         captured["input"] = input
@@ -291,7 +291,7 @@ def test_render_prompt_uses_system_prompt_when_provided(monkeypatch, tmp_path):
     framing — the system prompt carries the JSON output contract."""
     inputs: list[str] = []
 
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         inputs.append(input)
         return subprocess.CompletedProcess(argv, returncode=0, stdout="", stderr="")
 
@@ -336,7 +336,7 @@ def test_render_prompt_falls_back_to_legacy_when_no_system_prompt(monkeypatch, t
     The cli_agent must keep its original DIAGNOSIS/FIX framing for them."""
     captured = {}
 
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         captured["input"] = input
         return subprocess.CompletedProcess(argv, returncode=0, stdout="", stderr="")
 
@@ -370,7 +370,7 @@ def test_json_reprompt_fires_when_first_response_lacks_json(monkeypatch, tmp_pat
         ),
     ]
 
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         calls.append(input)
         return subprocess.CompletedProcess(argv, returncode=0, stdout="", stderr="")
 
@@ -413,7 +413,7 @@ def test_json_reprompt_skipped_when_first_response_already_has_json(monkeypatch,
         ),
     ]
 
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         calls.append(input)
         return subprocess.CompletedProcess(argv, returncode=0, stdout="", stderr="")
 
@@ -449,7 +449,7 @@ def test_json_reprompt_skipped_when_no_system_prompt(monkeypatch, tmp_path):
         ),
     ]
 
-    def fake_run(argv, *, input, capture_output, text, env, timeout):
+    def fake_run(argv, *, input, capture_output, text, env, timeout, cwd=None):
         calls.append(input)
         return subprocess.CompletedProcess(argv, returncode=0, stdout="", stderr="")
 

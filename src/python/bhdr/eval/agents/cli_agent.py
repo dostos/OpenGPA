@@ -107,6 +107,22 @@ class CliAgent(AgentBackend):
         if snap:
             env["BHDR_UPSTREAM_ROOT"] = str(snap)
 
+        # R19-P5: filesystem sandbox. Harness builds a per-scenario
+        # tmpdir; we override BHDR_SOURCE_ROOT / BHDR_UPSTREAM_ROOT to
+        # point inside it (scenario.md is never copied in, so the agent
+        # can't Read its way to Ground Truth), redirect HOME to the
+        # sandbox's home/ subdir (Claude user-memory ``~/.claude/CLAUDE.md``
+        # never reaches the agent), and strip env vars that name the real
+        # project. Run the subprocess with cwd=<sandbox> so ancestor
+        # CLAUDE.md lookups also fail.
+        sandbox = tools.get("sandbox") if tools else None
+        sandbox_cwd = None
+        if sandbox is not None:
+            for k in sandbox.env_strip:
+                env.pop(k, None)
+            env.update(sandbox.env_overrides)
+            sandbox_cwd = str(sandbox.root)
+
         prompt = self._render_prompt(
             scenario, mode, tools,
             have_frame=(frame_id is not None),
@@ -120,6 +136,7 @@ class CliAgent(AgentBackend):
             proc = subprocess.run(
                 argv, input=prompt, capture_output=True, text=True,
                 env=env, timeout=self._spec.timeout_sec,
+                cwd=sandbox_cwd,
             )
         except subprocess.TimeoutExpired:
             elapsed = time.time() - t0
@@ -181,6 +198,7 @@ class CliAgent(AgentBackend):
                     argv, input=followup_prompt, capture_output=True,
                     text=True, env=env,
                     timeout=self._spec.timeout_sec,
+                    cwd=sandbox_cwd,
                 )
                 metrics2 = self._spec.parse_run(proc2.stdout, proc2.stderr)
                 # Merge: keep the original diagnosis prose and append the
