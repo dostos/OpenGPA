@@ -4,7 +4,7 @@
 
 All 14 round-12b scenarios ran **snapshot-only** — `run.log` shows
 `live capture unavailable` 14/14, so `BHDR_FRAME_ID` was never set.
-Yet `with_gla`'s prompt advertises 11 commands of which only 3
+Yet `with_bhdr`'s prompt advertises 11 commands of which only 3
 (`gpa upstream read|grep|list`) actually work. The agent worked
 around the noise (web-map: 5/6 cited specific symbols) but the
 prompt is miscalibrated, the upstream surface is grep-shaped (no

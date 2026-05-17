@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Local-only static HTML dashboard that visualizes per-round OpenGPA eval results, with `code_only` vs `with_gla` as the primary comparison axis per scenario type, across model tiers, across rounds.
+**Goal:** Local-only static HTML dashboard that visualizes per-round OpenGPA eval results, with `code_only` vs `with_bhdr` as the primary comparison axis per scenario type, across model tiers, across rounds.
 
-**Architecture:** A Python build script (`src/python/bhdr/eval/dashboard/build.py`) walks `/data3/gla-eval-results/*` and `docs/eval-rounds/*.md`, folds rerun/resume directories, and emits a single `dashboard/index.json`. A static `dashboard/index.html` (with vendored `app.js` + `index.css`) loads `index.json` and renders three sections: per-scenario-type Plotly chart panels, a scenario × round timeline grid, and expandable round-log narrative cards. Markdown rendering via marked.js. Plotly via CDN.
+**Architecture:** A Python build script (`src/python/bhdr/eval/dashboard/build.py`) walks `/data3/bhdr-eval-results/*` and `docs/eval-rounds/*.md`, folds rerun/resume directories, and emits a single `dashboard/index.json`. A static `dashboard/index.html` (with vendored `app.js` + `index.css`) loads `index.json` and renders three sections: per-scenario-type Plotly chart panels, a scenario × round timeline grid, and expandable round-log narrative cards. Markdown rendering via marked.js. Plotly via CDN.
 
 **Tech Stack:** Python 3.10+ (build script, uses existing `EvalResult` / `ScenarioLoader`). Plotly.js 2.x via CDN. marked.js via CDN. Plain vanilla JS for grid + cards. No build pipeline for the HTML side.
 
@@ -143,7 +143,7 @@ _ROUND_ID_RE = re.compile(r"(?:r|round)(\d+[a-z]?)")
 
 
 def extract_round_id(dirname: str) -> Optional[str]:
-    """Extract the round id from a /data3/gla-eval-results/<dirname> basename.
+    """Extract the round id from a /data3/bhdr-eval-results/<dirname> basename.
 
     Examples:
       "2026-05-14-r18" -> "r18"
@@ -235,9 +235,9 @@ def test_pick_prefers_merged_over_full(tmp_path):
 
 def test_pick_returns_both_modes(tmp_path):
     (tmp_path / "code_only.json").write_text("[]")
-    (tmp_path / "with_gla.json").write_text("[]")
+    (tmp_path / "with_bhdr.json").write_text("[]")
     picked = pick_result_files(tmp_path)
-    assert sorted(p.name for p in picked) == ["code_only.json", "with_gla.json"]
+    assert sorted(p.name for p in picked) == ["code_only.json", "with_bhdr.json"]
 
 
 def test_pick_legacy_results_json(tmp_path):
@@ -261,12 +261,12 @@ def pick_result_files(round_dir: Path) -> list[Path]:
 
     Priority: per-mode merged > per-mode full > legacy ``results.json``.
     A round can have multiple files when both ``code_only`` and
-    ``with_gla`` ran; both are returned. Merged variants supersede
+    ``with_bhdr`` ran; both are returned. Merged variants supersede
     their non-merged counterpart for the same mode.
     """
     files = {p.name: p for p in round_dir.iterdir() if p.is_file()}
     picked: list[Path] = []
-    for mode in ("code_only", "with_gla"):
+    for mode in ("code_only", "with_bhdr"):
         merged = files.get(f"{mode}_merged.json")
         full = files.get(f"{mode}.json")
         if merged is not None:
@@ -955,7 +955,7 @@ from gpa.eval.dashboard._results import (
 from gpa.eval.scenario import ScenarioLoader
 
 
-_DATA3_ROOT = Path("/data3/gla-eval-results")
+_DATA3_ROOT = Path("/data3/bhdr-eval-results")
 _ROUNDS_DIR = Path("docs/eval-rounds")
 _OUTPUT_PATH = Path("dashboard/index.json")
 
@@ -1158,7 +1158,7 @@ Dark theme, high-contrast (matches the brainstorming visual companion's saturate
   --text-secondary: #94a3b8;
   --accent: #38bdf8;
   --co: #60a5fa;            /* code_only */
-  --gla: #fb923c;           /* with_gla */
+  --gla: #fb923c;           /* with_bhdr */
   --solve-hi: #15803d;
   --solve-mid: #a16207;
   --solve-lo: #991b1b;
@@ -1241,8 +1241,8 @@ Just enough rows that opening `dashboard/index.html` against this fixture exerci
     {
       "id": "r17",
       "date": "2026-05-05",
-      "results_path": "/data3/gla-eval-results/2026-05-05-r17/",
-      "aux_paths": ["/data3/gla-eval-results/2026-05-05-r17-resume/"],
+      "results_path": "/data3/bhdr-eval-results/2026-05-05-r17/",
+      "aux_paths": ["/data3/bhdr-eval-results/2026-05-05-r17-resume/"],
       "narrative_path": "docs/eval-rounds/2026-05-05-r17.md",
       "narrative_md": "# Round R17 (test)\n\nFixture round.\n",
       "headline": "Fixture round.",
@@ -1288,7 +1288,7 @@ Just enough rows that opening `dashboard/index.html` against this fixture exerci
     {
       "id": "r18",
       "date": "2026-05-14",
-      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
+      "results_path": "/data3/bhdr-eval-results/2026-05-14-r18/",
       "aux_paths": [],
       "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
       "narrative_md": "# Round R18 (test)\n\nSecond fixture round. bug_class dispatch deleted.\n",
@@ -1497,7 +1497,7 @@ git commit -m "feat(dashboard): scenario grid + narrative cards"
   }
 
   function buildTraces(type) {
-    const modes = ["code_only", "with_gla"];
+    const modes = ["code_only", "with_bhdr"];
     const tiers = state.tier === "all"
       ? ["haiku", "sonnet", "opus"]
       : [state.tier];
@@ -1576,7 +1576,7 @@ git commit -m "feat(dashboard): scenario grid + narrative cards"
         // Latest seen wins for type
         s.type = r.scenario_type;
         if (r.expected_failure) s.isStable = true;
-        // Use code_only as default mode for the grid; with_gla shown next to it via cell-label
+        // Use code_only as default mode for the grid; with_bhdr shown next to it via cell-label
         const key = `${round.id}|${r.mode}`;
         s.byRound[key] = r;
       }
@@ -1588,7 +1588,7 @@ git commit -m "feat(dashboard): scenario grid + narrative cards"
     trMode.appendChild(elem("th", "scenario"));
     const roundColumns = []; // [{round_id, mode}]
     for (const round of state.data.rounds) {
-      for (const mode of ["code_only", "with_gla"]) {
+      for (const mode of ["code_only", "with_bhdr"]) {
         const anyRow = round.results.some(r =>
           r.mode === mode && (state.tier === "all" || r.tier === state.tier)
         );
@@ -1762,10 +1762,10 @@ Append the following section to `docs/eval-next-steps.md` (after the
 ## Tooling: local eval dashboard
 
 `scripts/build-eval-dashboard.sh` aggregates
-`/data3/gla-eval-results/*` + `docs/eval-rounds/*.md` into
+`/data3/bhdr-eval-results/*` + `docs/eval-rounds/*.md` into
 `dashboard/index.json`, then open `dashboard/index.html` in a
 browser. Primary view: per-scenario-type Plotly panels comparing
-`code_only` vs `with_gla` across rounds. Scope: R12c+ (rounds with
+`code_only` vs `with_bhdr` across rounds. Scope: R12c+ (rounds with
 `verdict` field). Pre-R12 legacy rounds excluded — see
 `docs/superpowers/specs/2026-05-15-eval-dashboard-design.md`.
 ```
@@ -1783,4 +1783,4 @@ git commit -m "docs(eval): note local dashboard in eval-next-steps"
 git tag dashboard-r18 HEAD
 ```
 
-Done. The dashboard reads `/data3/gla-eval-results/*` + `docs/eval-rounds/*.md` and renders the comparison view. As R19's pipeline-fix work lands (multi-tier eval, with_gla restored), no code changes are needed — the dashboard picks up the new modes/tiers automatically from the result JSON via the meta.json tier override.
+Done. The dashboard reads `/data3/bhdr-eval-results/*` + `docs/eval-rounds/*.md` and renders the comparison view. As R19's pipeline-fix work lands (multi-tier eval, with_bhdr restored), no code changes are needed — the dashboard picks up the new modes/tiers automatically from the result JSON via the meta.json tier override.

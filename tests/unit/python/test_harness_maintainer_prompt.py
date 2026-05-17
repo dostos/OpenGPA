@@ -158,15 +158,15 @@ def test_bug_class_legacy_explicit_also_none():
     assert tools["system_prompt"] is None
 
 
-def test_with_gla_includes_bhdr_tool_block():
-    """`mode='with_gla'` includes the OpenGPA-only tool block in the prompt."""
+def test_with_bhdr_includes_bhdr_tool_block():
+    """`mode='with_bhdr'` includes the OpenGPA-only tool block in the prompt."""
     harness = _make_harness()
     scenario = _make_scenario(
         fix=_fix("framework-internal"),
         upstream_snapshot_repo="https://github.com/mrdoob/three.js",
         upstream_snapshot_sha="abc123",
     )
-    prompt_gla = harness._build_tools(scenario, mode="with_gla")["system_prompt"]
+    prompt_gla = harness._build_tools(scenario, mode="with_bhdr")["system_prompt"]
     prompt_code = harness._build_tools(scenario, mode="code_only")["system_prompt"]
     # With GPA, the prompt must mention gpa commands; code-only must not.
     assert "gpa report" in prompt_gla or "gpa trace" in prompt_gla
@@ -357,15 +357,15 @@ def test_prompt_renderer_strips_with_bhdr_block_for_code_only():
     assert "<!-- END_WITH_BHDR_ONLY -->" not in prompt
 
 
-def test_prompt_renderer_keeps_block_content_for_with_gla():
-    """In with_gla mode, the gated content stays but the markers are gone."""
+def test_prompt_renderer_keeps_block_content_for_with_bhdr():
+    """In with_bhdr mode, the gated content stays but the markers are gone."""
     harness = _make_harness()
     scenario = _make_scenario(
         fix=_fix("framework-internal"),
         upstream_snapshot_repo="https://github.com/x/y",
         upstream_snapshot_sha="abc",
     )
-    prompt = harness._build_tools(scenario, mode="with_gla")["system_prompt"]
+    prompt = harness._build_tools(scenario, mode="with_bhdr")["system_prompt"]
     assert "<!-- WITH_BHDR_ONLY -->" not in prompt
     assert "<!-- END_WITH_BHDR_ONLY -->" not in prompt
     # Content within the block survives.

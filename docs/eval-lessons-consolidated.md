@@ -375,7 +375,7 @@ methodology, agent/system improvements). Per-area detail in
     diagnosis. Round 12 cesium "gave up" with one sentence and was
     marked ✓; round 12b cesium found the real bug (cache invalidation
     in `Picking.pickPositionWorldCoordinates`) and was marked ✗.
-14. **The with_gla prompt advertises capabilities the agent doesn't
+14. **The with_bhdr prompt advertises capabilities the agent doesn't
     have.** 14/14 R12b runs had `live capture unavailable` (no
     binaries, no engine), yet the prompt block in `cli_agent.py:80-96`
     lists 11 commands of which only 3 (`gpa upstream read|grep|list`)
@@ -404,7 +404,7 @@ methodology, agent/system improvements). Per-area detail in
    `score_maintainer_patch` available to the 14 R12 scenarios (and
    any future advisor-classed mine that retains real `fix.files`).
    → `eval-lessons-scoring.md` §2a.
-3. **Stop lying in the with_gla prompt about live capture.** Branch
+3. **Stop lying in the with_bhdr prompt about live capture.** Branch
    the prompt block on `tools.get("snapshot_root")` vs runtime
    capture availability. Drop the "BHDR_FRAME_ID is set" line when
    `frame_id is None`. Add a one-line "scenario blurb" with
@@ -443,7 +443,7 @@ methodology, agent/system improvements). Per-area detail in
    369–402 KB. → system §2 gaps + §5 fix #2 (grep `--context` +
    raise cap to 512 KB) + fix #3.
 
-### What we now know about with_gla on these scenarios
+### What we now know about with_bhdr on these scenarios
 
 - **Token-efficiency win is real.** 38% faster wall, 8% fewer total
   output tokens, 15% fewer tool calls vs same-scenario code_only.
@@ -451,13 +451,13 @@ methodology, agent/system improvements). Per-area detail in
   shape from training data).
 - **"Did the agent solve it" is a wash by current metrics**, but the
   metrics are broken (P0 #2 unlocks the real signal). Qualitatively,
-  with_gla flipped cesium ✗→✓ (the kind of bug only solvable with
+  with_bhdr flipped cesium ✗→✓ (the kind of bug only solvable with
   snapshot access) and sharpened maplibre/mapbox diagnoses with
   symbol-level citations the snapshot enabled.
 - **Web-map subset was a clear win**: 5/6 vs 4/6 file-level any-hit,
   precision 0.67 vs 0.58. Godot regressed (3/8 vs 5/8) but each
   godot "regression" is code_only's training-data guess landing on a
-  collateral PR file while with_gla cited a different (probably
+  collateral PR file while with_bhdr cited a different (probably
   also-relevant) file from the bug area. P1 #5 addresses this by
   cutting collateral from `fix.files` in future mines.
 
@@ -465,7 +465,7 @@ methodology, agent/system improvements). Per-area detail in
 
 1. **Re-score rounds 4–12 against the new scorer stack** once P0 #2
    and P1 #6 land. No re-running the agent; results.json on disk has
-   what we need. Expect existing "with_gla solved 0/27" type cells
+   what we need. Expect existing "with_bhdr solved 0/27" type cells
    to flip on rounds where `fix.files` is well-shaped.
 2. **Re-mine rounds 11–12 scenarios** after P0 #1 + P1 #4 + P1 #5
    land. `bug_class` distribution should shift toward

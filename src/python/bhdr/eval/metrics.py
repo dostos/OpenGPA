@@ -10,7 +10,7 @@ from typing import Optional
 @dataclass
 class EvalResult:
     scenario_id: str
-    mode: str                  # "with_gla" or "code_only"
+    mode: str                  # "with_bhdr" or "code_only"
 
     diagnosis_text: str        # LLM's diagnosis
 
@@ -147,10 +147,10 @@ class ReportGenerator:
             agg["regression_count"] = len(reg_rs)
             overall[mode] = agg
 
-        # Token reduction: with_gla vs code_only
+        # Token reduction: with_bhdr vs code_only
         token_reduction: Optional[float] = None
-        if "with_gla" in overall and "code_only" in overall:
-            bhdr_tok = overall["with_gla"].get("avg_total_tokens") or 0
+        if "with_bhdr" in overall and "code_only" in overall:
+            bhdr_tok = overall["with_bhdr"].get("avg_total_tokens") or 0
             base_tok = overall["code_only"].get("avg_total_tokens") or 0
             if base_tok:
                 token_reduction = (base_tok - bhdr_tok) / base_tok
@@ -218,7 +218,7 @@ class ReportGenerator:
             pct = summary["token_reduction_fraction"] * 100
             lines.append("")
             lines.append(
-                f"**Token reduction (with_gla vs code_only): {pct:.1f}%**"
+                f"**Token reduction (with_bhdr vs code_only): {pct:.1f}%**"
             )
 
         # R18-P0: surface stable-failure scenarios so readers know which

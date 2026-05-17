@@ -89,7 +89,7 @@ class CliAgent(AgentBackend):
         # leave BHDR_FRAME_ID unset so any `gpa` CLI calls fall back to env /
         # current-frame defaults instead of pointing at a sentinel id.
         frame_id = None
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             frame_id = tools["run_with_capture"]()
             if frame_id is not None:
                 env["BHDR_FRAME_ID"] = str(frame_id)
@@ -210,7 +210,7 @@ class CliAgent(AgentBackend):
         # the task framing and final-output format.
         system_prompt = (tools or {}).get("system_prompt") or ""
         # Effective mode: harness sets this to "code_only" for
-        # browser-tier scenarios in with_gla, so the GPA tool block is
+        # browser-tier scenarios in with_bhdr, so the GPA tool block is
         # dropped from the prompt (it can't help — native shim doesn't
         # see browser WebGL). Falls back to the requested mode.
         effective_mode = (tools or {}).get("effective_mode") or mode
@@ -297,7 +297,7 @@ class CliAgent(AgentBackend):
             "Source tools:\n"
             "- gpa source read PATH               — read a file from buggy app\n"
         )
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             if have_frame and have_snapshot:
                 return live_block + "\n" + upstream_block + "\n" + source_block
             if have_frame:

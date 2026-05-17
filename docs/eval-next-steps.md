@@ -39,7 +39,7 @@ informs.
 
 OpenGPA ties code_only on web-map at 71% (R12c). The shim doesn't
 intercept browser WebGL — the tier-mismatch warning prevents bad
-with_gla token spend, but real *lift* on browser scenarios needs a
+with_bhdr token spend, but real *lift* on browser scenarios needs a
 WebGL backend. Two paths:
 
 1. **Gate at the harness** (shipped in `d7bd4bb`) — prevents
@@ -92,9 +92,9 @@ explicit:
 ## Tooling: local eval dashboard
 
 `scripts/build-eval-dashboard.sh` aggregates
-`/data3/gla-eval-results/*` + `docs/eval-rounds/*.md` into
+`/data3/bhdr-eval-results/*` + `docs/eval-rounds/*.md` into
 `dashboard/index.json`, then open `dashboard/index.html` in a
 browser. Primary view: per-scenario-type Plotly panels comparing
-`code_only` vs `with_gla` across rounds. Scope: R12c+ (rounds with
+`code_only` vs `with_bhdr` across rounds. Scope: R12c+ (rounds with
 `verdict` field). Pre-R12 legacy rounds excluded — see
 `docs/superpowers/specs/2026-05-15-eval-dashboard-design.md`.

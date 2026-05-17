@@ -45,7 +45,7 @@ class AgentBackend(ABC):
             A scenario object (e.g. ``EvalScenario``) exposing at least
             ``description``/``bug_description`` and ``source_path``.
         mode:
-            ``"with_gla"`` or ``"code_only"``.
+            ``"with_bhdr"`` or ``"code_only"``.
         tools:
             Dict of harness-provided callables (``read_source``,
             ``run_with_capture``, snapshot tools, etc.).  Same shape as

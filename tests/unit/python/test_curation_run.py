@@ -261,7 +261,7 @@ def test_run_judge_commits_without_evaluate_when_flag_not_set(
     assert row["judge"] is not None
     assert row["judge"]["committed_as"] is not None
     assert row["judge"]["committed_as"].startswith("r")
-    assert row["judge"]["with_gla_score"] is None
+    assert row["judge"]["with_bhdr_score"] is None
     assert row["judge"]["code_only_score"] is None
     assert row["terminal_phase"] == "judge"
     assert row["terminal_reason"] == "committed"
@@ -351,7 +351,7 @@ def test_run_judge_evaluate_branches(
 
     @dataclasses.dataclass
     class _FakeEvalResult:
-        with_gla: _FakeScore
+        with_bhdr: _FakeScore
         code_only: _FakeScore
 
     @dataclasses.dataclass
@@ -360,7 +360,7 @@ def test_run_judge_evaluate_branches(
 
     def _stub_run_eval(*, scenario_id, eval_dir, backend):
         return _FakeEvalResult(
-            with_gla=_FakeScore(score=0.9),
+            with_bhdr=_FakeScore(score=0.9),
             code_only=_FakeScore(score=0.4),
         )
     _stub_run_eval._is_default = False  # mark seam as configured
@@ -368,7 +368,7 @@ def test_run_judge_evaluate_branches(
     monkeypatch.setattr(run_mod, "run_eval", _stub_run_eval)
     monkeypatch.setattr(
         run_mod, "classify_observed_helps",
-        lambda with_gla, code_only: _FakeObservedClassification(verdict=verdict),
+        lambda with_bhdr, code_only: _FakeObservedClassification(verdict=verdict),
     )
 
     commit_calls: list[dict] = []
@@ -392,7 +392,7 @@ def test_run_judge_evaluate_branches(
 
     assert row["terminal_phase"] == "judge"
     assert row["terminal_reason"] == expected_terminal
-    assert row["judge"]["with_gla_score"] == 0.9
+    assert row["judge"]["with_bhdr_score"] == 0.9
     assert row["judge"]["code_only_score"] == 0.4
     assert row["judge"]["helps_verdict"] == verdict
 
@@ -401,7 +401,7 @@ def test_run_judge_evaluate_branches(
         assert len(commit_calls) == 1
         assert commit_calls[0]["observed_helps"] == verdict
         assert commit_calls[0]["eval_summary"] == {
-            "with_gla_score": 0.9,
+            "with_bhdr_score": 0.9,
             "code_only_score": 0.4,
             "verdict": verdict,
         }
@@ -425,7 +425,7 @@ def test_run_judge_evaluate_auto_wires_factory(
 
     @dataclasses.dataclass
     class _EvalResult:
-        with_gla: _Score = dataclasses.field(default_factory=_Score)
+        with_bhdr: _Score = dataclasses.field(default_factory=_Score)
         code_only: _Score = dataclasses.field(default_factory=lambda: _Score(score=0.4))
 
     def _fake_build_agent_fn(backend, **kwargs):

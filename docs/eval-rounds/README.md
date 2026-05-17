@@ -1,6 +1,6 @@
 # Eval Rounds
 
-One file per round, mirroring `/data3/gla-eval-results/` (gitignored
+One file per round, mirroring `/data3/bhdr-eval-results/` (gitignored
 data dirs). Each file has the same fixed shape so cross-round diffs
 are easy to read:
 
@@ -9,9 +9,9 @@ are easy to read:
 
 ## Ran
 - Cohort: <N scenarios>
-- Modes: with_gla, code_only
+- Modes: with_bhdr, code_only
 - Model: <agent model>
-- Output: /data3/gla-eval-results/<round-dir>/
+- Output: /data3/bhdr-eval-results/<round-dir>/
 
 ## Findings
 - Bullet 1 (what we learned that we didn't know before)
@@ -117,7 +117,7 @@ process gap.
 | [R13](2026-05-05-r13.md)   | 2026-05-05 | Scope-hint validated: file_solved 0→6, tokens −25% to −48%, +2 code_only |
 | [R14](2026-05-05-r14.md)   | 2026-05-05 | Browser-tier gate closes web-map gap (+0); budget hint over-throttled (-6 solves); revert in R15 |
 | [R15](2026-05-05-r15.md)   | 2026-05-05 | First system change in 4 rounds (`gpa upstream outline`); audit identifies 3 R16 deletions |
-| [R16](2026-05-05-r16.md)   | 2026-05-05 | First deletion-shipping round: with_gla skip works perfectly; rate-limit invalidates code_only validation |
+| [R16](2026-05-05-r16.md)   | 2026-05-05 | First deletion-shipping round: with_bhdr skip works perfectly; rate-limit invalidates code_only validation |
 | [R17](2026-05-05-r17.md)   | 2026-05-05 | Audit-driven deletions: DiagnosisScorer dead chain (-131 lines) + outline-recipe; partial run shows 2/3 R15+ regressions recovered |
 | [R18](2026-05-14-r18.md)   | 2026-05-14 | Bug_class prompt dispatch deleted; world_environment recovered; 11/13 solved, signal shifts to high-confidence file_level (10/11) but cost 4× R17 |
 

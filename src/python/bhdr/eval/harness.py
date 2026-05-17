@@ -28,7 +28,7 @@ AgentFn = Callable[
     tuple[str, int, int, int, int, float],
 ]
 
-_ALL_MODES = ["with_gla", "code_only"]
+_ALL_MODES = ["with_bhdr", "code_only"]
 
 
 # All non-legacy scenarios use the maintainer_framing prompt. Legacy /
@@ -95,7 +95,7 @@ class EvalHarness:
 
         Args:
             scenario_id: e.g. "e1_state_leak"
-            mode: "with_gla" or "code_only"
+            mode: "with_bhdr" or "code_only"
             agent_fn: callable(scenario, mode, tools) ->
                       (diagnosis_text, input_tokens, output_tokens,
                        tool_calls, num_turns, time_seconds)
@@ -247,7 +247,7 @@ class EvalHarness:
         Args:
             agent_fn: see run_scenario
             scenarios: list of scenario IDs; None means all available
-            modes: list of modes; None means ["with_gla", "code_only"]
+            modes: list of modes; None means ["with_bhdr", "code_only"]
 
         Returns:
             All EvalResult objects produced in this run.
@@ -261,7 +261,7 @@ class EvalHarness:
         new_results: list[EvalResult] = []
         for sid in scenarios:
             # Source-less scenarios (mined without a synthetic
-            # reproducer) cannot run live capture, so `with_gla`
+            # reproducer) cannot run live capture, so `with_bhdr`
             # collapses to `code_only` at the prompt level (R14
             # browser-tier gate generalised — applies to ALL
             # source-less scenarios, not just web-*). Skip the
@@ -273,9 +273,9 @@ class EvalHarness:
             except Exception:
                 has_source = True  # be conservative on loader errors
             for mode in modes:
-                if mode == "with_gla" and not has_source:
+                if mode == "with_bhdr" and not has_source:
                     _log.info(
-                        "scenario %s: skipping with_gla — no source_path "
+                        "scenario %s: skipping with_bhdr — no source_path "
                         "(can't capture; collapses to code_only)",
                         sid,
                     )
@@ -304,7 +304,7 @@ class EvalHarness:
     def _build_tools(self, scenario: ScenarioMetadata, mode: str) -> dict:
         """Return a tool dictionary passed to the agent.
 
-        In 'with_gla' mode the runner tools are included.
+        In 'with_bhdr' mode the runner tools are included.
         In 'code_only' mode only the source reader is provided.
         When the scenario has upstream snapshot refs, read_upstream,
         list_upstream_files and grep_upstream are added for both modes.
@@ -335,23 +335,23 @@ class EvalHarness:
             "list_scenario_files": lambda: self._list_scenario_files(scenario),
             "read_scenario_file": lambda path: self._read_scenario_file(scenario, path),
         }
-        # Effective mode: for browser-tier scenarios in with_gla, the
+        # Effective mode: for browser-tier scenarios in with_bhdr, the
         # GPA tool block is dead weight (the native LD_PRELOAD shim
         # can't intercept browser WebGL). R13 (2026-05-05) confirmed
-        # the cost: with_gla=9/14 vs code_only=12/14 on the same
+        # the cost: with_bhdr=9/14 vs code_only=12/14 on the same
         # cohort, with the gap entirely on web-map. Degrade to
         # code_only for prompt construction so the agent isn't told
         # to use endpoints that don't help. Result is still recorded
-        # under `mode == "with_gla"` for analysis comparison; only
+        # under `mode == "with_bhdr"` for analysis comparison; only
         # the prompt + tool block change.
         effective_mode = mode
-        is_browser_tier_with_gla = (
-            mode == "with_gla" and is_browser_tier_scenario(scenario)
+        is_browser_tier_with_bhdr = (
+            mode == "with_bhdr" and is_browser_tier_scenario(scenario)
         )
-        if is_browser_tier_with_gla:
+        if is_browser_tier_with_bhdr:
             _log.warning(
                 "scenario %s: browser-tier (web-* / graphics-lib) "
-                "in with_gla mode — degrading to code_only prompt "
+                "in with_bhdr mode — degrading to code_only prompt "
                 "construction (no GPA tool block). The native shim "
                 "does not intercept browser WebGL; including the "
                 "block costs tokens for no value.",
@@ -360,9 +360,9 @@ class EvalHarness:
             effective_mode = "code_only"
         tools["effective_mode"] = effective_mode
 
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             def _safe_run_with_capture():
-                if is_browser_tier_with_gla:
+                if is_browser_tier_with_bhdr:
                     # No point attempting a Bazel build + capture for a
                     # browser-tier scenario; no source_path, no frame.
                     return None
@@ -371,7 +371,7 @@ class EvalHarness:
                 except (RuntimeError, FileNotFoundError, OSError) as exc:
                     _log.warning(
                         "scenario %s: live capture unavailable (%s); "
-                        "with_gla will run without BHDR_FRAME_ID",
+                        "with_bhdr will run without BHDR_FRAME_ID",
                         scenario.id, exc,
                     )
                     return None

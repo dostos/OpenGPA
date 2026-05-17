@@ -32,7 +32,7 @@ export PATH=/home/jingyulee/gh/gla/bin:$PATH
 # ---- Build the prompt template via the shared renderer. ----
 PROMPT_MODE=code_only
 if [ "$MODE" = "with_bhdr" ]; then
-  PROMPT_MODE=with_gla
+  PROMPT_MODE=with_bhdr
 fi
 
 python3 /tmp/eval_r10v2_r11/build_prompt.py "$SCENARIO" "$PROMPT_MODE" > "$PROMPT_FILE" || {

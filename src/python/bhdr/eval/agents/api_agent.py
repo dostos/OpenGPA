@@ -334,7 +334,7 @@ class ApiAgent(AgentBackend):
     # ------------------------------------------------------------------
 
     def run(self, scenario, mode: str, tools: dict) -> AgentResult:
-        """Implement AgentBackend.run by dispatching to run_with_gla / run_code_only.
+        """Implement AgentBackend.run by dispatching to run_with_bhdr / run_code_only.
 
         Adapts the harness ``tools`` dict (same shape as build_agent_fn uses)
         to the keyword-arg style expected by the underlying methods.
@@ -365,7 +365,7 @@ class ApiAgent(AgentBackend):
 
         system_prompt = tools.get("system_prompt")
 
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             frame_id = tools["run_with_capture"]()
             if frame_id is None:
                 # Live capture unavailable; agent has no live frame to query.
@@ -383,7 +383,7 @@ class ApiAgent(AgentBackend):
                 token=os.environ.get("BHDR_TOKEN", ""),
                 frame_id=frame_id,
             )
-            return self.run_with_gla(
+            return self.run_with_bhdr(
                 scenario_description=description,
                 source_code=source_code,
                 source_path=source_path,
@@ -404,7 +404,7 @@ class ApiAgent(AgentBackend):
     # Existing methods (kept for backward-compat with direct callers)
     # ------------------------------------------------------------------
 
-    def run_with_gla(
+    def run_with_bhdr(
         self,
         scenario_description: str,
         source_code: str,
@@ -437,7 +437,7 @@ class ApiAgent(AgentBackend):
             tool_specs=tool_specs,
             tool_executor=tool_executor,
             extra_tools=extra_tools or {},
-            mode="with_gla",
+            mode="with_bhdr",
             system_prompt_override=system_prompt,
         )
 
@@ -626,7 +626,7 @@ class ApiAgent(AgentBackend):
                 "- read_upstream: Read a file from the upstream repository snapshot\n"
                 "- list_upstream_files: List files in a directory of the upstream repo\n"
             )
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             return base + (
                 "You have access to these tools:\n"
                 "- read_source_file: Read the application source code\n"
@@ -682,7 +682,7 @@ def build_agent_fn(
              tool_calls, num_turns, time_seconds)
     matching :class:`bhdr.eval.harness.AgentFn`.
 
-    In "with_gla" mode the agent is given the full OpenGPA tool set plus the
+    In "with_bhdr" mode the agent is given the full OpenGPA tool set plus the
     source reader and is driven by a `BhdrToolExecutor` pointed at the
     captured frame. In "code_only" mode the agent only has `read_source_file`.
 
@@ -730,7 +730,7 @@ def build_agent_fn(
         # None → agent falls back to its built-in diagnosis prompt.
         system_prompt = tools.get("system_prompt")
 
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             frame_id = tools["run_with_capture"]()
             if frame_id is None:
                 # Live capture unavailable — fall back to code_only.
@@ -747,7 +747,7 @@ def build_agent_fn(
                     token=os.environ.get("BHDR_TOKEN", ""),
                     frame_id=frame_id,
                 )
-                result = agent.run_with_gla(
+                result = agent.run_with_bhdr(
                     scenario_description=description,
                     source_code=source_code,
                     source_path=source_path,

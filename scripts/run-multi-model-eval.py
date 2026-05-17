@@ -34,7 +34,7 @@ RESULTS_DIR = REPO / "docs" / "eval-runs"
 class EvalRun:
     scenario: str
     model: str          # haiku, sonnet, opus
-    mode: str           # code_only, with_gla
+    mode: str           # code_only, with_bhdr
     correct: Optional[bool] = None
     diagnosis: str = ""
     fix: str = ""
@@ -106,7 +106,7 @@ def print_summary(results: list[EvalRun]):
 
     # Group by model
     models = sorted(set(r.model for r in results))
-    modes = ["code_only", "with_gla"]
+    modes = ["code_only", "with_bhdr"]
 
     # Accuracy table
     print(f"\n{'Scenario':<45} ", end="")
@@ -157,7 +157,7 @@ def print_summary(results: list[EvalRun]):
         print()
 
     # Framebuffer trap analysis
-    bhdr_runs = [r for r in results if r.mode == "with_gla"]
+    bhdr_runs = [r for r in results if r.mode == "with_bhdr"]
     if bhdr_runs:
         fb_first_count = sum(1 for r in bhdr_runs if r.framebuffer_first)
         total_gla = len(bhdr_runs)
@@ -220,7 +220,7 @@ def main():
                 "opus": "claude-opus-4-20250514",
             }.get(model_tier, model_tier)
 
-            for mode in ["code_only", "with_gla"]:
+            for mode in ["code_only", "with_bhdr"]:
                 print(f"\n--- {scenario['name']} | {model_tier} | {mode} ---")
 
                 run = EvalRun(
@@ -234,7 +234,7 @@ def main():
 
                     problem_desc = f"Problem: {description[:500]}" if description else "A rendering bug."
 
-                    if mode == "with_gla":
+                    if mode == "with_bhdr":
                         # Need frame_id — check if captured
                         # For now, use frame_id=0 as placeholder
                         executor = BhdrToolExecutor(
@@ -242,7 +242,7 @@ def main():
                             token=os.environ.get("BHDR_TOKEN", "eval-test"),
                             frame_id=0,
                         )
-                        result = agent.run_with_gla(
+                        result = agent.run_with_bhdr(
                             scenario_description=problem_desc,
                             source_code=source_code,
                             source_path=scenario["source"],

@@ -1,8 +1,10 @@
-# OpenGPA — Project Instructions
+# Beholder — Project Instructions
 
 ## What This Is
 
-OpenGPA (Open Graphics Profiler for Agents) — a live graphics debugger for AI agents. Intercepts GL/Vulkan calls, captures frame state, exposes via REST API + MCP tools.
+Beholder — a live graphics debugger for AI agents. Intercepts GL/Vulkan calls, captures frame state, exposes via REST API + MCP tools. Named for the D&D creature with many eyes; helps code agents *see* the 3D world.
+
+Internal namespace prefix: `bhdr`. Older artifacts may still carry the legacy `gpa` / `gla` / `OpenGPA` names — those are being phased out. Historical round logs intentionally retain their original mode literals as fact-of-record.
 
 ## Build & Test
 

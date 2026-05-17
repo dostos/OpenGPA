@@ -21,7 +21,7 @@ from bhdr.eval.dashboard._results import (
 from bhdr.eval.scenario import ScenarioLoader
 
 
-_DATA3_ROOT = Path("/data3/gla-eval-results")
+_DATA3_ROOT = Path("/data3/bhdr-eval-results")
 _ROUNDS_DIR = Path("docs/eval-rounds")
 _EVAL_ROOT = Path("tests/eval")
 _OUTPUT_PATH = Path("dashboard/index.json")

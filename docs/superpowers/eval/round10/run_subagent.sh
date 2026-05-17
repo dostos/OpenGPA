@@ -35,7 +35,7 @@ PORT=$(python3 -c 'import socket; s=socket.socket(); s.bind(("127.0.0.1",0)); pr
 # ---- Build the prompt template via the shared renderer. ----
 PROMPT_MODE=code_only
 if [ "$MODE" = "with_bhdr" ]; then
-  PROMPT_MODE=with_gla
+  PROMPT_MODE=with_bhdr
 fi
 
 python3 /tmp/eval_round10/build_prompt.py "$SCENARIO" "$PROMPT_MODE" > "$PROMPT_FILE" || {

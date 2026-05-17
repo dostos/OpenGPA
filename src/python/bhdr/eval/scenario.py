@@ -25,8 +25,8 @@ _VALID_BUG_CLASSES = frozenset(
 
 # Top-level taxonomy categories whose scenarios run in a browser
 # (WebGL/JS) — the native LD_PRELOAD shim cannot intercept these, so
-# `with_gla` mode surfaces no useful frame state for them. Used by the
-# harness to warn (and optionally gate) when running with_gla on a
+# `with_bhdr` mode surfaces no useful frame state for them. Used by the
+# harness to warn (and optionally gate) when running with_bhdr on a
 # tier-mismatched scenario.
 _BROWSER_TIER_CATEGORIES = frozenset(
     {"web-2d", "web-3d", "web-map", "graphics-lib"}

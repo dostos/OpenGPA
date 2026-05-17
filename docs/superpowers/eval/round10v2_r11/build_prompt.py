@@ -3,10 +3,10 @@
 Usage: python3 build_prompt.py <scenario_id> <mode>
 
 Same shape as round10/build_prompt.py but with the R11 stronger
-breadcrumb hint injected per-run for the with_gla mode (without
+breadcrumb hint injected per-run for the with_bhdr mode (without
 modifying the in-repo template).
 
-Mode values: 'with_gla' | 'code_only'.
+Mode values: 'with_bhdr' | 'code_only'.
 """
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ def main() -> None:
         print("usage: build_prompt.py <scenario_id> <mode>", file=sys.stderr)
         sys.exit(2)
     scenario_id = sys.argv[1]
-    mode = sys.argv[2]  # 'with_gla' or 'code_only'
+    mode = sys.argv[2]  # 'with_bhdr' or 'code_only'
 
     loader = ScenarioLoader(Path("/home/jingyulee/gh/gla/tests/eval"))
     s = loader.load(scenario_id)
@@ -89,10 +89,10 @@ def main() -> None:
         mode=mode,
     )
 
-    # Per-run patch: stronger breadcrumb hint for with_gla.
+    # Per-run patch: stronger breadcrumb hint for with_bhdr.
     # Replace the original "OpenGPA live capture" bullet block with the
     # breadcrumb-style block.
-    if mode == "with_gla":
+    if mode == "with_bhdr":
         # Match the OpenGPA bullet that the renderer emitted.  The bullet
         # spans multiple lines, ending right before "# Task".
         new_prompt = re.sub(

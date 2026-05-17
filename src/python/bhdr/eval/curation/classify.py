@@ -1,8 +1,8 @@
 """Classify observed helpfulness of OpenGPA vs code-only from two EvalResult objects.
 
 6-rule decision table (first match wins):
-  Rule 1: correct_with_gla AND NOT correct_code_only  -> yes
-  Rule 2: NOT correct_with_gla AND correct_code_only   -> no  (GPA regressed)
+  Rule 1: correct_with_bhdr AND NOT correct_code_only  -> yes
+  Rule 2: NOT correct_with_bhdr AND correct_code_only   -> no  (GPA regressed)
   Rule 3: both wrong                                   -> no
   Rule 4: both correct AND ratio < 0.5                 -> yes
   Rule 5: both correct AND ratio > 0.8                 -> no
@@ -53,23 +53,23 @@ def _solved(result: EvalResult) -> bool:
 
 
 def classify_observed_helps(
-    with_gla: EvalResult, code_only: EvalResult
+    with_bhdr: EvalResult, code_only: EvalResult
 ) -> ObservedClassification:
     """Return an ObservedClassification based on the 6-rule decision table."""
     # Rule 1
-    if _solved(with_gla) and not _solved(code_only):
+    if _solved(with_bhdr) and not _solved(code_only):
         return ObservedClassification(
             "yes",
-            "solved_with_gla=True, solved_code_only=False",
+            "solved_with_bhdr=True, solved_code_only=False",
         )
     # Rule 2
-    if not _solved(with_gla) and _solved(code_only):
+    if not _solved(with_bhdr) and _solved(code_only):
         return ObservedClassification(
             "no",
             "OpenGPA regressed vs code_only",
         )
     # Rule 3: both wrong
-    if not _solved(with_gla) and not _solved(code_only):
+    if not _solved(with_bhdr) and not _solved(code_only):
         return ObservedClassification(
             "no",
             "both modes wrong",
@@ -80,7 +80,7 @@ def classify_observed_helps(
             "ambiguous",
             f"code_only tokens degenerate ({code_only.total_tokens})",
         )
-    ratio = with_gla.total_tokens / code_only.total_tokens
+    ratio = with_bhdr.total_tokens / code_only.total_tokens
     # Rule 4
     if ratio < 0.5:
         return ObservedClassification(

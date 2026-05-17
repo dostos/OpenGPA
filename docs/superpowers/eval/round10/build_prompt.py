@@ -34,7 +34,7 @@ def main() -> None:
         print("usage: build_prompt.py <scenario_id> <mode>", file=sys.stderr)
         sys.exit(2)
     scenario_id = sys.argv[1]
-    mode = sys.argv[2]  # 'with_gla' or 'code_only'
+    mode = sys.argv[2]  # 'with_bhdr' or 'code_only'
 
     loader = ScenarioLoader(Path("/home/jingyulee/gh/gla/tests/eval"))
     s = loader.load(scenario_id)

@@ -51,7 +51,7 @@ class ProduceOutcome:
 
 @dataclass
 class JudgeOutcome:
-    with_gla_score: Optional[float] = None
+    with_bhdr_score: Optional[float] = None
     code_only_score: Optional[float] = None
     helps_verdict: Optional[str] = None  # "yes" | "no" | "ambiguous"
     committed_as: Optional[str] = None

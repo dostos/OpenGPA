@@ -1,8 +1,8 @@
 """CLI entry point for the OpenGPA evaluation harness.
 
 Usage:
-    python -m bhdr.eval.cli run --scenario e1_state_leak --mode with_gla
-    python -m bhdr.eval.cli run --all [--scenarios e1,e2] [--modes with_gla,code_only]
+    python -m bhdr.eval.cli run --scenario e1_state_leak --mode with_bhdr
+    python -m bhdr.eval.cli run --all [--scenarios e1,e2] [--modes with_bhdr,code_only]
     python -m bhdr.eval.cli report results.json [--output report.md]
 """
 from __future__ import annotations
@@ -181,8 +181,8 @@ def build_parser() -> argparse.ArgumentParser:
     # --- run subcommand ---
     run_p = sub.add_parser("run", help="Execute evaluation scenarios")
     run_p.add_argument("--scenario", help="Scenario ID (e.g. e1_state_leak)")
-    run_p.add_argument("--mode", default="with_gla", choices=["with_gla", "code_only"],
-                       help="Evaluation mode (default: with_gla)")
+    run_p.add_argument("--mode", default="with_bhdr", choices=["with_bhdr", "code_only"],
+                       help="Evaluation mode (default: with_bhdr)")
     run_p.add_argument("--all", action="store_true",
                        help="Run all scenarios")
     run_p.add_argument("--scenarios",

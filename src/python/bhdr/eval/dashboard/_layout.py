@@ -14,7 +14,7 @@ _ROUND_ID_RE = re.compile(r"(?:^|[-_])(?:r|round)(\d+[a-z]?)(?=[-_]|$)")
 
 
 def extract_round_id(dirname: str) -> Optional[str]:
-    """Extract the round id from a /data3/gla-eval-results/<dirname> basename.
+    """Extract the round id from a /data3/bhdr-eval-results/<dirname> basename.
 
     Examples:
       "2026-05-14-r18" -> "r18"
@@ -55,12 +55,12 @@ def pick_result_files(round_dir: Path) -> list[Path]:
 
     Priority: per-mode merged > per-mode full > legacy ``results.json``.
     A round can have multiple files when both ``code_only`` and
-    ``with_gla`` ran; both are returned. Merged variants supersede
+    ``with_bhdr`` ran; both are returned. Merged variants supersede
     their non-merged counterpart for the same mode.
     """
     files = {p.name: p for p in round_dir.iterdir() if p.is_file()}
     picked: list[Path] = []
-    for mode in ("code_only", "with_gla"):
+    for mode in ("code_only", "with_bhdr"):
         merged = files.get(f"{mode}_merged.json")
         full = files.get(f"{mode}.json")
         if merged is not None:

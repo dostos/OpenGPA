@@ -1,5 +1,5 @@
 """Tests for `is_browser_tier_scenario` — used by the harness to warn
-when with_gla mode is requested for a scenario whose rendering tier
+when with_bhdr mode is requested for a scenario whose rendering tier
 the native LD_PRELOAD shim cannot intercept."""
 from __future__ import annotations
 

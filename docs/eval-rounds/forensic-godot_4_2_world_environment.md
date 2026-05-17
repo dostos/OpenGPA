@@ -31,7 +31,7 @@ clipping**.
 
 ## What the agent diagnosed
 
-(Verbatim from `/data3/gla-eval-results/2026-05-05-iter-r12c-rerun/with_gla.json`):
+(Verbatim from `/data3/bhdr-eval-results/2026-05-05-iter-r12c-rerun/with_bhdr.json`):
 
 > CopyEffects::copy_to_drawlist skips the / luminance_multiplier
 > (=2.0) division (it only fires inside the if (p_linear) branch,

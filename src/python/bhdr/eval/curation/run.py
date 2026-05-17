@@ -839,7 +839,7 @@ def _run_judge(
         produce = ProduceOutcome(extracted=True, validated=True)
         scenario_id = _make_scenario_id(rec, cand, run_id=run_id)
 
-        with_gla_score: Optional[float] = None
+        with_bhdr_score: Optional[float] = None
         code_only_score: Optional[float] = None
         verdict: Optional[str] = None
         eval_summary: Optional[dict] = None
@@ -860,18 +860,18 @@ def _run_judge(
                 ))
                 continue
 
-            with_gla = getattr(ev, "with_gla", None)
+            with_bhdr = getattr(ev, "with_bhdr", None)
             code_only = getattr(ev, "code_only", None)
-            with_gla_score = float(getattr(with_gla, "score", 0.0)) if with_gla else None
+            with_bhdr_score = float(getattr(with_bhdr, "score", 0.0)) if with_bhdr else None
             code_only_score = float(getattr(code_only, "score", 0.0)) if code_only else None
 
             try:
-                obs = classify_observed_helps(with_gla, code_only)
+                obs = classify_observed_helps(with_bhdr, code_only)
             except Exception:
                 obs = None
             verdict = getattr(obs, "verdict", None) if obs else None
             judge = JudgeOutcome(
-                with_gla_score=with_gla_score,
+                with_bhdr_score=with_bhdr_score,
                 code_only_score=code_only_score,
                 helps_verdict=verdict,
             )
@@ -884,7 +884,7 @@ def _run_judge(
                 ))
                 continue
             eval_summary = {
-                "with_gla_score": with_gla_score,
+                "with_bhdr_score": with_bhdr_score,
                 "code_only_score": code_only_score,
                 "verdict": verdict,
             }
@@ -914,7 +914,7 @@ def _run_judge(
             cand, run_id=run_id, discovered_at=discovered_at,
             select=select, produce=produce,
             judge=JudgeOutcome(
-                with_gla_score=with_gla_score,
+                with_bhdr_score=with_bhdr_score,
                 code_only_score=code_only_score,
                 helps_verdict=verdict,
                 committed_as=scenario_id,
@@ -982,7 +982,7 @@ def main(argv: Optional[list[str]] = None) -> int:
             results = harness.run_all(
                 agent_fn=agent_fn,
                 scenarios=[scenario_id],
-                modes=["with_gla", "code_only"],
+                modes=["with_bhdr", "code_only"],
             )
             if not results:
                 raise RuntimeError(f"EvalHarness returned no results for {scenario_id}")
@@ -993,15 +993,15 @@ def main(argv: Optional[list[str]] = None) -> int:
 
             @dataclasses.dataclass
             class _EvalResult:
-                with_gla: _Score = dataclasses.field(default_factory=_Score)
+                with_bhdr: _Score = dataclasses.field(default_factory=_Score)
                 code_only: _Score = dataclasses.field(default_factory=_Score)
 
             ev = _EvalResult()
             for r in results:
                 mode = getattr(r, "mode", None)
                 score = float(getattr(r, "score", 0.0))
-                if mode == "with_gla":
-                    ev.with_gla = _Score(score=score)
+                if mode == "with_bhdr":
+                    ev.with_bhdr = _Score(score=score)
                 elif mode == "code_only":
                     ev.code_only = _Score(score=score)
             return ev

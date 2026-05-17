@@ -93,7 +93,7 @@ use cross-subsystem bugs, not single-class regressions.
 
 Two parallel actions:
 
-- **Easy headroom**: re-run R14 Bevy in `with_gla` mode on the 6
+- **Easy headroom**: re-run R14 Bevy in `with_bhdr` mode on the 6
   failing scenarios — that's where the 33%→60+% lift would land.
   Bevy scenarios already produce visual symptoms that beat
   code_only; the runtime trace should disambiguate which of the

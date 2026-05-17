@@ -45,7 +45,7 @@ def render_prompt(
       user_report: The verbatim issue body from the scenario.
       upstream_snapshot_repo: Repo URL of the framework at the pre-fix SHA.
       upstream_snapshot_sha: The pre-fix parent SHA.
-      mode: ``"with_gla"`` or ``"code_only"`` — controls whether the
+      mode: ``"with_bhdr"`` or ``"code_only"`` — controls whether the
         OpenGPA tool block is included.
       scope_hint: Optional pre-computed scope-hint text from
         :func:`bhdr.eval.scope_hint.compute_scope_hint`. When provided,
@@ -64,7 +64,7 @@ def render_prompt(
     # Strip the ``<!-- WITH_BHDR_ONLY -->`` gated block for code_only mode.
     # The template uses HTML comments so we can handle the substitution
     # deterministically without a full templating engine.
-    if mode == "with_gla":
+    if mode == "with_bhdr":
         template = template.replace("<!-- WITH_BHDR_ONLY -->", "").replace(
             "<!-- END_WITH_BHDR_ONLY -->", ""
         )

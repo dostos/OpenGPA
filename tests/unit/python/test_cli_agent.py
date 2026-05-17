@@ -25,7 +25,7 @@ _SPEC = CliBackendSpec(
 )
 
 
-def test_run_with_gla_invokes_capture_and_subprocess(monkeypatch, tmp_path):
+def test_run_with_bhdr_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     captured = {}
     def fake_run(argv, *, input, capture_output, text, env, timeout):
         captured["argv"] = argv
@@ -39,7 +39,7 @@ def test_run_with_gla_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     scenario = _Scenario(source_path=str(tmp_path / "main.c"))
     (tmp_path / "main.c").write_text("// hi")
     tools = {"run_with_capture": lambda: 42}
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
     assert result.diagnosis.startswith("DIAGNOSIS:")
     assert result.tool_calls == 2
     assert captured["env"]["BHDR_FRAME_ID"] == "42"
@@ -47,8 +47,8 @@ def test_run_with_gla_invokes_capture_and_subprocess(monkeypatch, tmp_path):
     assert "--model" in captured["argv"]
 
 
-def test_with_gla_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_path):
-    """When neither live capture nor a snapshot is available, the with_gla
+def test_with_bhdr_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_path):
+    """When neither live capture nor a snapshot is available, the with_bhdr
     prompt must NOT advertise the 11-command tool block (most are
     unusable). And it must NOT lie about BHDR_FRAME_ID being set."""
     captured = {}
@@ -59,13 +59,13 @@ def test_with_gla_no_capture_no_snapshot_uses_minimal_block(monkeypatch, tmp_pat
     agent = CliAgent(spec=_SPEC)
     scenario = _Scenario()
     tools = {"run_with_capture": lambda: None}  # no frame, no snapshot key
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     assert "BHDR_FRAME_ID is set" not in captured["input"]
     assert "gpa drawcalls" not in captured["input"]  # live-frame tools omitted
     assert "gpa pixel" not in captured["input"]
 
 
-def test_with_gla_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_path):
+def test_with_bhdr_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_path):
     """With snapshot but no live frame, the prompt should be an advisor
     block: list/grep/read of upstream only, NOT the live-frame commands."""
     captured = {}
@@ -81,7 +81,7 @@ def test_with_gla_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_pa
         "run_with_capture": lambda: None,
         "snapshot_root": lambda: snap,
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     text = captured["input"]
     assert "BHDR_FRAME_ID is set" not in text
     assert "gpa upstream read" in text
@@ -91,7 +91,7 @@ def test_with_gla_no_capture_but_snapshot_uses_advisor_block(monkeypatch, tmp_pa
     assert "gpa pixel" not in text
 
 
-def test_with_gla_full_capture_keeps_full_block(monkeypatch, tmp_path):
+def test_with_bhdr_full_capture_keeps_full_block(monkeypatch, tmp_path):
     """When live capture succeeded AND snapshot is present, we get the
     full block (live-frame tools + upstream tools)."""
     captured = {}
@@ -107,7 +107,7 @@ def test_with_gla_full_capture_keeps_full_block(monkeypatch, tmp_path):
         "run_with_capture": lambda: 42,
         "snapshot_root": lambda: snap,
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     text = captured["input"]
     assert "gpa drawcalls" in text
     assert "gpa pixel" in text
@@ -139,7 +139,7 @@ def test_scenario_blurb_injected_when_metadata_present(monkeypatch, tmp_path):
         "bug_class": "consumer-misuse",
         "fix_pr_url": "https://github.com/maplibre/maplibre-gl-js/pull/5746",
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     text = captured["input"]
     assert "maplibre-gl-js" in text
     assert "maplibre/maplibre-gl-js" in text or "github.com/maplibre" in text
@@ -157,7 +157,7 @@ def test_scenario_blurb_omits_missing_fields(monkeypatch, tmp_path):
     agent = CliAgent(spec=_SPEC)
     scenario = _Scenario()  # no framework/repo/etc.
     tools = {"run_with_capture": lambda: None}
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     text = captured["input"]
     # Don't print "Framework: None" or "fix-PR: None" sentinel garbage
     assert "None" not in text or text.count("None") < 3  # tolerant
@@ -180,7 +180,7 @@ def test_snapshot_root_callable_pins_bhdr_upstream_root(monkeypatch, tmp_path):
         "run_with_capture": lambda: 7,
         "snapshot_root": lambda: snap_dir,
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     assert captured["env"]["BHDR_UPSTREAM_ROOT"] == str(snap_dir)
 
 
@@ -199,13 +199,13 @@ def test_snapshot_root_none_skips_bhdr_upstream_root(monkeypatch, tmp_path):
         "run_with_capture": lambda: 7,
         "snapshot_root": lambda: None,
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
     assert "BHDR_UPSTREAM_ROOT" not in captured["env"]
 
 
-def test_run_with_gla_graceful_when_capture_returns_none(monkeypatch, tmp_path):
+def test_run_with_bhdr_graceful_when_capture_returns_none(monkeypatch, tmp_path):
     """When run_with_capture returns None (e.g. no Bazel target / build
-    failure), the agent should still run the with_gla prompt but skip
+    failure), the agent should still run the with_bhdr prompt but skip
     pinning BHDR_FRAME_ID. BHDR_BASE_URL is still set so any gpa CLI
     invocations the agent attempts get a sensible default."""
     captured = {}
@@ -219,7 +219,7 @@ def test_run_with_gla_graceful_when_capture_returns_none(monkeypatch, tmp_path):
     scenario = _Scenario(source_path=str(tmp_path / "main.c"))
     (tmp_path / "main.c").write_text("")
     tools = {"run_with_capture": lambda: None}
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
     assert result.diagnosis.startswith("DIAGNOSIS:")
     assert "BHDR_FRAME_ID" not in captured["env"]
     assert captured["env"].get("BHDR_BASE_URL")  # default applied
@@ -320,7 +320,7 @@ def test_render_prompt_uses_system_prompt_when_provided(monkeypatch, tmp_path):
         "run_with_capture": lambda: None,
         "system_prompt": sysprompt,
     }
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
 
     # Only one CLI invocation — the first (and only) prompt
     assert len(inputs) == 1
@@ -346,7 +346,7 @@ def test_render_prompt_falls_back_to_legacy_when_no_system_prompt(monkeypatch, t
     (tmp_path / "main.c").write_text("// hi")
 
     tools = {"run_with_capture": lambda: None}  # no system_prompt
-    agent.run(scenario, "with_gla", tools)
+    agent.run(scenario, "with_bhdr", tools)
 
     # Legacy framing must survive
     assert "DIAGNOSIS: <one-sentence root cause>" in captured["input"]
@@ -388,7 +388,7 @@ def test_json_reprompt_fires_when_first_response_lacks_json(monkeypatch, tmp_pat
         "run_with_capture": lambda: None,
         "system_prompt": "You are a maintainer. End with JSON.",
     }
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
 
     # Two CLI invocations: original + reprompt
     assert len(calls) == 2
@@ -431,7 +431,7 @@ def test_json_reprompt_skipped_when_first_response_already_has_json(monkeypatch,
         "run_with_capture": lambda: None,
         "system_prompt": "You are a maintainer. End with JSON.",
     }
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
 
     # Only the original call — no reprompt
     assert len(calls) == 1
@@ -464,7 +464,7 @@ def test_json_reprompt_skipped_when_no_system_prompt(monkeypatch, tmp_path):
     scenario = _Scenario(source_path=str(tmp_path / "main.c"))
     (tmp_path / "main.c").write_text("// hi")
     tools = {"run_with_capture": lambda: None}  # no system_prompt
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
 
     assert len(calls) == 1
     assert "DIAGNOSIS:" in result.diagnosis
@@ -501,7 +501,7 @@ def test_cli_agent_raises_on_rate_limit_response(monkeypatch, tmp_path):
 
     import pytest
     with pytest.raises(CliRateLimitError) as info:
-        agent.run(scenario, "with_gla", tools)
+        agent.run(scenario, "with_bhdr", tools)
     assert "rate-limit" in str(info.value).lower()
 
 
@@ -529,7 +529,7 @@ def test_cli_agent_does_not_raise_on_legit_short_response(monkeypatch, tmp_path)
     tools = {"run_with_capture": lambda: None}
 
     # Should NOT raise — this is a real (terse) response with non-zero tokens
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
     assert "proposed_patches" in result.diagnosis
 
 
@@ -564,7 +564,7 @@ def test_cli_agent_raises_on_mid_session_rate_limit(monkeypatch, tmp_path):
 
     import pytest
     with pytest.raises(CliRateLimitError):
-        agent.run(scenario, "with_gla", tools)
+        agent.run(scenario, "with_bhdr", tools)
 
 
 def test_cli_agent_does_not_raise_on_long_diagnosis_mentioning_limit(monkeypatch, tmp_path):
@@ -599,5 +599,5 @@ def test_cli_agent_does_not_raise_on_long_diagnosis_mentioning_limit(monkeypatch
     tools = {"run_with_capture": lambda: None}
 
     # Should NOT raise — long diagnosis with non-zero tool count is real
-    result = agent.run(scenario, "with_gla", tools)
+    result = agent.run(scenario, "with_bhdr", tools)
     assert "rate limit handling" in result.diagnosis

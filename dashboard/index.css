@@ -1,5 +1,5 @@
 /* ============================================================
-   OpenGPA Evaluation Ledger — editorial monograph theme
+   Beholder Evaluation Ledger — editorial monograph theme
    ============================================================
    Type pairing: Spectral (serif display + italic emphasis) +
    JetBrains Mono (data + labels). Background = warm parchment,
@@ -20,7 +20,7 @@
   --terra:      #7a2c1f;     /* negative / regressions */
   --forest:     #2d4a2b;     /* positive / improvements */
   --indigo:     #2a3a55;     /* neutral accents */
-  --gla:        #b85420;     /* with_gla traces / annotations */
+  --bhdr:        #b85420;     /* with_bhdr traces / annotations */
 
   --serif: 'Spectral', 'IBM Plex Serif', Georgia, serif;
   --mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
@@ -157,7 +157,7 @@ html, body {
 .corpus-fill { display: block; height: 100%; }
 .corpus-fill.kind-category { background: var(--indigo); }
 .corpus-fill.kind-framework { background: var(--ink); }
-.corpus-fill.kind-api { background: var(--gla); }
+.corpus-fill.kind-api { background: var(--bhdr); }
 .corpus-fill.kind-bug-class { background: var(--terra); }
 .corpus-fill.kind-source { background: var(--forest); }
 .corpus-fill.kind-status { background: var(--indigo); }
@@ -184,7 +184,7 @@ html, body {
 }
 .lede em { color: var(--ink); font-style: italic; }
 
-/* === KPI strip (paired CO|GLA tiles) ============================ */
+/* === KPI strip (paired CO|BHDR tiles) ============================ */
 
 .kpi-strip {
   display: grid; grid-template-columns: repeat(4, 1fr);
@@ -213,7 +213,7 @@ html, body {
   display: flex; flex-direction: column; gap: 2px;
 }
 .kpi-pair-side.co  { border-right: 1px solid var(--rule); background: var(--paper); }
-.kpi-pair-side.gla { background: rgba(184,84,32,0.05); border-right: 1px solid var(--rule); }
+.kpi-pair-side.bhdr { background: rgba(184,84,32,0.05); border-right: 1px solid var(--rule); }
 .kpi-pair-side:last-child { border-right: 0; }
 .kpi-pair-side .side-tag {
   font-family: var(--mono);
@@ -223,7 +223,7 @@ html, body {
   color: var(--ink-fade);
 }
 .kpi-pair-side.co .side-tag  { color: var(--indigo); }
-.kpi-pair-side.gla .side-tag { color: var(--gla); }
+.kpi-pair-side.bhdr .side-tag { color: var(--bhdr); }
 .kpi-pair-value {
   font-family: var(--serif);
   font-weight: 500;
@@ -361,7 +361,7 @@ html, body {
   border-right: 1px solid var(--rule-soft);
 }
 .metric-cell.co  { }
-.metric-cell.gla { background: rgba(184,84,32,0.05); }
+.metric-cell.bhdr { background: rgba(184,84,32,0.05); }
 .metric-mode {
   font-family: var(--mono);
   font-size: 8.5px;
@@ -369,7 +369,7 @@ html, body {
   text-transform: uppercase;
 }
 .metric-cell.co .metric-mode  { color: var(--indigo); }
-.metric-cell.gla .metric-mode { color: var(--gla); }
+.metric-cell.bhdr .metric-mode { color: var(--bhdr); }
 .metric-value {
   font-family: var(--serif);
   font-size: 20px;
@@ -398,7 +398,7 @@ html, body {
   height: 100%;
 }
 .bar-track.co .bar-fill  { background: var(--indigo); }
-.bar-track.gla .bar-fill { background: var(--gla); }
+.bar-track.bhdr .bar-fill { background: var(--bhdr); }
 .metric-lift {
   padding: 10px 12px;
   display: flex; align-items: center; justify-content: flex-end;
@@ -457,8 +457,8 @@ table.timeline {
   white-space: nowrap;
   padding: 7px 8px;
 }
-.timeline th.col-gla {
-  color: var(--gla);
+.timeline th.col-bhdr {
+  color: var(--bhdr);
 }
 .timeline td.cell { cursor: help; min-width: 48px; font-size: 14px; line-height: 1; }
 .timeline td.scenario-cell {
@@ -492,7 +492,7 @@ table.timeline {
 .cell-rescued   { color: var(--ink); }
 .cell-failed    { color: var(--terra); }
 .cell-absent    { color: var(--ink-fade); font-size: 11px; }
-.cell.col-gla {
+.cell.col-bhdr {
   background-image: repeating-linear-gradient(
     45deg, transparent, transparent 5px,
     rgba(184,84,32,0.07) 5px, rgba(184,84,32,0.07) 10px

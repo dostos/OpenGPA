@@ -20,7 +20,7 @@ EVAL_DIR = Path(__file__).parent.parent.parent / "eval"
 
 def _make_result(
     scenario_id: str = "e1_state_leak",
-    mode: str = "with_gla",
+    mode: str = "with_bhdr",
     solved: bool = True,
     total_tokens: int = 1000,
     input_tokens: int = 800,
@@ -133,7 +133,7 @@ class TestScenarioLoader:
 class TestReportGenerator:
     def _two_mode_results(self) -> list[EvalResult]:
         return [
-            _make_result("e1_state_leak", "with_gla", solved=True,
+            _make_result("e1_state_leak", "with_bhdr", solved=True,
                          total_tokens=500, input_tokens=400, output_tokens=100,
                          tool_calls=3, num_turns=4, time_seconds=1.2),
             _make_result("e1_state_leak", "code_only", solved=False,
@@ -154,7 +154,7 @@ class TestReportGenerator:
     def test_generate_markdown_contains_modes(self):
         gen = ReportGenerator()
         md = gen.generate_markdown(self._two_mode_results())
-        assert "with_gla" in md
+        assert "with_bhdr" in md
         assert "code_only" in md
 
     def test_generate_markdown_shows_token_reduction(self):
@@ -171,7 +171,7 @@ class TestReportGenerator:
         assert "overall" in summary
         assert "token_reduction_fraction" in summary
         assert "e1_state_leak" in summary["scenarios"]
-        assert "with_gla" in summary["scenarios"]["e1_state_leak"]
+        assert "with_bhdr" in summary["scenarios"]["e1_state_leak"]
         assert "code_only" in summary["scenarios"]["e1_state_leak"]
 
     def test_generate_summary_token_reduction(self):

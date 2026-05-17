@@ -11,7 +11,7 @@ def test_journey_row_full_commit_shape():
                               score=7, score_reasons=["visual_symptom"],
                               selected=True),
         produce=ProduceOutcome(extracted=True, validated=True),
-        judge=JudgeOutcome(with_gla_score=1.0, code_only_score=0.0,
+        judge=JudgeOutcome(with_bhdr_score=1.0, code_only_score=0.0,
                             helps_verdict="yes",
                             committed_as="r20_threejs_depth_write_transparent"),
         tokens=TokenSpend(triage=0, draft=0, evaluate=12500),

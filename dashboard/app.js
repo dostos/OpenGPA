@@ -1,10 +1,10 @@
 // dashboard/app.js
-// OpenGPA Evaluation Ledger — comparison renderer.
+// Beholder Evaluation Ledger — comparison renderer.
 //
-// SPINE: code_only vs with_gla, per capability bucket. The dashboard
-// answers the project's foundational question — "does GPA help the
+// SPINE: code_only vs with_bhdr, per capability bucket. The dashboard
+// answers the project's foundational question — "does Beholder help the
 // agent solve graphics bugs?" — by pairing every (round, scenario)
-// that ran in both modes and aggregating CO vs GLA side-by-side.
+// that ran in both modes and aggregating CO vs BHDR side-by-side.
 //
 // Round-over-round trends are NOT the headline. Aggregating across
 // rounds (instead of charting per-round trajectories) lets the
@@ -29,12 +29,12 @@
   const rounds = [...state.data.rounds].sort((a, b) =>
     (a.date || "").localeCompare(b.date || ""));
 
-  /* ---------- Pair CO/GLA rows within each round ---------- */
+  /* ---------- Pair CO/BHDR rows within each round ---------- */
   // A "pair" is one (round, scenario) where BOTH modes ran. That's
-  // the unit of CO-vs-GLA comparison; rows with only one mode
-  // contribute to the CO-only or GLA-only buckets but not to lift.
+  // the unit of CO-vs-BHDR comparison; rows with only one mode
+  // contribute to the CO-only or BHDR-only buckets but not to lift.
   const allRows = [];           // every result row, flattened
-  const pairs = [];             // { round_id, scenario_id, CO, GLA }
+  const pairs = [];             // { round_id, scenario_id, CO, BHDR }
   const pairedRoundIds = new Set();
   for (const round of rounds) {
     const byScenario = new Map();
@@ -44,7 +44,7 @@
       byScenario.get(r.scenario_id)[r.mode] = r;
     }
     for (const [sid, modes] of byScenario.entries()) {
-      if (modes.code_only && modes.with_gla) {
+      if (modes.code_only && modes.with_bhdr) {
         pairs.push({
           round_id: round.id,
           scenario_id: sid,
@@ -55,7 +55,7 @@
           fix_scope: modes.code_only.fix_scope,
           expected_failure: modes.code_only.expected_failure,
           CO: modes.code_only,
-          GLA: modes.with_gla,
+          BHDR: modes.with_bhdr,
         });
         pairedRoundIds.add(round.id);
       }
@@ -72,7 +72,7 @@
       + (coOnlyRounds.length ? ` · code-only only: <em>${coOnlyRounds.join(", ")}</em>` : "")
     : "no paired data";
   document.getElementById("round-count").textContent =
-    `${pairs.length} CO×GLA pairs across ${pairedList.length} rounds`;
+    `${pairs.length} CO×BHDR pairs across ${pairedList.length} rounds`;
 
   /* ---------- Capability nav ---------- */
   const nav = document.getElementById("capability-nav");
@@ -177,26 +177,26 @@
   }
 
   /* =================================================================
-     KPI STRIP — paired CO vs GLA aggregate
+     KPI STRIP — paired CO vs BHDR aggregate
      ================================================================= */
 
   function renderKPIs() {
     const m = aggregate(pairs);
     renderPairedKPI("kpi-solved",
       m.n ? `${m.coSolved}/${m.n}` : "—",
-      m.n ? `${m.glaSolved}/${m.n}` : "—",
-      m.n ? formatLift(m.glaSolved - m.coSolved, m.n, "pp") : "");
+      m.n ? `${m.bhdrSolved}/${m.n}` : "—",
+      m.n ? formatLift(m.bhdrSolved - m.coSolved, m.n, "pp") : "");
     renderPairedKPI("kpi-cost",
       m.coTokPerSolve != null ? `${(m.coTokPerSolve / 1000).toFixed(1)}k` : "—",
-      m.glaTokPerSolve != null ? `${(m.glaTokPerSolve / 1000).toFixed(1)}k` : "—",
-      (m.coTokPerSolve && m.glaTokPerSolve)
-        ? `ratio ${(m.glaTokPerSolve / m.coTokPerSolve).toFixed(2)}×`
+      m.bhdrTokPerSolve != null ? `${(m.bhdrTokPerSolve / 1000).toFixed(1)}k` : "—",
+      (m.coTokPerSolve && m.bhdrTokPerSolve)
+        ? `ratio ${(m.bhdrTokPerSolve / m.coTokPerSolve).toFixed(2)}×`
         : "");
     renderPairedKPI("kpi-qualified",
       m.n ? `${Math.round(100 * m.coQualified / m.n)}%` : "—",
-      m.n ? `${Math.round(100 * m.glaQualified / m.n)}%` : "—",
+      m.n ? `${Math.round(100 * m.bhdrQualified / m.n)}%` : "—",
       m.n
-        ? formatLift(m.glaQualified - m.coQualified, m.n, "pp")
+        ? formatLift(m.bhdrQualified - m.coQualified, m.n, "pp")
         : "");
     // Final tile: scope footprint — how much of the data is paired
     const totalPairsPotential = allRows.filter(r => r.mode === "code_only").length;
@@ -235,7 +235,7 @@
   }
 
   /* =================================================================
-     FACETS — per-bucket CO vs GLA paired comparison
+     FACETS — per-bucket CO vs BHDR paired comparison
      ================================================================= */
 
   function renderFacets() {
@@ -265,8 +265,8 @@
       const empty = document.createElement("div");
       empty.className = "facet-empty";
       empty.innerHTML =
-        '<em>No paired CO×GLA data for the active axis.</em><br>' +
-        'R16+ rounds dropped <code>with_gla</code> on source-less ' +
+        '<em>No paired CO×BHDR data for the active axis.</em><br>' +
+        'R16+ rounds dropped <code>with_bhdr</code> on source-less ' +
         'scenarios; only r12c–r15 currently produce paired rows.';
       host.appendChild(empty);
       return;
@@ -276,7 +276,7 @@
       host.appendChild(buildFacet(key, buckets.get(key)));
     }
 
-    // CO-only addendum (scenarios that only ever ran without GLA)
+    // CO-only addendum (scenarios that only ever ran without BHDR)
     const coOnlyBuckets = new Map();
     for (const r of allRows) {
       if (r.mode !== "code_only") continue;
@@ -289,7 +289,7 @@
       const note = document.createElement("div");
       note.className = "facet-empty";
       note.innerHTML =
-        `<em>Code-only without paired GLA:</em> ` +
+        `<em>Code-only without paired BHDR:</em> ` +
         [...coOnlyBuckets.entries()]
           .map(([k, v]) => `${k} (${v.length})`)
           .join(" · ") +
@@ -326,30 +326,30 @@
     grid.className = "facet-pair";
 
     grid.appendChild(buildMetricRow("Solved",
-      m.coSolved, m.glaSolved, m.n,
+      m.coSolved, m.bhdrSolved, m.n,
       v => `${v}/${m.n}`,
-      m.glaSolved - m.coSolved,
+      m.bhdrSolved - m.coSolved,
       "pp", m.n));
     grid.appendChild(buildMetricRow("Tokens / Solve",
       m.coTokPerSolve != null ? Math.round(m.coTokPerSolve) : null,
-      m.glaTokPerSolve != null ? Math.round(m.glaTokPerSolve) : null,
+      m.bhdrTokPerSolve != null ? Math.round(m.bhdrTokPerSolve) : null,
       null,
       v => v == null ? "—" : `${(v / 1000).toFixed(1)}k`,
       null, "", null,
-      (m.coTokPerSolve && m.glaTokPerSolve)
-        ? `${(m.glaTokPerSolve / m.coTokPerSolve).toFixed(2)}× ratio`
+      (m.coTokPerSolve && m.bhdrTokPerSolve)
+        ? `${(m.bhdrTokPerSolve / m.coTokPerSolve).toFixed(2)}× ratio`
         : null));
     grid.appendChild(buildMetricRow("Qualified",
-      m.coQualified, m.glaQualified, m.n,
+      m.coQualified, m.bhdrQualified, m.n,
       v => `${Math.round(100 * v / Math.max(1, m.n))}%`,
-      m.glaQualified - m.coQualified,
+      m.bhdrQualified - m.coQualified,
       "pp", m.n));
 
     facet.appendChild(grid);
     return facet;
   }
 
-  function buildMetricRow(label, coVal, glaVal, denom, fmt, diff, unit, total, ratioStr) {
+  function buildMetricRow(label, coVal, bhdrVal, denom, fmt, diff, unit, total, ratioStr) {
     const row = document.createElement("div");
     row.className = "metric-row";
 
@@ -363,16 +363,16 @@
     co.innerHTML = `<span class="metric-mode">CO</span><span class="metric-value">${fmt(coVal)}</span>`;
     row.appendChild(co);
 
-    const gla = document.createElement("div");
-    gla.className = "metric-cell gla";
-    gla.innerHTML = `<span class="metric-mode">GLA</span><span class="metric-value">${fmt(glaVal)}</span>`;
-    row.appendChild(gla);
+    const bhdr = document.createElement("div");
+    bhdr.className = "metric-cell bhdr";
+    bhdr.innerHTML = `<span class="metric-mode">BHDR</span><span class="metric-value">${fmt(bhdrVal)}</span>`;
+    row.appendChild(bhdr);
 
-    // Visual bar pair (CO blue rule, GLA terracotta rule). Width
+    // Visual bar pair (CO blue rule, BHDR terracotta rule). Width
     // proportional to value; missing values show a stippled track.
     const bar = document.createElement("div");
     bar.className = "metric-bar";
-    const maxV = Math.max(coVal ?? 0, glaVal ?? 0) || 1;
+    const maxV = Math.max(coVal ?? 0, bhdrVal ?? 0) || 1;
     const coBar = document.createElement("div");
     coBar.className = "bar-track co" + (coVal == null ? " empty" : "");
     if (coVal != null) {
@@ -381,16 +381,16 @@
       fill.style.width = `${(coVal / maxV) * 100}%`;
       coBar.appendChild(fill);
     }
-    const glaBar = document.createElement("div");
-    glaBar.className = "bar-track gla" + (glaVal == null ? " empty" : "");
-    if (glaVal != null) {
+    const bhdrBar = document.createElement("div");
+    bhdrBar.className = "bar-track bhdr" + (bhdrVal == null ? " empty" : "");
+    if (bhdrVal != null) {
       const fill = document.createElement("div");
       fill.className = "bar-fill";
-      fill.style.width = `${(glaVal / maxV) * 100}%`;
-      glaBar.appendChild(fill);
+      fill.style.width = `${(bhdrVal / maxV) * 100}%`;
+      bhdrBar.appendChild(fill);
     }
     bar.appendChild(coBar);
-    bar.appendChild(glaBar);
+    bar.appendChild(bhdrBar);
     row.appendChild(bar);
 
     const liftCell = document.createElement("div");
@@ -412,26 +412,26 @@
   /* ---------- Aggregator ---------- */
 
   function aggregate(pairList) {
-    let n = 0, coSolved = 0, glaSolved = 0, coQual = 0, glaQual = 0;
-    let coTok = 0, glaTok = 0;
+    let n = 0, coSolved = 0, bhdrSolved = 0, coQual = 0, bhdrQual = 0;
+    let coTok = 0, bhdrTok = 0;
     for (const p of pairList) {
       n += 1;
       if (p.CO.solved) { coSolved += 1; coTok += p.CO.output_tokens || 0; }
-      if (p.GLA.solved) { glaSolved += 1; glaTok += p.GLA.output_tokens || 0; }
+      if (p.BHDR.solved) { bhdrSolved += 1; bhdrTok += p.BHDR.output_tokens || 0; }
       if (p.CO.qualified) coQual += 1;
-      if (p.GLA.qualified) glaQual += 1;
+      if (p.BHDR.qualified) bhdrQual += 1;
     }
     return {
       n,
-      coSolved, glaSolved,
-      coQualified: coQual, glaQualified: glaQual,
+      coSolved, bhdrSolved,
+      coQualified: coQual, bhdrQualified: bhdrQual,
       coTokPerSolve: coSolved > 0 ? coTok / coSolved : null,
-      glaTokPerSolve: glaSolved > 0 ? glaTok / glaSolved : null,
+      bhdrTokPerSolve: bhdrSolved > 0 ? bhdrTok / bhdrSolved : null,
     };
   }
 
   /* =================================================================
-     SCENARIO TIMELINE GRID  (kept — already a CO|GLA view)
+     SCENARIO TIMELINE GRID  (kept — already a CO|BHDR view)
      ================================================================= */
 
   function renderGrid() {
@@ -459,10 +459,10 @@
     trHead.appendChild(elem("th", "scenario"));
     const colKeys = [];
     for (const round of rounds) {
-      for (const mode of ["code_only", "with_gla"]) {
+      for (const mode of ["code_only", "with_bhdr"]) {
         colKeys.push({ round_id: round.id, mode });
-        const th = elem("th", `${round.id}·${mode === "code_only" ? "CO" : "GLA"}`);
-        if (mode === "with_gla") th.classList.add("col-gla");
+        const th = elem("th", `${round.id}·${mode === "code_only" ? "CO" : "BHDR"}`);
+        if (mode === "with_bhdr") th.classList.add("col-bhdr");
         trHead.appendChild(th);
       }
     }
@@ -493,7 +493,7 @@
         for (const col of colKeys) {
           const cell = document.createElement("td");
           cell.className = "cell";
-          if (col.mode === "with_gla") cell.classList.add("col-gla");
+          if (col.mode === "with_bhdr") cell.classList.add("col-bhdr");
           const r = s.byRound[`${col.round_id}|${col.mode}`];
           if (!r) {
             cell.textContent = "—";

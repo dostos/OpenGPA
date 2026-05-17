@@ -182,7 +182,7 @@ Dispatch eval agents with non-directive prompts:
 
 ```bash
 PYTHONPATH=src/python python3 -m bhdr.eval.cli run \
-    --all --modes with_gla,code_only \
+    --all --modes with_bhdr,code_only \
     --scenarios "$ID_LIST" \
     --bhdr-url http://127.0.0.1:18080 \
     --shim "$SHIM_PATH" \
@@ -212,7 +212,7 @@ After the eval, ask in order:
 3. Did agents fall into the framebuffer trap? (querying pixels before
    structured state)
 4. What capture data was MISSING that would have helped?
-5. **Did with_gla underperform code_only on any scenario family?**
+5. **Did with_bhdr underperform code_only on any scenario family?**
    Check the rendering tier — if it's WebGL/JS, that's expected (the
    shim doesn't see browser GL calls and the agent gets distracted by
    empty overviews).
@@ -250,7 +250,7 @@ round depended on, ask:
   real?
 - What would happen if this requirement didn't exist?
 - Did any forensic finding this round invalidate a requirement?
-  (R12c invalidated "with_gla measures GPA's value" for mined
+  (R12c invalidated "with_bhdr measures GPA's value" for mined
   scenarios with no source_path — the whole comparison was theater.)
 
 Write the answers in the round log. If you can't name the owner of
@@ -347,7 +347,7 @@ These were learned the hard way. If any breaks, eval signal is fake.
 | Invariant | What goes wrong if violated |
 |---|---|
 | `fix_parent_sha` populated for every fix-anchored scenario | Snapshot serves the post-fix tree → agent investigates already-fixed code → false negatives across the board |
-| `SnapshotFetcher.fetch()` holds a per-cache-key fcntl lock | Parallel modes (with_gla + code_only) race; one rmtrees the other's in-flight clone; FileNotFoundError on cwd |
+| `SnapshotFetcher.fetch()` holds a per-cache-key fcntl lock | Parallel modes (with_bhdr + code_only) race; one rmtrees the other's in-flight clone; FileNotFoundError on cwd |
 | `--unshallow` only when `.git/shallow` exists | git fatals "--unshallow on a complete repository does not make sense" when fallback 1 already pulled the full history |
 | Verifier runs before every eval round | Hint-comment leaks bias the agent; stale SHAs fail mid-run; no source means no Bazel target |
 | `runner._bazel_target_for(scenario)` derives the nested package | Old `//tests/eval:<slug>` targets don't exist after the taxonomy migration → live capture silently disabled |
@@ -358,14 +358,14 @@ After fixing all of the above on the same 14-scenario cohort:
 
 | Run | Solved | Total tokens |
 |---|---|---|
-| with_gla (post-fix) | 5/14 (36%) | 147,358 |
+| with_bhdr (post-fix) | 5/14 (36%) | 147,358 |
 | code_only (post-fix) | 7/14 (50%) | 162,824 |
-| with_gla (R12b, stale snapshot) | 1/14 (7%) | 229,872 |
+| with_bhdr (R12b, stale snapshot) | 1/14 (7%) | 229,872 |
 
 5–7× lift purely from fixing the pipeline. Tokens dropped 36% because
 agents stopped re-reading already-fixed code.
 
-The code_only > with_gla gap was entirely web-map (3/6 vs 5/6) where
+The code_only > with_bhdr gap was entirely web-map (3/6 vs 5/6) where
 GPA can't intercept browser WebGL — expected, and it tells us the
 next gating fix.
 
@@ -379,7 +379,7 @@ next gating fix.
 | Hints in source code | Eval is unfair — verifier should have caught this |
 | Only testing one model | Can't measure capability-dependent benefit |
 | Claiming improvement without re-running eval | Hypothesis, not evidence |
-| with_gla < code_only across the board | Either snapshot regression OR rendering-tier mismatch |
+| with_bhdr < code_only across the board | Either snapshot regression OR rendering-tier mismatch |
 | > 5% quarantine rate | Mining pipeline regression — fix before evaluating |
 | All `verdict.scorer == no_signal` | Scoring stack misconfigured or scenarios broken |
 

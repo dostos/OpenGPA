@@ -1,4 +1,4 @@
-# R14 with_gla attempt — 2026-05-01
+# R14 with_bhdr attempt — 2026-05-01
 
 Attempted to run a real Bevy example (the R14 #2
 `invisible_after_material_swap` repro) under the OpenGPA Vulkan
@@ -94,7 +94,7 @@ mesh draws on this configuration. Options:
 ## Status of the agent eval
 
 The earlier round-14 plan called for re-running the 6 missed
-scenarios in `with_gla` mode against real captures, with the goal
+scenarios in `with_bhdr` mode against real captures, with the goal
 of lifting the 33% code_only baseline to 60+%. That experiment is
 **parked** until the Vulkan layer captures the full Bevy draw
 stream on at least one ICD configuration we can run reliably

@@ -87,6 +87,6 @@ the right entity → right system → right file.
 
 For each of the 6 failing scenarios, build the corresponding Bevy
 example at the parent SHA, run it under the OpenGPA Vulkan layer, and
-re-run the agent in `with_gla` mode. Goal: lift the 33% baseline to
+re-run the agent in `with_bhdr` mode. Goal: lift the 33% baseline to
 60+%. That would be the first quantified evidence of OpenGPA's marginal
 value.

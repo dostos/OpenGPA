@@ -525,7 +525,7 @@ def test_append_and_read(tmp_path):
         predicted_helps="yes",
         observed_helps="yes",
         failure_mode=None,
-        eval_summary={"with_gla": {"correct_diagnosis": True, "total_tokens": 1820},
+        eval_summary={"with_bhdr": {"correct_diagnosis": True, "total_tokens": 1820},
                       "code_only": {"correct_diagnosis": False, "total_tokens": 5940}},
     )
     log.append(entry)
@@ -533,7 +533,7 @@ def test_append_and_read(tmp_path):
     entries = log.read_all()
     assert len(entries) == 1
     assert entries[0].issue_url == entry.issue_url
-    assert entries[0].eval_summary["with_gla"]["total_tokens"] == 1820
+    assert entries[0].eval_summary["with_bhdr"]["total_tokens"] == 1820
 
 def test_contains_url(tmp_path):
     log = CoverageLog(tmp_path / "log.jsonl")
@@ -2486,7 +2486,7 @@ git commit -m "feat(eval): ScenarioRunner.build_and_capture for curation"
 - Create: `src/python/gla/eval/curation/run_eval.py`
 - Test: `tests/unit/python/test_curation_run_eval.py`
 
-Invokes the existing `EvalHarness` on a committed-but-not-classified scenario, returning the two `EvalResult` objects (with_gla + code_only).
+Invokes the existing `EvalHarness` on a committed-but-not-classified scenario, returning the two `EvalResult` objects (with_bhdr + code_only).
 
 - [ ] **Step 1: Failing test**
 
@@ -2507,13 +2507,13 @@ def _mk(mode, correct, total_tokens):
 def test_run_eval_invokes_harness_for_both_modes():
     harness = MagicMock()
     harness.run_scenario.side_effect = [
-        _mk("with_gla", True, 1000),
+        _mk("with_bhdr", True, 1000),
         _mk("code_only", False, 4000),
     ]
     agent_fn = MagicMock()
     re = RunEval(harness=harness, agent_fn=agent_fn)
     result = re.run("r1")
-    assert result.with_gla.mode == "with_gla"
+    assert result.with_bhdr.mode == "with_bhdr"
     assert result.code_only.mode == "code_only"
     assert harness.run_scenario.call_count == 2
 ```
@@ -2530,7 +2530,7 @@ from gla.eval.metrics import EvalResult
 
 @dataclass
 class RunEvalResult:
-    with_gla: EvalResult
+    with_bhdr: EvalResult
     code_only: EvalResult
     scorer_ambiguous: bool = False
 
@@ -2540,15 +2540,15 @@ class RunEval:
         self._agent_fn = agent_fn
 
     def run(self, scenario_id: str) -> RunEvalResult:
-        with_gla = self._harness.run_scenario(scenario_id, "with_gla", self._agent_fn)
+        with_bhdr = self._harness.run_scenario(scenario_id, "with_bhdr", self._agent_fn)
         code_only = self._harness.run_scenario(scenario_id, "code_only", self._agent_fn)
         # If both diagnoses are empty / both wrong AND both tokens are very small,
         # the scorer probably cannot interpret them. Flag as ambiguous.
         ambiguous = (
-            not with_gla.correct_diagnosis and not code_only.correct_diagnosis and
-            with_gla.total_tokens < 100 and code_only.total_tokens < 100
+            not with_bhdr.correct_diagnosis and not code_only.correct_diagnosis and
+            with_bhdr.total_tokens < 100 and code_only.total_tokens < 100
         )
-        return RunEvalResult(with_gla=with_gla, code_only=code_only,
+        return RunEvalResult(with_bhdr=with_bhdr, code_only=code_only,
                              scorer_ambiguous=ambiguous)
 ```
 
@@ -2585,35 +2585,35 @@ def _mk(mode, correct, total_tokens):
                       model="x", timestamp=datetime.now(timezone.utc).isoformat())
 
 def test_rule_1_gla_correct_code_wrong():
-    r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", False, 1000))
+    r = classify_observed_helps(_mk("with_bhdr", True, 1000), _mk("code_only", False, 1000))
     assert r.verdict == "yes"
 
 def test_rule_2_gla_wrong_code_correct():
-    r = classify_observed_helps(_mk("with_gla", False, 1000), _mk("code_only", True, 1000))
+    r = classify_observed_helps(_mk("with_bhdr", False, 1000), _mk("code_only", True, 1000))
     assert r.verdict == "no"
 
 def test_rule_3_both_wrong():
-    r = classify_observed_helps(_mk("with_gla", False, 1000), _mk("code_only", False, 1000))
+    r = classify_observed_helps(_mk("with_bhdr", False, 1000), _mk("code_only", False, 1000))
     assert r.verdict == "no"
 
 def test_rule_4_both_correct_low_ratio():
     # ratio 0.25 < 0.5 -> yes
-    r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", True, 4000))
+    r = classify_observed_helps(_mk("with_bhdr", True, 1000), _mk("code_only", True, 4000))
     assert r.verdict == "yes"
 
 def test_rule_5_both_correct_high_ratio():
     # ratio 0.9 > 0.8 -> no
-    r = classify_observed_helps(_mk("with_gla", True, 3600), _mk("code_only", True, 4000))
+    r = classify_observed_helps(_mk("with_bhdr", True, 3600), _mk("code_only", True, 4000))
     assert r.verdict == "no"
 
 def test_rule_6_both_correct_mid_ratio_ambiguous():
     # ratio 0.65 in [0.5, 0.8] -> ambiguous
-    r = classify_observed_helps(_mk("with_gla", True, 2600), _mk("code_only", True, 4000))
+    r = classify_observed_helps(_mk("with_bhdr", True, 2600), _mk("code_only", True, 4000))
     assert r.verdict == "ambiguous"
 
 def test_code_only_zero_tokens_degenerate():
     # Degenerate case: code_only has 0 tokens (shouldn't happen but guard)
-    r = classify_observed_helps(_mk("with_gla", True, 1000), _mk("code_only", True, 0))
+    r = classify_observed_helps(_mk("with_bhdr", True, 1000), _mk("code_only", True, 0))
     assert r.verdict == "ambiguous"
 ```
 
@@ -2633,25 +2633,25 @@ class ObservedClassification:
     evidence: str
 
 def classify_observed_helps(
-    with_gla: EvalResult, code_only: EvalResult
+    with_bhdr: EvalResult, code_only: EvalResult
 ) -> ObservedClassification:
     # Rule 1
-    if with_gla.correct_diagnosis and not code_only.correct_diagnosis:
+    if with_bhdr.correct_diagnosis and not code_only.correct_diagnosis:
         return ObservedClassification("yes",
             f"correct_with_gla=True, correct_code_only=False")
     # Rule 2
-    if not with_gla.correct_diagnosis and code_only.correct_diagnosis:
+    if not with_bhdr.correct_diagnosis and code_only.correct_diagnosis:
         return ObservedClassification("no",
             f"OpenGPA regressed vs code_only")
     # Rule 3: both wrong
-    if not with_gla.correct_diagnosis and not code_only.correct_diagnosis:
+    if not with_bhdr.correct_diagnosis and not code_only.correct_diagnosis:
         return ObservedClassification("no",
             f"both modes wrong")
     # both correct from here
     if code_only.total_tokens <= 0:
         return ObservedClassification("ambiguous",
             f"code_only tokens degenerate ({code_only.total_tokens})")
-    ratio = with_gla.total_tokens / code_only.total_tokens
+    ratio = with_bhdr.total_tokens / code_only.total_tokens
     # Rule 4
     if ratio < 0.5:
         return ObservedClassification("yes",
@@ -2688,7 +2688,7 @@ git commit -m "feat(curation): observed helpfulness rules"
 Create `src/python/gla/eval/curation/prompts/classify_failure_mode_system.md`:
 
 ```markdown
-You are a failure-mode analyst. Given an eval scenario where the with_gla mode did not help (or regressed) compared to code_only, explain WHY in 1-2 sentences and assign a category from this seed list:
+You are a failure-mode analyst. Given an eval scenario where the with_bhdr mode did not help (or regressed) compared to code_only, explain WHY in 1-2 sentences and assign a category from this seed list:
 
 - `shader_compile_not_exposed`
 - `framework_internal_state`
@@ -2845,7 +2845,7 @@ def test_commit_appends_log_and_writes_summary(tmp_path):
         predicted_helps="yes",
         observed_helps="yes",
         failure_mode=None,
-        eval_summary={"with_gla": {"correct_diagnosis": True, "total_tokens": 100}},
+        eval_summary={"with_bhdr": {"correct_diagnosis": True, "total_tokens": 100}},
     )
 
     assert (eval_dir / "r1_test.c").read_text() == "int main(){}"
@@ -2963,7 +2963,7 @@ The orchestrator wires all stages together:
 4. Check fingerprint duplicate → `log_rejection` with `duplicate_of_existing_scenario`.
 5. Run draft. On failure → `log_rejection` with `not_reproducible`.
 6. Run validate. On failure → `log_rejection` with validate-specific reason.
-7. Run eval (with_gla + code_only). If scorer_ambiguous → `log_rejection`.
+7. Run eval (with_bhdr + code_only). If scorer_ambiguous → `log_rejection`.
 8. Classify observed + (if no) attribute failure mode. Write both back into the scenario md.
 9. Commit.
 
@@ -3031,7 +3031,7 @@ def test_pipeline_happy_path_commits_one_scenario(tmp_path):
                                                                  "draw_calls": []})
     run_eval = MagicMock()
     run_eval.run.return_value = RunEvalResult(
-        with_gla=_eval_result("with_gla", True, 1000),
+        with_bhdr=_eval_result("with_bhdr", True, 1000),
         code_only=_eval_result("code_only", False, 4000),
         scorer_ambiguous=False)
     # Failure-mode attributor not needed on happy path
@@ -3241,14 +3241,14 @@ class CurationPipeline:
                 rejection_reason="eval_scorer_ambiguous")
             return
 
-        observed = classify_observed_helps(run_result.with_gla, run_result.code_only)
+        observed = classify_observed_helps(run_result.with_bhdr, run_result.code_only)
         failure_mode = None
         failure_details = None
         if observed.verdict == "no":
             try:
                 fm = self._failure_mode_fn(
                     scenario_md=draft.md_body,
-                    with_gla_diagnosis=run_result.with_gla.diagnosis_text,
+                    with_gla_diagnosis=run_result.with_bhdr.diagnosis_text,
                     code_only_diagnosis=run_result.code_only.diagnosis_text,
                     ground_truth="",  # loaded from md during attribution
                 )
@@ -3287,8 +3287,8 @@ class CurationPipeline:
             observed_helps=observed.verdict,
             failure_mode=failure_mode,
             eval_summary={
-                "with_gla": {"correct_diagnosis": run_result.with_gla.correct_diagnosis,
-                             "total_tokens": run_result.with_gla.total_tokens},
+                "with_bhdr": {"correct_diagnosis": run_result.with_bhdr.correct_diagnosis,
+                             "total_tokens": run_result.with_bhdr.total_tokens},
                 "code_only": {"correct_diagnosis": run_result.code_only.correct_diagnosis,
                               "total_tokens": run_result.code_only.total_tokens},
             },
@@ -3572,7 +3572,7 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
     }
     validator = Validator(eval_dir=tmp_path / "eval", runner=fake_runner)
 
-    # Run-eval returns with_gla correct, code_only wrong
+    # Run-eval returns with_bhdr correct, code_only wrong
     def _mk(mode, correct, total):
         return EvalResult(scenario_id="r1_material_clone_second_mesh_inherits_first_mesh_s_texture",
                           mode=mode, correct_diagnosis=correct, correct_fix=correct,
@@ -3582,7 +3582,7 @@ def test_pipeline_end_to_end_with_fixture(tmp_path):
                           timestamp=datetime.now(timezone.utc).isoformat())
     run_eval = MagicMock()
     run_eval.run.return_value = RunEvalResult(
-        with_gla=_mk("with_gla", True, 1000),
+        with_bhdr=_mk("with_bhdr", True, 1000),
         code_only=_mk("code_only", False, 4000),
         scorer_ambiguous=False,
     )

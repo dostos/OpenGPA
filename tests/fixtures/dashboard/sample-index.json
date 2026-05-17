@@ -5,8 +5,8 @@
     {
       "id": "r17",
       "date": "2026-05-05",
-      "results_path": "/data3/gla-eval-results/2026-05-05-r17/",
-      "aux_paths": ["/data3/gla-eval-results/2026-05-05-r17-resume/"],
+      "results_path": "/data3/bhdr-eval-results/2026-05-05-r17/",
+      "aux_paths": ["/data3/bhdr-eval-results/2026-05-05-r17-resume/"],
       "narrative_path": "docs/eval-rounds/2026-05-05-r17.md",
       "narrative_md": "# Round R17 (test)\n\nFixture round.\n",
       "headline": "Fixture round.",
@@ -70,7 +70,7 @@
     {
       "id": "r18",
       "date": "2026-05-14",
-      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
+      "results_path": "/data3/bhdr-eval-results/2026-05-14-r18/",
       "aux_paths": [],
       "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
       "narrative_md": "# Round R18 (test)\n\nSecond fixture round. bug_class dispatch deleted.\n",

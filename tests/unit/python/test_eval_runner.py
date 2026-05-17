@@ -58,7 +58,7 @@ def test_build_and_capture_returns_framebuffer_and_metadata(tmp_path):
 def test_build_and_capture_uses_nested_taxonomy_target(tmp_path):
     """Regression: scenarios live at //tests/eval/<cat>/<fw>/<slug>:<slug>,
     not the legacy //tests/eval:<slug>. R12 archived eval reported "live
-    capture unavailable" for all 14 with_gla scenarios because the runner
+    capture unavailable" for all 14 with_bhdr scenarios because the runner
     asked for the wrong package."""
     scen = _make_scenario(tmp_path, slug="my_scenario",
                           pkg="tests/eval/native-engine/godot/my_scenario")

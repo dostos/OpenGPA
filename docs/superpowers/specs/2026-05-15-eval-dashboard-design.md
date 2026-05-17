@@ -9,9 +9,9 @@
 ## Summary
 
 A static, local-only HTML dashboard that curates per-round OpenGPA eval
-results. Primary axis: `code_only` vs `with_gla` per scenario type,
+results. Primary axis: `code_only` vs `with_bhdr` per scenario type,
 across model tiers, across rounds. Lives in `dashboard/`; built by a
-Python script that aggregates `/data3/gla-eval-results/*/*.json` and
+Python script that aggregates `/data3/bhdr-eval-results/*/*.json` and
 `docs/eval-rounds/*.md` into a single `index.json` consumed by one
 HTML file with Plotly charts.
 
@@ -21,7 +21,7 @@ The round logs in `docs/eval-rounds/` already capture per-round
 results, audit findings, and backlog items, but read as separate
 text files. There's no single view to:
 
-- Compare `code_only` vs `with_gla` per scenario type at a glance.
+- Compare `code_only` vs `with_bhdr` per scenario type at a glance.
 - See how solve% and cost-per-solve trend round-over-round per type.
 - Spot recoveries (R18 `world_environment` ✗→✓) or regressions
   visually.
@@ -35,7 +35,7 @@ dashboard reads it as-is.
 ## Non-Goals
 
 - **Multi-tier eval orchestration**. The dashboard renders whatever
-  data exists; running with_gla across haiku/sonnet/opus is a separate
+  data exists; running with_bhdr across haiku/sonnet/opus is a separate
   pipeline-fix spec (R19 backlog).
 - **Auto-rebuild**. No git hook, no watcher. Run the build script
   after each round.
@@ -71,7 +71,7 @@ treats `verdict is None` as "skip this row from charts".
 
 | Layout | Example | Handling |
 |---|---|---|
-| `code_only.json` + `with_gla.json` | `2026-05-05-r13-scope-hint/` | Load both; `mode` per file |
+| `code_only.json` + `with_bhdr.json` | `2026-05-05-r13-scope-hint/` | Load both; `mode` per file |
 | `code_only_merged.json` | `2026-05-05-r17/` | Prefer over `code_only.json` (merged = partial + resume) |
 | `results.json` only | `2026-05-04-round4-claude-cli/` | Legacy; verdict absent → exclude from charts |
 | `<round>-rerun` / `<round>-resume` | `2026-05-05-r17-resume/` | **Fold into parent round**: see merge rule below |
@@ -95,7 +95,7 @@ chart and the round-over-round series doesn't line up.
 ```
 docs/eval-rounds/*.md          ─┐
                                  ├─> scripts/build-eval-dashboard.py
-/data3/gla-eval-results/*/.json ─┘                  │
+/data3/bhdr-eval-results/*/.json ─┘                  │
                                                      ▼
                                           dashboard/index.json
                                                      │
@@ -141,7 +141,7 @@ scripts/build-eval-dashboard.sh
       "id": "r18",
       "date": "2026-05-14",
       "tag": "round-r18-end",
-      "results_path": "/data3/gla-eval-results/2026-05-14-r18/",
+      "results_path": "/data3/bhdr-eval-results/2026-05-14-r18/",
       "aux_paths": [],
       "narrative_path": "docs/eval-rounds/2026-05-14-r18.md",
       "narrative_md": "...full file contents...",
@@ -236,8 +236,8 @@ One Plotly subplot per scenario type. Grid layout, ≤3 columns.
 
 - X-axis: round (categorical; ordered by date)
 - Y-axis: selected metric
-- Up to 6 traces per panel: `{code_only, with_gla} × {haiku, sonnet, opus}`
-- Color encodes mode: code_only = blue, with_gla = orange
+- Up to 6 traces per panel: `{code_only, with_bhdr} × {haiku, sonnet, opus}`
+- Color encodes mode: code_only = blue, with_bhdr = orange
 - Dash pattern encodes tier: solid = haiku, dashed = sonnet, dotted = opus
 - Missing data → gap in line (Plotly's `connectgaps: false`)
 - Hover tooltip: `round · mode · tier · value · n=K`
@@ -295,7 +295,7 @@ sys.path hacks.
 
 ```python
 def main():
-    raw_rounds = _collect_round_dirs(Path("/data3/gla-eval-results"))
+    raw_rounds = _collect_round_dirs(Path("/data3/bhdr-eval-results"))
     rounds_by_id = _fold_reruns(raw_rounds)  # r17-resume → r17
     rounds = []
     for round_id, dirs in sorted(rounds_by_id.items()):
@@ -339,7 +339,7 @@ testable without I/O when given a fake filesystem fixture.
 - `_fold_reruns(raw_rounds)`: group by extracted id; preserve all
   directories per group so `_merge_results` can fold them.
 - `_pick_result_file(dir)`: prefer `*_merged.json` > `code_only.json`
-  > `with_gla.json` > `results.json`. Returns None if none exist.
+  > `with_bhdr.json` > `results.json`. Returns None if none exist.
 - `_merge_results(paths)`: load every path via `EvalResult.from_dict`;
   fold by `(scenario_id, mode)` with last-write-wins.
 - `_load_tier_meta(dir)`: read `dir/meta.json` if present; else seed
@@ -357,7 +357,7 @@ testable without I/O when given a fake filesystem fixture.
     → `r17`, `2026-05-04-round4-claude-cli` → `r4`, malformed → None
   - `_fold_reruns`: r17 + r17-resume merge into one group
   - `_pick_result_file` priority: `*_merged.json` > `code_only.json`
-    > `with_gla.json` > `results.json`; None when nothing matches
+    > `with_bhdr.json` > `results.json`; None when nothing matches
   - `_merge_results`: overlay by `(scenario_id, mode)`, last write
     wins, no duplicate rows
   - Verdict-absent rows excluded from chart-bound output but the
@@ -372,7 +372,7 @@ testable without I/O when given a fake filesystem fixture.
 - **Dashboard HTML**: open `dashboard/index.html` against the fixture
   `tests/fixtures/dashboard/sample-index.json` and verify panels +
   table + cards render. The fixture must include at least one row of
-  each: code_only solve, with_gla solve, expected_failure, missing
+  each: code_only solve, with_bhdr solve, expected_failure, missing
   verdict (excluded), legacy taxonomy path. No JS unit tests; visual
   + click checks.
 
@@ -380,7 +380,7 @@ testable without I/O when given a fake filesystem fixture.
 
 | Condition | Behavior |
 |---|---|
-| `/data3/gla-eval-results/` absent | Build script exits 1 with message |
+| `/data3/bhdr-eval-results/` absent | Build script exits 1 with message |
 | Round data exists but no round log | Round included; `narrative_md: null`; card shows "(no round log)" |
 | Round log exists but no eval data | Round skipped (nothing to chart, no narrative card either — narratives only render for rounds with rendered data) |
 | `verdict` field missing on a result row | **Row excluded from charts and grid** (legacy pre-R12c rounds). If all rows are pre-verdict, the round is excluded entirely |
@@ -396,7 +396,7 @@ None for v1. Follow-ups recorded in the OpenGPA strategic backlog:
 
 - **Vendoring Plotly** (Q1 follow-up): bundle a copy for offline use
   when this becomes the daily-driver.
-- **Multi-tier eval orchestration** (R19 backlog Q2): once with_gla
+- **Multi-tier eval orchestration** (R19 backlog Q2): once with_bhdr
   + tier multiplexing land, dashboard automatically picks them up —
   no schema changes needed.
 

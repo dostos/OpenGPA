@@ -65,9 +65,9 @@ def test_pick_prefers_merged_over_full(tmp_path):
 
 def test_pick_returns_both_modes(tmp_path):
     (tmp_path / "code_only.json").write_text("[]")
-    (tmp_path / "with_gla.json").write_text("[]")
+    (tmp_path / "with_bhdr.json").write_text("[]")
     picked = pick_result_files(tmp_path)
-    assert sorted(p.name for p in picked) == ["code_only.json", "with_gla.json"]
+    assert sorted(p.name for p in picked) == ["code_only.json", "with_bhdr.json"]
 
 
 def test_pick_legacy_results_json(tmp_path):

@@ -109,7 +109,7 @@ Drafting prompts require citing the upstream thread or commit for every diagnost
 
 **Validate** — Builds the scenario (Bazel for core, `npm install && npm run build` for showcase). Runs it headless (Xvfb for core, Puppeteer for showcase). Captures a frame via the appropriate OpenGPA shim. Checks the captured frame against the scenario's declared `## Bug Signature` (§3.4) using either a heuristic comparator (6-8 signature types) or, as fallback, an LLM visual check. Failure logs `rejection_reason: symptom_mismatch_at_validation`.
 
-**Run Eval** — Invokes `EvalHarness.run_scenario(scenario_id, mode, agent_fn)` for `mode in {"with_gla", "code_only"}`. Records `correct_diagnosis`, `correct_fix`, `input_tokens`, `output_tokens`, `tool_calls`, `num_turns`, `time_seconds` for each mode. This is also the eval-in-the-loop gate: if the scorer cannot interpret either mode's output, the scenario is held for manual review (`rejection_reason: eval_scorer_ambiguous`).
+**Run Eval** — Invokes `EvalHarness.run_scenario(scenario_id, mode, agent_fn)` for `mode in {"with_bhdr", "code_only"}`. Records `correct_diagnosis`, `correct_fix`, `input_tokens`, `output_tokens`, `tool_calls`, `num_turns`, `time_seconds` for each mode. This is also the eval-in-the-loop gate: if the scorer cannot interpret either mode's output, the scenario is held for manual review (`rejection_reason: eval_scorer_ambiguous`).
 
 **Classify** — Emits three fields to the scenario `.md` and coverage log:
 - `predicted_helps` — already set by the drafting agent.
@@ -238,7 +238,7 @@ Showcase scenarios use the same schema, renamed file (`scenario.md`), and stored
   "observed_helps": "yes",
   "failure_mode": null,
   "eval_summary": {
-    "with_gla": {"correct_diagnosis": true, "total_tokens": 1820},
+    "with_bhdr": {"correct_diagnosis": true, "total_tokens": 1820},
     "code_only": {"correct_diagnosis": false, "total_tokens": 5940}
   }
 }

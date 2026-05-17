@@ -52,7 +52,7 @@ def test_snapshot_root_callable_returns_path_when_fetch_succeeds(tmp_path):
         upstream_snapshot_repo="https://github.com/o/r",
         upstream_snapshot_sha="abc123",
     )
-    tools = h._build_tools(scenario, mode="with_gla")
+    tools = h._build_tools(scenario, mode="with_bhdr")
     assert "snapshot_root" in tools
     assert callable(tools["snapshot_root"])
     assert tools["snapshot_root"]() == tmp_path / "fake_snap"
@@ -65,14 +65,14 @@ def test_snapshot_root_callable_returns_none_on_fetch_error():
         upstream_snapshot_repo="https://github.com/o/r",
         upstream_snapshot_sha="abc123",
     )
-    tools = h._build_tools(scenario, mode="with_gla")
+    tools = h._build_tools(scenario, mode="with_bhdr")
     assert tools["snapshot_root"]() is None
 
 
 def test_snapshot_root_absent_when_no_snapshot_refs():
     h = _bare_harness()
     scenario = _make_scenario()  # no upstream_snapshot_repo / sha
-    tools = h._build_tools(scenario, mode="with_gla")
+    tools = h._build_tools(scenario, mode="with_bhdr")
     assert "snapshot_root" not in tools
 
 

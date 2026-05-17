@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>OpenGPA Evaluation Ledger</title>
+  <title>Beholder Evaluation Ledger</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500;600&display=swap">
@@ -15,7 +15,7 @@
 
     <header class="masthead">
       <div>
-        <h1>OpenGPA Evaluation Ledger</h1>
+        <h1>Beholder Evaluation Ledger</h1>
         <div class="subtitle"><span id="volume-range">—</span></div>
       </div>
       <div class="masthead-meta">
@@ -25,10 +25,10 @@
     </header>
 
     <p class="lede">
-      Does OpenGPA help an LLM agent diagnose graphics bugs? Each tile below
+      Does Beholder help an LLM agent diagnose graphics bugs? Each tile below
       pairs the agent's <em>code-only</em> baseline against the same agent
-      with <em>GPA</em> capture available — only on scenarios where both
-      modes ran. Lift &gt; 0 means GPA helped; &lt; 0 means it hurt.
+      with <em>Beholder</em> capture available — only on scenarios where both
+      modes ran. Lift &gt; 0 means Beholder helped; &lt; 0 means it hurt.
     </p>
 
     <section class="corpus">
@@ -46,7 +46,7 @@
         <div class="kpi-label">Solved</div>
         <div class="kpi-pair">
           <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
-          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side bhdr"><div class="side-tag">with_bhdr</div><div class="kpi-pair-value">—</div></div>
         </div>
         <div class="kpi-note"></div>
       </div>
@@ -54,7 +54,7 @@
         <div class="kpi-label">Tokens / Solve</div>
         <div class="kpi-pair">
           <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
-          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side bhdr"><div class="side-tag">with_bhdr</div><div class="kpi-pair-value">—</div></div>
         </div>
         <div class="kpi-note"></div>
       </div>
@@ -62,7 +62,7 @@
         <div class="kpi-label">Qualified<sup>1</sup></div>
         <div class="kpi-pair">
           <div class="kpi-pair-side co"><div class="side-tag">code-only</div><div class="kpi-pair-value">—</div></div>
-          <div class="kpi-pair-side gla"><div class="side-tag">with_gla</div><div class="kpi-pair-value">—</div></div>
+          <div class="kpi-pair-side bhdr"><div class="side-tag">with_bhdr</div><div class="kpi-pair-value">—</div></div>
         </div>
         <div class="kpi-note"></div>
       </div>
@@ -77,12 +77,12 @@
     </section>
 
     <section class="capability">
-      <h2 class="section-title">CO vs GLA, by capability</h2>
+      <h2 class="section-title">CO vs BHDR, by capability</h2>
       <p class="section-meta">
         Reslice the paired data by what's being measured. Each row in a
-        facet shows one metric with <em>code-only</em> and <em>with_gla</em>
+        facet shows one metric with <em>code-only</em> and <em>with_bhdr</em>
         side by side; the bar pair below gives the proportion at a glance.
-        The right-hand <em>lift</em> column is GLA − CO — green when GPA helps.
+        The right-hand <em>lift</em> column is BHDR − CO — green when Beholder helps.
       </p>
 
       <nav class="capability-nav" id="capability-nav">
@@ -125,14 +125,14 @@
           <em>Qualified</em> = <code>solved · scorer=file_level · confidence=high</code>.
           The complement (<em>rescued</em>) is a solve salvaged by the
           <code>judge</code> or <code>prose</code> scorer — a proxy for
-          false positives in the maintainer-framing pipeline. The GLA column
-          can shrink even when GLA solves grow if GPA-mode rescues collapse
+          false positives in the maintainer-framing pipeline. The BHDR column
+          can shrink even when BHDR solves grow if BHDR-mode rescues collapse
           into qualified — that's the desired direction.
         </li>
         <li>
           <em>Paired data</em>: only (round, scenario) combinations where
-          both <code>code_only</code> and <code>with_gla</code> ran are used
-          in lift calculations. R16-R18 dropped GLA on source-less cohorts;
+          both <code>code_only</code> and <code>with_bhdr</code> ran are used
+          in lift calculations. R16-R18 dropped BHDR on source-less cohorts;
           those rows are visible in the per-scenario trace but excluded
           from lift.
         </li>

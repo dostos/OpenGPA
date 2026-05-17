@@ -28,12 +28,12 @@ detector. Surface a per-scenario `ScoreVerdict` with explicit
 
 - *Cesium camera_jumps, code_only:* legacy marked ✓ because prose
   echoes user-report keywords (`pickPosition`, `ScreenSpaceCameraController`);
-  agent never found the actual cache-invalidation bug. with_gla
+  agent never found the actual cache-invalidation bug. with_bhdr
   found it (`Picking.update` never called) and cited `Scene.js` +
   `Picking.js` — both in gt — yet legacy marked ✗.
-- *Maplibre 3d_terrain, with_gla:* sharp, code-grounded diagnosis
+- *Maplibre 3d_terrain, with_bhdr:* sharp, code-grounded diagnosis
   (`getStencilConfigForOverlapAndUpdateStencilID`, exact conditional
-  on `painter.renderPass`). gt is 3 files; with_gla cited 1, code_only
+  on `painter.renderPass`). gt is 3 files; with_bhdr cited 1, code_only
   cited 2. Recall 0.33 vs 0.67, but the cited file is the actual
   bug-cause; the other two are collateral. File-overlap alone can't
   resolve this — we need a "needs review" outcome.
@@ -256,6 +256,6 @@ One day, ~600 LoC including tests.
 **Validation:** re-score 28 round-12+12b results from `/data3/...`
 without the judge, eyeball distribution, then enable `--llm-judge`
 on the `needs_review` band; expect agreement ≥ 5/8 vs manual
-inspection. Acceptance: cesium camera_jumps with_gla = ✓,
-code_only = ✗ (gave-up); maplibre 3d_terrain with_gla =
+inspection. Acceptance: cesium camera_jumps with_bhdr = ✓,
+code_only = ✗ (gave-up); maplibre 3d_terrain with_bhdr =
 `needs_review`, not ✗.

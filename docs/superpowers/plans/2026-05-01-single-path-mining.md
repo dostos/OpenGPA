@@ -1186,9 +1186,9 @@ Expected: FAIL.
             from gpa.eval.curation.classify import classify_observed_helps
             ev = run_eval(draft=draft, scenario_id=scenario_id,
                           backend=args.backend, eval_dir=args.eval_dir)
-            verdict = classify_observed_helps(ev.with_gla, ev.code_only).verdict
+            verdict = classify_observed_helps(ev.with_bhdr, ev.code_only).verdict
             judge = JudgeOutcome(
-                with_gla_score=ev.with_gla.score,
+                with_gla_score=ev.with_bhdr.score,
                 code_only_score=ev.code_only.score,
                 helps_verdict=verdict,
                 committed_as=None,

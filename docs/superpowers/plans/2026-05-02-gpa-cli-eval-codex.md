@@ -992,7 +992,7 @@ class CliAgent(AgentBackend):
     def run(self, scenario, mode, tools):
         env = os.environ.copy()
         # Pin frame_id (with-gla mode runs the binary first)
-        if mode == "with_gla":
+        if mode == "with_bhdr":
             frame_id = tools["run_with_capture"]()
             env["BHDR_FRAME_ID"] = str(frame_id)
         env["BHDR_BASE_URL"] = env.get("BHDR_BASE_URL", "http://127.0.0.1:18080")

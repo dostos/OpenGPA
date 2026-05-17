@@ -229,13 +229,13 @@ class TestEvalAgentSystemPrompt(unittest.TestCase):
             self.agent = EvalAgent(api_key="fake-key")
 
     def test_with_bhdr_prompt_mentions_tools(self):
-        prompt = self.agent._build_system_prompt("with_gla")
+        prompt = self.agent._build_system_prompt("with_bhdr")
         for tool in ["query_frame", "inspect_drawcall", "query_pixel",
                      "query_scene", "compare_frames", "read_source_file"]:
-            self.assertIn(tool, prompt, f"'{tool}' not mentioned in with_gla prompt")
+            self.assertIn(tool, prompt, f"'{tool}' not mentioned in with_bhdr prompt")
 
     def test_with_bhdr_prompt_ends_with_diagnosis_fix(self):
-        prompt = self.agent._build_system_prompt("with_gla")
+        prompt = self.agent._build_system_prompt("with_bhdr")
         self.assertIn("DIAGNOSIS:", prompt)
         self.assertIn("FIX:", prompt)
 
@@ -255,7 +255,7 @@ class TestEvalAgentSystemPrompt(unittest.TestCase):
         self.assertIn("FIX:", prompt)
 
     def test_unknown_mode_returns_code_only_style(self):
-        # Any mode other than 'with_gla' falls into the else branch
+        # Any mode other than 'with_bhdr' falls into the else branch
         prompt = self.agent._build_system_prompt("other")
         self.assertIn("DIAGNOSIS:", prompt)
 
@@ -398,7 +398,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
         )
 
         executor = MagicMock(spec=BhdrToolExecutor)
-        self.agent.run_with_gla(
+        self.agent.run_with_bhdr(
             scenario_description="Depth issue.",
             source_code="",
             source_path="/app/main.cpp",
@@ -423,7 +423,7 @@ class TestEvalAgentRunWithGla(unittest.TestCase):
         executor = MagicMock(spec=BhdrToolExecutor)
         executor.execute.return_value = '{"frame_id": 1}'
 
-        self.agent.run_with_gla(
+        self.agent.run_with_bhdr(
             scenario_description="Bug.",
             source_code="code",
             source_path="/app/main.cpp",

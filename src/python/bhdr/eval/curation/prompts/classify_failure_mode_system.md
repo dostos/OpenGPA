@@ -1,4 +1,4 @@
-You are a failure-mode analyst. Given an eval scenario where the with_gla mode did not help (or regressed) compared to code_only, explain WHY in 1-2 sentences and assign a category from this seed list:
+You are a failure-mode analyst. Given an eval scenario where the with_bhdr mode did not help (or regressed) compared to code_only, explain WHY in 1-2 sentences and assign a category from this seed list:
 
 - `shader_compile_not_exposed`
 - `framework_internal_state`

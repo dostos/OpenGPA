@@ -1447,7 +1447,7 @@ exercises the new `claude-cli` agent backend end-to-end (subprocess
 shells `claude -p --output-format stream-json` per scenario).
 
 This is a baseline, not a comparison: only `code_only` mode was run.
-See "with_gla blockers" below.
+See "with_bhdr blockers" below.
 
 ### Setup
 
@@ -1458,7 +1458,7 @@ See "with_gla blockers" below.
 - **Wall clock:** 2h04m sequential (started 14:54, finished 16:58).
 - **Per-scenario time:** avg 530s, range 222s–992s.
 
-### with_gla blockers
+### with_bhdr blockers
 
 | Blocker | Effect |
 |---|---|
@@ -1467,7 +1467,7 @@ See "with_gla blockers" below.
 | OpenGPA engine not running on `:18080` | No live frame to query |
 | `bug_class ∈ {consumer-misuse, user-config}` for all 14 | Maintainer scorer doesn't apply (`maintainer_solved=None` everywhere) |
 
-Decision: run `code_only` only; document the with_gla axis as gated
+Decision: run `code_only` only; document the with_bhdr axis as gated
 on adding capture / reproducer infrastructure for these scenario
 classes.
 
@@ -1543,10 +1543,10 @@ classes.
    harness errors. Stream-JSON parsing extracted DIAGNOSIS+FIX
    markers, tool counts, and per-scenario timings cleanly.
 
-### with_gla unlock prerequisites (next-round gates)
+### with_bhdr unlock prerequisites (next-round gates)
 
 To convert these 14 scenarios from `code_only`-only to a real
-`with_gla` vs `code_only` comparison, we need at least one of:
+`with_bhdr` vs `code_only` comparison, we need at least one of:
 
 - **Reproducer binaries**: write minimal C apps that exhibit the
   rendering bug. Tractable for godot scenarios (vulkan / GL
@@ -1559,7 +1559,7 @@ To convert these 14 scenarios from `code_only`-only to a real
   framework-maintenance scenarios.
 - **Reclassify the scenario class.** If the scenarios are really
   consumer-misuse questions (read the docs, fix the call site),
-  with_gla doesn't add value; the eval should focus on an
+  with_bhdr doesn't add value; the eval should focus on an
   advisor-quality metric instead of a capture-quality metric.
 
 ### Rolling latest stats (round 12)
@@ -1577,7 +1577,7 @@ To convert these 14 scenarios from `code_only`-only to a real
 
 ### Raw artifacts
 
-- `/data3/gla-eval-results/2026-05-04-round4-claude-cli/` (gitignored, ~44KB)
+- `/data3/bhdr-eval-results/2026-05-04-round4-claude-cli/` (gitignored, ~44KB)
   - `results.json` — 14 EvalResult entries
   - `report.md` — `gpa.eval.cli report` output
   - `system-status.md` — pre-run system snapshot
@@ -1585,28 +1585,28 @@ To convert these 14 scenarios from `code_only`-only to a real
 
 COMMIT: bcf05f7
 
-## Round 12b — with_gla on the same 14 scenarios (2026-05-04)
+## Round 12b — with_bhdr on the same 14 scenarios (2026-05-04)
 
-Round 12 was code_only-only because with_gla hard-failed at `bazel build`
+Round 12 was code_only-only because with_bhdr hard-failed at `bazel build`
 on these mined scenarios. This session's three fixes
 (`2d6dd94` graceful capture, `34e4472` loader scenario.yaml backfill,
 `3cf7920` parent-SHA + snapshot_root threading) unblocked the path:
-with_gla now clones the upstream repo at the bug state (`<fix_sha>^`)
+with_bhdr now clones the upstream repo at the bug state (`<fix_sha>^`)
 and pins `BHDR_UPSTREAM_ROOT` so `gpa upstream read/grep/list` works
 against the actual buggy framework code.
 
-**Same 14 scenarios, same backend (`claude-cli` opus-4-7), with_gla
+**Same 14 scenarios, same backend (`claude-cli` opus-4-7), with_bhdr
 mode only. 2h04m wall clock.** Comparison is against round 12's
 code_only data on the same scenario set.
 
 ### Headline
 
-with_gla is **faster** and uses **fewer total output tokens** than
+with_bhdr is **faster** and uses **fewer total output tokens** than
 code_only on this scenario set. The legacy keyword scorer says
-with_gla scored **1/14 vs code_only's 5/14** — but inspection shows
+with_bhdr scored **1/14 vs code_only's 5/14** — but inspection shows
 the scorer is broken for these mined scenarios, not the agent.
 
-| metric              | code_only (round 12) | with_gla (round 12b) | Δ          |
+| metric              | code_only (round 12) | with_bhdr (round 12b) | Δ          |
 |---------------------|---------------------:|---------------------:|------------|
 | total wall clock    |  7,426 s (123.8 min) |  4,629 s (77.2 min)  | **−38%**   |
 | total tool calls    |              597     |              505     |     −15%   |
@@ -1615,7 +1615,7 @@ the scorer is broken for these mined scenarios, not the agent.
 
 By group (avg per scenario):
 
-| group   |  | code_only       | with_gla        | Δ |
+| group   |  | code_only       | with_bhdr        | Δ |
 |---------|--|-----------------|-----------------|---|
 | godot   | t/tools/out_tok | 545s / 53.2 / 26,154 | 377s / 41.9 / 19,219 | −31% / −21% / −26% |
 | web-map | t/tools/out_tok | 510s / 28.5 /  6,692 | 269s / 28.3 / 12,582 | −47% / −1% / +88% |
@@ -1629,7 +1629,7 @@ actual buggy code and produced more substantive analyses.
 ### The scorer failure (cesium camera_jumps as the smoking gun)
 
 The legacy keyword scorer matched on training-data hand-waves; the
-specific upstream-code-grounded diagnoses with_gla produced don't
+specific upstream-code-grounded diagnoses with_bhdr produced don't
 keyword-match the (templatey, often empty) ground truth fields these
 mined scenarios carry.
 
@@ -1638,7 +1638,7 @@ mined scenarios carry.
 > far-plane depths that the camera controller then uses as the
 > zoom/pan pivot, causing per-frame jumps.
 
-**with_gla diagnosis (marked ✗ wrong):**
+**with_bhdr diagnosis (marked ✗ wrong):**
 > `_pickPositionCache` (which clears `_pickPositionCache`) is defined
 > but never called, so `pickPositionWorldCoordinates` returns a stale
 > world point indefinitely; with globe translucency the cached point
@@ -1648,14 +1648,14 @@ mined scenarios carry.
 > FIX: Invalidate the cache every frame — call `this._picking.update()`
 > once per render in `Scene.js`...
 
-The with_gla diagnosis cites the *actual cache invalidation bug* in
+The with_bhdr diagnosis cites the *actual cache invalidation bug* in
 `Picking.pickPositionWorldCoordinates` — a finding only possible by
 reading the cesium snapshot. The code_only one is a plausible-sounding
 guess. The keyword scorer rewards the guess.
 
 Same pattern in maplibre 3d_terrain (smoke-test scenario):
 - code_only cites `painter.stencilModeForClipping` generally
-- with_gla cites `getStencilConfigForOverlapAndUpdateStencilID`,
+- with_bhdr cites `getStencilConfigForOverlapAndUpdateStencilID`,
   `_renderTileClippingMasks`, the exact `painter.renderPass ===
   'translucent' && isRenderingToTexture` conditional — names the
   agent could only know from reading the tree at parent of fix_sha.
@@ -1673,16 +1673,16 @@ issue resolves to a different fix_sha (8 different parent commits).
 Per-scenario investigation pattern (using snapshot-usage indicators
 extracted post-hoc):
 
-| signal | code_only | with_gla |
+| signal | code_only | with_bhdr |
 |---|---|---|
 | produced `DIAGNOSIS:` + `FIX:` markers | 14/14 | 14/14 |
 | cited specific framework file paths | 6/14 | 6/14 |
 | explicitly gave up ("no upstream", "not accessible") | 2/14 | 1/14 |
 
-The with_gla agent gave up on one fewer scenario (cesium previously
+The with_bhdr agent gave up on one fewer scenario (cesium previously
 unsolved → now substantive diagnosis), and produced demonstrably
 more specific analyses on at least 2/14 (cesium, maplibre 3d_terrain).
-Godot scenarios show no qualitative diagnosis change but with_gla
+Godot scenarios show no qualitative diagnosis change but with_bhdr
 runs 26% cheaper in output tokens — the agent reaches the same
 conclusion with less guessing.
 
@@ -1693,30 +1693,30 @@ re-score (extract paths + bare basenames + capitalised symbol tokens
 from each diagnosis, intersect with `scenario.fix.files`) gives a
 second-opinion signal:
 
-| group   |  | code_only any_hit | with_gla any_hit | mean_recall | mean_precision |
+| group   |  | code_only any_hit | with_bhdr any_hit | mean_recall | mean_precision |
 |---------|--|------------------:|-----------------:|------------:|---------------:|
 | web-map | (6) | 4/6 | **5/6** | 0.67 → 0.53 | 0.58 → **0.67** |
 | godot   | (8) | 5/8 | 3/8 | 0.31 → 0.15 | 0.42 → 0.38 |
 | all     |(14) | 9/14 | 8/14 | 0.46 → 0.31 | 0.49 → 0.50 |
 
-So the picture is more nuanced than "with_gla scored worse":
+So the picture is more nuanced than "with_bhdr scored worse":
 
 - **Cesium camera_jumps flipped ✗ → ✓** under file-level scoring:
-  with_gla's diagnosis cites `Scene.js` and `Picking.*` symbols,
+  with_bhdr's diagnosis cites `Scene.js` and `Picking.*` symbols,
   both of which match `packages/engine/Source/Scene/Scene.js` /
   `Picking.js` in the 12-file ground truth. code_only had given
-  up; with_gla actually found the bug.
+  up; with_bhdr actually found the bug.
 - **Three godot scenarios flipped ✓ → ✗** the other way: code_only's
   training-data guess happened to name a file in the gt list;
-  with_gla read the snapshot and proposed a different (probably
+  with_bhdr read the snapshot and proposed a different (probably
   also-relevant) file from the 13–22-file gt. Likely scoring
   artifact: `scenario.fix.files` is the *whole PR file list*
   (including tests + collateral), not just the bug-cause file.
 - **Mean precision is essentially equal** (0.50 vs 0.49). When the
-  agent does name files, with_gla is no less precise than code_only
+  agent does name files, with_bhdr is no less precise than code_only
   — it just names fewer of them, so recall drops.
 
-### What with_gla actually buys us (signal, not artifact)
+### What with_bhdr actually buys us (signal, not artifact)
 
 1. **Stops give-up answers**: cesium / one godot scenario produced
    real diagnoses where code_only had bailed.
@@ -1750,7 +1750,7 @@ real accuracy signal we need either:
 
 - **P0: Drop the legacy keyword scorer's "correct" output for
   consumer-misuse / user-config scenarios.** Reporting it does more
-  harm than good (this round's "with_gla is worse" headline is
+  harm than good (this round's "with_bhdr is worse" headline is
   false; the metric is broken).
 - **P1: Mining pipeline: populate `fix_parent_sha` on every emitted
   scenario.** Loader currently sets `resolve_parent=True` and the
@@ -1768,16 +1768,16 @@ real accuracy signal we need either:
 ### Rolling latest stats (round 12b)
 
 - **Date:** 2026-05-04
-- **Scope:** 14 scenarios, with_gla mode only, claude-cli backend
+- **Scope:** 14 scenarios, with_bhdr mode only, claude-cli backend
 - **Wall clock:** 2h04m
-- **Result:** 14/14 completed; with_gla 38% faster than code_only
+- **Result:** 14/14 completed; with_bhdr 38% faster than code_only
   on the same scenarios; 1 fewer give-up; 2 demonstrably-deeper
   diagnoses (cesium, maplibre 3d_terrain). Legacy scorer's
   "correctness" output is unreliable for this scenario class.
 
 ### Raw artifacts
 
-- `/data3/gla-eval-results/2026-05-04-round12b-with-gla/` (gitignored)
+- `/data3/bhdr-eval-results/2026-05-04-round12b-with-gla/` (gitignored)
   - `results.json` — 14 EvalResult entries
   - `report.md` — `gpa.eval.cli report` output
   - `system-status.md` — pre-run snapshot
@@ -1800,7 +1800,7 @@ acceptance criteria from `eval-lessons-scoring.md` §5. No agent re-runs
 
 | mode      | solved | needs_review | no_signal |
 |-----------|--------|--------------|-----------|
-| with_gla  | 4/14   | 4            | 6         |
+| with_bhdr  | 4/14   | 4            | 6         |
 | code_only | 6/14   | 2            | 6         |
 
 `needs_review` is the new "we don't know without an LLM" band — recall
@@ -1811,10 +1811,10 @@ never fires).
 
 ### Acceptance criteria
 
-- **maplibre 3d_terrain with_gla** — expected `needs_review` (sharp
+- **maplibre 3d_terrain with_bhdr** — expected `needs_review` (sharp
   diagnosis on 1 of 3 gt files, not a hard ✗). **✓** Got
   `needs_review=True, recall=0.33, precision=1.0`.
-- **cesium camera_jumps with_gla** — expected ✓ via prose or judge.
+- **cesium camera_jumps with_bhdr** — expected ✓ via prose or judge.
   Got `needs_review=True, recall=0.08`. The diagnosis (`Picking.update()
   never called`) cites `Scene.js` (matches gt) but references
   `Picking.js` only via the class name (`Picking.prototype.update()`),
@@ -1845,13 +1845,13 @@ never fires).
 
 ### Judge-tier upgrade run (claude-opus-4-7, 6 needs_review rows)
 
-Fed the 4 with_gla + 2 code_only `needs_review` rows through
+Fed the 4 with_bhdr + 2 code_only `needs_review` rows through
 `judge_residual` against the fix-PR diff in
 `/data3/opengpa-snapshots/`. Wall: ~46s for 6 calls (cached at
 `/tmp/judge_cache_r12c/`).
 
 **First pass (terse rubric, `git show --stat` only): 3 full / 1 partial / 2 none.**
-Cesium camera_jumps with_gla was borderline — the judge said `none`
+Cesium camera_jumps with_bhdr was borderline — the judge said `none`
 even though the agent had identified a real-looking cause. Without
 diff hunks, the judge could only see file counts.
 
@@ -1866,14 +1866,14 @@ Two judge.py changes (commit pending):
 
 | mode      | scenario                              | refined judge | flips? |
 |-----------|---------------------------------------|---------------|--------|
-| with_gla  | godot glow_extremely_slow             | full          | ✓ → solved |
-| with_gla  | godot weird_shadow_on_mobile          | none          |   stays ✗ |
-| with_gla  | cesium camera_jumps                   | none          |   stays ✗ |
-| with_gla  | maplibre 3d_terrain                   | full          | ✓ → solved |
+| with_bhdr  | godot glow_extremely_slow             | full          | ✓ → solved |
+| with_bhdr  | godot weird_shadow_on_mobile          | none          |   stays ✗ |
+| with_bhdr  | cesium camera_jumps                   | none          |   stays ✗ |
+| with_bhdr  | maplibre 3d_terrain                   | full          | ✓ → solved |
 | code_only | godot 4_2_world_environment_glow      | full          | ✓ → solved |
 | code_only | godot glow_extremely_slow             | full          | ✓ → solved |
 
-**Post-judge with_gla:** 6/14 solved (was 4), 2 needs_review.
+**Post-judge with_bhdr:** 6/14 solved (was 4), 2 needs_review.
 **Post-judge code_only:** 8/14 solved (was 6), 0 needs_review.
 Net: **+4 solved across the cohort**, no false-positives.
 
@@ -1916,7 +1916,7 @@ COMMIT: 9eb3612 + 0ee84d7 + (refined judge prompt — see commit log)
 
 ## Cohort Verification (post-R12c)
 
-Inspecting the archived 14×2 R12 results revealed **all 14 with_gla
+Inspecting the archived 14×2 R12 results revealed **all 14 with_bhdr
 scenarios fell back to "live capture unavailable"** — the harness had a
 Bazel target path bug (`//tests/eval:<slug>` instead of the nested
 `//tests/eval/<cat>/<fw>/<slug>:<slug>`) and could never emit frames.
@@ -1955,19 +1955,19 @@ runs will keep the `tests/eval/` tree clean automatically.
 After fixing the snapshot pipeline (parent SHA + Bazel target + verifier
 + snapshot fetcher race) we re-ran the same 14 R12 scenarios in both
 modes against `claude-opus-4-7[1m]`. Results live at
-`/data3/gla-eval-results/2026-05-05-iter-r12c-rerun/`.
+`/data3/bhdr-eval-results/2026-05-05-iter-r12c-rerun/`.
 
 | Run | Solved | Total tokens | Avg tokens/scenario |
 |---|---|---|---|
-| **R12c with_gla** (NEW, buggy snapshot) | **5/14 (36%)** | 147,358 | 10,526 |
+| **R12c with_bhdr** (NEW, buggy snapshot) | **5/14 (36%)** | 147,358 | 10,526 |
 | **R12c code_only** (NEW, buggy snapshot) | **7/14 (50%)** | 162,824 | 11,630 |
-| R12b with_gla (OLD, fixed snapshot, old scorer) | 1/14 (7%) | 229,872 | 16,419 |
+| R12b with_bhdr (OLD, fixed snapshot, old scorer) | 1/14 (7%) | 229,872 | 16,419 |
 
 Headline: **agents now solve real bugs.** 1/14 → 5–7/14 (5–7×) once
 they see the buggy upstream state instead of the post-fix tree. Tokens
 also dropped 36% — fewer wasted turns reading already-fixed code.
 
-### with_gla vs code_only on the cleaned cohort
+### with_bhdr vs code_only on the cleaned cohort
 
 | Scenario family | w/ GLA | code-only |
 |---|---|---|
@@ -1975,25 +1975,25 @@ also dropped 36% — fewer wasted turns reading already-fixed code.
 | web-map (6) | 3/6 | 5/6 |
 | **all (14)** | **5/14** | **7/14** |
 
-Two web-map scenarios that code_only solved but with_gla didn't:
+Two web-map scenarios that code_only solved but with_bhdr didn't:
 `maplibre-gl-js_3d_terrain_with_partially_tran` and
 `maplibre-gl-js_vertical_edge_wall_artifact_at`. These are JS-side
 WebGL bugs — the GL shim doesn't intercept browser WebGL calls, so
-GPA tools surface no useful frame state. Their with_gla outputs got
+GPA tools surface no useful frame state. Their with_bhdr outputs got
 distracted enumerating empty/irrelevant overviews. **Implication:**
 GLA's value proposition currently only applies when the host app
-runs against the native GL/Vulkan path; gating with_gla off for
+runs against the native GL/Vulkan path; gating with_bhdr off for
 WebGL/JS scenarios would close the gap.
 
 ### Failure mode breakdown
 
 Across both modes the surviving failure modes are:
 
-- **`no_signal`** (5 with_gla, 4 code_only): agent produced prose but
+- **`no_signal`** (5 with_bhdr, 4 code_only): agent produced prose but
   none matched the ground-truth file or the canonical fix description.
   Concentrated on the harder godot scenarios where the bug is several
   layers deep in renderer pipeline state.
-- **`prose` low-confidence** (4 with_gla, 3 code_only): partial recall,
+- **`prose` low-confidence** (4 with_bhdr, 3 code_only): partial recall,
   agent identified the affected subsystem but not the specific cause.
 
 No `gave_up`, no `parsed_json: false`, no `out_of_tree` outliers in
@@ -2022,7 +2022,7 @@ Fix (`5e5fbdb`):
 
 ## R12c+R12d with LLM-judge (real numbers)
 
-The "5/14 with_gla, 7/14 code_only" headline above was itself
+The "5/14 with_bhdr, 7/14 code_only" headline above was itself
 under-counting. Three scoring infra bugs, all silent until R12d
 exposed them, were masking solved scenarios:
 
@@ -2047,17 +2047,17 @@ runs (no agent re-execution; only the verdicts changed) gives:
 
 | Run | Solved | scorer breakdown |
 |---|---|---|
-| **R12c with_gla**  | **10/14 (71%)** | prose 8 · judge 4 · no_signal 2 |
+| **R12c with_bhdr**  | **10/14 (71%)** | prose 8 · judge 4 · no_signal 2 |
 | **R12c code_only** | **10/14 (71%)** | prose 11 · judge 1 · no_signal 2 |
-| R12d with_gla  | 2/14 (14%) | judge 2 · no_signal 12 |
+| R12d with_bhdr  | 2/14 (14%) | judge 2 · no_signal 12 |
 | R12d code_only | 4/14 (29%) | judge 2 · prose 2 · no_signal 10 |
-| R12b with_gla (artifactual baseline) | 1/14 (7%) | — |
+| R12b with_bhdr (artifactual baseline) | 1/14 (7%) | — |
 
 Headline: **agents solve real bugs at 10/14 once snapshot + scorer
 are correct.** 1/14 → 10/14 is a 10× lift, all from infrastructure
 fixes — same agent, same scenarios, same model.
 
-**with_gla = code_only at 71%, but with_gla used 90% of the tokens.**
+**with_bhdr = code_only at 71%, but with_bhdr used 90% of the tokens.**
 That's the inversion R12c hinted at: native scenarios benefit (GPA
 gives faster diagnosis paths), web-map breaks even (GPA can't see
 browser WebGL but the agent doesn't waste much on the empty

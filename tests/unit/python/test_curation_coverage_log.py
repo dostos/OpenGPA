@@ -18,7 +18,7 @@ def test_append_and_read(tmp_path):
         predicted_helps="yes",
         observed_helps="yes",
         failure_mode=None,
-        eval_summary={"with_gla": {"solved": True, "total_tokens": 1820},
+        eval_summary={"with_bhdr": {"solved": True, "total_tokens": 1820},
                       "code_only": {"solved": False, "total_tokens": 5940}},
     )
     log.append(entry)
@@ -26,7 +26,7 @@ def test_append_and_read(tmp_path):
     entries = log.read_all()
     assert len(entries) == 1
     assert entries[0].issue_url == entry.issue_url
-    assert entries[0].eval_summary["with_gla"]["total_tokens"] == 1820
+    assert entries[0].eval_summary["with_bhdr"]["total_tokens"] == 1820
 
 def test_contains_url(tmp_path):
     log = CoverageLog(tmp_path / "log.jsonl")

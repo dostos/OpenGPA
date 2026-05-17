@@ -72,8 +72,8 @@ def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
             r.time_seconds = 0.0
             return r
 
-        def run_with_gla(self, **kw):
-            captured["with_gla"] = kw
+        def run_with_bhdr(self, **kw):
+            captured["with_bhdr"] = kw
             r = MagicMock()
             r.diagnosis = "d"
             r.input_tokens = 0
