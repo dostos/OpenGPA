@@ -75,7 +75,7 @@ def test_python_canonical_matches_c_reference(v):
     the expected body for each value class and comparing."""
     body = canonical_py(v)
     # Parse back and check round-trip.
-    from gpa.api.routes_trace import _parse_canonical_number
+    from bhdr.api.routes_trace import _parse_canonical_number
 
     parsed = _parse_canonical_number(body)
     if math.isnan(v):

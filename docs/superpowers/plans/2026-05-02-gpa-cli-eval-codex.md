@@ -19,7 +19,7 @@ These commands unblock the agent backend (Phase 3) by exposing source/upstream s
 ### Task 1: `local_roots.py` — env-rooted path resolver
 
 **Files:**
-- Create: `src/python/gpa/cli/local_roots.py`
+- Create: `src/python/bhdr/cli/local_roots.py`
 - Test: `tests/unit/python/test_cli_local_roots.py`
 
 - [ ] **Step 1: Write the failing test**
@@ -87,7 +87,7 @@ Expected: ImportError / collection error.
 - [ ] **Step 3: Implement `local_roots.py`**
 
 ```python
-# src/python/gpa/cli/local_roots.py
+# src/python/bhdr/cli/local_roots.py
 """Env-rooted path resolution shared by ``gpa source`` and ``gpa upstream``.
 
 Both commands operate inside a per-scenario root directory communicated
@@ -159,7 +159,7 @@ Expected: 6 passed.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/python/gpa/cli/local_roots.py tests/unit/python/test_cli_local_roots.py
+git add src/python/bhdr/cli/local_roots.py tests/unit/python/test_cli_local_roots.py
 git commit -m "feat(cli): env-rooted path resolver for source/upstream commands"
 ```
 
@@ -168,8 +168,8 @@ git commit -m "feat(cli): env-rooted path resolver for source/upstream commands"
 ### Task 2: `gpa source` namespace (read, grep)
 
 **Files:**
-- Create: `src/python/gpa/cli/commands/source.py`
-- Modify: `src/python/gpa/cli/main.py` (register subparser)
+- Create: `src/python/bhdr/cli/commands/source.py`
+- Modify: `src/python/bhdr/cli/main.py` (register subparser)
 - Test: `tests/unit/python/test_cli_source.py`
 
 - [ ] **Step 1: Write the failing test**
@@ -276,7 +276,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/test_cli_source.py -q
 - [ ] **Step 3: Implement `source.py`**
 
 ```python
-# src/python/gpa/cli/commands/source.py
+# src/python/bhdr/cli/commands/source.py
 """``gpa source read|grep`` — harness-local source access.
 
 Operates inside ``$GPA_SOURCE_ROOT``. All paths are validated by
@@ -417,7 +417,7 @@ def run(args: argparse.Namespace) -> int:
 - [ ] **Step 4: Wire `add_subparser` into `gpa.cli.main`**
 
 ```python
-# src/python/gpa/cli/main.py — at the import block
+# src/python/bhdr/cli/main.py — at the import block
 from gpa.cli.commands import source as source_cmd
 
 # in build_parser(), near the existing add_subparser calls:
@@ -437,7 +437,7 @@ PYTHONPATH=src/python python -m pytest tests/unit/python/test_cli_source.py -q
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/python/gpa/cli/commands/source.py src/python/gpa/cli/main.py tests/unit/python/test_cli_source.py
+git add src/python/bhdr/cli/commands/source.py src/python/bhdr/cli/main.py tests/unit/python/test_cli_source.py
 git commit -m "feat(cli): gpa source read/grep over GPA_SOURCE_ROOT"
 ```
 
@@ -446,8 +446,8 @@ git commit -m "feat(cli): gpa source read/grep over GPA_SOURCE_ROOT"
 ### Task 3: `gpa upstream` namespace (read, list, grep)
 
 **Files:**
-- Create: `src/python/gpa/cli/commands/upstream.py`
-- Modify: `src/python/gpa/cli/main.py`
+- Create: `src/python/bhdr/cli/commands/upstream.py`
+- Modify: `src/python/bhdr/cli/main.py`
 - Test: `tests/unit/python/test_cli_upstream.py`
 
 - [ ] **Step 1: Write tests modelled on `test_cli_source.py`**
@@ -520,7 +520,7 @@ Each task here registers one noun namespace (`drawcalls`, `pixel`, `scene`, etc.
 ### Task 5: Frame-resolver helper with GPA_FRAME_ID precedence
 
 **Files:**
-- Create: `src/python/gpa/cli/frame_resolver.py`
+- Create: `src/python/bhdr/cli/frame_resolver.py`
 - Test: `tests/unit/python/test_cli_frame_resolver.py`
 
 - [ ] **Step 1: Write tests**
@@ -588,8 +588,8 @@ git commit -m "feat(cli): frame_resolver honors GPA_FRAME_ID env"
 ### Task 6: `gpa frames` — list/overview/check-config consolidation
 
 **Files:**
-- Modify: `src/python/gpa/cli/commands/frames.py` (add `list` subverb; current bare `gpa frames` becomes deprecated alias for `gpa frames list`)
-- Modify: `src/python/gpa/cli/main.py` (replace bare `frames` parser with namespaced one)
+- Modify: `src/python/bhdr/cli/commands/frames.py` (add `list` subverb; current bare `gpa frames` becomes deprecated alias for `gpa frames list`)
+- Modify: `src/python/bhdr/cli/main.py` (replace bare `frames` parser with namespaced one)
 - Modify or create: `tests/unit/python/test_cli_frames.py`
 
 Add subcommands:
@@ -615,8 +615,8 @@ git commit -m "feat(cli): gpa frames list/overview namespace + bare alias deprec
 ### Task 7: `gpa drawcalls` namespace
 
 **Files:**
-- Create: `src/python/gpa/cli/commands/drawcalls.py`
-- Modify: `src/python/gpa/cli/main.py`
+- Create: `src/python/bhdr/cli/commands/drawcalls.py`
+- Modify: `src/python/bhdr/cli/main.py`
 - Test: `tests/unit/python/test_cli_drawcalls.py`
 
 Subcommands:
@@ -798,8 +798,8 @@ git commit -m "refactor(cli): deprecate gpa dump in favor of noun-verb commands"
 **Note on test paths:** `tests/unit/python/` is flat in this repo (no nested package dirs). All new tests below use `tests/unit/python/test_<name>.py` flat naming.
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/__init__.py`
-- Create: `src/python/gpa/eval/agents/base.py`
+- Create: `src/python/bhdr/eval/agents/__init__.py`
+- Create: `src/python/bhdr/eval/agents/base.py`
 - Test: `tests/unit/python/test_agents_base.py`
 
 `base.py` defines:
@@ -837,8 +837,8 @@ git commit -m "feat(eval): create gpa.eval.agents package with AgentBackend ABC"
 ### Task 17: Move `EvalAgent` → `agents.api_agent.ApiAgent`
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/api_agent.py`
-- Modify: `src/python/gpa/eval/llm_agent.py` (becomes shim)
+- Create: `src/python/bhdr/eval/agents/api_agent.py`
+- Modify: `src/python/bhdr/eval/llm_agent.py` (becomes shim)
 
 Move the existing `EvalAgent`, `GpaToolExecutor`, `GPA_TOOLS`, `CODE_ONLY_TOOLS`, `SNAPSHOT_TOOLS`, `build_agent_fn` constants into `api_agent.py`. Rename `EvalAgent` → `ApiAgent` and have it implement `AgentBackend`.
 
@@ -896,7 +896,7 @@ git commit -m "refactor(eval): move EvalAgent to gpa.eval.agents.api_agent (shim
 ### Task 18: `CliBackendSpec` and `CliRunMetrics`
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/cli_spec.py`
+- Create: `src/python/bhdr/eval/agents/cli_spec.py`
 - Test: `tests/unit/python/test_cli_spec.py`
 
 ```python
@@ -928,7 +928,7 @@ class CliBackendSpec:
 ### Task 19: claude-cli stream-json parser
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/cli_parsers.py`
+- Create: `src/python/bhdr/eval/agents/cli_parsers.py`
 - Test: `tests/unit/python/test_cli_parsers_claude.py`
 - Fixture: `tests/unit/python/fixtures/claude_stream.jsonl`
 
@@ -951,7 +951,7 @@ git commit -m "feat(eval): claude-cli stream-json parser for CliAgent"
 ### Task 20: codex-cli NDJSON parser
 
 **Files:**
-- Modify: `src/python/gpa/eval/agents/cli_parsers.py`
+- Modify: `src/python/bhdr/eval/agents/cli_parsers.py`
 - Test: `tests/unit/python/test_cli_parsers_codex.py`
 - Fixture: `tests/unit/python/fixtures/codex_events.jsonl`
 
@@ -978,7 +978,7 @@ git commit -m "feat(eval): codex-cli NDJSON parser for CliAgent"
 ### Task 21: `CliAgent.run` implementation
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/cli_agent.py`
+- Create: `src/python/bhdr/eval/agents/cli_agent.py`
 - Test: `tests/unit/python/test_cli_agent.py`
 
 Skeleton:
@@ -1079,7 +1079,7 @@ git commit -m "feat(eval): CliAgent driving CLI subprocess + prompt rendering"
 ### Task 22: Spec presets
 
 **Files:**
-- Modify: `src/python/gpa/eval/agents/cli_agent.py` — append module-level `CLAUDE_CLI_SPEC` and `CODEX_CLI_SPEC`.
+- Modify: `src/python/bhdr/eval/agents/cli_agent.py` — append module-level `CLAUDE_CLI_SPEC` and `CODEX_CLI_SPEC`.
 
 ```python
 CLAUDE_CLI_SPEC = CliBackendSpec(
@@ -1116,7 +1116,7 @@ git commit -m "feat(eval): claude-cli and codex-cli backend presets"
 ### Task 23: `factory.build_agent_fn`
 
 **Files:**
-- Create: `src/python/gpa/eval/agents/factory.py`
+- Create: `src/python/bhdr/eval/agents/factory.py`
 - Test: `tests/unit/python/test_agents_factory.py`
 
 ```python
@@ -1163,7 +1163,7 @@ git commit -m "feat(eval): factory.build_agent_fn dispatches api/claude-cli/code
 ### Task 24: Extract `_CliLLMClient` base + add `CodexCliLLMClient`
 
 **Files:**
-- Modify: `src/python/gpa/eval/curation/llm_client.py`
+- Modify: `src/python/bhdr/eval/curation/llm_client.py`
 - Test: `tests/unit/python/test_curation_llm_client.py`
 
 The current `ClaudeCodeLLMClient.complete()` is ~30 lines of subprocess plumbing. Extract a `_CliLLMClient` base whose `complete()` shells out to `[binary, *extra_args]` with the combined system+user prompt on stdin.
@@ -1227,7 +1227,7 @@ git commit -m "feat(curation): CodexCliLLMClient + _CliLLMClient base"
 ### Task 25: Wire `codex-cli` into `gen_queries`
 
 **Files:**
-- Modify: `src/python/gpa/eval/curation/gen_queries.py`
+- Modify: `src/python/bhdr/eval/curation/gen_queries.py`
 - Test: `tests/unit/python/test_curation_gen_queries.py` (extend existing tests if present, else new)
 
 Change `--llm-backend` choices to `["api", "claude-cli", "codex-cli"]`. Add the `codex-cli` branch to `_build_llm_client`.
@@ -1247,7 +1247,7 @@ git commit -m "feat(curation): gen_queries --llm-backend codex-cli"
 ### Task 26: `gpa.eval.cli` adopts factory
 
 **Files:**
-- Modify: `src/python/gpa/eval/cli.py`
+- Modify: `src/python/bhdr/eval/cli.py`
 
 Replace the `_stub_agent` default with `factory.build_agent_fn(backend, model=...)`. Add CLI flags:
 
@@ -1277,7 +1277,7 @@ agent_fn = build_real_agent(
 `_stub_agent` stays only as a fallback for `--dry-run` if we want one — defer that flag.
 
 - [ ] **Step 1: Unit test** — patch `gpa.eval.cli.build_real_agent` to return a stub callable; assert `--agent-backend codex-cli` reaches the factory with the correct backend kwarg, *without* invoking any real CLI or API. The existing `_stub_agent` is preserved as the test default so `--dry-run` style usage continues to work.
-- [ ] **Step 2: Live smoke test** (skipif `ANTHROPIC_API_KEY` missing): `python -m gpa.eval.cli run --scenario X --mode code_only --agent-backend api`. Assert exit 0 on a tiny scenario.
+- [ ] **Step 2: Live smoke test** (skipif `ANTHROPIC_API_KEY` missing): `python -m bhdr.eval.cli run --scenario X --mode code_only --agent-backend api`. Assert exit 0 on a tiny scenario.
 - [ ] **Step 3: Implement.** Keep `_stub_agent` reachable via an unused `--dry-run` flag (or just leave it defined; it's small and harmless).
 - [ ] **Step 4: Commit.**
 
@@ -1290,7 +1290,7 @@ git commit -m "feat(eval): gpa.eval.cli --agent-backend selects api/claude-cli/c
 ### Task 27: `gpa.eval.curation.run` wires `--backend`
 
 **Files:**
-- Modify: `src/python/gpa/eval/curation/run.py`
+- Modify: `src/python/bhdr/eval/curation/run.py`
 
 The existing `--backend` flag currently does nothing (line ~128 in run.py). Wire it through to `factory.build_agent_fn` when `--evaluate` is passed.
 
@@ -1310,8 +1310,8 @@ git commit -m "feat(curation): wire --backend through to factory.build_agent_fn"
 ### Task 28: MCP deprecation notice
 
 **Files:**
-- Modify: `src/python/gpa/mcp/server.py` (top docstring)
-- Modify: `src/python/gpa/mcp/README.md` (top banner)
+- Modify: `src/python/bhdr/mcp/server.py` (top docstring)
+- Modify: `src/python/bhdr/mcp/README.md` (top banner)
 
 Add to `server.py` module docstring:
 
@@ -1409,9 +1409,9 @@ After completing all tasks:
 - [ ] `bazel test //tests/unit/core/... //tests/unit/shims/...` passes.
 - [ ] `PYTHONPATH=src/python python -m pytest tests/unit/python/ -q` passes.
 - [ ] `gpa --help` shows the new noun-verb commands; old commands print stderr deprecation warnings but still work.
-- [ ] `python -m gpa.eval.cli run --scenario e1_state_leak --mode code_only --agent-backend codex-cli` produces a diagnosis.
-- [ ] `python -m gpa.eval.curation.gen_queries --instruction "..." --llm-backend codex-cli ...` produces a queries file.
-- [ ] `src/python/gpa/mcp/server.py` and `src/python/gpa/mcp/README.md` carry deprecation notices.
+- [ ] `python -m bhdr.eval.cli run --scenario e1_state_leak --mode code_only --agent-backend codex-cli` produces a diagnosis.
+- [ ] `python -m bhdr.eval.curation.gen_queries --instruction "..." --llm-backend codex-cli ...` produces a queries file.
+- [ ] `src/python/bhdr/mcp/server.py` and `src/python/bhdr/mcp/README.md` carry deprecation notices.
 - [ ] `docs/cli/agent-integration.md` exists and lists every new command with a one-line example.
 
 ## Open questions resolved during implementation

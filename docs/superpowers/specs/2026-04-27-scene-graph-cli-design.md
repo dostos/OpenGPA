@@ -7,7 +7,7 @@
 - `docs/flywheel-matrix.md` — Category 2 (`framework-app-dev`) row, gap markers
 - `docs/superpowers/plans/2026-04-18-framework-integration.md` — Tier-3 plan
 - `docs/superpowers/specs/2026-04-19-gpa-cli-design.md` — existing CLI shape
-- `src/python/gpa/api/routes_annotations.py` (commit `b720e9c`) — annotations sidecar endpoint already shipped
+- `src/python/bhdr/api/routes_annotations.py` (commit `b720e9c`) — annotations sidecar endpoint already shipped
 
 ---
 
@@ -263,7 +263,7 @@ Response (excerpt):
 ### 3.2 `GET /api/v1/frames/{frame_id}/check-config` (new)
 
 ```python
-# src/python/gpa/api/routes_check_config.py
+# src/python/bhdr/api/routes_check_config.py
 @router.get("/frames/{frame_id}/check-config")
 def get_check_config(frame_id, request: Request,
                      rule: list[str] | None = Query(None),
@@ -279,7 +279,7 @@ def get_check_config(frame_id, request: Request,
 
 Per CLAUDE.md: returns via `safe_json_response()` (handles bytes from pybind11). No write paths. Idempotent. Token cost: O(rules × scene-nodes), no large data ever returned (each finding is a small dict).
 
-The `run_rules()` function lives in `src/python/gpa/checks/config_rules.py` (new module, parallels `src/python/gpa/cli/checks/`). Each rule is a `(name, severity, predicate, fix_text)` tuple — adding a rule is a 5-line patch.
+The `run_rules()` function lives in `src/python/bhdr/checks/config_rules.py` (new module, parallels `src/python/bhdr/cli/checks/`). Each rule is a `(name, severity, predicate, fix_text)` tuple — adding a rule is a 5-line patch.
 
 ---
 
@@ -437,11 +437,11 @@ If the cost delta does not flip, the failure mode is informative: either the rul
 
 These should be resolved before the implementation plan is approved:
 
-1. **Annotation schema versioning.** The annotation endpoint stores raw JSON. Should `inspect-scene` and `check-config` enforce a `plugin_schema_version` field? If yes, where does the schema live (`src/python/gpa/framework/schemas/threejs_v1.json`?) and how do we evolve it without breaking pinned plugins?
+1. **Annotation schema versioning.** The annotation endpoint stores raw JSON. Should `inspect-scene` and `check-config` enforce a `plugin_schema_version` field? If yes, where does the schema live (`src/python/bhdr/framework/schemas/threejs_v1.json`?) and how do we evolve it without breaking pinned plugins?
 
 2. **Multi-plugin merge.** If two plugins POST to the same frame (a three.js plugin *and* a custom shader-uniform sidecar), do we merge dicts, last-writer-wins, or keep an array? The current `annotations_store.put()` is last-writer-wins. Cat-2 `web-3d` will probably want merge.
 
-3. **Rule provenance.** `check-config` needs to print "fix: …" hints. Do those come from a hand-curated YAML in-tree (`src/python/gpa/checks/config_rules.yaml`) or from the docstring of the rule predicate function? Hand-curated YAML is reviewable; docstring is colocated with the code.
+3. **Rule provenance.** `check-config` needs to print "fix: …" hints. Do those come from a hand-curated YAML in-tree (`src/python/bhdr/checks/config_rules.yaml`) or from the docstring of the rule predicate function? Hand-curated YAML is reviewable; docstring is colocated with the code.
 
 4. **Filter language scope.** Is `--filter type:Mesh,name:Helmet` (CSV AND) enough, or do we need a real expression grammar (e.g. `material.transparent=true AND geometry.vertex_count>1000`)? Recommend starting with the CSV form and adding an expression mode when an eval scenario actually demands it.
 
@@ -471,7 +471,7 @@ A 3/4 firing rate of `depth-write-without-depth-test` was suspiciously high — 
 
 **Hypothesis confirmed: predicate too loose.** All three R9 firings (and 3/5 unrelated control scenarios — `e1_state_leak`, `e3_index_buffer_obo`, `e9_scissor_not_reset`) triggered purely because of GL spec defaults: `glDepthMask` defaults to `GL_TRUE` and `glEnable(GL_DEPTH_TEST)` defaults to disabled. Any minimal GL test that does not explicitly enable depth-test triggered the rule, regardless of whether the depth buffer is actually being used. Per-drawcall pipeline state inspection on r10/r25/r27 confirmed: `depth_test=False, depth_write=True, depth_func=GL_LESS (513)` — the spec defaults verbatim. r22 was the negative control: it explicitly calls `glEnable(GL_DEPTH_TEST)`, so the rule (correctly) didn't fire.
 
-Tightening: the rule now requires (a) per-draw `depth_write=True AND (depth_test=False OR depth_func==GL_ALWAYS)` AND (b) frame-level evidence that the app is actually using the depth buffer — at least one OTHER drawcall in the frame must have `depth_test=True` with a non-`GL_ALWAYS` `depth_func`. Without (b), the depth buffer isn't being used at all and there's nothing to leak into. (`src/python/gpa/checks/rules.py::DepthWriteWithoutDepthTestRule.check`.)
+Tightening: the rule now requires (a) per-draw `depth_write=True AND (depth_test=False OR depth_func==GL_ALWAYS)` AND (b) frame-level evidence that the app is actually using the depth buffer — at least one OTHER drawcall in the frame must have `depth_test=True` with a non-`GL_ALWAYS` `depth_func`. Without (b), the depth buffer isn't being used at all and there's nothing to leak into. (`src/python/bhdr/checks/rules.py::DepthWriteWithoutDepthTestRule.check`.)
 
 ### Re-validation after tightening
 

@@ -20,7 +20,7 @@ export DISPLAY=:${DISPLAY_NUM}
 # Start OpenGPA engine + API
 echo "Starting OpenGPA engine..."
 PYTHONPATH="${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings" \
-    python3 -m gpa.launcher \
+    python3 -m bhdr.launcher \
     --socket "${SOCKET_PATH}" \
     --shm "${SHM_NAME}" \
     --port "${PORT}" \
@@ -50,7 +50,7 @@ cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
   "mcpServers": {
     "gpa": {
       "command": "python3",
-      "args": ["-m", "gpa.mcp.server"],
+      "args": ["-m", "bhdr.mcp.server"],
       "env": {
         "PYTHONPATH": "${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings",
         "GPA_BASE_URL": "http://127.0.0.1:${PORT}",

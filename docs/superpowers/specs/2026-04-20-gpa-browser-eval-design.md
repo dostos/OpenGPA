@@ -46,7 +46,7 @@ Each is simple enough to fit in a single HTML page + one npm-cached framework bu
               │         http://localhost:8765/r21/
               │
     +----------------------+
-    |  python -m gpa.       |
+    |  python -m bhdr.       |
     |  browser.runner      |
     |  (serves scenarios,  |
     |   launches browser,  |
@@ -130,8 +130,8 @@ Success criteria for R9 browser subset:
 ## Implementation phases
 
 ### Phase 1 — MVP runner (2–3 days)
-- `src/python/gpa/browser/runner.py` — Chromium launcher, port allocation, static server
-- `src/python/gpa/cli/commands/run_browser.py` — CLI subcommand
+- `src/python/bhdr/browser/runner.py` — Chromium launcher, port allocation, static server
+- `src/python/bhdr/cli/commands/run_browser.py` — CLI subcommand
 - First pilot scenario: `tests/eval-browser/r21_tile_id_overflow/` end-to-end
 - Tests: smoke test that runner launches Chromium + captures ≥ 1 frame into `TraceStore`
 

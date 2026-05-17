@@ -1,7 +1,7 @@
 import os
 import pytest
 from pathlib import Path
-from gpa.cli.local_roots import (
+from bhdr.cli.local_roots import (
     LocalRoot,
     LocalRootError,
     resolve_relative,

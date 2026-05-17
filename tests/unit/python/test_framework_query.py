@@ -7,9 +7,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.framework.metadata_store import MetadataStore
-from gpa.framework.query_engine import FrameworkQueryEngine
-from gpa.backends.base import DrawCallInfo, PixelResult
+from bhdr.framework.metadata_store import MetadataStore
+from bhdr.framework.query_engine import FrameworkQueryEngine
+from bhdr.backends.base import DrawCallInfo, PixelResult
 
 
 # ---------------------------------------------------------------------------

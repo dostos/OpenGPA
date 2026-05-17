@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import pytest
 
-from gpa.eval.scorer_prose import score_prose
+from bhdr.eval.scorer_prose import score_prose
 
 
 # ---------------------------------------------------------------------------

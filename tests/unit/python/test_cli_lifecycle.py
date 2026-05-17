@@ -21,13 +21,13 @@ from unittest.mock import patch
 
 import pytest
 
-from gpa.cli import main as cli_main
-from gpa.cli import session as session_mod
-from gpa.cli.commands import env as env_cmd
-from gpa.cli.commands import run as run_cmd
-from gpa.cli.commands import start as start_cmd
-from gpa.cli.commands import stop as stop_cmd
-from gpa.cli.session import Session
+from bhdr.cli import main as cli_main
+from bhdr.cli import session as session_mod
+from bhdr.cli.commands import env as env_cmd
+from bhdr.cli.commands import run as run_cmd
+from bhdr.cli.commands import start as start_cmd
+from bhdr.cli.commands import stop as stop_cmd
+from bhdr.cli.session import Session
 
 
 # --------------------------------------------------------------------------- #

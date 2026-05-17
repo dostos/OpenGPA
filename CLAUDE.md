@@ -25,7 +25,7 @@ See `docs/framework-tiers.md` for full capability matrix.
 ## Key Design Principles
 
 - **No heuristics in Tier 1.** Never guess which uniform is "the view matrix." Expose raw data, let the querying agent interpret.
-- **FrameProvider ABC** (`src/python/gpa/backends/base.py`) is the interface between capture backends and the query layer. All REST routes use this interface.
+- **FrameProvider ABC** (`src/python/bhdr/backends/base.py`) is the interface between capture backends and the query layer. All REST routes use this interface.
 - **safe_json_response()** — all routes must return this (not raw dicts) to handle bytes from pybind11.
 - **Lazy IPC init** — the shim connects to the engine at the first `glXSwapBuffers`, not at constructor time. This avoids fork issues from X11/DRI.
 
@@ -87,7 +87,7 @@ PYTHONPATH=src/python python3 -m gpa.eval.curation.gen_queries \
 # 2. Mine those queries (or any existing query pack)
 PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
   --queries /tmp/new_queries.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir .eval-pipeline \
   --batch-quota 30
   # --max-phase {select,produce,judge}: select skips LLM/commit; judge default
@@ -113,7 +113,7 @@ Spec: `docs/superpowers/specs/2026-05-01-single-path-mining-design.md`.
 
 ## Adding a New Capture Backend
 
-Implement `FrameProvider` from `src/python/gpa/backends/base.py`:
+Implement `FrameProvider` from `src/python/bhdr/backends/base.py`:
 - `get_frame_overview()`, `get_latest_overview()`
 - `list_draw_calls()`, `get_draw_call()`
 - `get_pixel()`
@@ -124,9 +124,9 @@ See `native.py` and `renderdoc.py` for examples.
 
 ## Adding a New REST Endpoint
 
-1. Create `src/python/gpa/api/routes_NAME.py`
+1. Create `src/python/bhdr/api/routes_NAME.py`
 2. Use `safe_json_response()` for ALL returns (prevents pydantic bytes crash)
-3. Register in `src/python/gpa/api/app.py`
+3. Register in `src/python/bhdr/api/app.py`
 4. Add tests in `tests/unit/python/test_api_NAME.py`
 
 ## Known Issues
@@ -144,11 +144,11 @@ See `native.py` and `renderdoc.py` for examples.
 | WebGL extension (JS) | `src/shims/webgl/` |
 | Core engine (C++) | `src/core/` |
 | Python bindings | `src/bindings/py_gpa.cpp` |
-| REST API | `src/python/gpa/api/` |
-| MCP server | `src/python/gpa/mcp/` |
-| Framework integration | `src/python/gpa/framework/` |
-| Capture backends | `src/python/gpa/backends/` |
-| Eval harness | `src/python/gpa/eval/` |
+| REST API | `src/python/bhdr/api/` |
+| MCP server | `src/python/bhdr/mcp/` |
+| Framework integration | `src/python/bhdr/framework/` |
+| Capture backends | `src/python/bhdr/backends/` |
+| Eval harness | `src/python/bhdr/eval/` |
 | C++ unit tests | `tests/unit/core/` |
 | Shim unit tests | `tests/unit/shims/` |
 | Python unit tests | `tests/unit/python/` |

@@ -1,4 +1,4 @@
-"""Tests for :mod:`gpa.eval.telemetry`.
+"""Tests for :mod:`bhdr.eval.telemetry`.
 
 The parser consumes ``claude -p --output-format stream-json`` transcripts.
 The fixture in ``fixtures/stream_json_sample.jsonl`` was hand-crafted to match
@@ -25,7 +25,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.telemetry import parse_stream_json
+from bhdr.eval.telemetry import parse_stream_json
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "stream_json_sample.jsonl"

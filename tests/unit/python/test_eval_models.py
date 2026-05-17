@@ -1,4 +1,4 @@
-"""Tests for gpa.eval.models — registry + budget-aware planner."""
+"""Tests for bhdr.eval.models — registry + budget-aware planner."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from gpa.eval.models import (
+from bhdr.eval.models import (
     MODELS,
     claude_id,
     estimate_budget,
@@ -169,13 +169,13 @@ def test_plan_round_does_not_mutate_caller_lists():
 
 
 # ---------------------------------------------------------------------------
-# CLI (python -m gpa.eval.plan)
+# CLI (python -m bhdr.eval.plan)
 # ---------------------------------------------------------------------------
 
 def test_plan_cli_under_budget_exits_zero(tmp_path):
     proc = subprocess.run(
         [
-            sys.executable, "-m", "gpa.eval.plan",
+            sys.executable, "-m", "bhdr.eval.plan",
             "--scenarios", "a", "b",
             "--tiers", "haiku", "sonnet",
             "--modes", "code_only",
@@ -195,7 +195,7 @@ def test_plan_cli_under_budget_exits_zero(tmp_path):
 def test_plan_cli_pruned_exits_two():
     proc = subprocess.run(
         [
-            sys.executable, "-m", "gpa.eval.plan",
+            sys.executable, "-m", "bhdr.eval.plan",
             "--scenarios", *[f"s{i}" for i in range(20)],
             "--tiers", "haiku", "sonnet", "opus",
             "--modes", "code_only", "with_gpa",

@@ -1,4 +1,4 @@
-"""Unit tests for ``gpa.cli.session.Session``."""
+"""Unit tests for ``bhdr.cli.session.Session``."""
 
 from __future__ import annotations
 
@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from gpa.cli import session as session_mod
-from gpa.cli.session import Session, SessionExistsError
+from bhdr.cli import session as session_mod
+from bhdr.cli.session import Session, SessionExistsError
 
 
 def test_create_populates_directory(tmp_path: Path) -> None:

@@ -21,10 +21,10 @@ Make the OpenGPA evaluation pipeline backend-agnostic. Today it is hard-wired to
 
 ## Background — what already exists
 
-- `gpa` CLI at `src/python/gpa/cli/`, wired in `pyproject.toml` as `[project.scripts] gpa = "gpa.cli.main:main"`. Existing commands: `start`, `stop`, `env`, `run`, `run-browser`, `report`, `check`, `dump {frame|drawcalls|pixel}`, `frames`, `check-config`, `explain-draw`, `diff-draws`, `scene-find`, `scene-explain`, `trace {uniform|value}`. Naming is mixed: top-level verbs, hyphenated multiword commands, and one `noun verb` (`trace`).
-- Eval agent at `src/python/gpa/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `GPA_TOOLS` (5 OpenGPA tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
-- Curation LLM client at `src/python/gpa/eval/curation/llm_client.py`: `LLMClient` (Anthropic SDK) and `ClaudeCodeLLMClient` (shell out to `claude -p`). `gen_queries.py` selects between them via `--llm-backend {api,claude-cli}`.
-- MCP server at `src/python/gpa/mcp/server.py`: ~17 tools, JSON-RPC over stdio. Substantially broader than what the eval agent calls today.
+- `gpa` CLI at `src/python/bhdr/cli/`, wired in `pyproject.toml` as `[project.scripts] gpa = "gpa.cli.main:main"`. Existing commands: `start`, `stop`, `env`, `run`, `run-browser`, `report`, `check`, `dump {frame|drawcalls|pixel}`, `frames`, `check-config`, `explain-draw`, `diff-draws`, `scene-find`, `scene-explain`, `trace {uniform|value}`. Naming is mixed: top-level verbs, hyphenated multiword commands, and one `noun verb` (`trace`).
+- Eval agent at `src/python/bhdr/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `GPA_TOOLS` (5 OpenGPA tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
+- Curation LLM client at `src/python/bhdr/eval/curation/llm_client.py`: `LLMClient` (Anthropic SDK) and `ClaudeCodeLLMClient` (shell out to `claude -p`). `gen_queries.py` selects between them via `--llm-backend {api,claude-cli}`.
+- MCP server at `src/python/bhdr/mcp/server.py`: ~17 tools, JSON-RPC over stdio. Substantially broader than what the eval agent calls today.
 
 ## Design
 
@@ -113,7 +113,7 @@ Backed by `GPA_SOURCE_ROOT` and `GPA_UPSTREAM_ROOT` env vars set per-scenario by
 Layout:
 
 ```
-src/python/gpa/eval/agents/
+src/python/bhdr/eval/agents/
   __init__.py        — re-exports + AgentResult dataclass
   base.py            — AgentBackend ABC: run(scenario, mode, tools) -> AgentResult
   api_agent.py       — current EvalAgent moved here, unchanged behaviour
@@ -191,7 +191,7 @@ CodexCliLLMClient(_CliLLMClient)
 
 ### Part 4 — Wiring backend selection through entry points
 
-- `gpa.eval.cli` (the user-facing eval CLI in `src/python/gpa/eval/cli.py`): replace the stub agent default with `factory.build_agent_fn(...)` when the user did not pass a real one. Add flags `--agent-backend {api,claude-cli,codex-cli}` (default: `api`) and `--agent-model MODEL`.
+- `gpa.eval.cli` (the user-facing eval CLI in `src/python/bhdr/eval/cli.py`): replace the stub agent default with `factory.build_agent_fn(...)` when the user did not pass a real one. Add flags `--agent-backend {api,claude-cli,codex-cli}` (default: `api`) and `--agent-model MODEL`.
 - `gpa.eval.curation.run`: the existing `--backend` flag is currently inert (passed to `RunEval` but unused). Wire it through `factory.build_agent_fn` so `--backend codex-cli` actually drives the agent. Default remains `auto` (resolves to `api` when an `ANTHROPIC_API_KEY` is present, else `claude-cli`).
 
 ### Part 5 — MCP deprecation
@@ -199,11 +199,11 @@ CodexCliLLMClient(_CliLLMClient)
 Compressed from codex's 5-phase plan since the user asked for "mark deprecated":
 
 1. **This change**:
-   - Add a deprecation header to `src/python/gpa/mcp/server.py` module docstring pointing to `gpa --help`.
-   - Add a deprecation banner to `src/python/gpa/mcp/README.md`.
+   - Add a deprecation header to `src/python/bhdr/mcp/server.py` module docstring pointing to `gpa --help`.
+   - Add a deprecation banner to `src/python/bhdr/mcp/README.md`.
    - Audit imports and remove MCP from any default code path. (Best as I can tell, it's already opt-in.)
    - Update any docs that frame MCP as the preferred agent integration to reference the CLI instead.
-2. **Follow-up (not in this PR)**: schedule a cleanup agent in 4 weeks to delete `src/python/gpa/mcp/` and its tests, after confirming no external consumer.
+2. **Follow-up (not in this PR)**: schedule a cleanup agent in 4 weeks to delete `src/python/bhdr/mcp/` and its tests, after confirming no external consumer.
 
 The MCP server is not removed in this change. Anyone who wants to keep using it can; we just stop documenting it as the recommended path.
 
@@ -229,13 +229,13 @@ Skill content (from codex's design, lightly trimmed):
 
 | Area | Files |
 |---|---|
-| CLI new commands | `src/python/gpa/cli/commands/{drawcalls,pixel,scene_get,scene_camera,scene_objects,diff_frames,passes,annotations,control,source,upstream,frames_metadata}.py` |
-| CLI rewiring | `src/python/gpa/cli/main.py` (rename existing parsers, register new ones, add deprecated aliases) |
-| CLI infra | `src/python/gpa/cli/rest_client.py` (no change expected); `src/python/gpa/cli/local_roots.py` (new — env-rooted path resolution shared by `source`/`upstream`) |
-| Eval agents | `src/python/gpa/eval/agents/{__init__,base,api_agent,cli_agent,factory}.py` (new package); `src/python/gpa/eval/llm_agent.py` becomes a re-export shim |
-| Eval entry points | `src/python/gpa/eval/cli.py` (add `--agent-backend`); `src/python/gpa/eval/curation/run.py` (wire `--backend`) |
-| Curation LLM client | `src/python/gpa/eval/curation/llm_client.py` (extract base, add codex client); `src/python/gpa/eval/curation/gen_queries.py` (add choice) |
-| MCP deprecation | `src/python/gpa/mcp/server.py` (header note); `src/python/gpa/mcp/README.md` (banner) |
+| CLI new commands | `src/python/bhdr/cli/commands/{drawcalls,pixel,scene_get,scene_camera,scene_objects,diff_frames,passes,annotations,control,source,upstream,frames_metadata}.py` |
+| CLI rewiring | `src/python/bhdr/cli/main.py` (rename existing parsers, register new ones, add deprecated aliases) |
+| CLI infra | `src/python/bhdr/cli/rest_client.py` (no change expected); `src/python/bhdr/cli/local_roots.py` (new — env-rooted path resolution shared by `source`/`upstream`) |
+| Eval agents | `src/python/bhdr/eval/agents/{__init__,base,api_agent,cli_agent,factory}.py` (new package); `src/python/bhdr/eval/llm_agent.py` becomes a re-export shim |
+| Eval entry points | `src/python/bhdr/eval/cli.py` (add `--agent-backend`); `src/python/bhdr/eval/curation/run.py` (wire `--backend`) |
+| Curation LLM client | `src/python/bhdr/eval/curation/llm_client.py` (extract base, add codex client); `src/python/bhdr/eval/curation/gen_queries.py` (add choice) |
+| MCP deprecation | `src/python/bhdr/mcp/server.py` (header note); `src/python/bhdr/mcp/README.md` (banner) |
 | Docs | `docs/cli/agent-integration.md` (new); `.codex/skills/gpa/SKILL.md`; `.claude/skills/gpa/SKILL.md` |
 | Tests | `tests/unit/python/cli/test_{drawcalls,pixel,scene,diff,passes,annotations,control,frames_metadata}.py` for new REST-backed namespaces; `tests/unit/python/cli/test_local_roots.py` for `gpa source`/`gpa upstream` (path-traversal rejection, max-bytes/max-matches caps, env-var resolution); `tests/unit/python/eval/agents/test_{factory,cli_agent}.py`; `tests/unit/python/eval/curation/test_codex_cli_client.py` |
 

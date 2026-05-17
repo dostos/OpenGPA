@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.scenario import ScenarioLoader
+from bhdr.eval.scenario import ScenarioLoader
 
 
 _BASE_MD = """\

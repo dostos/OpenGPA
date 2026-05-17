@@ -17,8 +17,8 @@ Fixture covers:
 """
 from __future__ import annotations
 import pathlib
-from gpa.eval.agents.cli_parsers import parse_codex_ndjson
-from gpa.eval.agents.cli_spec import CliRunMetrics
+from bhdr.eval.agents.cli_parsers import parse_codex_ndjson
+from bhdr.eval.agents.cli_spec import CliRunMetrics
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "codex_events.jsonl"
 

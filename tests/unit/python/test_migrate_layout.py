@@ -1,5 +1,5 @@
 import pytest
-from gpa.eval.migrate_layout import ParsedName, parse_existing_folder_name
+from bhdr.eval.migrate_layout import ParsedName, parse_existing_folder_name
 
 
 def test_parse_synthetic():
@@ -55,7 +55,7 @@ def test_parse_r9_is_early_mined_not_recent():
 
 
 def test_extract_github_issue_url(tmp_path):
-    from gpa.eval.migrate_layout import extract_source
+    from bhdr.eval.migrate_layout import extract_source
     md = tmp_path / "scenario.md"
     md.write_text("Closes https://github.com/godotengine/godot/issues/86493 yay")
     src = extract_source(md)
@@ -65,7 +65,7 @@ def test_extract_github_issue_url(tmp_path):
 
 
 def test_extract_github_pull(tmp_path):
-    from gpa.eval.migrate_layout import extract_source
+    from bhdr.eval.migrate_layout import extract_source
     md = tmp_path / "scenario.md"
     md.write_text("see https://github.com/godotengine/godot/pull/9857 fix")
     src = extract_source(md)
@@ -74,7 +74,7 @@ def test_extract_github_pull(tmp_path):
 
 
 def test_extract_stackoverflow(tmp_path):
-    from gpa.eval.migrate_layout import extract_source
+    from bhdr.eval.migrate_layout import extract_source
     md = tmp_path / "scenario.md"
     md.write_text("see https://stackoverflow.com/questions/23460040/something")
     src = extract_source(md)
@@ -83,7 +83,7 @@ def test_extract_stackoverflow(tmp_path):
 
 
 def test_extract_no_url_returns_legacy(tmp_path):
-    from gpa.eval.migrate_layout import extract_source
+    from bhdr.eval.migrate_layout import extract_source
     md = tmp_path / "scenario.md"
     md.write_text("plain text with no urls\n")
     src = extract_source(md)
@@ -91,10 +91,10 @@ def test_extract_no_url_returns_legacy(tmp_path):
 
 
 def test_resolve_taxonomy_from_parsed_hints():
-    from gpa.eval.migrate_layout import (
+    from bhdr.eval.migrate_layout import (
         ParsedName, resolve_taxonomy, ResolveContext,
     )
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r96fdc7", category_hint="native-engine",
                    framework_hint="godot", bug_class_hint="framework-maintenance",
                    suffix="x", kind="recent-mined")
@@ -107,10 +107,10 @@ def test_resolve_taxonomy_from_parsed_hints():
 
 
 def test_resolve_taxonomy_from_repo_lookup():
-    from gpa.eval.migrate_layout import (
+    from bhdr.eval.migrate_layout import (
         ParsedName, resolve_taxonomy, ResolveContext,
     )
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r14", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="bevy_child_text_invisible",
                    kind="early-mined")
@@ -126,10 +126,10 @@ def test_resolve_taxonomy_from_repo_lookup():
 
 
 def test_resolve_taxonomy_synthetic():
-    from gpa.eval.migrate_layout import (
+    from bhdr.eval.migrate_layout import (
         ParsedName, resolve_taxonomy, ResolveContext,
     )
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="e1", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="state_leak", kind="synthetic")
     src = Source(type="synthetic")
@@ -141,10 +141,10 @@ def test_resolve_taxonomy_synthetic():
 
 
 def test_resolve_taxonomy_overrides_win():
-    from gpa.eval.migrate_layout import (
+    from bhdr.eval.migrate_layout import (
         ParsedName, resolve_taxonomy, ResolveContext,
     )
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r2", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="weird_thing", kind="early-mined")
     src = Source(type="legacy")
@@ -160,10 +160,10 @@ def test_resolve_taxonomy_overrides_win():
 
 
 def test_resolve_taxonomy_unresolved():
-    from gpa.eval.migrate_layout import (
+    from bhdr.eval.migrate_layout import (
         ParsedName, resolve_taxonomy, ResolveContext,
     )
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r3", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="nothing", kind="early-mined")
     src = Source(type="legacy")
@@ -174,8 +174,8 @@ def test_resolve_taxonomy_unresolved():
 
 
 def test_build_slug_github_issue():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r96fdc7", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="world_environment_glow_eff",
                    kind="recent-mined")
@@ -184,8 +184,8 @@ def test_build_slug_github_issue():
 
 
 def test_build_slug_normalizes_repo_name():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r1", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="x", kind="early-mined")
     src = Source(type="github_issue", repo="mrdoob/three.js", issue_id=29841)
@@ -193,8 +193,8 @@ def test_build_slug_normalizes_repo_name():
 
 
 def test_build_slug_pull():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r1", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="z", kind="early-mined")
     src = Source(type="github_pull", repo="google/filament", issue_id=9857)
@@ -202,8 +202,8 @@ def test_build_slug_pull():
 
 
 def test_build_slug_stackoverflow():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r0", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="effectcomposer_resize",
                    kind="early-mined")
@@ -212,8 +212,8 @@ def test_build_slug_stackoverflow():
 
 
 def test_build_slug_synthetic():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="e1", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="state_leak", kind="synthetic")
     src = Source(type="synthetic")
@@ -221,8 +221,8 @@ def test_build_slug_synthetic():
 
 
 def test_build_slug_legacy():
-    from gpa.eval.migrate_layout import build_slug, ParsedName
-    from gpa.eval.scenario_metadata import Source
+    from bhdr.eval.migrate_layout import build_slug, ParsedName
+    from bhdr.eval.scenario_metadata import Source
     p = ParsedName(round="r3", category_hint=None, framework_hint=None,
                    bug_class_hint=None, suffix="black_screen", kind="early-mined")
     src = Source(type="legacy")
@@ -230,7 +230,7 @@ def test_build_slug_legacy():
 
 
 def test_synthetic_topic_bucket():
-    from gpa.eval.migrate_layout import synthetic_topic
+    from bhdr.eval.migrate_layout import synthetic_topic
     assert synthetic_topic("state_leak_xxx") == "state-leak"
     assert synthetic_topic("uniform_value_leaked") == "uniform"
     assert synthetic_topic("depth_test") == "depth"
@@ -244,14 +244,14 @@ def test_synthetic_topic_bucket():
 
 def test_parse_synthetic_topic_buckets_misc_safely():
     # 'depth' as a non-prefix substring shouldn't accidentally bucket as depth/.
-    from gpa.eval.migrate_layout import synthetic_topic
+    from bhdr.eval.migrate_layout import synthetic_topic
     # only true if the rule splits on '_'; misc bucket otherwise.
     assert synthetic_topic("compensating_vp") == "misc"
     assert synthetic_topic("scissor_not_reset") == "misc"
 
 
 def test_plan_one_synthetic(tmp_path):
-    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, ResolveContext
     from pathlib import Path
     (tmp_path / "e1_state_leak").mkdir()
     (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
@@ -265,7 +265,7 @@ def test_plan_one_synthetic(tmp_path):
 
 
 def test_plan_resolves_conflict_with_suffix(tmp_path):
-    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, ResolveContext
     # Two early-mined that would collide on slug
     (tmp_path / "r10_polygon_xxx").mkdir()
     (tmp_path / "r10_polygon_xxx" / "scenario.md").write_text("https://github.com/x/y/issues/1")
@@ -280,7 +280,7 @@ def test_plan_resolves_conflict_with_suffix(tmp_path):
 
 
 def test_plan_unresolved_emits_review(tmp_path):
-    from gpa.eval.migrate_layout import build_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, ResolveContext
     (tmp_path / "r99_mystery").mkdir()
     (tmp_path / "r99_mystery" / "scenario.md").write_text("no urls here")
     ctx = ResolveContext(rules={}, overrides={})
@@ -292,7 +292,7 @@ def test_plan_unresolved_emits_review(tmp_path):
 
 
 def test_apply_plan_moves_files_and_writes_yaml(tmp_path):
-    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, apply_plan, ResolveContext
     (tmp_path / "e1_state_leak").mkdir()
     (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
     (tmp_path / "e1_state_leak" / "main.c").write_text("int main(){}")
@@ -313,7 +313,7 @@ def test_apply_plan_moves_files_and_writes_yaml(tmp_path):
 
 def test_apply_plan_no_yaml_no_build_move_only(tmp_path):
     """The move-only commit per spec rollout: no yaml, no BUILD."""
-    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, apply_plan, ResolveContext
     (tmp_path / "e1_state_leak").mkdir()
     (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
     (tmp_path / "e1_state_leak" / "main.c").write_text("int main(){}")
@@ -328,7 +328,7 @@ def test_apply_plan_no_yaml_no_build_move_only(tmp_path):
 
 
 def test_apply_plan_no_build_for_md_only(tmp_path):
-    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, apply_plan, ResolveContext
     (tmp_path / "r96fdc7_framework-maintenance_native-engine_godot_x").mkdir()
     (tmp_path / "r96fdc7_framework-maintenance_native-engine_godot_x" / "scenario.md").write_text(
         "https://github.com/godotengine/godot/issues/1"
@@ -345,7 +345,7 @@ def test_apply_plan_no_build_for_md_only(tmp_path):
 
 def test_apply_plan_works_with_relative_root(tmp_path, monkeypatch):
     """Regression: apply_plan must accept relative roots without git mv breaking."""
-    from gpa.eval.migrate_layout import build_plan, apply_plan, ResolveContext
+    from bhdr.eval.migrate_layout import build_plan, apply_plan, ResolveContext
     (tmp_path / "e1_state_leak").mkdir()
     (tmp_path / "e1_state_leak" / "scenario.md").write_text("# x")
     ctx = ResolveContext(rules={}, overrides={})

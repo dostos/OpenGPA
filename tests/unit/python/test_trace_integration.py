@@ -15,8 +15,8 @@ import io
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.cli.commands import trace as trace_cmd
-from gpa.cli.rest_client import RestClient, RestError
+from bhdr.cli.commands import trace as trace_cmd
+from bhdr.cli.rest_client import RestClient, RestError
 
 from conftest import AUTH_HEADERS, AUTH_TOKEN
 
@@ -266,7 +266,7 @@ def test_trace_uniform_vector_whole_array_match(client):
     # Compute the a: hash for [1.0, 0.0, 0.0, 1.0] exactly the way the JS
     # scanner does: djb2 of JSON.stringify(...). We reuse the server's
     # helper to stay consistent.
-    from gpa.api.routes_trace import _djb2
+    from bhdr.api.routes_trace import _djb2
     import json as _json
     canonical = _json.dumps([1.0, 0.0, 0.0, 1.0])
     vhash = "a:" + _djb2(canonical)
@@ -363,7 +363,7 @@ def test_trace_uniform_unknown_name_404(client):
 
 
 def test_trace_uniform_requires_dc():
-    from gpa.cli.rest_client import RestClient
+    from bhdr.cli.rest_client import RestClient
     buf = io.StringIO()
     client = RestClient(token=AUTH_TOKEN, http_callable=lambda *a, **k: None)
     rc = trace_cmd.run_uniform(

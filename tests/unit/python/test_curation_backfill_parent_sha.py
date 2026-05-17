@@ -10,7 +10,7 @@ from __future__ import annotations
 import subprocess
 from unittest.mock import patch
 
-from gpa.eval.curation.backfill_parent_sha import (
+from bhdr.eval.curation.backfill_parent_sha import (
     backfill_one,
     _patch_yaml_body,
     _extract_field,

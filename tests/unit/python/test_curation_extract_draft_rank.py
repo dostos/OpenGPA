@@ -46,7 +46,7 @@ import pytest
     ],
 )
 def test_jasmine_specs_dropped(path):
-    from gpa.eval.curation.extract_draft import _filter_source_files
+    from bhdr.eval.curation.extract_draft import _filter_source_files
     assert _filter_source_files([path, "src/keep.js"]) == ["src/keep.js"]
 
 
@@ -60,13 +60,13 @@ def test_jasmine_specs_dropped(path):
 def test_jasmine_basename_dropped_outside_specs_dir(path):
     """Even when the Jasmine spec lives outside a Specs/ directory, the
     `*Spec.js`/`*Spec.ts` basename pattern still drops it."""
-    from gpa.eval.curation.extract_draft import _filter_source_files
+    from bhdr.eval.curation.extract_draft import _filter_source_files
     assert _filter_source_files([path, "src/keep.js"]) == ["src/keep.js"]
 
 
 def test_filter_keeps_real_source_alongside_specs():
     """Mixed input — only the spec entries dropped."""
-    from gpa.eval.curation.extract_draft import _filter_source_files
+    from bhdr.eval.curation.extract_draft import _filter_source_files
     files = [
         "packages/engine/Source/Scene/Picking.js",   # keep
         "packages/engine/Specs/Scene/PickingSpec.js",  # drop
@@ -83,7 +83,7 @@ def test_filter_keeps_real_source_alongside_specs():
 def test_existing_test_filter_still_works():
     """Regression guard: the lowercase `*.test.*` / `_test.*` /
     `test_*` patterns the filter already supported must keep working."""
-    from gpa.eval.curation.extract_draft import _filter_source_files
+    from bhdr.eval.curation.extract_draft import _filter_source_files
     out = _filter_source_files([
         "src/foo.ts",
         "src/foo.test.ts",
@@ -99,7 +99,7 @@ def test_existing_test_filter_still_works():
 
 
 def test_rank_by_diff_size_descending():
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     items = [
         {"filename": "src/small.ts",  "additions": 1,   "deletions": 0},
         {"filename": "src/big.ts",    "additions": 200, "deletions": 50},
@@ -110,7 +110,7 @@ def test_rank_by_diff_size_descending():
 
 
 def test_cap_at_top_n_when_many_files():
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     items = [
         {"filename": f"src/file{i:02d}.ts", "additions": 100 - i, "deletions": 0}
         for i in range(13)
@@ -125,7 +125,7 @@ def test_cap_at_top_n_when_many_files():
 def test_keep_all_when_pr_has_three_or_fewer_files():
     """Small PRs are unlikely to contain refactor collateral — keep
     every entry rather than imposing the top-N cap."""
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     items = [
         {"filename": "src/a.ts", "additions": 5,  "deletions": 0},
         {"filename": "src/b.ts", "additions": 50, "deletions": 5},
@@ -139,7 +139,7 @@ def test_keep_all_when_pr_has_three_or_fewer_files():
 def test_filter_drops_non_source_then_ranks():
     """Filter happens before ranking — Specs/ entries don't get top
     spots even if they have huge diffs."""
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     items = [
         {"filename": "Specs/Big.js",     "additions": 999, "deletions": 0},
         {"filename": "src/keep.ts",      "additions": 5,   "deletions": 1},
@@ -153,7 +153,7 @@ def test_filter_drops_non_source_then_ranks():
 def test_zero_diff_files_kept_at_bottom():
     """Files with zero diff (e.g. binary changes that GitHub doesn't
     expose) must still be kept — they sort last but aren't dropped."""
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     items = [
         {"filename": "src/a.ts", "additions": 10, "deletions": 0},
         {"filename": "src/b.ts"},  # no additions/deletions key
@@ -165,7 +165,7 @@ def test_zero_diff_files_kept_at_bottom():
 
 
 def test_filter_and_rank_empty_input():
-    from gpa.eval.curation.extract_draft import _filter_and_rank_source_files
+    from bhdr.eval.curation.extract_draft import _filter_and_rank_source_files
     assert _filter_and_rank_source_files([], top_n=5) == []
 
 
@@ -184,7 +184,7 @@ def _make_thread_dict():
 
 
 def test_extract_draft_prefers_files_meta(monkeypatch):
-    from gpa.eval.curation.extract_draft import extract_draft
+    from bhdr.eval.curation.extract_draft import extract_draft
     fix_pr = {
         "url": "https://github.com/o/r/pull/2",
         "commit_sha": "abc1234",
@@ -213,7 +213,7 @@ def test_extract_draft_prefers_files_meta(monkeypatch):
 def test_extract_draft_falls_back_to_files_changed():
     """Hand-built test fixtures + back-compat: when no files_meta is
     provided, extract_draft uses the legacy filename list path."""
-    from gpa.eval.curation.extract_draft import extract_draft
+    from bhdr.eval.curation.extract_draft import extract_draft
     fix_pr = {
         "url": "https://github.com/o/r/pull/2",
         "commit_sha": "abc1234",

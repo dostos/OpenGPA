@@ -1,7 +1,7 @@
 """Tests for the auto-summary writer that rolls up journey.jsonl."""
 from pathlib import Path
 
-from gpa.eval.curation.summary import write_summary
+from bhdr.eval.curation.summary import write_summary
 
 
 def test_summary_counts_by_terminal_reason(tmp_path):

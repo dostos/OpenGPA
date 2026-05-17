@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from gpa.eval.curation.scope_log import (
+from bhdr.eval.curation.scope_log import (
     aggregate_scope,
     append_scope_rows,
     queries_already_mined,

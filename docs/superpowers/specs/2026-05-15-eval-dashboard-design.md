@@ -63,7 +63,7 @@ schema that R17 deleted; faking a verdict from those would silently
 miscount history. They stay accessible via the narrative cards if a
 round log exists, but they don't appear in chart panels.
 
-`EvalResult.from_dict` (`src/python/gpa/eval/metrics.py:57`) already
+`EvalResult.from_dict` (`src/python/bhdr/eval/metrics.py:57`) already
 tolerates legacy keys; the build script uses it for safe loading but
 treats `verdict is None` as "skip this row from charts".
 
@@ -110,8 +110,8 @@ layouts. The HTML is dumb — it fetches `index.json` and renders.
 ### Files
 
 ```
-src/python/gpa/eval/dashboard/__init__.py
-src/python/gpa/eval/dashboard/build.py           # build aggregator (new)
+src/python/bhdr/eval/dashboard/__init__.py
+src/python/bhdr/eval/dashboard/build.py           # build aggregator (new)
 scripts/build-eval-dashboard.sh                  # thin PYTHONPATH+module shim
 dashboard/index.html                             # static page template (new)
 dashboard/index.json                             # build output (gitignored)
@@ -286,8 +286,8 @@ Current/newest round is expanded by default.
 
 ## Build Script
 
-**Location**: `src/python/gpa/eval/dashboard/build.py`, invoked as
-`python -m gpa.eval.dashboard.build` from the project root with
+**Location**: `src/python/bhdr/eval/dashboard/build.py`, invoked as
+`python -m bhdr.eval.dashboard.build` from the project root with
 `PYTHONPATH=src/python`. A thin shim at `scripts/build-eval-dashboard.sh`
 sets the path and calls the module. Lives inside the gpa.eval package
 so it can import `ScenarioLoader` / `EvalResult` directly without
@@ -405,4 +405,4 @@ None for v1. Follow-ups recorded in the OpenGPA strategic backlog:
 - R18 round log: `docs/eval-rounds/2026-05-14-r18.md`
 - Strategic direction: `docs/eval-next-steps.md`
 - Round-log convention: `docs/eval-rounds/README.md`
-- Scenario loader: `src/python/gpa/eval/scenario.py`
+- Scenario loader: `src/python/bhdr/eval/scenario.py`

@@ -1,6 +1,6 @@
 """Tests for CliBackendSpec and CliRunMetrics dataclasses."""
 import pytest
-from gpa.eval.agents.cli_spec import CliBackendSpec, CliRunMetrics
+from bhdr.eval.agents.cli_spec import CliBackendSpec, CliRunMetrics
 
 
 def _dummy_parser(stdout: str, stderr: str) -> CliRunMetrics:

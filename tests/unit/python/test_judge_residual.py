@@ -30,7 +30,7 @@ class _Fix:
 
 
 def test_fetch_pr_diff_summary_runs_git_commands(tmp_path, monkeypatch):
-    from gpa.eval import judge
+    from bhdr.eval import judge
 
     calls = []
 
@@ -73,7 +73,7 @@ def test_fetch_pr_diff_summary_runs_git_commands(tmp_path, monkeypatch):
 
 
 def test_fetch_pr_diff_summary_truncates(tmp_path, monkeypatch):
-    from gpa.eval import judge
+    from bhdr.eval import judge
 
     huge = "x" * 50000
 
@@ -88,7 +88,7 @@ def test_fetch_pr_diff_summary_truncates(tmp_path, monkeypatch):
 
 
 def test_fetch_pr_diff_summary_handles_missing_sha(tmp_path, monkeypatch):
-    from gpa.eval import judge
+    from bhdr.eval import judge
 
     def fake_run(argv, *, cwd, capture_output, text, timeout, check, errors=None):
         raise subprocess.CalledProcessError(128, argv, "", "fatal: bad object")
@@ -103,7 +103,7 @@ def test_fetch_pr_diff_summary_handles_missing_sha(tmp_path, monkeypatch):
 
 def test_fetch_pr_diff_summary_no_snapshot(tmp_path):
     """If snapshot_root doesn't exist or is None, return empty string."""
-    from gpa.eval import judge
+    from bhdr.eval import judge
     assert judge.fetch_pr_diff_summary(
         fix_sha="x", snapshot_root=None,
     ) == ""
@@ -129,7 +129,7 @@ class _StubClient:
 
 
 def _solved_verdict():
-    from gpa.eval.scorer import ScoreVerdict
+    from bhdr.eval.scorer import ScoreVerdict
     return ScoreVerdict(
         scorer="file_level", solved=True, confidence="high",
         file_score=1.0,
@@ -137,21 +137,21 @@ def _solved_verdict():
 
 
 def _gave_up_verdict():
-    from gpa.eval.scorer import ScoreVerdict
+    from bhdr.eval.scorer import ScoreVerdict
     return ScoreVerdict(
         scorer="gave_up", solved=False, confidence="high", gave_up=True,
     )
 
 
 def _no_signal_verdict():
-    from gpa.eval.scorer import ScoreVerdict
+    from bhdr.eval.scorer import ScoreVerdict
     return ScoreVerdict(
         scorer="no_signal", solved=False, confidence="high",
     )
 
 
 def _needs_review_verdict():
-    from gpa.eval.scorer import ScoreVerdict
+    from bhdr.eval.scorer import ScoreVerdict
     return ScoreVerdict(
         scorer="prose", solved=False, confidence="low",
         prose_recall=0.33, prose_precision=1.0, needs_review=True,
@@ -159,10 +159,10 @@ def _needs_review_verdict():
 
 
 def test_judge_skips_when_already_solved(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
 
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "diff",
     )
     client = _StubClient("full")
@@ -176,9 +176,9 @@ def test_judge_skips_when_already_solved(tmp_path, monkeypatch):
 
 
 def test_judge_skips_when_gave_up(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "diff",
     )
     client = _StubClient("full")
@@ -191,9 +191,9 @@ def test_judge_skips_when_gave_up(tmp_path, monkeypatch):
 
 
 def test_judge_skips_when_no_signal(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "diff",
     )
     client = _StubClient("full")
@@ -205,7 +205,7 @@ def test_judge_skips_when_no_signal(tmp_path, monkeypatch):
 
 
 def test_judge_skips_when_no_client(tmp_path):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     out = judge_residual(
         _needs_review_verdict(), fix=_Fix(), diagnosis_text="text",
         snapshot_root=tmp_path, llm_client=None,
@@ -217,7 +217,7 @@ def test_judge_skips_when_no_client(tmp_path):
 
 
 def test_judge_skips_when_no_snapshot(monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     client = _StubClient("full")
     out = judge_residual(
         _needs_review_verdict(), fix=_Fix(), diagnosis_text="text",
@@ -228,9 +228,9 @@ def test_judge_skips_when_no_snapshot(monkeypatch):
 
 
 def test_judge_full_upgrades_to_solved(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat output",
     )
     client = _StubClient("full")
@@ -247,9 +247,9 @@ def test_judge_full_upgrades_to_solved(tmp_path, monkeypatch):
 
 
 def test_judge_partial_keeps_needs_review(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat",
     )
     client = _StubClient("partial")
@@ -263,9 +263,9 @@ def test_judge_partial_keeps_needs_review(tmp_path, monkeypatch):
 
 
 def test_judge_none_keeps_failed(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat",
     )
     client = _StubClient("none")
@@ -283,9 +283,9 @@ def test_judge_none_keeps_failed(tmp_path, monkeypatch):
 
 
 def test_judge_cache_skips_repeat_call(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat",
     )
     client = _StubClient("full")
@@ -308,9 +308,9 @@ def test_judge_cache_skips_repeat_call(tmp_path, monkeypatch):
 
 
 def test_judge_cache_distinct_diagnoses_call_twice(tmp_path, monkeypatch):
-    from gpa.eval.scorer import judge_residual
+    from bhdr.eval.scorer import judge_residual
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat",
     )
     client = _StubClient("partial")

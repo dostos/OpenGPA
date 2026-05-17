@@ -2,7 +2,7 @@ import io
 import json
 import pytest
 from pathlib import Path
-from gpa.cli.commands import upstream as upstream_cmd
+from bhdr.cli.commands import upstream as upstream_cmd
 
 
 def _make_root(tmp_path: Path) -> Path:

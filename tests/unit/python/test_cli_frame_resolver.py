@@ -1,5 +1,5 @@
 import pytest
-from gpa.cli.frame_resolver import resolve_frame
+from bhdr.cli.frame_resolver import resolve_frame
 
 
 class _FakeClient:

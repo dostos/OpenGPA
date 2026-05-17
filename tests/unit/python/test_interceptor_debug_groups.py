@@ -10,7 +10,7 @@ the JS test runs as part of the regular ``pytest`` suite.
 The JS test verifies the WebGL interceptor's per-drawcall
 ``debug_groups`` snapshot matches the wire-format the engine consumes
 (``NormalizedDrawCall::debug_groups`` and the
-``gpa.backends.base.DrawCall.debug_groups`` field — both snake_case).
+``bhdr.backends.base.DrawCall.debug_groups`` field — both snake_case).
 """
 from __future__ import annotations
 

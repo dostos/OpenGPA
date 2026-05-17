@@ -1,6 +1,6 @@
 import pytest
 from pathlib import Path
-from gpa.eval.curation.draft import compute_scenario_dir
+from bhdr.eval.curation.draft import compute_scenario_dir
 
 
 def test_compute_scenario_dir_new_layout(tmp_path):

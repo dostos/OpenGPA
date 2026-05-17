@@ -1,8 +1,8 @@
 import re
 from unittest.mock import MagicMock
-from gpa.eval.curation.draft import Draft, DraftResult
-from gpa.eval.curation.llm_client import LLMResponse
-from gpa.eval.curation.triage import IssueThread, TriageResult
+from bhdr.eval.curation.draft import Draft, DraftResult
+from bhdr.eval.curation.llm_client import LLMResponse
+from bhdr.eval.curation.triage import IssueThread, TriageResult
 
 def _fake_response(text: str) -> LLMResponse:
     return LLMResponse(text=text, input_tokens=100, output_tokens=50,
@@ -469,7 +469,7 @@ def test_draft_parses_md_body_with_fix_section():
 def test_drafted_fix_section_loads_through_scenario_loader(tmp_path):
     """End-to-end: a DraftResult.md_body that contains `## Fix` yields a
     ScenarioMetadata.fix populated when written to disk and reloaded."""
-    from gpa.eval.scenario import ScenarioLoader
+    from bhdr.eval.scenario import ScenarioLoader
     llm = MagicMock()
     llm.complete.return_value = _fake_response(
         _wrap_draft_response(_C_CODE, _MD_BODY_WITH_FIX)

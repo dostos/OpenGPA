@@ -10,8 +10,8 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from gpa.eval.harness import EvalHarness
-from gpa.eval.scenario import FixMetadata, ScenarioMetadata
+from bhdr.eval.harness import EvalHarness
+from bhdr.eval.scenario import FixMetadata, ScenarioMetadata
 
 
 _FIX_FILES = ["src/render/draw_fill.ts", "src/render/painter.ts"]
@@ -170,7 +170,7 @@ def test_judge_tier_upgrades_needs_review_to_solved(tmp_path, monkeypatch):
     h._ensure_snapshot = MagicMock(return_value=snap)
     # Make fetch_pr_diff_summary return a non-empty payload
     monkeypatch.setattr(
-        "gpa.eval.judge.fetch_pr_diff_summary",
+        "bhdr.eval.judge.fetch_pr_diff_summary",
         lambda fix_sha, snapshot_root, **_: "stat output",
     )
 

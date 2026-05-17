@@ -120,16 +120,16 @@ expected vs actual behavior in `scenario.md`, never in the source.
 
 ```bash
 # Static checks only (default), in-place: just records verdict in scenario.yaml
-python -m gpa.eval.curation.verify tests/eval
+python -m bhdr.eval.curation.verify tests/eval
 
 # All tiers (network: gh api SHA existence; build: bazel build per scenario)
-python -m gpa.eval.curation.verify tests/eval --network --build
+python -m bhdr.eval.curation.verify tests/eval --network --build
 
 # Move failures to tests/eval-quarantine/<original-taxonomy-path>/
-python -m gpa.eval.curation.verify tests/eval --quarantine-dir tests/eval-quarantine
+python -m bhdr.eval.curation.verify tests/eval --quarantine-dir tests/eval-quarantine
 
 # Re-verify a quarantined scenario (after fixing the underlying defect)
-python -m gpa.eval.curation.verify tests/eval-quarantine
+python -m bhdr.eval.curation.verify tests/eval-quarantine
 ```
 
 The verifier is also useful as a pre-commit gate when authoring or
@@ -142,7 +142,7 @@ the parent SHA the upstream snapshot defaults to the post-fix state and
 the agent investigates already-fixed code. Backfill via:
 
 ```bash
-python -m gpa.eval.curation.backfill_parent_sha tests/eval [--dry-run]
+python -m bhdr.eval.curation.backfill_parent_sha tests/eval [--dry-run]
 ```
 
 The CLI calls `gh api repos/<o>/<r>/commits/<fix_sha>` to read

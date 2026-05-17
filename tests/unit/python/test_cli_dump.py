@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from gpa.cli.commands import dump as dump_cmd
-from gpa.cli.commands import frames as frames_cmd
-from gpa.cli.rest_client import RestClient, RestError
+from bhdr.cli.commands import dump as dump_cmd
+from bhdr.cli.commands import frames as frames_cmd
+from bhdr.cli.rest_client import RestClient, RestError
 
 
 @pytest.fixture
@@ -175,7 +175,7 @@ def test_dump_removed_subtarget_shows_redirect(
 def test_dump_removed_subtarget_via_full_cli(argv, session_dir, monkeypatch, capsys):
     """Regression guard: full CLI parser must route ``dump drawcall [0]``
     through the redirect (exit 3), not argparse's exit 2."""
-    from gpa.cli.main import main as cli_main
+    from bhdr.cli.main import main as cli_main
 
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
     rc = cli_main(argv)
@@ -198,7 +198,7 @@ def test_dump_removed_subtarget_via_full_cli(argv, session_dir, monkeypatch, cap
 def test_dump_pixel_via_full_cli_parses_xy(session_dir, monkeypatch):
     """``gpa dump pixel --x 10 --y 20 --frame 1`` must reach the handler with
     x=10, y=20, frame=1 — not all-None (which is what REMAINDER produced)."""
-    from gpa.cli import main as cli_main_mod
+    from bhdr.cli import main as cli_main_mod
 
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
     captured = {}
@@ -219,7 +219,7 @@ def test_dump_pixel_via_full_cli_parses_xy(session_dir, monkeypatch):
 
 def test_dump_frame_via_full_cli_parses_frame(session_dir, monkeypatch):
     """``gpa dump frame --frame 7`` must reach the handler with frame=7."""
-    from gpa.cli import main as cli_main_mod
+    from bhdr.cli import main as cli_main_mod
 
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
     captured = {}
@@ -238,7 +238,7 @@ def test_dump_frame_via_full_cli_parses_frame(session_dir, monkeypatch):
 def test_dump_drawcalls_via_full_cli_parses_format(session_dir, monkeypatch):
     """``gpa dump drawcalls --format json`` must reach the handler with
     fmt='json' (REMAINDER would have absorbed ``--format json``)."""
-    from gpa.cli import main as cli_main_mod
+    from bhdr.cli import main as cli_main_mod
 
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
     captured = {}
@@ -261,7 +261,7 @@ def test_dump_drawcalls_via_full_cli_parses_format(session_dir, monkeypatch):
 
 def test_dump_prints_deprecation_warning(session_dir, monkeypatch, capsys):
     """`gpa dump frame` still works but warns to stderr."""
-    from gpa.cli import main as cli_main_mod
+    from bhdr.cli import main as cli_main_mod
 
     monkeypatch.setenv("GPA_SESSION", str(session_dir))
 

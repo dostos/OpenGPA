@@ -228,9 +228,9 @@ Retrofit runs as one parallel batch: each scenario dir gets a `## Fix` section a
 ### Phase 1 — schema + drafter + validator (2 days)
 
 Files:
-- `src/python/gpa/eval/scenario.py` — extend parser to read `## Fix` YAML
-- `src/python/gpa/eval/curation/prompts/draft_core_system.md` — add `## Fix` to output template; update drafter to emit it
-- `src/python/gpa/eval/curation/validate.py` — extend `check_contamination` to require `## Fix` section with non-empty `files`
+- `src/python/bhdr/eval/scenario.py` — extend parser to read `## Fix` YAML
+- `src/python/bhdr/eval/curation/prompts/draft_core_system.md` — add `## Fix` to output template; update drafter to emit it
+- `src/python/bhdr/eval/curation/validate.py` — extend `check_contamination` to require `## Fix` section with non-empty `files`
 - Tests: `test_scenario_fix_section_parse`, `test_drafter_emits_fix_section`, `test_validator_requires_fix_section`
 
 Deliverable: new scenarios drafted from here on carry `## Fix`; existing ones still parse but are flagged `legacy_scorer`.
@@ -248,9 +248,9 @@ Deliverable: retrofit report + updated scenarios.
 ### Phase 3 — scorer (2 days)
 
 Files:
-- `src/python/gpa/eval/scorer.py` (NEW) — replaces keyword scorer for `## Fix`-carrying scenarios
-- `src/python/gpa/eval/judge.py` (NEW) — LLM-judge for semantic-match stage
-- `src/python/gpa/eval/telemetry.py` — extend `classify_verdict` to use new scorer output
+- `src/python/bhdr/eval/scorer.py` (NEW) — replaces keyword scorer for `## Fix`-carrying scenarios
+- `src/python/bhdr/eval/judge.py` (NEW) — LLM-judge for semantic-match stage
+- `src/python/bhdr/eval/telemetry.py` — extend `classify_verdict` to use new scorer output
 - Tests: `test_scorer_file_overlap`, `test_judge_semantic_match`, `test_classify_verdict_with_fix_scoring`
 
 Deliverable: scorer produces file-overlap + semantic-match + verdict; round runners switch to it.
@@ -259,7 +259,7 @@ Deliverable: scorer produces file-overlap + semantic-match + verdict; round runn
 
 Files:
 - `docs/superpowers/eval/round10/run_subagent.sh` (new template) — agent-role prompt change
-- `src/python/gpa/eval/harness.py` — full-repo tool surface (not just relevant_files)
+- `src/python/bhdr/eval/harness.py` — full-repo tool surface (not just relevant_files)
 - `scripts/round_runner_template.sh` — updated for new scoring output
 
 Deliverable: R10 runner ready.

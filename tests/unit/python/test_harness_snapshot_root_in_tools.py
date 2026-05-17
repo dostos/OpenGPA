@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.eval.harness import EvalHarness
-from gpa.eval.scenario import ScenarioMetadata
+from bhdr.eval.harness import EvalHarness
+from bhdr.eval.scenario import ScenarioMetadata
 
 
 def _make_scenario(**overrides) -> ScenarioMetadata:

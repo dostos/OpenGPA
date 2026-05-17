@@ -6,15 +6,15 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.eval.curation.draft import (
+from bhdr.eval.curation.draft import (
     Draft,
     DraftRejectedByModel,
     DraftResult,
     _is_maintainer_framing,
 )
-from gpa.eval.curation.llm_client import LLMResponse
-from gpa.eval.curation.triage import IssueThread, TriageResult
-from gpa.eval.curation.validate import (
+from bhdr.eval.curation.llm_client import LLMResponse
+from bhdr.eval.curation.triage import IssueThread, TriageResult
+from bhdr.eval.curation.validate import (
     Validator,
     _is_maintainer_framing_draft,
 )
@@ -558,7 +558,7 @@ def test_triage_bug_class_field_back_compat():
 
 def test_triage_normalize_unknown_bug_class_falls_back_to_none():
     """Triage._normalize must defensively reject unknown bug_class strings."""
-    from gpa.eval.curation.triage import Triage
+    from bhdr.eval.curation.triage import Triage
     llm = MagicMock()
     triager = Triage(llm_client=llm)
     out = triager._normalize({
@@ -573,7 +573,7 @@ def test_triage_normalize_unknown_bug_class_falls_back_to_none():
 
 def test_triage_normalize_accepts_each_valid_bug_class():
     """All four valid bug_class strings must round-trip through _normalize."""
-    from gpa.eval.curation.triage import Triage
+    from bhdr.eval.curation.triage import Triage
     llm = MagicMock()
     triager = Triage(llm_client=llm)
     for bc in (

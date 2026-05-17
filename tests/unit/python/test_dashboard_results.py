@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.dashboard._results import (
+from bhdr.eval.dashboard._results import (
     load_and_merge_results, load_or_seed_tier_meta, derive_scenario_type,
     derive_inferred_api, derive_depth_bucket, derive_fix_scope_bucket,
     enrich_results,
 )
-from gpa.eval.metrics import EvalResult
+from bhdr.eval.metrics import EvalResult
 
 
 def _make_result_dict(sid="scen_a", mode="code_only", solved=True, **kw):

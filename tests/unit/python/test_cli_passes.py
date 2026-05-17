@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from gpa.cli.commands import passes as passes_mod
+from bhdr.cli.commands import passes as passes_mod
 
 
 # --------------------------------------------------------------------------- #

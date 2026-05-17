@@ -1,11 +1,11 @@
-"""Tests for gpa.eval.index_cli."""
+"""Tests for bhdr.eval.index_cli."""
 import pytest
 from pathlib import Path
 
 
 def test_index_by_taxonomy_renders_counts(tmp_path):
-    from gpa.eval.index_cli import build_taxonomy_table
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.index_cli import build_taxonomy_table
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend, dump_scenario_yaml, iter_scenarios,
     )
     for cat, fw, slug in [
@@ -28,8 +28,8 @@ def test_index_by_taxonomy_renders_counts(tmp_path):
 
 
 def test_index_by_backend_renders_counts(tmp_path):
-    from gpa.eval.index_cli import build_backend_table
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.index_cli import build_backend_table
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend, dump_scenario_yaml, iter_scenarios,
     )
     for api, st, slug in [
@@ -52,8 +52,8 @@ def test_index_by_backend_renders_counts(tmp_path):
 
 
 def test_main_returns_zero(tmp_path):
-    from gpa.eval.index_cli import main
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.index_cli import main
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend, dump_scenario_yaml,
     )
     d = tmp_path / "synthetic" / "synthetic" / "z1"
@@ -69,7 +69,7 @@ def test_main_returns_zero(tmp_path):
 
 def _make_scenario(tmp_path, cat, fw, slug, round_="r1"):
     """Helper to create a scenario.yaml at tmp_path/<cat>/<fw>/<slug>/."""
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend, dump_scenario_yaml,
     )
     d = tmp_path / cat / fw / slug
@@ -84,8 +84,8 @@ def _make_scenario(tmp_path, cat, fw, slug, round_="r1"):
 
 
 def test_index_by_round_renders_counts(tmp_path):
-    from gpa.eval.index_cli import build_round_table
-    from gpa.eval.scenario_metadata import iter_scenarios
+    from bhdr.eval.index_cli import build_round_table
+    from bhdr.eval.scenario_metadata import iter_scenarios
     _make_scenario(tmp_path, "native-engine", "godot", "g1", round_="r1")
     _make_scenario(tmp_path, "native-engine", "godot", "g2", round_="r96fdc7")
     _make_scenario(tmp_path, "web-3d", "synthetic", "w1", round_="r96fdc7")
@@ -96,8 +96,8 @@ def test_index_by_round_renders_counts(tmp_path):
 
 
 def test_filter_narrows_scenarios(tmp_path):
-    from gpa.eval.index_cli import build_taxonomy_table, apply_filter
-    from gpa.eval.scenario_metadata import iter_scenarios
+    from bhdr.eval.index_cli import build_taxonomy_table, apply_filter
+    from bhdr.eval.scenario_metadata import iter_scenarios
     _make_scenario(tmp_path, "native-engine", "godot", "g1")
     _make_scenario(tmp_path, "native-engine", "godot", "g2")
     _make_scenario(tmp_path, "web-3d", "threejs", "t1")
@@ -109,8 +109,8 @@ def test_filter_narrows_scenarios(tmp_path):
 
 
 def test_filter_unknown_field_raises(tmp_path):
-    from gpa.eval.index_cli import apply_filter
-    from gpa.eval.scenario_metadata import iter_scenarios
+    from bhdr.eval.index_cli import apply_filter
+    from bhdr.eval.scenario_metadata import iter_scenarios
     _make_scenario(tmp_path, "native-engine", "godot", "g1")
     scenarios = list(iter_scenarios(tmp_path))
     with pytest.raises(ValueError, match="unknown filter field"):
@@ -118,8 +118,8 @@ def test_filter_unknown_field_raises(tmp_path):
 
 
 def test_filter_two_clauses_anded(tmp_path):
-    from gpa.eval.index_cli import apply_filter
-    from gpa.eval.scenario_metadata import iter_scenarios, Backend, dump_scenario_yaml, Scenario, Source, Taxonomy
+    from bhdr.eval.index_cli import apply_filter
+    from bhdr.eval.scenario_metadata import iter_scenarios, Backend, dump_scenario_yaml, Scenario, Source, Taxonomy
     # godot+vulkan, godot+opengl, threejs+vulkan
     for fw, api, slug in [("godot", "vulkan", "g_vk"), ("godot", "opengl", "g_gl"), ("threejs", "vulkan", "t_vk")]:
         d = tmp_path / "native-engine" / fw / slug

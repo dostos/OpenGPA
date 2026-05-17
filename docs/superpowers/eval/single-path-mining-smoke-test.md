@@ -69,17 +69,17 @@ triage-tuning is its own future iteration.
 
 ```bash
 # Generalization corpus (the one that yielded the 3/3 measurement):
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/generalization_queries.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/generalization_queries.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir /tmp/smoke-eval-pipeline-gen \
   --batch-quota 40 \
   --max-phase produce
 
 # Framework-app-dev hard-cases (the one with sparser yield by design):
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir /tmp/smoke-eval-pipeline \
   --max-phase select
 ```

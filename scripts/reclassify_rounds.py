@@ -26,7 +26,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_REPO_ROOT / "src" / "python"))
 
-from gpa.eval.telemetry import classify_verdict  # noqa: E402
+from bhdr.eval.telemetry import classify_verdict  # noqa: E402
 
 
 _ROUNDS = (5, 6, 7, 8)

@@ -1,4 +1,4 @@
-"""Tests for :func:`gpa.eval.telemetry.classify_verdict`.
+"""Tests for :func:`bhdr.eval.telemetry.classify_verdict`.
 
 The verdict classifier separates the three failure modes our rounds had
 previously lumped together as "incorrect":
@@ -14,7 +14,7 @@ R5-R8 all used ``--max-turns 40``, so the default budget is 40 and the
 
 from __future__ import annotations
 
-from gpa.eval.telemetry import classify_verdict
+from bhdr.eval.telemetry import classify_verdict
 
 
 def test_solved_when_correct():

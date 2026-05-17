@@ -1,4 +1,4 @@
-"""Unit tests for ``gpa.browser.runner`` (Phase 1 MVP).
+"""Unit tests for ``bhdr.browser.runner`` (Phase 1 MVP).
 
 Chromium is not installed on the dev machine, so every test here mocks
 the launcher. The goal is to exercise the orchestration — argv
@@ -17,14 +17,14 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gpa.browser.runner import (
+from bhdr.browser.runner import (
     BrowserRunOptions,
     BrowserRunner,
     ChromiumNotFoundError,
     autodetect_chromium,
     spawn_chromium,
 )
-from gpa.cli.session import Session
+from bhdr.cli.session import Session
 
 
 # --------------------------------------------------------------------------- #
@@ -295,7 +295,7 @@ def test_spawn_chromium_uses_subprocess_popen(tmp_path):
             captured["argv"] = argv
             captured["kwargs"] = kwargs
 
-    with patch("gpa.browser.runner.subprocess.Popen", FakePopen):
+    with patch("bhdr.browser.runner.subprocess.Popen", FakePopen):
         spawn_chromium(["/bin/true", "--foo"])
 
     assert captured["argv"] == ["/bin/true", "--foo"]
@@ -312,11 +312,11 @@ def test_static_server_serves_plugin_alias(tmp_path):
     """`_start_static_server(extra_files=…)` exposes off-tree files at fixed URLs.
 
     Used by ``BrowserRunner`` to ship the three.js link plugin (which lives
-    in ``src/python/gpa/framework/`` rather than under any scenario dir).
+    in ``src/python/bhdr/framework/`` rather than under any scenario dir).
     """
     import urllib.request
 
-    from gpa.browser.runner import _start_static_server
+    from bhdr.browser.runner import _start_static_server
 
     # Prepare a serve_root that does NOT contain the plugin file.
     serve_root = tmp_path / "serve"

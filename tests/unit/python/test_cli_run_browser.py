@@ -8,9 +8,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gpa.browser import BrowserRunResult, ChromiumNotFoundError
-from gpa.cli.commands import run_browser as run_browser_cmd
-from gpa.cli.session import Session
+from bhdr.browser import BrowserRunResult, ChromiumNotFoundError
+from bhdr.cli.commands import run_browser as run_browser_cmd
+from bhdr.cli.session import Session
 
 
 def _make_scenario(tmp_path: Path, name: str = "r21_stub",
@@ -184,7 +184,7 @@ def test_run_browser_no_session_exits_2(env_fixtures, tmp_path):
 
 
 def test_run_browser_registered_in_main_parser():
-    from gpa.cli.main import build_parser
+    from bhdr.cli.main import build_parser
     parser = build_parser()
     # argparse raises SystemExit on unknown subcommand; parsing should work.
     args = parser.parse_args(["run-browser", "--scenario", "foo"])

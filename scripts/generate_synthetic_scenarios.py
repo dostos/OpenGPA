@@ -28,8 +28,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "src" / "python"))
 
-from gpa.eval.curation.llm_client import ClaudeCodeLLMClient  # noqa: E402
-from gpa.eval.curation.synth_generator import (                  # noqa: E402
+from bhdr.eval.curation.llm_client import ClaudeCodeLLMClient  # noqa: E402
+from bhdr.eval.curation.synth_generator import (                  # noqa: E402
     SyntheticGenerator,
     SynthRequest,
 )

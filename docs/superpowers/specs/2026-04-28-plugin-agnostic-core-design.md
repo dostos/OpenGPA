@@ -25,10 +25,10 @@ those boundaries:
 
 | # | Site | Coupling |
 |---|------|----------|
-| 1 | `src/python/gpa/api/trace_ranking.py:35-47` | `FRAMEWORK_HINT_PATTERNS` regex allowlist (`THREE.uniforms.*`, `map._transform.*`, `app.stage.*`) bumps confidence tier on framework-shaped paths |
-| 2 | `src/python/gpa/cli/main.py:283-284` | `gpa trace value` help text: *"Requires the WebGL shim (gpa-trace.js)"* — implies WebGL-only when native DWARF backend also feeds the same endpoint |
-| 3 | `src/python/gpa/mcp/server.py:189, 237` | MCP `gpa_trace_value` description mirrors the WebGL-only claim and gives JS-specific examples (mapbox tile cache) |
-| 4 | `src/python/gpa/cli/commands/scene_find.py:83, 183` | CLI Examples block + error hint cite `src/python/gpa/framework/threejs_link_plugin.js` by name |
+| 1 | `src/python/bhdr/api/trace_ranking.py:35-47` | `FRAMEWORK_HINT_PATTERNS` regex allowlist (`THREE.uniforms.*`, `map._transform.*`, `app.stage.*`) bumps confidence tier on framework-shaped paths |
+| 2 | `src/python/bhdr/cli/main.py:283-284` | `gpa trace value` help text: *"Requires the WebGL shim (gpa-trace.js)"* — implies WebGL-only when native DWARF backend also feeds the same endpoint |
+| 3 | `src/python/bhdr/mcp/server.py:189, 237` | MCP `gpa_trace_value` description mirrors the WebGL-only claim and gives JS-specific examples (mapbox tile cache) |
+| 4 | `src/python/bhdr/cli/commands/scene_find.py:83, 183` | CLI Examples block + error hint cite `src/python/bhdr/framework/threejs_link_plugin.js` by name |
 
 Phase 1 (this spec) removes the four couplings. Phase 2 (deferred) will
 design a formal plugin manifest contract — but only after ≥ 2 plugin
@@ -69,7 +69,7 @@ Today `rank_candidates()` applies three signals in order:
 After Phase 1, signal #3 is removed. The ranker uses signals 1 + 2 only
 — purely structural, framework-agnostic.
 
-**Code changes** in `src/python/gpa/api/trace_ranking.py`:
+**Code changes** in `src/python/bhdr/api/trace_ranking.py`:
 
 - Delete constant `FRAMEWORK_HINT_PATTERNS` (lines 35-47).
 - Delete helper `_framework_bump(path)` (lines 70-75).
@@ -99,7 +99,7 @@ not via a `THREE.` regex match. Real-world cost ≈ 0.
 ### 3. Scene-find — drop plugin-name cite
 
 Both `cli/commands/scene_find.py:83` (Examples block) and `:183` (error
-hint) currently cite `src/python/gpa/framework/threejs_link_plugin.js`
+hint) currently cite `src/python/bhdr/framework/threejs_link_plugin.js`
 by name. After Phase 1, both point at the spec doc instead:
 
 > See `docs/superpowers/specs/2026-04-18-framework-integration-design.md`
@@ -146,7 +146,7 @@ longer receive the +1 bump); paths that didn't match are unchanged.
 - `tests/unit/python/test_trace_ranking.py` passes with the new test
   set.
 - Full Python unit test suite (`pytest tests/unit/python/`) is green.
-- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b|\bIn three\.js,|\bThree\.js bug class\b" -- 'src/python/gpa/cli/' 'src/python/gpa/mcp/' 'src/python/gpa/api/' 'src/python/gpa/checks/' ':(exclude)src/python/gpa/api/routes_trace.py'`
+- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b|\bIn three\.js,|\bThree\.js bug class\b" -- 'src/python/bhdr/cli/' 'src/python/bhdr/mcp/' 'src/python/bhdr/api/' 'src/python/bhdr/checks/' ':(exclude)src/python/bhdr/api/routes_trace.py'`
   returns zero hits. (The grep is intentionally precise so legitimate
   occurrences of "WebGL Tier-3 SDK" — the new neutral phrasing — don't
   self-trip, and so legitimate parenthetical examples like `(e.g.
@@ -170,7 +170,7 @@ longer receive the +1 bump); paths that didn't match are unchanged.
 ## References
 
 - Audit findings: conversation context, this round.
-- `src/python/gpa/api/trace_ranking.py` — current ranker logic.
+- `src/python/bhdr/api/trace_ranking.py` — current ranker logic.
 - `tests/unit/python/test_trace_ranking.py` — existing test coverage.
 - `docs/superpowers/specs/2026-04-18-framework-integration-design.md` —
   Tier-3 plugin contract (current).

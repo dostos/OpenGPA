@@ -69,15 +69,15 @@ deck.gl), Stack Overflow, engine bug trackers.
 
 ```bash
 # 1. Generate new queries (LLM, deduped against scope-log)
-PYTHONPATH=src/python python3 -m gpa.eval.curation.gen_queries \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.gen_queries \
   --instruction "WebGPU compute shader artifacts" \
   --scope-log .eval-pipeline/scope-log.jsonl \
   --out /tmp/new_queries.yaml --max-queries 10 --llm-backend claude-cli
 
 # 2. Mine those queries
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
   --queries /tmp/new_queries.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir .eval-pipeline --batch-quota 30
 ```
 
@@ -103,14 +103,14 @@ artifactual numbers.** Always run before evaluating.
 # Static checks (default): fix-block schema, anchor section, no
 # source contamination, status field. In-place — records verdict in
 # scenario.yaml.
-python -m gpa.eval.curation.verify tests/eval
+python -m bhdr.eval.curation.verify tests/eval
 
 # All tiers (network: gh api SHA existence; build: bazel build per
 # scenario)
-python -m gpa.eval.curation.verify tests/eval --network --build
+python -m bhdr.eval.curation.verify tests/eval --network --build
 
 # Move failures aside so the harness can't pick them up
-python -m gpa.eval.curation.verify tests/eval \
+python -m bhdr.eval.curation.verify tests/eval \
     --quarantine-dir tests/eval-quarantine
 ```
 
@@ -118,7 +118,7 @@ python -m gpa.eval.curation.verify tests/eval \
 Backfill missing parent SHAs before running:
 
 ```bash
-python -m gpa.eval.curation.backfill_parent_sha tests/eval [--dry-run]
+python -m bhdr.eval.curation.backfill_parent_sha tests/eval [--dry-run]
 ```
 
 **Failure threshold:** if more than ~5% of the cohort quarantines,
@@ -142,7 +142,7 @@ For native scenarios:
 
 ```bash
 # Start engine
-python -m gpa.launcher --socket /tmp/gpa.sock --shm /gpa --port 18080 \
+python -m bhdr.launcher --socket /tmp/gpa.sock --shm /gpa --port 18080 \
     --token TOKEN
 
 # Capture scenario
@@ -181,7 +181,7 @@ Dispatch eval agents with non-directive prompts:
 - Track tool_sequence to see what strategy the agent chooses
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.cli run \
+PYTHONPATH=src/python python3 -m bhdr.eval.cli run \
     --all --modes with_gla,code_only \
     --scenarios "$ID_LIST" \
     --gpa-url http://127.0.0.1:18080 \
@@ -233,7 +233,7 @@ order. Skipping or reordering skips the highest-leverage wins. Most
 engineers (and most prior rounds) jump to step 3; that's the trap.
 
 Each round must produce **at least one system change** —
-shipped under `src/{shims,core,bindings}/` or `src/python/gpa/{api,backends,mcp,framework,cli}/`.
+shipped under `src/{shims,core,bindings}/` or `src/python/bhdr/{api,backends,mcp,framework,cli}/`.
 If three consecutive rounds ship zero system changes, the eval
 pipeline has saturated its own lift potential and the flywheel is
 spinning without making the product better.
@@ -390,7 +390,7 @@ next gating fix.
 - Eval results: `docs/eval-results.md`
 - Next-steps backlog: `docs/eval-next-steps.md`
 - Scenario schema: `docs/eval-scenario-format.md`
-- Curation pipeline: `src/python/gpa/eval/curation/`
-- Verifier CLI: `python -m gpa.eval.curation.verify`
-- Backfill CLI: `python -m gpa.eval.curation.backfill_parent_sha`
-- Eval CLI: `python -m gpa.eval.cli run`
+- Curation pipeline: `src/python/bhdr/eval/curation/`
+- Verifier CLI: `python -m bhdr.eval.curation.verify`
+- Backfill CLI: `python -m bhdr.eval.curation.backfill_parent_sha`
+- Eval CLI: `python -m bhdr.eval.cli run`

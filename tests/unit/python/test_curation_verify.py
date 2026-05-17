@@ -13,14 +13,14 @@ from unittest.mock import patch
 
 import yaml
 
-from gpa.eval.curation.verify import (
+from bhdr.eval.curation.verify import (
     verify_scenario,
     _check_static,
     _check_mining_quality,
     _quarantine,
     _write_verdict,
 )
-from gpa.eval.scenario import ScenarioLoader
+from bhdr.eval.scenario import ScenarioLoader
 
 
 def _seed_scenario(root: Path, *,
@@ -255,7 +255,7 @@ def test_static_detects_contamination_in_glsl_too(tmp_path):
 
 def test_write_verdict_marks_status_verified(tmp_path):
     sd = _seed_scenario(tmp_path)
-    from gpa.eval.curation.verify import VerificationResult
+    from bhdr.eval.curation.verify import VerificationResult
     result = VerificationResult(
         scenario_id="scn", scenario_dir=sd,
         failures=[], checks_run=["static"],
@@ -269,7 +269,7 @@ def test_write_verdict_marks_status_verified(tmp_path):
 
 def test_write_verdict_marks_status_quarantined_with_failures(tmp_path):
     sd = _seed_scenario(tmp_path)
-    from gpa.eval.curation.verify import VerificationResult
+    from bhdr.eval.curation.verify import VerificationResult
     result = VerificationResult(
         scenario_id="scn", scenario_dir=sd,
         failures=["fix_sha not found on github"],
@@ -321,7 +321,7 @@ def test_verify_scenario_skips_network_when_static_failed(tmp_path):
     sd = _seed_scenario(eval_root, slug="bad", pkg="x/y/bad",
                         fix_block="fix_pr_url: https://github.com/o/r/pull/1\n"
                                   "files: []\n")
-    with patch("gpa.eval.curation.verify._gh_commit_exists") as mock_gh:
+    with patch("bhdr.eval.curation.verify._gh_commit_exists") as mock_gh:
         result = verify_scenario(
             sd, eval_root=eval_root, repo_root=tmp_path,
             network=True, build=True,

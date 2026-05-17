@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gpa.eval.harness import EvalHarness
-from gpa.eval.scenario import FixMetadata, ScenarioMetadata
+from bhdr.eval.harness import EvalHarness
+from bhdr.eval.scenario import FixMetadata, ScenarioMetadata
 
 
 _FIX_FILES = ["src/render/draw_fill.ts"]

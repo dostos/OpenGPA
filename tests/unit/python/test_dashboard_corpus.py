@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.dashboard._corpus import compute_corpus_stats
+from bhdr.eval.dashboard._corpus import compute_corpus_stats
 
 
 _BASE_MD = """\

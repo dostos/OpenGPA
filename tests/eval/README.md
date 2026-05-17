@@ -28,7 +28,7 @@ for the full design.
 | File | Required | Description |
 |------|----------|-------------|
 | `scenario.md` | yes | Prose: user report, expected vs actual, ground truth, difficulty rating. No hint comments. |
-| `scenario.yaml` | yes | Machine-readable metadata (round, source URL, taxonomy, backend, status). Schema in `src/python/gpa/eval/scenario_metadata.py`. |
+| `scenario.yaml` | yes | Machine-readable metadata (round, source URL, taxonomy, backend, status). Schema in `src/python/bhdr/eval/scenario_metadata.py`. |
 | `*.c` / `main.c` | no | Buggy GL/Vulkan C app, when a runnable repro has been built. |
 | `BUILD.bazel` | only when `*.c` | Single `cc_binary(name=<leaf-slug>, ...)`. |
 
@@ -65,7 +65,7 @@ For synthetic scenarios:
 
 ## See Also
 
-- `src/python/gpa/eval/scenario_metadata.py` — schema + validator
-- `src/python/gpa/eval/migrate_layout.py` — migration tool
+- `src/python/bhdr/eval/scenario_metadata.py` — schema + validator
+- `src/python/bhdr/eval/migrate_layout.py` — migration tool
 - `docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md` — design
 - `docs/superpowers/plans/2026-05-02-eval-scenario-taxonomy-layout.md` — implementation plan

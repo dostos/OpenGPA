@@ -15,10 +15,10 @@
 ## File Structure
 
 ### New files
-- `src/python/gpa/eval/scenario_metadata.py` — `Scenario` dataclass, schema constants, `load_scenario`, `iter_scenarios`, `validate_all`. Pure data layer; no I/O beyond reading.
-- `src/python/gpa/eval/migrate_layout.py` — migration CLI; orchestrates folder walk, taxonomy inference, slug build, conflict resolution, codegen, `git mv`.
-- `src/python/gpa/eval/migration_overrides.yaml` — committed; small hand-edited mapping for scenarios where automatic taxonomy inference fails.
-- `src/python/gpa/eval/index_cli.py` — read-only reporter (`gpa-eval index --by taxonomy`).
+- `src/python/bhdr/eval/scenario_metadata.py` — `Scenario` dataclass, schema constants, `load_scenario`, `iter_scenarios`, `validate_all`. Pure data layer; no I/O beyond reading.
+- `src/python/bhdr/eval/migrate_layout.py` — migration CLI; orchestrates folder walk, taxonomy inference, slug build, conflict resolution, codegen, `git mv`.
+- `src/python/bhdr/eval/migration_overrides.yaml` — committed; small hand-edited mapping for scenarios where automatic taxonomy inference fails.
+- `src/python/bhdr/eval/index_cli.py` — read-only reporter (`gpa-eval index --by taxonomy`).
 - `tests/unit/python/test_scenario_metadata.py` — schema/loader/validator tests.
 - `tests/unit/python/test_migrate_layout.py` — migration tool tests using a synthetic mini-tree fixture.
 - `tests/unit/python/test_index_cli.py` — index report tests.
@@ -27,9 +27,9 @@
 - `tests/eval/BUILD.bazel` — replaced; new top-level glob `**/scenario.md` becomes purely informational (per-leaf `BUILD.bazel` files own the targets).
 - `tests/eval/README.md` — rewritten to describe the new layout.
 - `tests/eval/<every-scenario>/` — moved to new path; new `scenario.yaml` and per-leaf `BUILD.bazel` (where a `*.c` file exists).
-- `src/python/gpa/eval/curation/draft.py` — emit new mined scenarios into `<category>/<framework>/<slug>/` with `scenario.yaml`.
-- `src/python/gpa/eval/curation/run.py` — pass new path to draft; no other change.
-- `src/python/gpa/eval/curation/journey.py` — wherever `tests/eval/<slug>/` is constructed, switch to taxonomy-aware path.
+- `src/python/bhdr/eval/curation/draft.py` — emit new mined scenarios into `<category>/<framework>/<slug>/` with `scenario.yaml`.
+- `src/python/bhdr/eval/curation/run.py` — pass new path to draft; no other change.
+- `src/python/bhdr/eval/curation/journey.py` — wherever `tests/eval/<slug>/` is constructed, switch to taxonomy-aware path.
 - `pyproject.toml` — add `gpa-eval = "gpa.eval.index_cli:main"` script entry.
 - `scripts/run-eval-claude-code.sh` — update example path.
 - `docs/gpa-trace-native-usage.md` — update binary path examples.
@@ -39,7 +39,7 @@
 - `CLAUDE.md` — update eval examples.
 
 ### Untouched
-- `src/python/gpa/eval/scenario.py` — already exists; parses `scenario.md` frontmatter (the `## Fix` block). New `scenario_metadata.py` is a separate concern (sidecar yaml, not markdown frontmatter). Both modules coexist.
+- `src/python/bhdr/eval/scenario.py` — already exists; parses `scenario.md` frontmatter (the `## Fix` block). New `scenario_metadata.py` is a separate concern (sidecar yaml, not markdown frontmatter). Both modules coexist.
 
 ---
 
@@ -72,7 +72,7 @@ Expected: `198` (or whatever the current count is). Save this number; the migrat
 ## Task 1: Scenario metadata schema + dataclass
 
 **Files:**
-- Create: `src/python/gpa/eval/scenario_metadata.py`
+- Create: `src/python/bhdr/eval/scenario_metadata.py`
 - Test: `tests/unit/python/test_scenario_metadata.py`
 
 The schema lives in code (not a separate JSON file) — tiny enough to embed, and avoids I/O on every load.
@@ -114,7 +114,7 @@ Expected: `ModuleNotFoundError: No module named 'gpa.eval.scenario_metadata'`.
 - [ ] **Step 1.3: Implement the dataclasses + closed-list constants**
 
 ```python
-# src/python/gpa/eval/scenario_metadata.py
+# src/python/bhdr/eval/scenario_metadata.py
 """Per-scenario metadata sidecar (scenario.yaml).
 
 Schema is documented in docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md.
@@ -200,7 +200,7 @@ Expected: PASS.
 - [ ] **Step 1.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
+git add src/python/bhdr/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
 git commit -m "feat(eval): add Scenario metadata dataclasses"
 ```
 
@@ -209,7 +209,7 @@ git commit -m "feat(eval): add Scenario metadata dataclasses"
 ## Task 2: Schema validation + closed-list lookup
 
 **Files:**
-- Modify: `src/python/gpa/eval/scenario_metadata.py`
+- Modify: `src/python/bhdr/eval/scenario_metadata.py`
 - Modify: `tests/unit/python/test_scenario_metadata.py`
 
 The validator surfaces drift between `scenario.yaml` and `mining_rules.yaml` (e.g., a scenario claims `framework: nope` that isn't in the canon).
@@ -269,7 +269,7 @@ Expected: 3 FAILS with `validate_scenario` not found.
 - [ ] **Step 2.3: Implement `validate_scenario` and `_load_taxonomy_lists`**
 
 ```python
-# Append to src/python/gpa/eval/scenario_metadata.py
+# Append to src/python/bhdr/eval/scenario_metadata.py
 
 _MINING_RULES_PATH = Path(__file__).parent / "curation" / "mining_rules.yaml"
 
@@ -328,7 +328,7 @@ Expected: all 3 PASS.
 - [ ] **Step 2.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
+git add src/python/bhdr/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
 git commit -m "feat(eval): add scenario.yaml validator with closed-list checks"
 ```
 
@@ -337,7 +337,7 @@ git commit -m "feat(eval): add scenario.yaml validator with closed-list checks"
 ## Task 3: scenario.yaml load/dump round-trip
 
 **Files:**
-- Modify: `src/python/gpa/eval/scenario_metadata.py`
+- Modify: `src/python/bhdr/eval/scenario_metadata.py`
 - Modify: `tests/unit/python/test_scenario_metadata.py`
 
 - [ ] **Step 3.1: Write failing test for round-trip**
@@ -385,7 +385,7 @@ Expected: 2 FAILS.
 - [ ] **Step 3.3: Implement `dump_scenario_yaml` and `load_scenario_yaml`**
 
 ```python
-# Append to src/python/gpa/eval/scenario_metadata.py
+# Append to src/python/bhdr/eval/scenario_metadata.py
 
 def dump_scenario_yaml(s: Scenario, path: Path) -> None:
     """Write scenario as YAML to the given path."""
@@ -435,7 +435,7 @@ Expected: all PASS.
 - [ ] **Step 3.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
+git add src/python/bhdr/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
 git commit -m "feat(eval): add scenario.yaml load/dump"
 ```
 
@@ -444,7 +444,7 @@ git commit -m "feat(eval): add scenario.yaml load/dump"
 ## Task 4: Tree walker — `iter_scenarios` and `validate_all`
 
 **Files:**
-- Modify: `src/python/gpa/eval/scenario_metadata.py`
+- Modify: `src/python/bhdr/eval/scenario_metadata.py`
 - Modify: `tests/unit/python/test_scenario_metadata.py`
 
 - [ ] **Step 4.1: Write failing tests**
@@ -494,7 +494,7 @@ Expected: 2 FAILS.
 - [ ] **Step 4.3: Implement `iter_scenarios` and `validate_all`**
 
 ```python
-# Append to src/python/gpa/eval/scenario_metadata.py
+# Append to src/python/bhdr/eval/scenario_metadata.py
 
 def iter_scenarios(root: Path) -> Iterator[Scenario]:
     """Yield Scenario for every leaf containing scenario.yaml under root."""
@@ -531,7 +531,7 @@ Expected: all PASS.
 - [ ] **Step 4.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
+git add src/python/bhdr/eval/scenario_metadata.py tests/unit/python/test_scenario_metadata.py
 git commit -m "feat(eval): add iter_scenarios and validate_all walkers"
 ```
 
@@ -540,7 +540,7 @@ git commit -m "feat(eval): add iter_scenarios and validate_all walkers"
 ## Task 5: Migration tool — name parser
 
 **Files:**
-- Create: `src/python/gpa/eval/migrate_layout.py`
+- Create: `src/python/bhdr/eval/migrate_layout.py`
 - Create: `tests/unit/python/test_migrate_layout.py`
 
 The hardest inference is "given a current folder name, recover (round, category-hint, framework-hint, descriptive-suffix)". Three known formats:
@@ -627,7 +627,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 5.3: Implement parser**
 
 ```python
-# src/python/gpa/eval/migrate_layout.py
+# src/python/bhdr/eval/migrate_layout.py
 """Migrate tests/eval/ from flat layout to taxonomy tree.
 
 See docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md.
@@ -704,7 +704,7 @@ Expected: 6 PASS.
 - [ ] **Step 5.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: parser for existing folder names"
 ```
 
@@ -713,7 +713,7 @@ git commit -m "feat(eval): migrate_layout: parser for existing folder names"
 ## Task 6: Migration tool — source URL extractor
 
 **Files:**
-- Modify: `src/python/gpa/eval/migrate_layout.py`
+- Modify: `src/python/bhdr/eval/migrate_layout.py`
 - Modify: `tests/unit/python/test_migrate_layout.py`
 
 - [ ] **Step 6.1: Write failing test**
@@ -764,7 +764,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 6.3: Implement `extract_source`**
 
 ```python
-# Append to src/python/gpa/eval/migrate_layout.py
+# Append to src/python/bhdr/eval/migrate_layout.py
 from gpa.eval.scenario_metadata import Source
 
 _RE_GH = re.compile(r"github\.com/([^/]+)/([^/]+)/(issues|pull)/(\d+)")
@@ -802,7 +802,7 @@ Expected: 4 PASS.
 - [ ] **Step 6.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: source URL extraction"
 ```
 
@@ -811,7 +811,7 @@ git commit -m "feat(eval): migrate_layout: source URL extraction"
 ## Task 7: Migration tool — taxonomy resolver
 
 **Files:**
-- Modify: `src/python/gpa/eval/migrate_layout.py`
+- Modify: `src/python/bhdr/eval/migrate_layout.py`
 - Modify: `tests/unit/python/test_migrate_layout.py`
 
 Resolves `(category, framework)` from (parsed name, source). Order of precedence: overrides > parsed-name hints > repo lookup in `mining_rules.yaml` > unresolved.
@@ -911,7 +911,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 7.3: Implement `resolve_taxonomy` and `ResolveContext`**
 
 ```python
-# Append to src/python/gpa/eval/migrate_layout.py
+# Append to src/python/bhdr/eval/migrate_layout.py
 
 @dataclass
 class ResolveContext:
@@ -984,7 +984,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 7.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: taxonomy resolver"
 ```
 
@@ -993,7 +993,7 @@ git commit -m "feat(eval): migrate_layout: taxonomy resolver"
 ## Task 8: Migration tool — slug builder + topic bucketer
 
 **Files:**
-- Modify: `src/python/gpa/eval/migrate_layout.py`
+- Modify: `src/python/bhdr/eval/migrate_layout.py`
 - Modify: `tests/unit/python/test_migrate_layout.py`
 
 - [ ] **Step 8.1: Write failing tests**
@@ -1077,7 +1077,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 8.3: Implement `build_slug` and `synthetic_topic`**
 
 ```python
-# Append to src/python/gpa/eval/migrate_layout.py
+# Append to src/python/bhdr/eval/migrate_layout.py
 
 _REPO_NORMALIZE_RE = re.compile(r"[^a-z0-9]+")
 
@@ -1132,7 +1132,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 8.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: slug builder and synthetic topic bucketer"
 ```
 
@@ -1141,7 +1141,7 @@ git commit -m "feat(eval): migrate_layout: slug builder and synthetic topic buck
 ## Task 9: Migration tool — plan builder + conflict resolution
 
 **Files:**
-- Modify: `src/python/gpa/eval/migrate_layout.py`
+- Modify: `src/python/bhdr/eval/migrate_layout.py`
 - Modify: `tests/unit/python/test_migrate_layout.py`
 
 The "plan" is a pure-data list of (old_path, new_path, scenario_yaml_data) — no I/O.
@@ -1198,7 +1198,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 9.3: Implement `build_plan` + `MigrationPlan`**
 
 ```python
-# Append to src/python/gpa/eval/migrate_layout.py
+# Append to src/python/bhdr/eval/migrate_layout.py
 from datetime import date
 from gpa.eval.scenario_metadata import (
     Scenario, Source, Taxonomy, Backend,
@@ -1293,7 +1293,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 9.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: plan builder with conflict resolution"
 ```
 
@@ -1302,8 +1302,8 @@ git commit -m "feat(eval): migrate_layout: plan builder with conflict resolution
 ## Task 10: Migration tool — apply (git mv + codegen) + CLI
 
 **Files:**
-- Modify: `src/python/gpa/eval/migrate_layout.py`
-- Create: `src/python/gpa/eval/migration_overrides.yaml` (initially empty: `{}`)
+- Modify: `src/python/bhdr/eval/migrate_layout.py`
+- Create: `src/python/bhdr/eval/migration_overrides.yaml` (initially empty: `{}`)
 - Modify: `tests/unit/python/test_migrate_layout.py`
 
 - [ ] **Step 10.1: Write failing test for `apply_plan` (no git, just file moves)**
@@ -1370,7 +1370,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 10.3: Implement `apply_plan` + CLI entry point**
 
 ```python
-# Append to src/python/gpa/eval/migrate_layout.py
+# Append to src/python/bhdr/eval/migrate_layout.py
 import shutil
 import subprocess
 import argparse
@@ -1444,9 +1444,9 @@ def main(argv: Optional[list[str]] = None) -> int:
     p.add_argument("--root", type=Path, required=True,
                    help="Path to tests/eval/")
     p.add_argument("--rules", type=Path,
-                   default=Path("src/python/gpa/eval/curation/mining_rules.yaml"))
+                   default=Path("src/python/bhdr/eval/curation/mining_rules.yaml"))
     p.add_argument("--overrides", type=Path,
-                   default=Path("src/python/gpa/eval/migration_overrides.yaml"))
+                   default=Path("src/python/bhdr/eval/migration_overrides.yaml"))
     p.add_argument("--review-csv", type=Path, default=Path("/tmp/migration_review.csv"))
     p.add_argument("--apply", action="store_true",
                    help="Actually move files. Default is dry-run.")
@@ -1485,7 +1485,7 @@ if __name__ == "__main__":
 
 - [ ] **Step 10.4: Create empty overrides yaml**
 
-Create `src/python/gpa/eval/migration_overrides.yaml` containing a
+Create `src/python/bhdr/eval/migration_overrides.yaml` containing a
 single line: `{}` (empty mapping). Use the Write tool, not `echo >`,
 per project guidelines.
 
@@ -1498,7 +1498,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_migrate_layout.py
 - [ ] **Step 10.6: Commit**
 
 ```bash
-git add src/python/gpa/eval/migrate_layout.py src/python/gpa/eval/migration_overrides.yaml tests/unit/python/test_migrate_layout.py
+git add src/python/bhdr/eval/migrate_layout.py src/python/bhdr/eval/migration_overrides.yaml tests/unit/python/test_migrate_layout.py
 git commit -m "feat(eval): migrate_layout: apply step + CLI"
 ```
 
@@ -1507,7 +1507,7 @@ git commit -m "feat(eval): migrate_layout: apply step + CLI"
 ## Task 11: Dry-run on real `tests/eval/` and author overrides
 
 **Files:**
-- Modify: `src/python/gpa/eval/migration_overrides.yaml`
+- Modify: `src/python/bhdr/eval/migration_overrides.yaml`
 
 This is the operator step. No code change beyond the overrides file.
 
@@ -1525,7 +1525,7 @@ otherwise.
 - [ ] **Step 11.1: Run dry-run, capture output**
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.migrate_layout \
+PYTHONPATH=src/python python3 -m bhdr.eval.migrate_layout \
     --root tests/eval \
     --review-csv /tmp/migration_review.csv \
     > /tmp/dryrun.txt 2>&1
@@ -1536,7 +1536,7 @@ cat /tmp/migration_review.csv | head -30
 
 - [ ] **Step 11.2: Review unresolved scenarios**
 
-For each row in `migration_review.csv`, look at the original folder's `scenario.md` content and decide the right `(category, framework, bug_class)`. Edit `src/python/gpa/eval/migration_overrides.yaml`:
+For each row in `migration_review.csv`, look at the original folder's `scenario.md` content and decide the right `(category, framework, bug_class)`. Edit `src/python/bhdr/eval/migration_overrides.yaml`:
 
 ```yaml
 # Format: original_folder_name -> {category, framework, bug_class}
@@ -1550,14 +1550,14 @@ r4_3d_map_black_screen:
 - [ ] **Step 11.3: Re-run dry-run, confirm review_rows shrinks**
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.migrate_layout --root tests/eval | head -5
+PYTHONPATH=src/python python3 -m bhdr.eval.migrate_layout --root tests/eval | head -5
 ```
 Expected: "Review rows: 0" (or operator-acceptable small number for true `_legacy/` cases).
 
 - [ ] **Step 11.4: Verify counts**
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.migrate_layout --root tests/eval 2>&1 | grep "Planned moves"
+PYTHONPATH=src/python python3 -m bhdr.eval.migrate_layout --root tests/eval 2>&1 | grep "Planned moves"
 cat /tmp/pre_migration_count.txt
 ```
 Expected: "Planned moves" matches the pre-migration count (e.g., 198).
@@ -1565,7 +1565,7 @@ Expected: "Planned moves" matches the pre-migration count (e.g., 198).
 - [ ] **Step 11.5: Commit overrides**
 
 ```bash
-git add src/python/gpa/eval/migration_overrides.yaml
+git add src/python/bhdr/eval/migration_overrides.yaml
 git commit -m "chore(eval): author migration_overrides for unresolved legacy scenarios"
 ```
 
@@ -1590,7 +1590,7 @@ Expected: only the spec/plan/overrides/migration_layout.py changes from earlier 
 - [ ] **Step 12.2: Apply moves only (no yaml, no BUILD.bazel)**
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.migrate_layout \
+PYTHONPATH=src/python python3 -m bhdr.eval.migrate_layout \
     --root tests/eval --apply --no-yaml --no-build-files
 ```
 
@@ -1659,8 +1659,8 @@ from datetime import date
 
 root = Path("tests/eval")
 ctx = load_resolve_context(
-    Path("src/python/gpa/eval/curation/mining_rules.yaml"),
-    Path("src/python/gpa/eval/migration_overrides.yaml"),
+    Path("src/python/bhdr/eval/curation/mining_rules.yaml"),
+    Path("src/python/bhdr/eval/migration_overrides.yaml"),
 )
 TEMPLATE = '''load("@rules_cc//cc:defs.bzl", "cc_binary")
 
@@ -1810,8 +1810,8 @@ For synthetic scenarios:
 
 ## See Also
 
-- `src/python/gpa/eval/scenario_metadata.py` — schema + validator
-- `src/python/gpa/eval/migrate_layout.py` — migration tool
+- `src/python/bhdr/eval/scenario_metadata.py` — schema + validator
+- `src/python/bhdr/eval/migrate_layout.py` — migration tool
 - `docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md` — design
 ```
 
@@ -1897,7 +1897,7 @@ In CLAUDE.md, find the "Running the Eval" code block and update:
 - [ ] **Step 14.5: Verify nothing references old paths**
 
 ```bash
-grep -rE "tests/eval/[re][0-9]" docs/ scripts/ CLAUDE.md src/python/gpa/eval/ 2>/dev/null
+grep -rE "tests/eval/[re][0-9]" docs/ scripts/ CLAUDE.md src/python/bhdr/eval/ 2>/dev/null
 ```
 Expected: no output (or only false positives in unmoved files like the spec itself).
 
@@ -1913,10 +1913,10 @@ git commit -m "docs(eval): rewrite scenario path references for new taxonomy lay
 ## Task 15: Update mining pipeline to emit new layout
 
 **Files:**
-- Modify: `src/python/gpa/eval/curation/commit.py` (the actual write site — line 48 builds `scenario_dir = eval_dir / scenario_id`)
-- Modify: `src/python/gpa/eval/curation/draft.py`
-- Modify: `src/python/gpa/eval/curation/run.py`
-- Modify: `src/python/gpa/eval/curation/journey.py`
+- Modify: `src/python/bhdr/eval/curation/commit.py` (the actual write site — line 48 builds `scenario_dir = eval_dir / scenario_id`)
+- Modify: `src/python/bhdr/eval/curation/draft.py`
+- Modify: `src/python/bhdr/eval/curation/run.py`
+- Modify: `src/python/bhdr/eval/curation/journey.py`
 - Test: `tests/unit/python/test_curation_draft_layout.py`
 
 The actual on-disk write happens in `commit.py:commit_scenario`
@@ -1931,9 +1931,9 @@ and uses `compute_scenario_dir`.
 
 ```bash
 grep -n "scenario_id\|scenario_dir\|write\|files\[" \
-    src/python/gpa/eval/curation/commit.py \
-    src/python/gpa/eval/curation/draft.py \
-    src/python/gpa/eval/curation/run.py | head -30
+    src/python/bhdr/eval/curation/commit.py \
+    src/python/bhdr/eval/curation/draft.py \
+    src/python/bhdr/eval/curation/run.py | head -30
 ```
 
 - [ ] **Step 15.2: Write failing test for the new path computation**
@@ -1975,7 +1975,7 @@ Expected: `compute_scenario_dir` not found.
 - [ ] **Step 15.4: Add `compute_scenario_dir` to draft.py**
 
 ```python
-# Add to src/python/gpa/eval/curation/draft.py
+# Add to src/python/bhdr/eval/curation/draft.py
 def compute_scenario_dir(
     eval_root: Path,
     category: str,
@@ -2010,7 +2010,7 @@ with per-leaf `BUILD.bazel` write when `*.c` files were committed.
 - [ ] **Step 15.6: Update `run.py` callers of `commit_scenario`**
 
 The existing call site in `run.py` (around the `commit_scenario(...)`
-invocation — find via `grep -n commit_scenario src/python/gpa/eval/curation/run.py`)
+invocation — find via `grep -n commit_scenario src/python/bhdr/eval/curation/run.py`)
 already has triage output that includes `(category, framework)`. Thread
 those through. If a triage path produces `category=None` or
 `framework=None`, raise an explicit `ValueError` rather than routing
@@ -2022,7 +2022,7 @@ upstream, not something to paper over here.
 - [ ] **Step 15.7: Update `journey.py`**
 
 ```bash
-grep -n "tests/eval\|scenario_dir\|eval_dir" src/python/gpa/eval/curation/journey.py
+grep -n "tests/eval\|scenario_dir\|eval_dir" src/python/bhdr/eval/curation/journey.py
 ```
 Wherever a path is constructed, route through `compute_scenario_dir`.
 
@@ -2036,10 +2036,10 @@ Expected: all PASS.
 - [ ] **Step 15.9: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/commit.py \
-        src/python/gpa/eval/curation/draft.py \
-        src/python/gpa/eval/curation/run.py \
-        src/python/gpa/eval/curation/journey.py \
+git add src/python/bhdr/eval/curation/commit.py \
+        src/python/bhdr/eval/curation/draft.py \
+        src/python/bhdr/eval/curation/run.py \
+        src/python/bhdr/eval/curation/journey.py \
         tests/unit/python/test_curation_draft_layout.py
 git commit -m "feat(curation): emit new mined scenarios into taxonomy tree"
 ```
@@ -2049,7 +2049,7 @@ git commit -m "feat(curation): emit new mined scenarios into taxonomy tree"
 ## Task 16: Index CLI
 
 **Files:**
-- Create: `src/python/gpa/eval/index_cli.py`
+- Create: `src/python/bhdr/eval/index_cli.py`
 - Create: `tests/unit/python/test_index_cli.py`
 - Modify: `pyproject.toml`
 
@@ -2089,7 +2089,7 @@ PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_index_cli.py -v
 - [ ] **Step 16.3: Implement `index_cli.py`**
 
 ```python
-# src/python/gpa/eval/index_cli.py
+# src/python/bhdr/eval/index_cli.py
 """Read-only reporter for the eval scenario index."""
 from __future__ import annotations
 
@@ -2154,13 +2154,13 @@ gpa-eval = "gpa.eval.index_cli:main"
 
 ```bash
 PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_index_cli.py -v
-PYTHONPATH=src/python python3 -m gpa.eval.index_cli index --by taxonomy --root tests/eval | head -10
+PYTHONPATH=src/python python3 -m bhdr.eval.index_cli index --by taxonomy --root tests/eval | head -10
 ```
 
 - [ ] **Step 16.6: Commit**
 
 ```bash
-git add src/python/gpa/eval/index_cli.py tests/unit/python/test_index_cli.py pyproject.toml
+git add src/python/bhdr/eval/index_cli.py tests/unit/python/test_index_cli.py pyproject.toml
 git commit -m "feat(eval): index CLI for taxonomy/backend reports"
 ```
 
@@ -2211,7 +2211,7 @@ Expected: `errors: 0`.
 - [ ] **Step 17.5: Index renders**
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.index_cli index --by taxonomy --root tests/eval
+PYTHONPATH=src/python python3 -m bhdr.eval.index_cli index --by taxonomy --root tests/eval
 ```
 Expected: a markdown table summarizing the 198 scenarios across categories.
 

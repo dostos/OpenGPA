@@ -3,7 +3,7 @@
 #
 # Reference template for per-round OpenGPA eval dispatchers (Round 9+).
 # Validates the requested (scenarios x tiers x modes) matrix against a
-# USD budget via `python -m gpa.eval.plan`, then dispatches one
+# USD budget via `python -m bhdr.eval.plan`, then dispatches one
 # `claude -p --output-format stream-json --max-turns 40` per cell in
 # parallel, capturing each transcript to
 # /tmp/eval_round${ROUND_NUMBER}/<scenario>_<mode>_<tier>.jsonl.
@@ -11,7 +11,7 @@
 # Per-round customization (prompt templates, scenario selection, extra
 # env vars for the agent, post-processing) should happen in a thin
 # wrapper that sources/copies this file. The model catalog lives in
-# src/python/gpa/eval/models.py — do NOT hardcode model IDs here.
+# src/python/bhdr/eval/models.py — do NOT hardcode model IDs here.
 #
 # Env inputs:
 #   ROUND_NUMBER      required, integer identifier for this round
@@ -60,7 +60,7 @@ mkdir -p "$OUT_DIR"
 
 # --- Budget check --------------------------------------------------------
 PLAN_JSON=$(
-    PYTHONPATH="$REPO_ROOT/src/python" python -m gpa.eval.plan \
+    PYTHONPATH="$REPO_ROOT/src/python" python -m bhdr.eval.plan \
         --scenarios "${SCENARIOS[@]}" \
         --tiers $TIERS \
         --modes $MODES \
@@ -93,7 +93,7 @@ fi
 claude_id_for() {
     local tier="$1"
     PYTHONPATH="$REPO_ROOT/src/python" python -c \
-        "from gpa.eval.models import claude_id; print(claude_id('$tier'))"
+        "from bhdr.eval.models import claude_id; print(claude_id('$tier'))"
 }
 
 dispatch_one() {

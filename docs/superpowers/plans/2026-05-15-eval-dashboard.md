@@ -4,7 +4,7 @@
 
 **Goal:** Local-only static HTML dashboard that visualizes per-round OpenGPA eval results, with `code_only` vs `with_gla` as the primary comparison axis per scenario type, across model tiers, across rounds.
 
-**Architecture:** A Python build script (`src/python/gpa/eval/dashboard/build.py`) walks `/data3/gla-eval-results/*` and `docs/eval-rounds/*.md`, folds rerun/resume directories, and emits a single `dashboard/index.json`. A static `dashboard/index.html` (with vendored `app.js` + `index.css`) loads `index.json` and renders three sections: per-scenario-type Plotly chart panels, a scenario × round timeline grid, and expandable round-log narrative cards. Markdown rendering via marked.js. Plotly via CDN.
+**Architecture:** A Python build script (`src/python/bhdr/eval/dashboard/build.py`) walks `/data3/gla-eval-results/*` and `docs/eval-rounds/*.md`, folds rerun/resume directories, and emits a single `dashboard/index.json`. A static `dashboard/index.html` (with vendored `app.js` + `index.css`) loads `index.json` and renders three sections: per-scenario-type Plotly chart panels, a scenario × round timeline grid, and expandable round-log narrative cards. Markdown rendering via marked.js. Plotly via CDN.
 
 **Tech Stack:** Python 3.10+ (build script, uses existing `EvalResult` / `ScenarioLoader`). Plotly.js 2.x via CDN. marked.js via CDN. Plain vanilla JS for grid + cards. No build pipeline for the HTML side.
 
@@ -15,11 +15,11 @@
 ## File Structure
 
 ```
-src/python/gpa/eval/dashboard/__init__.py        # package marker
-src/python/gpa/eval/dashboard/build.py           # build aggregator entry point
-src/python/gpa/eval/dashboard/_layout.py         # round-dir parsing, rerun folding, file picking
-src/python/gpa/eval/dashboard/_results.py        # result loading, merging, enrichment, meta.json
-src/python/gpa/eval/dashboard/_narrative.py      # markdown discovery + headline extraction
+src/python/bhdr/eval/dashboard/__init__.py        # package marker
+src/python/bhdr/eval/dashboard/build.py           # build aggregator entry point
+src/python/bhdr/eval/dashboard/_layout.py         # round-dir parsing, rerun folding, file picking
+src/python/bhdr/eval/dashboard/_results.py        # result loading, merging, enrichment, meta.json
+src/python/bhdr/eval/dashboard/_narrative.py      # markdown discovery + headline extraction
 scripts/build-eval-dashboard.sh                  # PYTHONPATH + module shim
 
 dashboard/index.html                             # static page template
@@ -43,17 +43,17 @@ Files split by responsibility so each module stays under ~150 lines and tests st
 ## Task 1: Package skeleton + scripts shim
 
 **Files:**
-- Create: `src/python/gpa/eval/dashboard/__init__.py`
+- Create: `src/python/bhdr/eval/dashboard/__init__.py`
 - Create: `scripts/build-eval-dashboard.sh`
 - Modify: `.gitignore`
 
 - [ ] **Step 1: Create package marker**
 
 ```python
-# src/python/gpa/eval/dashboard/__init__.py
+# src/python/bhdr/eval/dashboard/__init__.py
 """Eval dashboard: aggregate per-round results into dashboard/index.json.
 
-Entry point: ``python -m gpa.eval.dashboard.build``. See
+Entry point: ``python -m bhdr.eval.dashboard.build``. See
 ``docs/superpowers/specs/2026-05-15-eval-dashboard-design.md``.
 """
 ```
@@ -65,7 +65,7 @@ Entry point: ``python -m gpa.eval.dashboard.build``. See
 # scripts/build-eval-dashboard.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-PYTHONPATH=src/python exec python3 -m gpa.eval.dashboard.build "$@"
+PYTHONPATH=src/python exec python3 -m bhdr.eval.dashboard.build "$@"
 ```
 
 Then `chmod +x scripts/build-eval-dashboard.sh`.
@@ -80,7 +80,7 @@ dashboard/index.json
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/python/gpa/eval/dashboard/__init__.py scripts/build-eval-dashboard.sh .gitignore
+git add src/python/bhdr/eval/dashboard/__init__.py scripts/build-eval-dashboard.sh .gitignore
 git commit -m "feat(dashboard): package skeleton + build shim"
 ```
 
@@ -89,7 +89,7 @@ git commit -m "feat(dashboard): package skeleton + build shim"
 ## Task 2: Round-dir layout parsing (`_layout.py`)
 
 **Files:**
-- Create: `src/python/gpa/eval/dashboard/_layout.py`
+- Create: `src/python/bhdr/eval/dashboard/_layout.py`
 - Create: `tests/unit/python/test_dashboard_layout.py`
 
 Pure functions: round-id extraction, rerun/resume folding, result-file priority. No I/O beyond `pathlib.Path` introspection so tests don't need fixtures.
@@ -128,7 +128,7 @@ Expected: ModuleNotFoundError / collection error.
 - [ ] **Step 3: Implement `extract_round_id`**
 
 ```python
-# src/python/gpa/eval/dashboard/_layout.py
+# src/python/bhdr/eval/dashboard/_layout.py
 """Round directory layout: id parsing, rerun folding, result-file picking."""
 from __future__ import annotations
 
@@ -319,7 +319,7 @@ Run: `PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_dashboard_l
 Expected: all green.
 
 ```bash
-git add src/python/gpa/eval/dashboard/_layout.py tests/unit/python/test_dashboard_layout.py
+git add src/python/bhdr/eval/dashboard/_layout.py tests/unit/python/test_dashboard_layout.py
 git commit -m "feat(dashboard): round-dir layout parsing (id, fold, pick)"
 ```
 
@@ -328,7 +328,7 @@ git commit -m "feat(dashboard): round-dir layout parsing (id, fold, pick)"
 ## Task 3: Result loading, merging, enrichment (`_results.py`)
 
 **Files:**
-- Create: `src/python/gpa/eval/dashboard/_results.py`
+- Create: `src/python/bhdr/eval/dashboard/_results.py`
 - Create: `tests/unit/python/test_dashboard_results.py`
 
 Loads `EvalResult` rows from one or more JSON files for the same round, merges by `(scenario_id, mode)`, enriches with `scenario_type` + `expected_failure` from `ScenarioLoader`, applies a tier from `meta.json`. Drops pre-verdict rows.
@@ -406,7 +406,7 @@ Expected: ImportError.
 - [ ] **Step 3: Implement `load_and_merge_results`**
 
 ```python
-# src/python/gpa/eval/dashboard/_results.py
+# src/python/bhdr/eval/dashboard/_results.py
 """Result loading, merging, enrichment for the dashboard build."""
 from __future__ import annotations
 
@@ -666,7 +666,7 @@ Run: `PYTHONPATH=src/python python3 -m pytest tests/unit/python/test_dashboard_r
 Expected: all green (10 tests).
 
 ```bash
-git add src/python/gpa/eval/dashboard/_results.py tests/unit/python/test_dashboard_results.py
+git add src/python/bhdr/eval/dashboard/_results.py tests/unit/python/test_dashboard_results.py
 git commit -m "feat(dashboard): result loading, merging, enrichment"
 ```
 
@@ -675,7 +675,7 @@ git commit -m "feat(dashboard): result loading, merging, enrichment"
 ## Task 4: Narrative discovery (`_narrative.py`)
 
 **Files:**
-- Create: `src/python/gpa/eval/dashboard/_narrative.py`
+- Create: `src/python/bhdr/eval/dashboard/_narrative.py`
 - Create: `tests/unit/python/test_dashboard_narrative.py`
 
 - [ ] **Step 1: Failing tests**
@@ -731,7 +731,7 @@ def test_extract_headline_none_when_no_paragraph():
 - [ ] **Step 3: Implement**
 
 ```python
-# src/python/gpa/eval/dashboard/_narrative.py
+# src/python/bhdr/eval/dashboard/_narrative.py
 """Round-log narrative discovery + headline extraction."""
 from __future__ import annotations
 
@@ -794,7 +794,7 @@ def extract_headline(markdown_text: str) -> Optional[str]:
 - [ ] **Step 4: Run, verify pass, commit**
 
 ```bash
-git add src/python/gpa/eval/dashboard/_narrative.py tests/unit/python/test_dashboard_narrative.py
+git add src/python/bhdr/eval/dashboard/_narrative.py tests/unit/python/test_dashboard_narrative.py
 git commit -m "feat(dashboard): narrative discovery + headline extraction"
 ```
 
@@ -803,7 +803,7 @@ git commit -m "feat(dashboard): narrative discovery + headline extraction"
 ## Task 5: End-to-end build script (`build.py`)
 
 **Files:**
-- Create: `src/python/gpa/eval/dashboard/build.py`
+- Create: `src/python/bhdr/eval/dashboard/build.py`
 - Create: `tests/unit/python/test_dashboard_build.py`
 
 - [ ] **Step 1: Failing end-to-end test**
@@ -932,10 +932,10 @@ def test_build_index_missing_data3_raises(tmp_path):
 - [ ] **Step 3: Implement `build.py`**
 
 ```python
-# src/python/gpa/eval/dashboard/build.py
+# src/python/bhdr/eval/dashboard/build.py
 """Aggregate per-round eval results into dashboard/index.json.
 
-Entry point: ``python -m gpa.eval.dashboard.build``.
+Entry point: ``python -m bhdr.eval.dashboard.build``.
 """
 from __future__ import annotations
 
@@ -1070,7 +1070,7 @@ python3 -c "import json; d=json.load(open('dashboard/index.json')); print(len(d[
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/python/gpa/eval/dashboard/build.py tests/unit/python/test_dashboard_build.py
+git add src/python/bhdr/eval/dashboard/build.py tests/unit/python/test_dashboard_build.py
 git commit -m "feat(dashboard): end-to-end build script (build_index)"
 ```
 

@@ -9,11 +9,11 @@ from unittest.mock import MagicMock
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
-from gpa.cli.commands import scene_explain as se_cmd
-from gpa.cli.commands import scene_find as sf_cmd
-from gpa.cli.rest_client import RestClient, RestError
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
+from bhdr.cli.commands import scene_explain as se_cmd
+from bhdr.cli.commands import scene_find as sf_cmd
+from bhdr.cli.rest_client import RestClient, RestError
 
 from conftest import AUTH_TOKEN, _make_drawcall
 

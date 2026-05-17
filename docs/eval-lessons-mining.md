@@ -4,7 +4,7 @@
 
 ## Mis-classification root cause
 
-Decision lives in `src/python/gpa/eval/curation/rules.py:313–343` (`infer_bug_class`):
+Decision lives in `src/python/bhdr/eval/curation/rules.py:313–343` (`infer_bug_class`):
 
 ```python
 if source_type == "stackoverflow" or app_side:
@@ -128,4 +128,4 @@ Belt-and-suspenders against any remaining triager mistakes; ground truth from th
 
 ---
 
-**Files referenced.** `src/python/gpa/eval/curation/rules.py:313` (infer_bug_class), `src/python/gpa/eval/curation/run.py:277,340,416,624` (fetch + bug_class wiring), `src/python/gpa/eval/curation/extract_draft.py:107–165` (file filter), `src/python/gpa/eval/curation/mining_rules.yaml:89-91` (regex patterns), `src/python/gpa/eval/curation/triage.py:164–211` (LLM Triage class, currently uncalled by run.py), `src/python/gpa/eval/curation/prompts/triage_system.md:19–26` (bug_class rubric).
+**Files referenced.** `src/python/bhdr/eval/curation/rules.py:313` (infer_bug_class), `src/python/bhdr/eval/curation/run.py:277,340,416,624` (fetch + bug_class wiring), `src/python/bhdr/eval/curation/extract_draft.py:107–165` (file filter), `src/python/bhdr/eval/curation/mining_rules.yaml:89-91` (regex patterns), `src/python/bhdr/eval/curation/triage.py:164–211` (LLM Triage class, currently uncalled by run.py), `src/python/bhdr/eval/curation/prompts/triage_system.md:19–26` (bug_class rubric).

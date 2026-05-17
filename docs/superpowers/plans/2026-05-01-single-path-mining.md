@@ -18,11 +18,11 @@
 
 | File | Responsibility |
 |---|---|
-| `src/python/gpa/eval/curation/journey.py` | `JourneyRow` dataclass, per-run JSONL writer, terminal-reason vocabulary |
-| `src/python/gpa/eval/curation/run_dir.py` | Per-run directory layout (`.eval-pipeline/runs/<id>/…`), config-freezing, run-id generation |
-| `src/python/gpa/eval/curation/extract_draft.py` | Deterministic field extraction from issue body + fix-PR (replaces LLM `draft`) |
-| `src/python/gpa/eval/curation/summary.py` | Auto-rollup of `journey.jsonl` into `summary.md` |
-| `src/python/gpa/eval/curation/run.py` | The single CLI entry point; orchestrates SELECT → PRODUCE → JUDGE |
+| `src/python/bhdr/eval/curation/journey.py` | `JourneyRow` dataclass, per-run JSONL writer, terminal-reason vocabulary |
+| `src/python/bhdr/eval/curation/run_dir.py` | Per-run directory layout (`.eval-pipeline/runs/<id>/…`), config-freezing, run-id generation |
+| `src/python/bhdr/eval/curation/extract_draft.py` | Deterministic field extraction from issue body + fix-PR (replaces LLM `draft`) |
+| `src/python/bhdr/eval/curation/summary.py` | Auto-rollup of `journey.jsonl` into `summary.md` |
+| `src/python/bhdr/eval/curation/run.py` | The single CLI entry point; orchestrates SELECT → PRODUCE → JUDGE |
 | `tests/unit/python/test_curation_journey.py` | Journey row + writer tests |
 | `tests/unit/python/test_curation_run_dir.py` | Dir layout + run-id tests |
 | `tests/unit/python/test_curation_extract_draft.py` | Extractor tests against real issue-body fixtures |
@@ -34,19 +34,19 @@
 
 | File | Change |
 |---|---|
-| `src/python/gpa/eval/curation/mining_rules.yaml` | Add `triage_required` and `triage_reject` keyword rule sections (subsumes today's LLM triage) |
-| `src/python/gpa/eval/curation/classify.py` | Confirm rule-only (already is per its docstring); add `classify_helps` re-export if missing |
-| `src/python/gpa/eval/curation/coverage_log.py` | No code change; tests verify shape unchanged |
+| `src/python/bhdr/eval/curation/mining_rules.yaml` | Add `triage_required` and `triage_reject` keyword rule sections (subsumes today's LLM triage) |
+| `src/python/bhdr/eval/curation/classify.py` | Confirm rule-only (already is per its docstring); add `classify_helps` re-export if missing |
+| `src/python/bhdr/eval/curation/coverage_log.py` | No code change; tests verify shape unchanged |
 | `docs/superpowers/eval/framework-app-dev-hard-cases.md` | Replace `mine_taxonomy` invocation with `run` invocation |
 
 **Delete:**
 
 | File | Reason |
 |---|---|
-| `src/python/gpa/eval/curation/mine_hard_cases.py` | Folded into `run.py` SELECT phase + new `extract_draft.py` |
-| `src/python/gpa/eval/curation/mine_taxonomy.py` | 4-line shim — gone with `mine_hard_cases` |
-| `src/python/gpa/eval/curation/measure_yield.py` | Yield reporting is now `summary.md` from a `--max-phase select` run |
-| `src/python/gpa/eval/curation/pipeline.py` | Replaced by `run.py` (per O7 decision: clean break, distinct file name) |
+| `src/python/bhdr/eval/curation/mine_hard_cases.py` | Folded into `run.py` SELECT phase + new `extract_draft.py` |
+| `src/python/bhdr/eval/curation/mine_taxonomy.py` | 4-line shim — gone with `mine_hard_cases` |
+| `src/python/bhdr/eval/curation/measure_yield.py` | Yield reporting is now `summary.md` from a `--max-phase select` run |
+| `src/python/bhdr/eval/curation/pipeline.py` | Replaced by `run.py` (per O7 decision: clean break, distinct file name) |
 | `tests/unit/python/test_curation_mine_hard_cases.py` | Tests targeting deleted CLI |
 | `tests/unit/python/test_curation_pipeline.py` | Tests targeting deleted CLI; replaced by `test_curation_run.py` |
 
@@ -63,7 +63,7 @@ The plan front-loads schema/layout (Tasks 1–2), then builds the new determinis
 ### Task 1: Journey row + JSONL writer
 
 **Files:**
-- Create: `src/python/gpa/eval/curation/journey.py`
+- Create: `src/python/bhdr/eval/curation/journey.py`
 - Test: `tests/unit/python/test_curation_journey.py`
 
 - [ ] **Step 1.1: Write the failing test for `JourneyRow.to_dict()` shape**
@@ -131,7 +131,7 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'gpa.eval.curation.jou
 - [ ] **Step 1.3: Implement `JourneyRow` and dataclasses**
 
 ```python
-# src/python/gpa/eval/curation/journey.py
+# src/python/bhdr/eval/curation/journey.py
 """Per-candidate journey records for a single mining run.
 
 One JourneyRow per discovered URL. Phase outcomes for skipped phases are
@@ -295,7 +295,7 @@ Expected: PASS, 3 tests pass.
 - [ ] **Step 1.7: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/journey.py tests/unit/python/test_curation_journey.py
+git add src/python/bhdr/eval/curation/journey.py tests/unit/python/test_curation_journey.py
 git commit -m "feat(curation): JourneyRow + per-run JSONL writer"
 ```
 
@@ -304,7 +304,7 @@ git commit -m "feat(curation): JourneyRow + per-run JSONL writer"
 ### Task 2: Per-run directory layout
 
 **Files:**
-- Create: `src/python/gpa/eval/curation/run_dir.py`
+- Create: `src/python/bhdr/eval/curation/run_dir.py`
 - Test: `tests/unit/python/test_curation_run_dir.py`
 
 - [ ] **Step 2.1: Write failing tests for run-id generation + dir layout**
@@ -351,7 +351,7 @@ Expected: FAIL with `ModuleNotFoundError`.
 - [ ] **Step 2.3: Implement run_dir.py**
 
 ```python
-# src/python/gpa/eval/curation/run_dir.py
+# src/python/bhdr/eval/curation/run_dir.py
 """Per-run directory layout: .eval-pipeline/runs/<run_id>/{config.yaml,journey.jsonl,issues/,summary.md}.
 
 run_id format: YYYY-MM-DD-HHMMSS-<8-hex hash of config>. Stable for a given
@@ -412,7 +412,7 @@ Expected: PASS, 4 tests pass.
 - [ ] **Step 2.5: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/run_dir.py tests/unit/python/test_curation_run_dir.py
+git add src/python/bhdr/eval/curation/run_dir.py tests/unit/python/test_curation_run_dir.py
 git commit -m "feat(curation): per-run directory layout helper"
 ```
 
@@ -429,9 +429,9 @@ git commit -m "feat(curation): per-run directory layout helper"
 Failures land in `journey.terminal_reason = "extraction_failed"` with details in `IssueWorkdir.write_stage("extract_draft", ...)`.
 
 **Files:**
-- Create: `src/python/gpa/eval/curation/extract_draft.py`
+- Create: `src/python/bhdr/eval/curation/extract_draft.py`
 - Test: `tests/unit/python/test_curation_extract_draft.py`
-- Reference: `src/python/gpa/eval/curation/draft.py` (existing LLM version — keep until Task 8)
+- Reference: `src/python/bhdr/eval/curation/draft.py` (existing LLM version — keep until Task 8)
 
 - [ ] **Step 3.1: Write failing test against a real fixture**
 
@@ -498,7 +498,7 @@ Expected: FAIL (`ModuleNotFoundError`).
 - [ ] **Step 3.4: Implement extract_draft.py**
 
 ```python
-# src/python/gpa/eval/curation/extract_draft.py
+# src/python/bhdr/eval/curation/extract_draft.py
 """Deterministic field extraction from an issue thread + fix-PR.
 
 Replaces the LLM-based draft.py for routine mining: produces the same
@@ -665,7 +665,7 @@ Expected: PASS, 3 tests pass.
 - [ ] **Step 3.8: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/extract_draft.py tests/unit/python/test_curation_extract_draft.py
+git add src/python/bhdr/eval/curation/extract_draft.py tests/unit/python/test_curation_extract_draft.py
 git commit -m "feat(curation): deterministic extract_draft (replaces LLM draft for routine mining)"
 ```
 
@@ -676,8 +676,8 @@ git commit -m "feat(curation): deterministic extract_draft (replaces LLM draft f
 **Context:** Today's LLM triage gates a lot of bad candidates. The new design folds triage into `classify_score`'s rule set with `triage_required` (must-match) and `triage_reject` (must-not-match) keyword rules. The existing `mining_rules.yaml` gets two new top-level sections.
 
 **Files:**
-- Modify: `src/python/gpa/eval/curation/mining_rules.yaml`
-- Modify: `src/python/gpa/eval/curation/mine_hard_cases.py:_match_codes` (extend rules engine to honor required/reject groups; will be moved into `run.py` in Task 5)
+- Modify: `src/python/bhdr/eval/curation/mining_rules.yaml`
+- Modify: `src/python/bhdr/eval/curation/mine_hard_cases.py:_match_codes` (extend rules engine to honor required/reject groups; will be moved into `run.py` in Task 5)
 - Test: `tests/unit/python/test_curation_mine_hard_cases.py` (extend, since the rules engine still lives here for now)
 
 - [ ] **Step 4.1: Write failing test for required + reject rule semantics**
@@ -723,7 +723,7 @@ Expected: FAIL.
 
 - [ ] **Step 4.3: Add `triage_required` and `triage_reject` sections to `mining_rules.yaml`**
 
-Append to `src/python/gpa/eval/curation/mining_rules.yaml`:
+Append to `src/python/bhdr/eval/curation/mining_rules.yaml`:
 
 ```yaml
 # Triage replacement: rules folded in from the deleted LLM triage step.
@@ -759,7 +759,7 @@ triage_reject:
 
 - [ ] **Step 4.4: Extend `score_candidate` to honor required + reject**
 
-Modify `src/python/gpa/eval/curation/mine_hard_cases.py`:
+Modify `src/python/bhdr/eval/curation/mine_hard_cases.py`:
 
 ```python
 # Inside score_candidate(...), after the existing pattern matching:
@@ -799,7 +799,7 @@ Expected: PASS, all existing + 2 new tests pass.
 - [ ] **Step 4.6: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/mining_rules.yaml src/python/gpa/eval/curation/mine_hard_cases.py tests/unit/python/test_curation_mine_hard_cases.py
+git add src/python/bhdr/eval/curation/mining_rules.yaml src/python/bhdr/eval/curation/mine_hard_cases.py tests/unit/python/test_curation_mine_hard_cases.py
 git commit -m "feat(curation): triage_required/reject rules subsume LLM triage"
 ```
 
@@ -810,7 +810,7 @@ git commit -m "feat(curation): triage_required/reject rules subsume LLM triage"
 **Context:** `run.py` brings together SELECT (rules-only), PRODUCE (`extract_draft` + `validate`), JUDGE (`evaluate` opt-in + `classify` + `commit`). It writes per-candidate journey rows after each phase boundary. It honors `--max-phase`, `--evaluate`, `--budget-tokens`, `--batch-quota`.
 
 **Files:**
-- Create: `src/python/gpa/eval/curation/run.py`
+- Create: `src/python/bhdr/eval/curation/run.py`
 - Test: `tests/unit/python/test_curation_run.py`
 - Reuses: `discover.py`, `triage.py` (only `fetch_thread` helper — the LLM verdict path is unused now), `extract_draft.py` (Task 3), `validate.py`, `run_eval.py`, `classify.py`, `commit.py`, `journey.py` (Task 1), `run_dir.py` (Task 2), `coverage_log.py`, `workdir.py`
 
@@ -830,7 +830,7 @@ def test_run_max_phase_select_writes_journey_no_llm(tmp_path, monkeypatch):
         "    repo: bevyengine/bevy\n"
         "    query: invisible cube\n"
     )
-    rules_path = Path("src/python/gpa/eval/curation/mining_rules.yaml")
+    rules_path = Path("src/python/bhdr/eval/curation/mining_rules.yaml")
 
     # Stub Discoverer so we don't hit the network
     from gpa.eval.curation import run as run_mod
@@ -874,14 +874,14 @@ Expected: FAIL with `ModuleNotFoundError` or `AttributeError`.
 - [ ] **Step 5.3: Implement `run.py` SELECT phase**
 
 ```python
-# src/python/gpa/eval/curation/run.py
+# src/python/bhdr/eval/curation/run.py
 """Single-path mining orchestrator.
 
 Runs SELECT → PRODUCE → JUDGE end-to-end. No human gate. Writes one
 journey row per discovered candidate to runs/<run_id>/journey.jsonl.
 
 CLI:
-    python -m gpa.eval.curation.run \
+    python -m bhdr.eval.curation.run \
         --queries Q.yaml --rules R.yaml \
         [--workdir .eval-pipeline] \
         [--max-phase {select,produce,judge}] \
@@ -1233,7 +1233,7 @@ Expected: PASS, all of the above.
 - [ ] **Step 5.13: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/run.py tests/unit/python/test_curation_run.py
+git add src/python/bhdr/eval/curation/run.py tests/unit/python/test_curation_run.py
 git commit -m "feat(curation): unified run.py orchestrator (SELECT/PRODUCE/JUDGE)"
 ```
 
@@ -1242,9 +1242,9 @@ git commit -m "feat(curation): unified run.py orchestrator (SELECT/PRODUCE/JUDGE
 ### Task 6: Auto-summary writer
 
 **Files:**
-- Create: `src/python/gpa/eval/curation/summary.py`
+- Create: `src/python/bhdr/eval/curation/summary.py`
 - Test: `tests/unit/python/test_curation_summary.py`
-- Modify: `src/python/gpa/eval/curation/run.py` to call `write_summary` at end of `main`
+- Modify: `src/python/bhdr/eval/curation/run.py` to call `write_summary` at end of `main`
 
 - [ ] **Step 6.1: Write failing test**
 
@@ -1280,7 +1280,7 @@ Expected: FAIL.
 - [ ] **Step 6.3: Implement summary.py**
 
 ```python
-# src/python/gpa/eval/curation/summary.py
+# src/python/bhdr/eval/curation/summary.py
 """Auto-rollup of journey.jsonl into summary.md.
 
 Counts by terminal_reason, taxonomy_cell histogram, total tokens. No
@@ -1347,7 +1347,7 @@ Expected: PASS for all that don't reference deleted modules. Tests for `mine_har
 - [ ] **Step 6.7: Commit**
 
 ```bash
-git add src/python/gpa/eval/curation/summary.py src/python/gpa/eval/curation/run.py tests/unit/python/test_curation_summary.py
+git add src/python/bhdr/eval/curation/summary.py src/python/bhdr/eval/curation/run.py tests/unit/python/test_curation_summary.py
 git commit -m "feat(curation): auto-summary writer wired into run.py"
 ```
 
@@ -1359,7 +1359,7 @@ git commit -m "feat(curation): auto-summary writer wired into run.py"
 
 **Files:**
 - Create: `docs/superpowers/eval/single-path-mining-smoke-test.md`
-- Use existing: `src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml`
+- Use existing: `src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml`
 
 - [ ] **Step 7.1: Sample the existing coverage log**
 
@@ -1382,9 +1382,9 @@ for u in urls: print(f'  - {{ source: direct_url, url: {u!r} }}')
 - [ ] **Step 7.2: Run the smoke test, SELECT phase only**
 
 ```bash
-PYTHONPATH=src/python python -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir /tmp/smoke-eval-pipeline \
   --max-phase select
 ```
@@ -1394,9 +1394,9 @@ Expected: exit 0, journey.jsonl populated.
 - [ ] **Step 7.3: Run the smoke test, PRODUCE phase**
 
 ```bash
-PYTHONPATH=src/python python -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml \
-  --rules src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml \
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir /tmp/smoke-eval-pipeline \
   --max-phase produce
 ```
@@ -1458,7 +1458,7 @@ For each failure, link to `runs/<id>/issues/<id>/`:
 ```bash
 git add docs/superpowers/eval/single-path-mining-smoke-test.md
 # If you tuned mining_rules.yaml during the smoke test:
-git add src/python/gpa/eval/curation/mining_rules.yaml
+git add src/python/bhdr/eval/curation/mining_rules.yaml
 git commit -m "test(curation): single-path mining smoke test + O1 decision"
 ```
 
@@ -1469,16 +1469,16 @@ git commit -m "test(curation): single-path mining smoke test + O1 decision"
 **Context:** With the new path proven by the smoke test, delete the four old CLIs and their tests. Update docs to point at `gpa.eval.curation.run`.
 
 **Files:**
-- Delete: `src/python/gpa/eval/curation/mine_hard_cases.py`, `mine_taxonomy.py`, `measure_yield.py`, `pipeline.py`
+- Delete: `src/python/bhdr/eval/curation/mine_hard_cases.py`, `mine_taxonomy.py`, `measure_yield.py`, `pipeline.py`
 - Delete: `tests/unit/python/test_curation_mine_hard_cases.py`, `test_curation_pipeline.py`
 - Modify: `docs/superpowers/eval/framework-app-dev-hard-cases.md`
 
 - [ ] **Step 8.1: Move rule-engine helpers from `mine_hard_cases.py` into `run.py` (or a new `rules.py`)**
 
-`run.py` currently imports `score_candidate`, `infer_taxonomy`, `infer_bug_class`, `select_stratified`, `MiningRules`, `load_rules` from `mine_hard_cases`. Move these into `src/python/gpa/eval/curation/rules.py` (a new file) so the deletion in 8.2 is clean. Update `run.py` import paths.
+`run.py` currently imports `score_candidate`, `infer_taxonomy`, `infer_bug_class`, `select_stratified`, `MiningRules`, `load_rules` from `mine_hard_cases`. Move these into `src/python/bhdr/eval/curation/rules.py` (a new file) so the deletion in 8.2 is clean. Update `run.py` import paths.
 
 ```bash
-git mv src/python/gpa/eval/curation/mine_hard_cases.py src/python/gpa/eval/curation/rules.py
+git mv src/python/bhdr/eval/curation/mine_hard_cases.py src/python/bhdr/eval/curation/rules.py
 # Then strip the argparse/main/CLI parts; keep only:
 #   - MiningRules dataclass
 #   - load_rules
@@ -1502,9 +1502,9 @@ Expected: PASS for everything that doesn't reference `mine_taxonomy` / `measure_
 - [ ] **Step 8.3: Delete the three remaining old CLIs and their tests**
 
 ```bash
-git rm src/python/gpa/eval/curation/mine_taxonomy.py
-git rm src/python/gpa/eval/curation/measure_yield.py
-git rm src/python/gpa/eval/curation/pipeline.py
+git rm src/python/bhdr/eval/curation/mine_taxonomy.py
+git rm src/python/bhdr/eval/curation/measure_yield.py
+git rm src/python/bhdr/eval/curation/pipeline.py
 git rm tests/unit/python/test_curation_pipeline.py
 ```
 
@@ -1526,9 +1526,9 @@ Replace the `Planner Command` section in `docs/superpowers/eval/framework-app-de
 Use:
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml \
-  --rules   src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml \
+  --rules   src/python/bhdr/eval/curation/mining_rules.yaml \
   --max-phase select \
   --workdir .eval-pipeline
 ```
@@ -1552,7 +1552,7 @@ Expected: zero hits to the four old module names. If hits, update each.
 
 ```bash
 PYTHONPATH=src/python python -m pytest tests/unit/python/test_curation_*.py -v
-PYTHONPATH=src/python python -m gpa.eval.curation.run --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml --rules src/python/gpa/eval/curation/mining_rules.yaml --max-phase select --workdir /tmp/sanity
+PYTHONPATH=src/python python -m bhdr.eval.curation.run --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml --rules src/python/bhdr/eval/curation/mining_rules.yaml --max-phase select --workdir /tmp/sanity
 ```
 
 Expected: tests PASS, run exits 0, `/tmp/sanity/runs/<id>/journey.jsonl` exists.
@@ -1580,9 +1580,9 @@ git commit -m "refactor(curation): hard cut to single-path mining (delete 4 old 
 
 ## Acceptance Criteria
 
-- [ ] `python -m gpa.eval.curation.run --max-phase select` exits 0 with no LLM cost; journey.jsonl populated.
-- [ ] `python -m gpa.eval.curation.run` (default) commits scenarios end-to-end without invoking the agent eval.
-- [ ] `python -m gpa.eval.curation.run --evaluate` runs the agent eval and writes `with_gla_score` / `code_only_score` / `helps_verdict` per candidate.
+- [ ] `python -m bhdr.eval.curation.run --max-phase select` exits 0 with no LLM cost; journey.jsonl populated.
+- [ ] `python -m bhdr.eval.curation.run` (default) commits scenarios end-to-end without invoking the agent eval.
+- [ ] `python -m bhdr.eval.curation.run --evaluate` runs the agent eval and writes `with_gla_score` / `code_only_score` / `helps_verdict` per candidate.
 - [ ] `runs/<id>/journey.jsonl` is queryable: `jq 'select(.terminal_phase=="select")'` gives a sane sub-list per slice.
 - [ ] `runs/<id>/summary.md` rolls up terminal_reason / taxonomy_cell / tokens.
 - [ ] All four old CLI modules are deleted; no test references them.

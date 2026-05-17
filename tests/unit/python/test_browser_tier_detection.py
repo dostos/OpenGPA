@@ -3,7 +3,7 @@ when with_gla mode is requested for a scenario whose rendering tier
 the native LD_PRELOAD shim cannot intercept."""
 from __future__ import annotations
 
-from gpa.eval.scenario import ScenarioMetadata, is_browser_tier_scenario
+from bhdr.eval.scenario import ScenarioMetadata, is_browser_tier_scenario
 
 
 def _make_scenario(scenario_dir: str | None) -> ScenarioMetadata:

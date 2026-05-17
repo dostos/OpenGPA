@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.curation.validate import check_contamination
+from bhdr.eval.curation.validate import check_contamination
 
 
 GOOD_MAIN_C = """\

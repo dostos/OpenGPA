@@ -22,9 +22,9 @@ not a minimal repro.
 ## The 5-stage flywheel
 
 1. **Mine** — Curate real bugs with `fix_pr_url`/`fix_sha`/`fix_parent_sha`/`bug_class`/`files`
-2. **Verify** — `python -m gpa.eval.curation.verify` (static + network + build); quarantine failures
+2. **Verify** — `python -m bhdr.eval.curation.verify` (static + network + build); quarantine failures
 3. **Capture** — Run native scenarios under the GL/Vulkan shim. Skip WebGL/JS — shim doesn't intercept browser GL.
-4. **Evaluate** — `python -m gpa.eval.cli run` with `--judge` (default on). Compare accuracy × token cost.
+4. **Evaluate** — `python -m bhdr.eval.cli run` with `--judge` (default on). Compare accuracy × token cost.
 5. **Improve** — Fix gaps; write `docs/eval-rounds/<round>.md` with Findings / Added / Removed / Numbers / Open backlog.
 
 Full skill: `~/.claude/skills/eval-driven-improvement/SKILL.md`.

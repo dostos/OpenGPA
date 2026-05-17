@@ -7,4 +7,4 @@ pybind11 bindings for OpenGPA's C++ core engine. Exposes `Engine`, `QueryEngine`
 
 ## See Also
 - `src/core/README.md` — C++ engine being wrapped
-- `src/python/gpa/backends/README.md` — Python backend that imports this module
+- `src/python/bhdr/backends/README.md` — Python backend that imports this module

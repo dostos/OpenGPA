@@ -13,9 +13,9 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
-from gpa.mcp import server as mcp_server
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
+from bhdr.mcp import server as mcp_server
 from starlette.testclient import TestClient
 
 

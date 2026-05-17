@@ -6,15 +6,15 @@ from typing import Any, Dict
 
 import pytest
 
-from gpa.cli.checks import (
+from bhdr.cli.checks import (
     all_checks,
     get_check,
     known_names,
 )
-from gpa.cli.checks.empty_capture import EmptyCaptureCheck
-from gpa.cli.checks.feedback_loops import FeedbackLoopsCheck
-from gpa.cli.checks.missing_clear import MissingClearCheck
-from gpa.cli.checks.nan_uniforms import NanUniformsCheck
+from bhdr.cli.checks.empty_capture import EmptyCaptureCheck
+from bhdr.cli.checks.feedback_loops import FeedbackLoopsCheck
+from bhdr.cli.checks.missing_clear import MissingClearCheck
+from bhdr.cli.checks.nan_uniforms import NanUniformsCheck
 
 
 # --------------------------------------------------------------------------- #

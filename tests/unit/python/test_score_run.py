@@ -16,7 +16,7 @@ from dataclasses import dataclass
 
 import pytest
 
-from gpa.eval.scorer import ScoreResult, score_run
+from bhdr.eval.scorer import ScoreResult, score_run
 
 
 # Light-weight stand-in for ScenarioMetadata.fix

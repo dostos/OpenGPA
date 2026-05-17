@@ -3,7 +3,7 @@ import threading
 
 import pytest
 
-from gpa.api.annotations_store import AnnotationsStore
+from bhdr.api.annotations_store import AnnotationsStore
 
 
 def test_put_and_get_roundtrip():

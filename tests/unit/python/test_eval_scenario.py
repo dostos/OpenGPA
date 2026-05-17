@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.metrics import EvalResult, ReportGenerator
-from gpa.eval.scenario import ScenarioLoader, ScenarioMetadata
+from bhdr.eval.metrics import EvalResult, ReportGenerator
+from bhdr.eval.scenario import ScenarioLoader, ScenarioMetadata
 
 
 # ---------------------------------------------------------------------------

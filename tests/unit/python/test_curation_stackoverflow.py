@@ -39,7 +39,7 @@ def test_search_questions_returns_sorequestion_list():
     })
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.return_value = _make_resp(payload)
-        from gpa.eval.curation.stackoverflow import search_questions, SOQuestion
+        from bhdr.eval.curation.stackoverflow import search_questions, SOQuestion
         results = search_questions(["three.js"], per_page=10)
     assert len(results) == 2
     assert isinstance(results[0], SOQuestion)
@@ -53,13 +53,13 @@ def test_search_questions_returns_sorequestion_list():
 def test_search_questions_returns_empty_on_api_failure():
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.side_effect = OSError("network down")
-        from gpa.eval.curation.stackoverflow import search_questions
+        from bhdr.eval.curation.stackoverflow import search_questions
         results = search_questions(["three.js"])
     assert results == []
 
 
 def test_fetch_stackoverflow_thread_rejects_non_so_url():
-    from gpa.eval.curation.stackoverflow import fetch_stackoverflow_thread
+    from bhdr.eval.curation.stackoverflow import fetch_stackoverflow_thread
     with pytest.raises(ValueError):
         fetch_stackoverflow_thread("https://github.com/mrdoob/three.js/issues/1")
 
@@ -85,7 +85,7 @@ def test_fetch_stackoverflow_thread_parses_question_and_accepted_answer():
             _make_resp(question_json),
             _make_resp(answer_json),
         ]
-        from gpa.eval.curation.stackoverflow import fetch_stackoverflow_thread
+        from bhdr.eval.curation.stackoverflow import fetch_stackoverflow_thread
         thread = fetch_stackoverflow_thread(
             "https://stackoverflow.com/questions/12345/some-title"
         )
@@ -107,7 +107,7 @@ def test_fetch_stackoverflow_thread_handles_missing_accepted_answer():
     })
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.return_value = _make_resp(question_json)
-        from gpa.eval.curation.stackoverflow import fetch_stackoverflow_thread
+        from bhdr.eval.curation.stackoverflow import fetch_stackoverflow_thread
         thread = fetch_stackoverflow_thread(
             "https://stackoverflow.com/questions/9/q"
         )
@@ -119,7 +119,7 @@ def test_fetch_stackoverflow_thread_raises_if_question_not_found():
     empty_json = json.dumps({"items": []})
     with patch("urllib.request.urlopen") as mock_urlopen:
         mock_urlopen.return_value = _make_resp(empty_json)
-        from gpa.eval.curation.stackoverflow import fetch_stackoverflow_thread
+        from bhdr.eval.curation.stackoverflow import fetch_stackoverflow_thread
         with pytest.raises(ValueError):
             fetch_stackoverflow_thread(
                 "https://stackoverflow.com/questions/99999/does-not-exist"
@@ -127,7 +127,7 @@ def test_fetch_stackoverflow_thread_raises_if_question_not_found():
 
 
 def test_strip_html_preserves_code_blocks():
-    from gpa.eval.curation.stackoverflow import _strip_html
+    from bhdr.eval.curation.stackoverflow import _strip_html
     html_text = (
         "<p>Try this:</p>"
         "<pre><code>glEnable(GL_DEPTH_TEST);</code></pre>"
@@ -143,7 +143,7 @@ def test_strip_html_preserves_code_blocks():
 
 
 def test_strip_html_unescapes_entities():
-    from gpa.eval.curation.stackoverflow import _strip_html
+    from bhdr.eval.curation.stackoverflow import _strip_html
     html_text = "<p>Use &lt;canvas&gt; &amp; draw()</p>"
     out = _strip_html(html_text)
     assert "<canvas>" in out

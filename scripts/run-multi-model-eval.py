@@ -201,7 +201,7 @@ def main():
 
     # Import eval agent
     sys.path.insert(0, str(REPO / "src" / "python"))
-    from gpa.eval.llm_agent import EvalAgent, GpaToolExecutor
+    from bhdr.eval.llm_agent import EvalAgent, GpaToolExecutor
 
     results = []
 

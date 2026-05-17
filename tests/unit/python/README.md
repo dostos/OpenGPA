@@ -11,5 +11,5 @@ pytest suite for OpenGPA's Python layer. All tests run without a live GPU; the n
 - Eval harness (scenario loading, scoring, report generation)
 
 ## See Also
-- `src/python/gpa/README.md` — package under test
+- `src/python/bhdr/README.md` — package under test
 - `tests/unit/core/README.md` — C++ unit tests for the engine layer

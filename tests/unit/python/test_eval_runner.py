@@ -3,8 +3,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gpa.eval.runner import ScenarioRunner
-from gpa.eval.scenario import ScenarioMetadata
+from bhdr.eval.runner import ScenarioRunner
+from bhdr.eval.scenario import ScenarioMetadata
 
 
 def _make_scenario(repo_root, *, slug="my_scenario",
@@ -31,7 +31,7 @@ def test_build_and_capture_returns_framebuffer_and_metadata(tmp_path):
     scen = _make_scenario(tmp_path, slug="r1_test",
                           pkg="tests/eval/native-engine/godot/r1_test")
     with patch("subprocess.run") as mock_run, \
-         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
+         patch("bhdr.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"PNGDATA",
@@ -63,7 +63,7 @@ def test_build_and_capture_uses_nested_taxonomy_target(tmp_path):
     scen = _make_scenario(tmp_path, slug="my_scenario",
                           pkg="tests/eval/native-engine/godot/my_scenario")
     with patch("subprocess.run") as mock_run, \
-         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
+         patch("bhdr.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"",
@@ -100,7 +100,7 @@ def test_build_and_capture_terminates_proc_on_success(tmp_path):
     scen = _make_scenario(tmp_path, slug="s1",
                           pkg="tests/eval/native-engine/godot/s1")
     with patch("subprocess.run") as mock_run, \
-         patch("gpa.eval.runner._capture_via_rest") as mock_capture:
+         patch("bhdr.eval.runner._capture_via_rest") as mock_capture:
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         mock_capture.return_value = {
             "framebuffer_png": b"X",

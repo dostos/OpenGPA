@@ -42,7 +42,7 @@ import pytest
     ],
 )
 def test_framework_source_paths_recognised(path):
-    from gpa.eval.curation.run import _is_framework_source_path
+    from bhdr.eval.curation.run import _is_framework_source_path
     assert _is_framework_source_path(path) is True
 
 
@@ -68,12 +68,12 @@ def test_framework_source_paths_recognised(path):
     ],
 )
 def test_non_framework_paths_rejected(path):
-    from gpa.eval.curation.run import _is_framework_source_path
+    from bhdr.eval.curation.run import _is_framework_source_path
     assert _is_framework_source_path(path) is False
 
 
 def test_empty_path_rejected():
-    from gpa.eval.curation.run import _is_framework_source_path
+    from bhdr.eval.curation.run import _is_framework_source_path
     assert _is_framework_source_path("") is False
 
 
@@ -85,7 +85,7 @@ def test_empty_path_rejected():
 def test_framework_path_fallback_overrides_consumer_misuse():
     """The R12 maplibre case: rec said consumer-misuse, fix-PR patches
     src/render/*.ts → final bug_class is framework-internal."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=[
@@ -101,7 +101,7 @@ def test_framework_path_fallback_overrides_consumer_misuse():
 def test_framework_path_fallback_overrides_user_config():
     """The R12 godot world_environment_glow case: rec said user-config,
     fix-PR patches servers/rendering/* → framework-internal."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="user-config",
         expected_files=["servers/rendering/renderer_rd/effects/copy_effects.cpp"],
@@ -114,7 +114,7 @@ def test_framework_path_fallback_no_op_when_files_empty():
     """If expected_files is empty (e.g. fix-PR was all docs and got
     filtered to nothing), the fallback must not fire — stays at
     rec.bug_class_guess."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=[],
@@ -127,7 +127,7 @@ def test_framework_path_fallback_no_op_when_any_file_excluded():
     """If even one entry isn't recognised as framework source, the
     fallback shouldn't fire (be conservative — prefer rec_guess over
     a wrong override)."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=[
@@ -143,7 +143,7 @@ def test_graphics_lib_dev_never_overridden():
     """graphics-lib-dev gates the drafter routing (C-repro vs maintainer
     framing). Overriding it would silently change the drafter path —
     never do that."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="graphics-lib-dev",
         expected_files=["src/render/draw_fill.ts"],
@@ -155,7 +155,7 @@ def test_graphics_lib_dev_never_overridden():
 def test_triage_result_overrides_rec_guess():
     """When --llm-triage is on and the triager classifies the issue,
     its verdict beats the regex guess."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=[],
@@ -167,7 +167,7 @@ def test_triage_result_overrides_rec_guess():
 def test_triage_result_beats_framework_path_fallback():
     """When both triggers fire, triager wins. (In practice they agree;
     this test pins the priority order.)"""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=["src/render/draw_fill.ts"],
@@ -179,7 +179,7 @@ def test_triage_result_beats_framework_path_fallback():
 def test_triage_none_falls_through_to_fallback():
     """When triager returns None (e.g. parse failure), framework-path
     fallback still applies."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="consumer-misuse",
         expected_files=["src/render/draw_fill.ts"],
@@ -190,7 +190,7 @@ def test_triage_none_falls_through_to_fallback():
 
 def test_no_triggers_returns_rec_guess():
     """No triager, no framework-path match → rec_guess is the answer."""
-    from gpa.eval.curation.run import _finalize_bug_class
+    from bhdr.eval.curation.run import _finalize_bug_class
     out = _finalize_bug_class(
         rec_guess="user-config",
         expected_files=[],
@@ -218,7 +218,7 @@ class _FakeOk:
 
 
 def _make_thread():
-    from gpa.eval.curation.triage import IssueThread
+    from bhdr.eval.curation.triage import IssueThread
     return IssueThread(
         url="https://github.com/maplibre/maplibre-gl-js/issues/1",
         title="3D terrain with partially transparent",
@@ -239,8 +239,8 @@ class _FakeCand:
 def test_run_produce_applies_framework_path_fallback(monkeypatch, tmp_path):
     """End-to-end: regex-guessed `consumer-misuse` flips to
     `framework-internal` because all fix.files are framework source."""
-    from gpa.eval.curation import run as run_mod
-    from gpa.eval.curation.journey import JourneyWriter
+    from bhdr.eval.curation import run as run_mod
+    from bhdr.eval.curation.journey import JourneyWriter
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -281,8 +281,8 @@ def test_run_produce_keeps_rec_guess_when_no_override_fires(monkeypatch, tmp_pat
     framework-path check does. The file survives extract_draft and
     arrives at _finalize_bug_class, which leaves rec.bug_class_guess
     intact because `_is_framework_source_path` returns False."""
-    from gpa.eval.curation import run as run_mod
-    from gpa.eval.curation.journey import JourneyWriter
+    from bhdr.eval.curation import run as run_mod
+    from bhdr.eval.curation.journey import JourneyWriter
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -317,8 +317,8 @@ def test_run_produce_applies_triage_fn_when_provided(monkeypatch, tmp_path):
     """When a `triage_fn` is wired in (via --llm-triage), its verdict
     beats both the regex `bug_class_guess` and the framework-path
     fallback."""
-    from gpa.eval.curation import run as run_mod
-    from gpa.eval.curation.journey import JourneyWriter
+    from bhdr.eval.curation import run as run_mod
+    from bhdr.eval.curation.journey import JourneyWriter
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -363,8 +363,8 @@ def test_run_produce_swallows_triage_errors(monkeypatch, tmp_path):
     """If the triage call blows up (network error, parse failure), the
     pipeline must not crash — fall through to rec.bug_class_guess +
     framework-path fallback."""
-    from gpa.eval.curation import run as run_mod
-    from gpa.eval.curation.journey import JourneyWriter
+    from bhdr.eval.curation import run as run_mod
+    from bhdr.eval.curation.journey import JourneyWriter
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",

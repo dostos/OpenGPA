@@ -43,7 +43,7 @@
 
   // Canonical cross-origin numeric hash. Must match the C shim in
   // src/shims/gl/native_trace.c::number_to_js_base36 and the Python
-  // parser in src/python/gpa/api/routes_trace.py::_parse_canonical_number.
+  // parser in src/python/bhdr/api/routes_trace.py::_parse_canonical_number.
   // Format:
   //   NaN           -> "n:NaN"
   //   +/- Infinity  -> "n:Inf" / "n:-Inf"

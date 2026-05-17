@@ -1,4 +1,4 @@
-"""Tests for :mod:`gpa.eval.scorer` — maintainer-framing file-overlap scorer.
+"""Tests for :mod:`bhdr.eval.scorer` — maintainer-framing file-overlap scorer.
 
 Covers the Phase 3 contract from
 ``docs/superpowers/specs/2026-04-21-maintainer-framing-design.md``:
@@ -19,13 +19,13 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.scenario import FixMetadata
-from gpa.eval.scorer import (
+from bhdr.eval.scenario import FixMetadata
+from bhdr.eval.scorer import (
     ScoreResult,
     judge_semantic_match,
     score_maintainer_patch,
 )
-from gpa.eval.telemetry import classify_verdict
+from bhdr.eval.telemetry import classify_verdict
 
 
 # ---------------------------------------------------------------------------

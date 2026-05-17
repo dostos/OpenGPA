@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import pytest
 
-from gpa.cli.commands import drawcalls as dc_mod
+from bhdr.cli.commands import drawcalls as dc_mod
 
 
 # --------------------------------------------------------------------------- #
@@ -306,7 +306,7 @@ def test_frame_defaults_from_env(monkeypatch):
 
 def test_explain_draw_deprecation_warning(monkeypatch, capsys):
     """gpa explain-draw should emit a deprecation warning to stderr."""
-    from gpa.cli.main import main as cli_main
+    from bhdr.cli.main import main as cli_main
 
     monkeypatch.setenv("GPA_SESSION", "nonexistent_session_path_xyz")
     # We just need the warning; the command itself will fail (no session).
@@ -318,7 +318,7 @@ def test_explain_draw_deprecation_warning(monkeypatch, capsys):
 
 def test_diff_draws_deprecation_warning(monkeypatch, capsys):
     """gpa diff-draws should emit a deprecation warning to stderr."""
-    from gpa.cli.main import main as cli_main
+    from bhdr.cli.main import main as cli_main
 
     monkeypatch.setenv("GPA_SESSION", "nonexistent_session_path_xyz")
     cli_main(["diff-draws", "0", "1"])

@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from gpa.cli.commands import scene as scene_mod
+from bhdr.cli.commands import scene as scene_mod
 
 
 # --------------------------------------------------------------------------- #

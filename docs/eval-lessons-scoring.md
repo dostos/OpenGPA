@@ -237,13 +237,13 @@ One day, ~600 LoC including tests.
 
 | file | change |
 |------|--------|
-| `src/python/gpa/eval/harness.py` | loosen trigger predicate (~3 lines); call new `score_run()` orchestrator that returns `ScoreVerdict`; populate `result.verdict` field. |
-| `src/python/gpa/eval/scorer.py` | add `score_run(result, scenario, *, llm_client=None) -> ScoreVerdict` orchestrator; existing `score_maintainer_patch` unchanged. |
-| `src/python/gpa/eval/scorer_prose.py` (new) | path/symbol/basename extractor + `score_prose()`; ~150 lines. |
-| `src/python/gpa/eval/scorer_giveup.py` (new) | regex pattern bank + `is_gave_up()` ~30 lines. |
-| `src/python/gpa/eval/judge.py` | add `fetch_pr_diff_summary(fix, snapshot_root)` helper that runs `git show --stat --shortstat <fix_sha>` and truncates; ~40 lines. |
-| `src/python/gpa/eval/metrics.py` | add `ScoreVerdict` dataclass; add to `EvalResult` (optional field, backwards-compatible). |
-| `src/python/gpa/eval/cli.py` | add `--llm-judge`, `--score-version` flags; rewire `report` command to print `ScoreVerdict.scorer` column + `needs_review` count. |
+| `src/python/bhdr/eval/harness.py` | loosen trigger predicate (~3 lines); call new `score_run()` orchestrator that returns `ScoreVerdict`; populate `result.verdict` field. |
+| `src/python/bhdr/eval/scorer.py` | add `score_run(result, scenario, *, llm_client=None) -> ScoreVerdict` orchestrator; existing `score_maintainer_patch` unchanged. |
+| `src/python/bhdr/eval/scorer_prose.py` (new) | path/symbol/basename extractor + `score_prose()`; ~150 lines. |
+| `src/python/bhdr/eval/scorer_giveup.py` (new) | regex pattern bank + `is_gave_up()` ~30 lines. |
+| `src/python/bhdr/eval/judge.py` | add `fetch_pr_diff_summary(fix, snapshot_root)` helper that runs `git show --stat --shortstat <fix_sha>` and truncates; ~40 lines. |
+| `src/python/bhdr/eval/metrics.py` | add `ScoreVerdict` dataclass; add to `EvalResult` (optional field, backwards-compatible). |
+| `src/python/bhdr/eval/cli.py` | add `--llm-judge`, `--score-version` flags; rewire `report` command to print `ScoreVerdict.scorer` column + `needs_review` count. |
 | `tests/unit/python/test_scorer_prose.py` (new) | path/symbol extractor unit tests, FP-guard tests, stoplist tests. |
 | `tests/unit/python/test_scorer_giveup.py` (new) | each give-up pattern as a parametrized case; non-give-up controls. |
 | `tests/unit/python/test_score_run.py` (new) | precedence tests — gave-up vetoes; file_level beats prose; judge fires only when expected. |

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from gpa.eval.curation.gen_queries import (
+from bhdr.eval.curation.gen_queries import (
     build_user_message,
     filter_duplicates,
     main,
@@ -200,7 +200,7 @@ def test_main_works_with_empty_scope_log(tmp_path):
 
 
 def test_build_llm_client_codex_cli():
-    from gpa.eval.curation.gen_queries import _build_llm_client
+    from bhdr.eval.curation.gen_queries import _build_llm_client
     client = _build_llm_client("codex-cli", model="ignored")
-    from gpa.eval.curation.llm_client import CodexCliLLMClient
+    from bhdr.eval.curation.llm_client import CodexCliLLMClient
     assert isinstance(client, CodexCliLLMClient)

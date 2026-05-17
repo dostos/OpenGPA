@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
-from gpa.eval.curation.classify import classify_observed_helps, ObservedClassification, attribute_failure_mode, FailureModeResult
-from gpa.eval.curation.llm_client import LLMResponse
-from gpa.eval.metrics import EvalResult
+from bhdr.eval.curation.classify import classify_observed_helps, ObservedClassification, attribute_failure_mode, FailureModeResult
+from bhdr.eval.curation.llm_client import LLMResponse
+from bhdr.eval.metrics import EvalResult
 
 def _mk(mode, correct, total_tokens):
     """Build an EvalResult with verdict.solved=correct (R17 replaced

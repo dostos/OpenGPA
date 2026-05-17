@@ -515,7 +515,7 @@ See `docs/superpowers/eval/round6-findings.md` for the discussion.
 - **New this round**: `claude -p --output-format stream-json --verbose` gives
   us ordered per-turn tool-call records. Self-reported `gpa_queries_made` /
   `framework_files_opened` from Rounds 5/6 are retired. Numbers below come
-  from the new parser in `src/python/gpa/eval/telemetry.py` (commits 2ccff06
+  from the new parser in `src/python/bhdr/eval/telemetry.py` (commits 2ccff06
   and 6549c53).
 - **Drill-down hints** shipped in commit eb5357c — `gpa report` now prints
   "drill:" lines pointing to the next natural `gpa check` call. Hypothesis:

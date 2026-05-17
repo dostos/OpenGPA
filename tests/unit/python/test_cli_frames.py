@@ -24,10 +24,10 @@ from unittest.mock import MagicMock
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
-from gpa.cli.commands import frames as frames_cmd
-from gpa.cli.rest_client import RestClient, RestError
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
+from bhdr.cli.commands import frames as frames_cmd
+from bhdr.cli.rest_client import RestClient, RestError
 
 from conftest import AUTH_TOKEN, _make_overview
 
@@ -158,7 +158,7 @@ class TestFramesCli:
 
     def test_missing_session_exit_2(self, tmp_path, monkeypatch):
         """No active session → exit 2."""
-        from gpa.cli import session as session_mod
+        from bhdr.cli import session as session_mod
         monkeypatch.delenv("GPA_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",

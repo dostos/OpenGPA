@@ -26,11 +26,11 @@ from a new GL function intercept means something different than a
 lift from a scoring fix.
 
 ### System (OpenGPA itself)
-- Commit <sha>: <one-line>  — paths under `src/{shims,core,bindings}/` or `src/python/gpa/{api,backends,mcp,framework}/`
+- Commit <sha>: <one-line>  — paths under `src/{shims,core,bindings}/` or `src/python/bhdr/{api,backends,mcp,framework}/`
 - ...
 
 ### Eval pipeline
-- Commit <sha>: <one-line>  — paths under `src/python/gpa/eval/`, `tests/eval/`, prompts
+- Commit <sha>: <one-line>  — paths under `src/python/bhdr/eval/`, `tests/eval/`, prompts
 - Backlog item P<n> — <one-line>
 - Scenarios: +<N> mined this round
 - ...

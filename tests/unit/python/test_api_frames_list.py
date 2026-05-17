@@ -11,8 +11,8 @@ from unittest.mock import MagicMock
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
 
 from conftest import AUTH_HEADERS, AUTH_TOKEN, _make_overview
 
@@ -96,7 +96,7 @@ class TestFramesListEndpoint:
 
     def test_backend_not_implemented_returns_empty(self):
         """A backend that raises NotImplementedError should yield ``[]`` (not 500)."""
-        from gpa.backends.base import FrameProvider, FrameOverview
+        from bhdr.backends.base import FrameProvider, FrameOverview
 
         class BareBackend(FrameProvider):
             def get_latest_overview(self):

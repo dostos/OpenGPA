@@ -180,7 +180,7 @@ copied verbatim from the upstream snapshot above. See
 ## Tier-3 Link Plugin
 
 This scenario imports the OpenGPA three.js link plugin
-(`src/python/gpa/framework/threejs_link_plugin.js`, mounted by the
+(`src/python/bhdr/framework/threejs_link_plugin.js`, mounted by the
 runner at `/_plugins/threejs-link.js`) via the `gpa-threejs-link`
 importmap entry. The plugin wraps `renderer.render()`, pushes
 `gl.pushDebugGroup` markers per Mesh/Light/Group around each node's

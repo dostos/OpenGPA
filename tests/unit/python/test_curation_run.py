@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.curation.triage import IssueThread
+from bhdr.eval.curation.triage import IssueThread
 
 
 class FakeCand:
@@ -97,7 +97,7 @@ def queries_path(tmp_path):
 @pytest.fixture
 def rules_path():
     # Use the real rules file so the triage_required gates exist.
-    return Path("src/python/gpa/eval/curation/mining_rules.yaml")
+    return Path("src/python/bhdr/eval/curation/mining_rules.yaml")
 
 
 @pytest.fixture
@@ -116,7 +116,7 @@ def fake_cand():
 @pytest.fixture
 def patch_select_seams(monkeypatch, fake_cand):
     """Monkeypatch the SELECT-phase seams (Discoverer + fetch_thread)."""
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     monkeypatch.setattr(
         run_mod, "build_discoverer",
@@ -138,7 +138,7 @@ def patch_select_seams(monkeypatch, fake_cand):
 def test_run_max_phase_select_writes_journey_no_llm(
     tmp_path, queries_path, rules_path, patch_select_seams
 ):
-    from gpa.eval.curation.run import main
+    from bhdr.eval.curation.run import main
 
     rc = main([
         "--queries", str(queries_path),
@@ -176,7 +176,7 @@ class _FakeValidationResult:
 def test_run_max_phase_produce_extracts_and_validates(
     tmp_path, queries_path, rules_path, patch_select_seams, monkeypatch
 ):
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     # Stub fix-PR metadata fetcher to return source files that pass the
     # source-file filter in extract_draft._filter_source_files.
@@ -223,7 +223,7 @@ def test_run_max_phase_produce_extracts_and_validates(
 def test_run_judge_commits_without_evaluate_when_flag_not_set(
     tmp_path, queries_path, rules_path, patch_select_seams, monkeypatch
 ):
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -274,8 +274,8 @@ def test_run_judge_commits_without_evaluate_when_flag_not_set(
 
 
 def test_draft_to_files_preserves_maintainer_bug_class():
-    from gpa.eval.curation.extract_draft import DraftResult
-    from gpa.eval.curation.run import _draft_to_files
+    from bhdr.eval.curation.extract_draft import DraftResult
+    from bhdr.eval.curation.run import _draft_to_files
 
     draft = DraftResult(
         user_report="transparent material stays opaque",
@@ -293,7 +293,7 @@ def test_draft_to_files_preserves_maintainer_bug_class():
 
 
 def test_layout_category_framework_drops_bug_class_prefix():
-    from gpa.eval.curation.run import _layout_category_framework
+    from bhdr.eval.curation.run import _layout_category_framework
 
     assert _layout_category_framework(
         "framework-maintenance.native-engine.godot"
@@ -330,7 +330,7 @@ def test_run_judge_evaluate_branches(
 ):
     """When --evaluate is set, verdict=='no' halts at NOT_HELPFUL while
     verdict=='yes' / 'ambiguous' commit normally with eval scores."""
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -415,7 +415,7 @@ def test_run_judge_evaluate_auto_wires_factory(
 ):
     """--evaluate with _is_default seam auto-builds agent_fn from factory
     (Task 27). Verify factory.build_agent_fn is called and pipeline succeeds."""
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     factory_calls: list[str] = []
 
@@ -439,7 +439,7 @@ def test_run_judge_evaluate_auto_wires_factory(
         return _agent
 
     monkeypatch.setattr(
-        "gpa.eval.agents.factory.build_agent_fn",
+        "bhdr.eval.agents.factory.build_agent_fn",
         _fake_build_agent_fn,
     )
 
@@ -475,7 +475,7 @@ def test_run_judge_evaluate_auto_wires_factory(
             pass
         def run_all(self, agent_fn, scenarios=None, modes=None):
             return []
-    monkeypatch.setattr("gpa.eval.harness.EvalHarness", _FakeHarness)
+    monkeypatch.setattr("bhdr.eval.harness.EvalHarness", _FakeHarness)
 
     # Ensure the module seam is _is_default=True before calling main().
     original_run_eval = run_mod.run_eval
@@ -533,7 +533,7 @@ def test_run_select_failure_modes(
     tmp_path, queries_path, rules_path, fake_cand, monkeypatch,
 ):
     """Each parametrized case stubs exactly one seam to force one terminal_reason."""
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     if body_override is not None:
         fake_cand.body = body_override
@@ -560,7 +560,7 @@ def test_run_select_failure_modes(
         # Patch CoverageLog.contains_url at class level so the empty/temp
         # coverage log behaves as if the URL is already known.
         monkeypatch.setattr(
-            "gpa.eval.curation.run.CoverageLog.contains_url",
+            "bhdr.eval.curation.run.CoverageLog.contains_url",
             lambda self, url: True,
         )
 
@@ -614,8 +614,8 @@ def test_run_produce_failure_modes(
     expected_terminal_reason, expected_extracted, expected_validated,
     tmp_path, queries_path, rules_path, patch_select_seams, monkeypatch,
 ):
-    from gpa.eval.curation import run as run_mod
-    from gpa.eval.curation.extract_draft import ExtractionFailure
+    from bhdr.eval.curation import run as run_mod
+    from bhdr.eval.curation.extract_draft import ExtractionFailure
 
     monkeypatch.setattr(
         run_mod, "_fetch_fix_pr_metadata",
@@ -678,7 +678,7 @@ def test_fetch_fix_pr_metadata_uses_pr_self_for_pr_candidates(monkeypatch):
     The fix: detect a PR candidate URL up front and skip body extraction.
     """
     import subprocess
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     captured: list[list[str]] = []
 
@@ -732,7 +732,7 @@ def test_fetch_fix_pr_metadata_uses_pr_self_for_pr_candidates(monkeypatch):
 
 def test_backend_codex_cli_calls_factory(monkeypatch):
     """--backend codex-cli --evaluate calls build_agent_fn('codex-cli')."""
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     factory_calls: list[str] = []
 
@@ -743,7 +743,7 @@ def test_backend_codex_cli_calls_factory(monkeypatch):
         return _agent
 
     monkeypatch.setattr(
-        "gpa.eval.agents.factory.build_agent_fn",
+        "bhdr.eval.agents.factory.build_agent_fn",
         _fake_build_agent_fn,
     )
 
@@ -772,7 +772,7 @@ def test_backend_codex_cli_calls_factory(monkeypatch):
 def test_backend_auto_resolves_to_api_when_api_key_present(monkeypatch):
     """--backend auto resolves to 'api' when ANTHROPIC_API_KEY is set."""
     import os
-    from gpa.eval.curation import run as run_mod
+    from bhdr.eval.curation import run as run_mod
 
     monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test-key")
 

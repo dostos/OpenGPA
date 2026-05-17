@@ -3,7 +3,7 @@ injected into agent prompts to calibrate search depth without leaking
 which specific files the canonical fix touched."""
 from __future__ import annotations
 
-from gpa.eval.scope_hint import compute_scope_hint
+from bhdr.eval.scope_hint import compute_scope_hint
 
 
 def test_empty_returns_placeholder():

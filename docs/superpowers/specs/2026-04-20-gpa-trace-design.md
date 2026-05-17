@@ -179,14 +179,14 @@ One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the 
 - `src/shims/webgl/extension/gpa-trace.js` — BFS scanner with depth/size
   caps, gated/lazy/eager modes, SDK `gpa.trace.addRoot()`, POSTs to
   `/frames/{id}/drawcalls/{dc}/sources`.
-- `src/python/gpa/api/trace_store.py` — in-memory LRU-per-frame store
+- `src/python/bhdr/api/trace_store.py` — in-memory LRU-per-frame store
   (`put` / `get` / `find_value` / `get_frame`).
-- `src/python/gpa/api/routes_trace.py` — POST/GET raw sources endpoint.
+- `src/python/bhdr/api/routes_trace.py` — POST/GET raw sources endpoint.
 - 32 unit tests.
 
 ### Phase 2 — query surface (shipped)
 
-- `src/python/gpa/cli/commands/trace.py` — `gpa trace uniform|texture|value`
+- `src/python/bhdr/cli/commands/trace.py` — `gpa trace uniform|texture|value`
   with `--frame / --dc / --json`. Plain-text renderer matches the
   "Query response" section's shape.
 - REST endpoints added to `routes_trace.py`:
@@ -199,11 +199,11 @@ One new tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` that wraps the 
   re-hashing the query literal — re-implementing JS's
   `Number.prototype.toString(36)` exactly is fiddly and unnecessary.
 - MCP tool `gpa_trace_value(frame_id, field?, value?, dc_id?)` in
-  `src/python/gpa/mcp/server.py`.
+  `src/python/bhdr/mcp/server.py`.
 
 ### Phase 3 — confidence + ranking (shipped)
 
-- `src/python/gpa/api/trace_ranking.py` — `rank_candidates()` sorts by
+- `src/python/bhdr/api/trace_ranking.py` — `rank_candidates()` sorts by
   `(tier desc, hops asc, path length asc)`. Inputs:
   - Hop distance: `.`-separated depth from the declared root (bracket
     indexing `foo[0]` counts as a hop).

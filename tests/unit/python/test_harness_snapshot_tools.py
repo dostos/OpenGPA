@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.eval.harness import EvalHarness, _SNAPSHOT_MAX_BYTES
-from gpa.eval.scenario import ScenarioMetadata
+from bhdr.eval.harness import EvalHarness, _SNAPSHOT_MAX_BYTES
+from bhdr.eval.scenario import ScenarioMetadata
 
 
 # ---------------------------------------------------------------------------

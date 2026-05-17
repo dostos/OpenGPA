@@ -1,6 +1,6 @@
-"""Tests for gpa.eval.agents base types."""
+"""Tests for bhdr.eval.agents base types."""
 import pytest
-from gpa.eval.agents import AgentBackend, AgentResult
+from bhdr.eval.agents import AgentBackend, AgentResult
 
 
 def test_agent_backend_is_abstract():

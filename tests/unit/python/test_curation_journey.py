@@ -1,4 +1,4 @@
-from gpa.eval.curation.journey import JourneyRow, SelectOutcome, ProduceOutcome, JudgeOutcome, TokenSpend, TerminalReason
+from bhdr.eval.curation.journey import JourneyRow, SelectOutcome, ProduceOutcome, JudgeOutcome, TokenSpend, TerminalReason
 
 def test_journey_row_full_commit_shape():
     row = JourneyRow(
@@ -48,7 +48,7 @@ def test_journey_row_select_dropped_has_null_phases():
     assert d["terminal_reason"] == "below_min_score"
 
 def test_journey_writer_roundtrip(tmp_path):
-    from gpa.eval.curation.journey import JourneyWriter
+    from bhdr.eval.curation.journey import JourneyWriter
     p = tmp_path / "journey.jsonl"
     w = JourneyWriter(p)
     w.append(JourneyRow(

@@ -36,7 +36,7 @@ the fix may also touch viewport/transform plumbing —
 ## 2. Gaps in the gpa CLI surface for advisor use
 
 Advisor mode = `upstream read|grep|list` only
-(`src/python/gpa/cli/commands/upstream.py:28-56`). What's missing:
+(`src/python/bhdr/cli/commands/upstream.py:28-56`). What's missing:
 
 1. **No `gpa upstream find-symbol NAME`.** Agent grep'd
    `^Picking\.prototype\.update` to find a definition. A

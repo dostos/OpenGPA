@@ -1,0 +1,703 @@
+"""Main orchestrator for the OpenGPA evaluation harness."""
+from __future__ import annotations
+
+import json
+import logging
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Callable, Optional
+
+_log = logging.getLogger(__name__)
+
+from bhdr.eval.metrics import EvalResult
+from bhdr.eval.runner import ScenarioRunner
+from bhdr.eval.scenario import (
+    ScenarioLoader,
+    ScenarioMetadata,
+    is_browser_tier_scenario,
+)
+
+if TYPE_CHECKING:
+    from bhdr.eval.snapshot_fetcher import SnapshotFetcher
+
+# Callable signature: (scenario, mode, tools) -> (diagnosis_text, input_tokens,
+#   output_tokens, tool_calls, num_turns, time_seconds)
+AgentFn = Callable[
+    [ScenarioMetadata, str, dict],
+    tuple[str, int, int, int, int, float],
+]
+
+_ALL_MODES = ["with_gla", "code_only"]
+
+
+# All non-legacy scenarios use the maintainer_framing prompt. Legacy /
+# unknown classes map to None so the agent falls back to its built-in
+# diagnosis prompt.
+#
+# R18-P2 (2026-05-14): collapsed the per-class dispatch into a single
+# template. The R17 cohort showed mining mis-classifies 100% of mined
+# scenarios as consumer-misuse / user-config, but their fix.files
+# contain framework code (1-22 framework source files each). The agent
+# already ignored the per-class schema guidance and emitted maintainer-
+# style JSON; the file_level scorer (which only parses
+# ``proposed_patches``) confirms this — 5 of R17's 10 solves came
+# through file_level despite the prompt asking for ``user_code_change``
+# or ``setting_change`` schemas that nothing parses. Per audit step 2,
+# deleted the dispatch in favour of one prompt that asks for what the
+# scorer reads.
+_PROMPT_BY_BUG_CLASS: dict[str, Optional[str]] = {
+    "framework-internal": "maintainer_framing",
+    "consumer-misuse": "maintainer_framing",
+    "user-config": "maintainer_framing",
+}
+
+_SNAPSHOT_MAX_BYTES = 512 * 1024  # 512 KB — godot files run 369–402 KB
+
+
+class EvalHarness:
+    """Orchestrates eval runs across scenarios and modes."""
+
+    def __init__(self, config: Optional[dict] = None,
+                 snapshot_fetcher: Optional["SnapshotFetcher"] = None,
+                 llm_judge_client: Optional[Any] = None,
+                 judge_cache_dir: Optional[Path] = None):
+        cfg = config or {}
+        eval_dir = cfg.get("eval_dir", "tests/eval")
+        self.loader = ScenarioLoader(eval_dir=eval_dir)
+        self.runner = ScenarioRunner(
+            gpa_base_url=cfg.get("gpa_base_url", "http://127.0.0.1:18080"),
+            gpa_token=cfg.get("gpa_token", ""),
+            shim_path=cfg.get("shim_path", ""),
+            bazel_bin=cfg.get("bazel_bin", "bazel"),
+            repo_root=cfg.get("repo_root"),
+        )
+        self._model = cfg.get("model", "unknown")
+        self.results: list[EvalResult] = []
+        self._snapshot_fetcher = snapshot_fetcher
+        # LLM-judge tier (opt-in): when a client is supplied, the
+        # `needs_review` band gets upgraded via semantic match against
+        # the fix-PR diff. Disk-cached so re-scoring a round is cheap.
+        self._llm_judge_client = llm_judge_client
+        self._judge_cache_dir = judge_cache_dir
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def run_scenario(
+        self,
+        scenario_id: str,
+        mode: str,
+        agent_fn: AgentFn,
+    ) -> EvalResult:
+        """Run one scenario in one mode.
+
+        Args:
+            scenario_id: e.g. "e1_state_leak"
+            mode: "with_gla" or "code_only"
+            agent_fn: callable(scenario, mode, tools) ->
+                      (diagnosis_text, input_tokens, output_tokens,
+                       tool_calls, num_turns, time_seconds)
+
+        Returns:
+            EvalResult with scores populated.
+        """
+        if mode not in _ALL_MODES:
+            raise ValueError(f"mode must be one of {_ALL_MODES}, got: {mode!r}")
+
+        scenario = self.loader.load(scenario_id)
+
+        # Build tool set for the agent
+        tools = self._build_tools(scenario, mode)
+
+        # Invoke the agent
+        (
+            diagnosis_text,
+            input_tokens,
+            output_tokens,
+            tool_calls,
+            num_turns,
+            elapsed,
+        ) = agent_fn(scenario, mode, tools)
+
+        # Maintainer-framing scorer (Phase 4): run when the scenario has
+        # a parseable `## Fix` section with a non-legacy bug_class that
+        # targets file-level scoring.  The scorer is best-effort: any
+        # error degrades gracefully (fields stay None).
+        bug_class = tools.get("bug_class")
+        maintainer_solved: Optional[bool] = None
+        file_score: Optional[float] = None
+        file_hits: Optional[list] = None
+        file_misses: Optional[list] = None
+        file_extras: Optional[list] = None
+        out_of_tree: Optional[list] = None
+        parsed_json: Optional[bool] = None
+
+        # File-level scorer fires whenever the scenario carries real fix
+        # metadata. Round-12 surfaced that consumer-misuse / user-config
+        # scenarios still patch framework code; their fix.files is just as
+        # scoreable as a framework-internal scenario's.
+        score_result = None
+        if scenario.fix is not None and scenario.fix.files:
+            try:
+                from bhdr.eval.scorer import (
+                    _extract_json_tail, score_maintainer_patch,
+                )
+                parsed = _extract_json_tail(diagnosis_text)
+                parsed_json = parsed is not None
+                # framework-internal prompts ask for JSON, so missing JSON
+                # is itself signal worth scoring (records solved=False).
+                # Other classes (advisor format) don't ask for JSON;
+                # missing JSON is expected, so leave file_score None and
+                # let the prose scorer below handle them.
+                should_score = (
+                    bug_class == "framework-internal" or parsed_json
+                )
+                if should_score:
+                    snapshot_root = None
+                    try:
+                        if (scenario.upstream_snapshot_repo
+                                and scenario.upstream_snapshot_sha):
+                            snapshot_root = self._ensure_snapshot(scenario)
+                    except Exception:
+                        snapshot_root = None
+                    score_result = score_maintainer_patch(
+                        parsed if parsed is not None else diagnosis_text,
+                        scenario.fix,
+                        snapshot_root=snapshot_root,
+                    )
+                    maintainer_solved = score_result.solved
+                    file_score = score_result.file_score
+                    file_hits = list(score_result.file_hits)
+                    file_misses = list(score_result.file_misses)
+                    file_extras = list(score_result.file_extras)
+                    out_of_tree = list(score_result.out_of_tree)
+            except Exception:
+                # Scoring is best-effort; don't fail the run on scorer bugs.
+                pass
+
+        # ScoreVerdict v2: orchestrate file_level + prose + gave-up. Best-
+        # effort; verdict stays None on failure rather than masking the
+        # legacy fields above. When an llm_judge_client is configured,
+        # `needs_review` rows get a semantic-match upgrade.
+        verdict_dict = None
+        try:
+            from dataclasses import asdict
+            from bhdr.eval.scorer import judge_residual, score_run
+            verdict = score_run(
+                diagnosis_text=diagnosis_text,
+                fix=scenario.fix,
+                file_score=score_result,
+            )
+            judge_client = getattr(self, "_llm_judge_client", None)
+            if judge_client is not None and verdict.needs_review:
+                snap_root = None
+                try:
+                    if (scenario.upstream_snapshot_repo
+                            and scenario.upstream_snapshot_sha):
+                        snap_root = self._ensure_snapshot(scenario)
+                except Exception:
+                    snap_root = None
+                verdict = judge_residual(
+                    verdict,
+                    fix=scenario.fix,
+                    diagnosis_text=diagnosis_text,
+                    snapshot_root=snap_root,
+                    llm_client=judge_client,
+                    cache_dir=getattr(self, "_judge_cache_dir", None),
+                )
+            verdict_dict = asdict(verdict)
+        except Exception:
+            verdict_dict = None
+
+        result = EvalResult(
+            scenario_id=scenario_id,
+            mode=mode,
+            diagnosis_text=diagnosis_text,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            tool_calls=tool_calls,
+            num_turns=num_turns,
+            time_seconds=elapsed,
+            model=self._model,
+            timestamp=datetime.now(timezone.utc).isoformat(),
+            bug_class=bug_class,
+            maintainer_solved=maintainer_solved,
+            file_score=file_score,
+            file_hits=file_hits,
+            file_misses=file_misses,
+            file_extras=file_extras,
+            out_of_tree=out_of_tree,
+            parsed_json=parsed_json,
+            verdict=verdict_dict,
+        )
+        self.results.append(result)
+        return result
+
+    def run_all(
+        self,
+        agent_fn: AgentFn,
+        scenarios: Optional[list[str]] = None,
+        modes: Optional[list[str]] = None,
+    ) -> list[EvalResult]:
+        """Run all (or a subset of) scenarios in all (or subset of) modes.
+
+        Args:
+            agent_fn: see run_scenario
+            scenarios: list of scenario IDs; None means all available
+            modes: list of modes; None means ["with_gla", "code_only"]
+
+        Returns:
+            All EvalResult objects produced in this run.
+        """
+        if scenarios is None:
+            all_meta = self.loader.load_all()
+            scenarios = [m.id for m in all_meta]
+        if modes is None:
+            modes = list(_ALL_MODES)
+
+        new_results: list[EvalResult] = []
+        for sid in scenarios:
+            # Source-less scenarios (mined without a synthetic
+            # reproducer) cannot run live capture, so `with_gla`
+            # collapses to `code_only` at the prompt level (R14
+            # browser-tier gate generalised — applies to ALL
+            # source-less scenarios, not just web-*). Skip the
+            # duplicate run entirely. Pre-R16 we paid 2x cohort
+            # cost for a measurement that had no signal.
+            try:
+                scen = self.loader.load(sid)
+                has_source = bool(scen.source_path)
+            except Exception:
+                has_source = True  # be conservative on loader errors
+            for mode in modes:
+                if mode == "with_gla" and not has_source:
+                    _log.info(
+                        "scenario %s: skipping with_gla — no source_path "
+                        "(can't capture; collapses to code_only)",
+                        sid,
+                    )
+                    continue
+                result = self.run_scenario(sid, mode, agent_fn)
+                new_results.append(result)
+        return new_results
+
+    def save_results(self, path: str) -> None:
+        """Serialize all accumulated results to a JSON file."""
+        data = [r.to_dict() for r in self.results]
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump(data, fh, indent=2)
+
+    @staticmethod
+    def load_results(path: str) -> list[EvalResult]:
+        """Load previously-saved results from a JSON file."""
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        return [EvalResult.from_dict(d) for d in data]
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _build_tools(self, scenario: ScenarioMetadata, mode: str) -> dict:
+        """Return a tool dictionary passed to the agent.
+
+        In 'with_gla' mode the runner tools are included.
+        In 'code_only' mode only the source reader is provided.
+        When the scenario has upstream snapshot refs, read_upstream,
+        list_upstream_files and grep_upstream are added for both modes.
+        These are full-repo tools — they walk / read / grep the ENTIRE
+        snapshot, not just ``upstream_snapshot_relevant_files`` (which is
+        now a hint list per the maintainer-framing spec, not a
+        restriction).
+
+        The returned dict also carries two meta entries the agent layer
+        uses to drive maintainer-framing prompts and scoring:
+
+        - ``bug_class``: the resolved bug class for this scenario
+          (``framework-internal`` | ``consumer-misuse`` | ``user-config``
+          | ``legacy``).  Inferred from ``scenario.fix.bug_class`` when
+          present; otherwise ``"legacy"``.
+        - ``system_prompt``: the rendered system prompt for this
+          scenario, chosen by :meth:`_select_prompt_for_scenario` per
+          ``bug_class``.  May be ``None`` for legacy scenarios, in which
+          case the agent falls back to its existing diagnosis prompt.
+        """
+        tools: dict = {
+            "read_source": lambda: self.runner.read_source(scenario),
+            # Directory-form scenarios include extra .c/.h/.glsl/.vert/.frag
+            # files beyond main.c. Expose them through a pair of scoped
+            # tools that deny any access to scenario.md (which carries
+            # Ground Truth). read_source still returns main.c contents for
+            # backward compatibility.
+            "list_scenario_files": lambda: self._list_scenario_files(scenario),
+            "read_scenario_file": lambda path: self._read_scenario_file(scenario, path),
+        }
+        # Effective mode: for browser-tier scenarios in with_gla, the
+        # GPA tool block is dead weight (the native LD_PRELOAD shim
+        # can't intercept browser WebGL). R13 (2026-05-05) confirmed
+        # the cost: with_gla=9/14 vs code_only=12/14 on the same
+        # cohort, with the gap entirely on web-map. Degrade to
+        # code_only for prompt construction so the agent isn't told
+        # to use endpoints that don't help. Result is still recorded
+        # under `mode == "with_gla"` for analysis comparison; only
+        # the prompt + tool block change.
+        effective_mode = mode
+        is_browser_tier_with_gla = (
+            mode == "with_gla" and is_browser_tier_scenario(scenario)
+        )
+        if is_browser_tier_with_gla:
+            _log.warning(
+                "scenario %s: browser-tier (web-* / graphics-lib) "
+                "in with_gla mode — degrading to code_only prompt "
+                "construction (no GPA tool block). The native shim "
+                "does not intercept browser WebGL; including the "
+                "block costs tokens for no value.",
+                scenario.id,
+            )
+            effective_mode = "code_only"
+        tools["effective_mode"] = effective_mode
+
+        if mode == "with_gla":
+            def _safe_run_with_capture():
+                if is_browser_tier_with_gla:
+                    # No point attempting a Bazel build + capture for a
+                    # browser-tier scenario; no source_path, no frame.
+                    return None
+                try:
+                    return self.runner.run_with_capture(scenario)
+                except (RuntimeError, FileNotFoundError, OSError) as exc:
+                    _log.warning(
+                        "scenario %s: live capture unavailable (%s); "
+                        "with_gla will run without GPA_FRAME_ID",
+                        scenario.id, exc,
+                    )
+                    return None
+            tools["run_with_capture"] = _safe_run_with_capture
+
+        # Add snapshot tools when the scenario references an upstream snapshot.
+        # Agents should be able to walk, read, and grep across the full
+        # snapshot — not just the `relevant_files` hint list.
+        if scenario.upstream_snapshot_repo and scenario.upstream_snapshot_sha:
+            tools["read_upstream"] = lambda path: self._read_snapshot_file(scenario, path)
+            tools["list_upstream_files"] = lambda subdir="": self._list_snapshot_files(scenario, subdir)
+            tools["grep_upstream"] = lambda pattern, subdir="", glob="", max_matches=200: (
+                self._grep_snapshot(scenario, pattern, subdir=subdir,
+                                    glob=glob, max_matches=max_matches)
+            )
+
+            # Lazy resolver for the cli_agent: returns the snapshot
+            # working-tree Path (cloning if needed) or None on fetch error.
+            # Triggered the first time the agent reads tools["snapshot_root"]().
+            def _snapshot_root():
+                try:
+                    return self._ensure_snapshot(scenario)
+                except Exception as exc:
+                    _log.warning(
+                        "scenario %s: snapshot fetch failed (%s); "
+                        "GPA_UPSTREAM_ROOT will not be set",
+                        scenario.id, exc,
+                    )
+                    return None
+            tools["snapshot_root"] = _snapshot_root
+
+        # Maintainer-framing metadata (Phase 4).  Agents that want to
+        # honour bug-class-aware prompting read these two keys; the
+        # default ``build_agent_fn`` does exactly that.  Legacy agents
+        # can ignore them.
+        bug_class = self._resolve_bug_class(scenario)
+        tools["bug_class"] = bug_class
+        tools["system_prompt"] = self._select_prompt_for_scenario(
+            scenario, bug_class=bug_class, mode=effective_mode,
+        )
+        # Free signal that helps the agent skip "where am I?" turns.
+        # cli_agent reads these into a one-line scenario blurb.
+        if scenario.fix is not None and scenario.fix.fix_pr_url:
+            tools["fix_pr_url"] = scenario.fix.fix_pr_url
+
+        return tools
+
+    @staticmethod
+    def _resolve_bug_class(scenario: ScenarioMetadata) -> str:
+        """Return the bug_class for a scenario.
+
+        Falls back to ``"legacy"`` when ``scenario.fix`` is absent or
+        carries no bug_class.  This keeps the pre-R10 scenarios on the
+        legacy diagnosis prompt even after Phase 4 lands.
+        """
+        fix = getattr(scenario, "fix", None)
+        if fix is not None and getattr(fix, "bug_class", None):
+            return str(fix.bug_class)
+        return "legacy"
+
+    def _select_prompt_for_scenario(
+        self,
+        scenario: ScenarioMetadata,
+        bug_class: str,
+        mode: str,
+    ) -> Optional[str]:
+        """Render the right prompt for a scenario by bug_class.
+
+        Returns None for ``bug_class == "legacy"`` so the agent falls
+        back to its existing diagnosis prompt.
+        """
+        # Import lazily so harness has no startup dependency on the
+        # prompts package (keeps import times cheap for callers that
+        # don't need prompts, e.g. analytics scripts).
+        from bhdr.eval.prompts import render_prompt
+        from bhdr.eval.scope_hint import compute_scope_hint
+
+        template_name = _PROMPT_BY_BUG_CLASS.get(bug_class)
+        if template_name is None:
+            # "legacy" or unknown — fall back to the agent's default prompt.
+            return None
+
+        # Pre-compute the scope hint once for the scenario. Pulls from the
+        # curated fix.files list — this is "size and area" only, never the
+        # filenames themselves (the hint helper enforces this).
+        scope_hint = None
+        if scenario.fix is not None and scenario.fix.files:
+            scope_hint = compute_scope_hint(scenario.fix.files)
+
+        return render_prompt(
+            template_name,
+            framework=scenario.framework or "the framework",
+            user_report=scenario.bug_description or "",
+            upstream_snapshot_repo=scenario.upstream_snapshot_repo,
+            upstream_snapshot_sha=scenario.upstream_snapshot_sha,
+            mode=mode,
+            scope_hint=scope_hint,
+        )
+
+    # ------------------------------------------------------------------
+    # Scenario-directory helpers (must exclude scenario.md to avoid
+    # leaking Ground Truth to the agent)
+    # ------------------------------------------------------------------
+
+    _SCENARIO_ALLOWED_EXTS = (".c", ".h", ".glsl", ".vert", ".frag", ".txt")
+    _SCENARIO_DENIED_NAMES = frozenset({"scenario.md"})
+
+    def _scenario_root(self, scenario: ScenarioMetadata) -> Optional[Path]:
+        sdir = getattr(scenario, "scenario_dir", None)
+        return Path(sdir) if sdir else None
+
+    def _is_agent_visible(self, rel: str) -> bool:
+        """Policy: agent-visible files are source/shader files only. Never
+        scenario.md (Ground Truth lives there). Never hidden dotfiles."""
+        name = Path(rel).name
+        if name in self._SCENARIO_DENIED_NAMES:
+            return False
+        if name.startswith("."):
+            return False
+        return Path(rel).suffix.lower() in self._SCENARIO_ALLOWED_EXTS
+
+    def _list_scenario_files(self, scenario: ScenarioMetadata) -> str:
+        root = self._scenario_root(scenario)
+        if root is None or not root.exists():
+            return "ERROR: scenario directory not available"
+        names = []
+        for p in sorted(root.iterdir()):
+            if p.is_file() and self._is_agent_visible(p.name):
+                names.append(p.name)
+        return "\n".join(names)
+
+    def _read_scenario_file(self, scenario: ScenarioMetadata, path: str) -> str:
+        root = self._scenario_root(scenario)
+        if root is None or not root.exists():
+            return "ERROR: scenario directory not available"
+        try:
+            target = (root / path).resolve()
+            if not str(target).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {path!r}"
+        except Exception as exc:
+            return f"ERROR: invalid path {path!r}: {exc}"
+        if not target.exists() or not target.is_file():
+            return f"ERROR: file not found: {path!r}"
+        rel = str(target.relative_to(root.resolve()))
+        if not self._is_agent_visible(rel):
+            return f"ERROR: file {path!r} is not agent-visible (scenario.md is withheld to prevent Ground Truth leakage)"
+        try:
+            return target.read_text(encoding="utf-8", errors="replace")
+        except Exception as exc:
+            return f"ERROR: could not read {path!r}: {exc}"
+
+    # ------------------------------------------------------------------
+    # Snapshot helpers
+    # ------------------------------------------------------------------
+
+    def _ensure_snapshot(self, scenario: ScenarioMetadata) -> Path:
+        """Return the working-tree Path for the scenario's upstream snapshot."""
+        if self._snapshot_fetcher is None:
+            from bhdr.eval.snapshot_fetcher import SnapshotFetcher
+            self._snapshot_fetcher = SnapshotFetcher()
+        from bhdr.eval.snapshot_fetcher import SnapshotRef
+        ref = SnapshotRef(
+            repo_url=scenario.upstream_snapshot_repo,  # type: ignore[arg-type]
+            sha=scenario.upstream_snapshot_sha,  # type: ignore[arg-type]
+            resolve_parent=scenario.upstream_snapshot_resolve_parent,
+        )
+        return self._snapshot_fetcher.fetch(ref)
+
+    def _read_snapshot_file(self, scenario: ScenarioMetadata, path: str) -> str:
+        """Read a file from the upstream snapshot and return its contents.
+
+        Returns an "ERROR: ..." string on any failure — never raises.
+        Guards against path traversal, missing files, wrong type, fetch
+        failures, and files larger than 200 KB (truncated with a marker).
+        """
+        try:
+            root = self._ensure_snapshot(scenario)
+        except Exception as exc:
+            return f"ERROR: could not fetch upstream snapshot: {exc}"
+
+        try:
+            # Resolve the requested path relative to snapshot root;
+            # guard against traversal outside root.
+            target = (root / path).resolve()
+            if not str(target).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {path!r}"
+        except Exception as exc:
+            return f"ERROR: invalid path {path!r}: {exc}"
+
+        if not target.exists():
+            return f"ERROR: file not found in snapshot: {path!r}"
+        if target.is_dir():
+            return f"ERROR: {path!r} is a directory, not a file"
+
+        try:
+            raw = target.read_bytes()
+        except Exception as exc:
+            return f"ERROR: could not read {path!r}: {exc}"
+
+        truncated = len(raw) > _SNAPSHOT_MAX_BYTES
+        if truncated:
+            raw = raw[:_SNAPSHOT_MAX_BYTES]
+
+        try:
+            text = raw.decode("utf-8", errors="replace")
+        except Exception as exc:
+            return f"ERROR: could not decode {path!r} as UTF-8: {exc}"
+
+        if truncated:
+            text += f"\n\n[TRUNCATED: file exceeds {_SNAPSHOT_MAX_BYTES // 1024} KB limit]"
+
+        return text
+
+    def _list_snapshot_files(self, scenario: ScenarioMetadata, subdir: str = "") -> str:
+        """List entries under subdir in the upstream snapshot.
+
+        Returns a newline-separated list of names with '/' suffix on dirs.
+        Returns an "ERROR: ..." string on any failure.
+        """
+        try:
+            root = self._ensure_snapshot(scenario)
+        except Exception as exc:
+            return f"ERROR: could not fetch upstream snapshot: {exc}"
+
+        try:
+            target = (root / subdir).resolve() if subdir else root.resolve()
+            if not str(target).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {subdir!r}"
+        except Exception as exc:
+            return f"ERROR: invalid path {subdir!r}: {exc}"
+
+        if not target.exists():
+            return f"ERROR: directory not found in snapshot: {subdir!r}"
+        if not target.is_dir():
+            return f"ERROR: {subdir!r} is a file, not a directory"
+
+        try:
+            entries = sorted(target.iterdir(), key=lambda p: (p.is_file(), p.name))
+            names = [
+                (e.name + "/" if e.is_dir() else e.name)
+                for e in entries
+                if e.name != ".complete"
+            ]
+        except Exception as exc:
+            return f"ERROR: could not list {subdir!r}: {exc}"
+
+        return "\n".join(names)
+
+    def _grep_snapshot(
+        self,
+        scenario: ScenarioMetadata,
+        pattern: str,
+        subdir: str = "",
+        glob: str = "",
+        max_matches: int = 200,
+    ) -> str:
+        """Grep for `pattern` across files in the upstream snapshot.
+
+        Powered by ripgrep (`rg`) when available; falls back to python
+        regex if not. Returns matches in ``path:line:text`` form, capped
+        to ``max_matches`` lines. ``glob`` filters by filename (e.g.
+        ``"*.ts"``); ``subdir`` narrows the search root.
+        """
+        import re as _re
+        import shutil as _shutil
+        import subprocess as _subprocess
+
+        try:
+            root = self._ensure_snapshot(scenario)
+        except Exception as exc:
+            return f"ERROR: could not fetch upstream snapshot: {exc}"
+
+        try:
+            search_root = (root / subdir).resolve() if subdir else root.resolve()
+            if not str(search_root).startswith(str(root.resolve())):
+                return f"ERROR: path traversal not allowed: {subdir!r}"
+        except Exception as exc:
+            return f"ERROR: invalid subdir {subdir!r}: {exc}"
+        if not search_root.exists() or not search_root.is_dir():
+            return f"ERROR: {subdir!r} is not a directory in the snapshot"
+
+        rg_path = _shutil.which("rg")
+        if rg_path:
+            argv = [rg_path, "-n", "--no-heading", "--color", "never",
+                    "-m", str(max_matches), pattern]
+            if glob:
+                argv.extend(["-g", glob])
+            argv.append(str(search_root))
+            try:
+                out = _subprocess.run(
+                    argv, capture_output=True, text=True, timeout=20,
+                )
+            except Exception as exc:
+                return f"ERROR: ripgrep invocation failed: {exc}"
+            if out.returncode not in (0, 1):  # 1 == no matches
+                return f"ERROR: ripgrep: {out.stderr[:300]}"
+            lines = out.stdout.splitlines()[:max_matches]
+            # Strip the absolute snapshot prefix so paths are snapshot-relative.
+            prefix = str(root.resolve()) + "/"
+            return "\n".join(
+                line[len(prefix):] if line.startswith(prefix) else line
+                for line in lines
+            ) or "(no matches)"
+
+        # Python fallback — fine for small snapshots, slow for large ones
+        try:
+            cre = _re.compile(pattern)
+        except _re.error as exc:
+            return f"ERROR: invalid regex {pattern!r}: {exc}"
+        from fnmatch import fnmatch
+        matches: list[str] = []
+        for p in search_root.rglob("*"):
+            if not p.is_file():
+                continue
+            rel = str(p.relative_to(root))
+            if glob and not fnmatch(p.name, glob):
+                continue
+            try:
+                text = p.read_text(encoding="utf-8", errors="replace")
+            except Exception:
+                continue
+            for i, line in enumerate(text.splitlines(), 1):
+                if cre.search(line):
+                    matches.append(f"{rel}:{i}:{line}")
+                    if len(matches) >= max_matches:
+                        break
+            if len(matches) >= max_matches:
+                break
+        return "\n".join(matches) or "(no matches)"

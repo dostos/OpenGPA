@@ -1,7 +1,7 @@
 import subprocess
 from unittest.mock import patch, MagicMock
 import pytest
-from gpa.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, CodexCliLLMClient, LLMResponse
+from bhdr.eval.curation.llm_client import LLMClient, ClaudeCodeLLMClient, CodexCliLLMClient, LLMResponse
 
 def test_llm_client_calls_anthropic_with_cache_control():
     fake_sdk = MagicMock()

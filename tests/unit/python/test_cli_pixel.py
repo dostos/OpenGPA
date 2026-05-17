@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from gpa.cli.commands import pixel as pixel_mod
+from bhdr.cli.commands import pixel as pixel_mod
 
 
 # --------------------------------------------------------------------------- #

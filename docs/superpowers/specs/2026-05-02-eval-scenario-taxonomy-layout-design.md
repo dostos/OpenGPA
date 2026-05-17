@@ -121,7 +121,7 @@ for review.
 
 Every scenario directory contains both `scenario.md` (prose) and
 `scenario.yaml` (metadata). Schema lives at
-`src/python/gpa/eval/scenario_schema.json`.
+`src/python/bhdr/eval/scenario_schema.json`.
 
 ```yaml
 schema_version: 1
@@ -163,13 +163,13 @@ taxonomy.framework, status`.
 
 **Closed lists** (drift-resistant): `taxonomy.category` and
 `taxonomy.framework` are validated against
-`src/python/gpa/eval/curation/mining_rules.yaml` at load time. Adding a new
+`src/python/bhdr/eval/curation/mining_rules.yaml` at load time. Adding a new
 framework requires editing `mining_rules.yaml` first; the validator surfaces
 the drift on the next CI run.
 
 ## Validation
 
-New module `src/python/gpa/eval/scenario_metadata.py`:
+New module `src/python/bhdr/eval/scenario_metadata.py`:
 
 ```python
 @dataclass
@@ -195,7 +195,7 @@ Pytest test in `tests/unit/python/test_scenario_metadata.py` walks
 
 ## Indexes
 
-CLI subcommands (in a new `src/python/gpa/eval/index_cli.py`):
+CLI subcommands (in a new `src/python/bhdr/eval/index_cli.py`):
 
 ```
 gpa-eval index --by taxonomy   # table: <category> × <framework>, count
@@ -209,12 +209,12 @@ are not committed to the repo (computed on demand).
 
 ## Migration Tool
 
-New file `src/python/gpa/eval/migrate_layout.py`:
+New file `src/python/bhdr/eval/migrate_layout.py`:
 
 ```
 Inputs:
   --root tests/eval
-  --rules src/python/gpa/eval/curation/mining_rules.yaml
+  --rules src/python/bhdr/eval/curation/mining_rules.yaml
   --overrides migration_overrides.yaml   # operator-edited
   --dry-run / --apply
   --report /tmp/migration.json
@@ -304,8 +304,8 @@ The migration PR includes a separate commit per consumer:
 | `docs/eval-results.md` | Update `tests/eval/r15_*` references. |
 | `docs/superpowers/specs/2026-04-17-eval-set-real-world-design.md` | "Superseded by this spec" pointer at top. |
 | `docs/superpowers/specs/2026-04-28-omnispace-gen-integration-design.md` | Update `tests/eval/r37_joint_offset_smplx/` reference. |
-| `src/python/gpa/eval/curation/draft.py` and `run.py` | New mined scenarios go to `<category>/<framework>/<slug>/` with `scenario.yaml`. |
-| `src/python/gpa/eval/curation/journey.py` | Path constructions updated. |
+| `src/python/bhdr/eval/curation/draft.py` and `run.py` | New mined scenarios go to `<category>/<framework>/<slug>/` with `scenario.yaml`. |
+| `src/python/bhdr/eval/curation/journey.py` | Path constructions updated. |
 | `CLAUDE.md` | Eval examples use new paths. |
 
 ## Forward-Going Mining Pipeline
@@ -359,7 +359,7 @@ codegen helpers (in `scenario_metadata.py`).
 9. CI gate: `bazel test //tests/...` and `pytest tests/unit/python/`.
 
 **Auxiliary file locations**:
-- `migration_overrides.yaml` lives at `src/python/gpa/eval/migration_overrides.yaml`
+- `migration_overrides.yaml` lives at `src/python/bhdr/eval/migration_overrides.yaml`
   (committed; small, hand-edited).
 - `migration_review.csv` is generated to `/tmp/` by default and not committed.
 

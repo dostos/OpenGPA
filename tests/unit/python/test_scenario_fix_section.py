@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.scenario import FixMetadata, ScenarioLoader
+from bhdr.eval.scenario import FixMetadata, ScenarioLoader
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +145,7 @@ def test_parse_fix_section_missing_yaml_block(tmp_path, caplog):
     fix_block = "## Fix\n\nSome prose but no YAML block whatsoever.\n"
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_no_yaml", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_no_yaml")
     assert scenario.fix is None
     assert any(
@@ -167,7 +167,7 @@ def test_parse_fix_section_missing_required_field(tmp_path, caplog):
         """)
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_no_files", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_no_files")
     assert scenario.fix is None
     assert any("empty files list" in r.getMessage() for r in caplog.records)
@@ -187,7 +187,7 @@ def test_parse_fix_section_missing_fix_pr_url(tmp_path, caplog):
         """)
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_no_url", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_no_url")
     assert scenario.fix is None
     assert any("required field" in r.getMessage() for r in caplog.records)
@@ -196,7 +196,7 @@ def test_parse_fix_section_missing_fix_pr_url(tmp_path, caplog):
 def test_parse_legacy_scenario_without_fix(tmp_path, caplog):
     """No `## Fix` heading at all → fix=None, no warning emitted."""
     loader = _write_scenario(tmp_path, "r99_legacy", _BASE_MD_WITHOUT_FIX)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_legacy")
     assert scenario.fix is None
     # Critically: no warning, because there's no section at all.
@@ -243,7 +243,7 @@ def test_bug_class_legacy_allowed(tmp_path, caplog):
         """)
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_legacy", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_legacy")
     assert scenario.fix is not None
     assert scenario.fix.bug_class == "legacy"
@@ -269,7 +269,7 @@ def test_bug_class_unknown_preserved_with_warning(tmp_path, caplog):
         """)
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_unknown_class", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_unknown_class")
     assert scenario.fix is not None
     assert scenario.fix.bug_class == "some-new-category"
@@ -290,6 +290,6 @@ def test_fix_section_malformed_yaml(tmp_path, caplog):
         """)
     md = _BASE_MD_WITHOUT_FIX + "\n" + fix_block
     loader = _write_scenario(tmp_path, "r99_fix_bad_yaml", md)
-    with caplog.at_level(logging.WARNING, logger="gpa.eval.scenario"):
+    with caplog.at_level(logging.WARNING, logger="bhdr.eval.scenario"):
         scenario = loader.load("r99_fix_bad_yaml")
     assert scenario.fix is None

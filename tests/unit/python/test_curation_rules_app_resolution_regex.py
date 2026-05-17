@@ -17,7 +17,7 @@ import re
 
 import pytest
 
-from gpa.eval.curation.rules import infer_bug_class, load_rules
+from bhdr.eval.curation.rules import infer_bug_class, load_rules
 
 
 # Canonical user-report prose that triggered false `consumer-misuse`

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from gpa.eval.dashboard._narrative import find_narrative, extract_headline
+from bhdr.eval.dashboard._narrative import find_narrative, extract_headline
 
 
 def test_find_narrative_by_round_id(tmp_path):

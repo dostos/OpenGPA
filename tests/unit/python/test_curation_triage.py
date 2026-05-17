@@ -1,7 +1,7 @@
 import json
 from unittest.mock import patch, MagicMock
-from gpa.eval.curation.triage import Triage, TriageResult, IssueThread, fetch_issue_thread, fetch_commit_thread, fetch_pr_thread
-from gpa.eval.curation.llm_client import LLMResponse
+from bhdr.eval.curation.triage import Triage, TriageResult, IssueThread, fetch_issue_thread, fetch_commit_thread, fetch_pr_thread
+from bhdr.eval.curation.llm_client import LLMResponse
 
 def _fake_response(text: str) -> LLMResponse:
     return LLMResponse(text=text, input_tokens=100, output_tokens=50,
@@ -164,7 +164,7 @@ def test_fetch_thread_dispatches_by_url_shape():
     issue_stub.return_value = IssueThread(url="issue", title="i", body="b")
     commit_stub.return_value = IssueThread(url="commit", title="c", body="b")
 
-    import gpa.eval.curation.triage as T
+    import bhdr.eval.curation.triage as T
     with patch.object(T, "fetch_issue_thread", issue_stub), \
          patch.object(T, "fetch_commit_thread", commit_stub):
         r1 = T.fetch_thread("https://github.com/o/r/issues/1")
@@ -175,8 +175,8 @@ def test_fetch_thread_dispatches_by_url_shape():
 
 def test_fetch_thread_dispatches_to_stackoverflow():
     """SO URLs are routed to fetch_stackoverflow_thread."""
-    import gpa.eval.curation.triage as T
-    import gpa.eval.curation.stackoverflow as SO
+    import bhdr.eval.curation.triage as T
+    import bhdr.eval.curation.stackoverflow as SO
 
     so_stub = MagicMock(return_value=IssueThread(url="so", title="so", body="b"))
     with patch.object(SO, "fetch_stackoverflow_thread", so_stub):
@@ -186,7 +186,7 @@ def test_fetch_thread_dispatches_to_stackoverflow():
 
 
 def test_extract_pr_refs_finds_short_form():
-    from gpa.eval.curation.triage import _extract_pr_refs
+    from bhdr.eval.curation.triage import _extract_pr_refs
     text = "Fixed by #1234 and also see #5678."
     refs = _extract_pr_refs(text, "owner", "repo")
     nums = [r[2] for r in refs]
@@ -195,19 +195,19 @@ def test_extract_pr_refs_finds_short_form():
     assert refs[0][0] == "owner"
 
 def test_extract_pr_refs_finds_full_urls():
-    from gpa.eval.curation.triage import _extract_pr_refs
+    from bhdr.eval.curation.triage import _extract_pr_refs
     text = "See https://github.com/mrdoob/three.js/pull/12345 for context."
     refs = _extract_pr_refs(text, "owner", "repo")
     assert any(r == ("mrdoob", "three.js", "12345") for r in refs)
 
 def test_extract_pr_refs_handles_commit_urls():
-    from gpa.eval.curation.triage import _extract_pr_refs
+    from bhdr.eval.curation.triage import _extract_pr_refs
     text = "Fixed in https://github.com/owner/repo/commit/abc123def456"
     refs = _extract_pr_refs(text, "owner", "repo")
     assert any(r == ("owner", "repo", "abc123def456") for r in refs)
 
 def test_extract_pr_refs_dedupes():
-    from gpa.eval.curation.triage import _extract_pr_refs
+    from bhdr.eval.curation.triage import _extract_pr_refs
     text = "See #1234, also #1234 and https://github.com/o/r/pull/1234"
     refs = _extract_pr_refs(text, "o", "r")
     assert len(refs) == 1
@@ -341,7 +341,7 @@ def test_fetch_thread_dispatches_pr_url():
     """`fetch_thread()` must route `/pull/<n>` URLs to `fetch_pr_thread`,
     not `fetch_issue_thread` (which would raise ValueError)."""
     pr_stub = MagicMock(return_value=IssueThread(url="pr", title="p", body="b"))
-    import gpa.eval.curation.triage as T
+    import bhdr.eval.curation.triage as T
     with patch.object(T, "fetch_pr_thread", pr_stub):
         result = T.fetch_thread("https://github.com/o/r/pull/123")
     assert result.title == "p"

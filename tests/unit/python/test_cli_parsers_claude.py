@@ -11,8 +11,8 @@ claude -p --output-format stream-json --verbose) on 2026-05-02. It covers:
 """
 from __future__ import annotations
 import pathlib
-from gpa.eval.agents.cli_parsers import parse_claude_stream_json
-from gpa.eval.agents.cli_spec import CliRunMetrics
+from bhdr.eval.agents.cli_parsers import parse_claude_stream_json
+from bhdr.eval.agents.cli_spec import CliRunMetrics
 
 FIXTURE = pathlib.Path(__file__).parent / "fixtures" / "claude_stream.jsonl"
 

@@ -11,11 +11,11 @@ from pathlib import Path
 
 import pytest
 
-from gpa.cli.checks import CheckResult, Finding
-from gpa.cli.commands import check as check_cmd
-from gpa.cli.commands import report as report_cmd
-from gpa.cli.rest_client import RestClient, RestError
-from gpa.cli.session import Session
+from bhdr.cli.checks import CheckResult, Finding
+from bhdr.cli.commands import check as check_cmd
+from bhdr.cli.commands import report as report_cmd
+from bhdr.cli.rest_client import RestClient, RestError
+from bhdr.cli.session import Session
 
 
 @pytest.fixture
@@ -128,7 +128,7 @@ def test_report_skip_filter(session_dir, injected_rest, monkeypatch):
 def test_report_no_session_returns_2(tmp_path, monkeypatch):
     # Ensure discovery fails.
     monkeypatch.delenv("GPA_SESSION", raising=False)
-    from gpa.cli import session as session_mod
+    from bhdr.cli import session as session_mod
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK",
                         str(tmp_path / "no-such-link"))
     buf = io.StringIO()

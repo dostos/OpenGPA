@@ -7,8 +7,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from gpa.eval.harness import EvalHarness
-from gpa.eval.scenario import ScenarioMetadata
+from bhdr.eval.harness import EvalHarness
+from bhdr.eval.scenario import ScenarioMetadata
 
 
 def _make_scenario(**overrides) -> ScenarioMetadata:
@@ -79,8 +79,8 @@ def test_run_with_capture_absent_from_code_only_tools():
 def test_browser_tier_with_gla_sets_effective_mode_to_code_only(tmp_path, monkeypatch):
     """The harness should set tools['effective_mode']='code_only' for a
     browser-tier scenario in with_gla mode."""
-    import gpa.eval.scenario as scenario_mod
-    from gpa.eval.harness import EvalHarness
+    import bhdr.eval.scenario as scenario_mod
+    from bhdr.eval.harness import EvalHarness
 
     h = EvalHarness()
     # Stub a scenario with a browser-tier scenario_dir
@@ -91,7 +91,7 @@ def test_browser_tier_with_gla_sets_effective_mode_to_code_only(tmp_path, monkey
 
 def test_native_with_gla_keeps_effective_mode_with_gla(tmp_path):
     """Native engine scenarios should NOT downgrade — effective_mode stays with_gla."""
-    from gpa.eval.harness import EvalHarness
+    from bhdr.eval.harness import EvalHarness
 
     h = EvalHarness()
     scenario = _make_native_scenario(tmp_path)
@@ -103,7 +103,7 @@ def test_browser_tier_with_gla_drops_gpa_only_block_from_prompt(tmp_path):
     """The system_prompt for a browser-tier with_gla scenario should be
     rendered in code_only mode — i.e. should NOT contain the WITH_GPA_ONLY-
     gated content (e.g. 'gpa report --frame latest --json')."""
-    from gpa.eval.harness import EvalHarness
+    from bhdr.eval.harness import EvalHarness
 
     h = EvalHarness()
     scenario = _make_browser_scenario(tmp_path)
@@ -119,7 +119,7 @@ def test_browser_tier_with_gla_drops_gpa_only_block_from_prompt(tmp_path):
 def test_browser_tier_with_gla_skips_run_with_capture(tmp_path):
     """run_with_capture for a browser-tier scenario should return None
     immediately (not even attempt a Bazel build)."""
-    from gpa.eval.harness import EvalHarness
+    from bhdr.eval.harness import EvalHarness
 
     h = EvalHarness()
     scenario = _make_browser_scenario(tmp_path)
@@ -133,7 +133,7 @@ def test_browser_tier_with_gla_skips_run_with_capture(tmp_path):
 def _make_browser_scenario(tmp_path):
     """A minimal scenario with a web-map scenario_dir to trigger the
     browser-tier check."""
-    from gpa.eval.scenario import ScenarioMetadata, FixMetadata
+    from bhdr.eval.scenario import ScenarioMetadata, FixMetadata
 
     sd = tmp_path / "tests" / "eval" / "web-map" / "cesium" / "test-slug"
     sd.mkdir(parents=True, exist_ok=True)
@@ -155,7 +155,7 @@ def _make_browser_scenario(tmp_path):
 
 def _make_native_scenario(tmp_path):
     """A minimal scenario with a native-engine scenario_dir (NOT browser tier)."""
-    from gpa.eval.scenario import ScenarioMetadata, FixMetadata
+    from bhdr.eval.scenario import ScenarioMetadata, FixMetadata
 
     sd = tmp_path / "tests" / "eval" / "native-engine" / "godot" / "test-slug"
     sd.mkdir(parents=True, exist_ok=True)
@@ -187,8 +187,8 @@ def _make_native_scenario(tmp_path):
 def test_run_all_skips_with_gla_for_source_less_scenarios(tmp_path, monkeypatch):
     """When a scenario has no source_path, run_all should skip its
     with_gla run entirely — the comparison is meaningless."""
-    from gpa.eval.harness import EvalHarness
-    from gpa.eval.scenario import ScenarioMetadata, FixMetadata
+    from bhdr.eval.harness import EvalHarness
+    from bhdr.eval.scenario import ScenarioMetadata, FixMetadata
 
     h = EvalHarness()
 
@@ -228,7 +228,7 @@ def test_run_all_skips_with_gla_for_source_less_scenarios(tmp_path, monkeypatch)
     def fake_run_scenario(sid, mode, agent_fn):
         invocations.append((sid, mode))
         # Return a minimal result so the loop continues
-        from gpa.eval.metrics import EvalResult
+        from bhdr.eval.metrics import EvalResult
         return EvalResult(scenario_id=sid, mode=mode,
                           diagnosis_text="", input_tokens=0, output_tokens=0,
                           total_tokens=0, tool_calls=0, num_turns=0,

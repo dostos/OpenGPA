@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from gpa.cli.commands import check_config as cc_cmd
-from gpa.cli.rest_client import RestClient, RestError
+from bhdr.cli.commands import check_config as cc_cmd
+from bhdr.cli.rest_client import RestClient, RestError
 
 
 # --------------------------------------------------------------------------- #
@@ -56,7 +56,7 @@ def injected_rest(client):
 class TestRulesListing:
     def test_rules_flag_lists_all(self, monkeypatch, tmp_path):
         # No session needed; --rules short-circuits.
-        from gpa.cli import session as session_mod
+        from bhdr.cli import session as session_mod
         monkeypatch.delenv("GPA_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
@@ -69,12 +69,12 @@ class TestRulesListing:
         assert "auto-clear-with-no-explicit-clear" in out
         assert "depth-write-without-depth-test" in out
         # All 8 rule ids should appear.
-        from gpa.checks import default_engine
+        from bhdr.checks import default_engine
         for rid in default_engine().rule_ids():
             assert rid in out
 
     def test_rules_json(self, monkeypatch, tmp_path):
-        from gpa.cli import session as session_mod
+        from bhdr.cli import session as session_mod
         monkeypatch.delenv("GPA_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
@@ -233,7 +233,7 @@ class TestErrorPaths:
         assert "gpa check-config --rules" in captured.err
 
     def test_no_session_exit_3(self, monkeypatch, tmp_path, capsys):
-        from gpa.cli import session as session_mod
+        from bhdr.cli import session as session_mod
         monkeypatch.delenv("GPA_SESSION", raising=False)
         monkeypatch.setattr(
             session_mod, "CURRENT_SESSION_LINK",
@@ -310,7 +310,7 @@ class TestStdinPipeline:
 
 class TestArgparseWiring:
     def test_help_includes_examples(self, capsys):
-        from gpa.cli.main import build_parser
+        from bhdr.cli.main import build_parser
         parser = build_parser()
         with pytest.raises(SystemExit) as e:
             parser.parse_args(["check-config", "--help"])
@@ -324,7 +324,7 @@ class TestArgparseWiring:
         assert "color-space-encoding-mismatch" in out
 
     def test_subcommand_parses_typed_args(self):
-        from gpa.cli.main import build_parser
+        from bhdr.cli.main import build_parser
         parser = build_parser()
         args = parser.parse_args([
             "check-config", "--frame", "7", "--severity", "error",
@@ -337,7 +337,7 @@ class TestArgparseWiring:
         assert args.json_output is True
 
     def test_dash_frame_accepted(self):
-        from gpa.cli.main import build_parser
+        from bhdr.cli.main import build_parser
         parser = build_parser()
         args = parser.parse_args(["check-config", "--frame", "-"])
         assert args.frame == "-"

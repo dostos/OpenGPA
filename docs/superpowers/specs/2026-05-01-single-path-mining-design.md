@@ -21,7 +21,7 @@ PRODUCE  — extract_draft · validate
 JUDGE    — evaluate · classify_helps · commit
 ```
 
-CLI: `python -m gpa.eval.curation.run`. Phase boundary is the
+CLI: `python -m bhdr.eval.curation.run`. Phase boundary is the
 user-facing surface (`--max-phase`); finer sub-steps remain in
 `IssueWorkdir` for replay.
 

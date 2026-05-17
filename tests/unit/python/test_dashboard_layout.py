@@ -1,6 +1,6 @@
 import pytest
 
-from gpa.eval.dashboard._layout import extract_round_id
+from bhdr.eval.dashboard._layout import extract_round_id
 
 
 @pytest.mark.parametrize("dirname,expected", [
@@ -30,7 +30,7 @@ def test_extract_round_id(dirname, expected):
     assert extract_round_id(dirname) == expected
 
 
-from gpa.eval.dashboard._layout import fold_rerun_dirs
+from bhdr.eval.dashboard._layout import fold_rerun_dirs
 
 
 def test_fold_rerun_dirs_groups_by_round_id(tmp_path):
@@ -53,7 +53,7 @@ def test_fold_rerun_dirs_missing_root_returns_empty(tmp_path):
     assert fold_rerun_dirs(tmp_path / "nope") == {}
 
 
-from gpa.eval.dashboard._layout import pick_result_files
+from bhdr.eval.dashboard._layout import pick_result_files
 
 
 def test_pick_prefers_merged_over_full(tmp_path):
@@ -81,7 +81,7 @@ def test_pick_empty_when_no_match(tmp_path):
     assert pick_result_files(tmp_path) == []
 
 
-from gpa.eval.dashboard._layout import extract_date
+from bhdr.eval.dashboard._layout import extract_date
 
 
 @pytest.mark.parametrize("dirname,expected", [

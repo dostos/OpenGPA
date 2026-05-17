@@ -1,0 +1,238 @@
+"""Scenario runner: compiles and runs eval GL apps under OpenGPA capture."""
+from __future__ import annotations
+
+import os
+import subprocess
+import time
+from pathlib import Path
+from typing import Optional
+
+from bhdr.eval.scenario import ScenarioMetadata
+
+
+def _capture_via_rest(base_url: str, token: str) -> dict:
+    """Fetch the latest captured frame metadata via REST.
+
+    Note: framebuffer image bytes are not exposed by the Tier-1 native
+    backend, so ``framebuffer_png`` is always empty. Downstream consumers
+    that need the image must obtain it through another path.
+    """
+    import json
+    import urllib.request
+
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+    def _get(path):
+        req = urllib.request.Request(base_url + path, headers=headers)
+        with urllib.request.urlopen(req, timeout=30) as r:
+            return r.read()
+
+    overview = json.loads(_get("/api/v1/frames/current/overview"))
+    drawcalls = json.loads(_get("/api/v1/frames/current/drawcalls?limit=200&offset=0"))
+
+    return {
+        "framebuffer_png": b"",
+        "metadata": {
+            "draw_call_count": overview.get("draw_call_count", 0),
+            "draw_calls": drawcalls.get("items", []),
+        },
+    }
+
+
+class ScenarioRunner:
+    """Compiles and runs eval scenarios under OpenGPA capture.
+
+    The runner uses Bazel to build each scenario binary and then launches
+    it with LD_PRELOAD pointing at the OpenGPA shim library.
+    """
+
+    def __init__(
+        self,
+        gpa_base_url: str = "http://127.0.0.1:18080",
+        gpa_token: str = "",
+        shim_path: str = "",
+        bazel_bin: str = "bazel",
+        repo_root: Optional[str] = None,
+        capture_timeout: float = 5.0,
+    ):
+        self._base_url = gpa_base_url
+        self._token = gpa_token
+        self._shim_path = shim_path
+        self._bazel = bazel_bin
+        self._capture_timeout = capture_timeout
+
+        if repo_root is not None:
+            self._repo_root = Path(repo_root)
+        else:
+            # Default: walk up from this file to find WORKSPACE / MODULE.bazel
+            p = Path(__file__).resolve()
+            for parent in p.parents:
+                if (parent / "MODULE.bazel").exists() or (parent / "WORKSPACE").exists():
+                    self._repo_root = parent
+                    break
+            else:
+                self._repo_root = Path.cwd()
+
+    @classmethod
+    def from_env(cls) -> "ScenarioRunner":
+        """Construct a ScenarioRunner from environment variables.
+
+        Reads:
+          - GPA_BASE_URL (default: http://127.0.0.1:18080)
+          - GPA_TOKEN    (default: empty)
+          - GPA_SHIM_PATH (default: empty)
+          - BAZEL         (default: bazel)
+          - GPA_REPO_ROOT (default: None, auto-detect)
+        """
+        return cls(
+            gpa_base_url=os.environ.get("GPA_BASE_URL", "http://127.0.0.1:18080"),
+            gpa_token=os.environ.get("GPA_TOKEN", ""),
+            shim_path=os.environ.get("GPA_SHIM_PATH", ""),
+            bazel_bin=os.environ.get("BAZEL", "bazel"),
+            repo_root=os.environ.get("GPA_REPO_ROOT"),
+        )
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
+    def _bazel_target_for(self, scenario: ScenarioMetadata) -> tuple[str, Path]:
+        """Resolve the Bazel package + target for `scenario`.
+
+        Scenarios live under nested taxonomy packages
+        (``tests/eval/<cat>/<fw>/<slug>/``), so the package is computed
+        from ``scenario.source_path``'s parent directory rather than
+        being a flat ``tests/eval`` package.
+        """
+        if not scenario.source_path:
+            raise FileNotFoundError(
+                f"scenario {scenario.id} has no source_path — likely a "
+                f"mined scenario without a synthetic reproducer; cannot build"
+            )
+        src = Path(scenario.source_path)
+        try:
+            pkg = src.parent.relative_to(self._repo_root)
+        except ValueError as exc:
+            raise FileNotFoundError(
+                f"scenario {scenario.id} source_path {src} is not under "
+                f"repo_root {self._repo_root}"
+            ) from exc
+        target = f"//{pkg.as_posix()}:{scenario.binary_name}"
+        binary = self._repo_root / "bazel-bin" / pkg / scenario.binary_name
+        return target, binary
+
+    def build_scenario(self, scenario: ScenarioMetadata) -> str:
+        """Build the scenario binary via Bazel. Returns absolute binary path."""
+        target, binary = self._bazel_target_for(scenario)
+        result = subprocess.run(
+            [self._bazel, "build", target],
+            cwd=str(self._repo_root),
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            raise RuntimeError(
+                f"Bazel build failed for {target}:\n"
+                f"stdout: {result.stdout}\n"
+                f"stderr: {result.stderr}"
+            )
+
+        if not binary.exists():
+            raise FileNotFoundError(f"Built binary not found at: {binary}")
+        return str(binary)
+
+    def run_with_capture(self, scenario: ScenarioMetadata) -> int:
+        """Run the scenario binary under OpenGPA capture. Returns the captured frame_id.
+
+        Sets up the environment required by the OpenGPA shim:
+          - LD_PRELOAD: path to the OpenGPA interceptor shared library
+          - GPA_BASE_URL: HTTP endpoint for the GPA server
+          - GPA_TOKEN: bearer token for authentication
+
+        Waits up to self._capture_timeout seconds for frames to appear,
+        then queries the OpenGPA server for the latest frame_id.
+        """
+        binary_path = self.build_scenario(scenario)
+
+        env = os.environ.copy()
+        if self._shim_path:
+            existing_preload = env.get("LD_PRELOAD", "")
+            env["LD_PRELOAD"] = (
+                f"{self._shim_path}:{existing_preload}"
+                if existing_preload
+                else self._shim_path
+            )
+        env["GPA_BASE_URL"] = self._base_url
+        if self._token:
+            env["GPA_TOKEN"] = self._token
+
+        proc = subprocess.run(
+            [binary_path],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=self._capture_timeout + 10,
+        )
+        # Non-zero exit may still have produced frames; don't raise here.
+
+        # Give the server a moment to flush captured data.
+        time.sleep(min(self._capture_timeout, 1.0))
+
+        frame_id = self._get_latest_frame_id()
+        return frame_id
+
+    def read_source(self, scenario: ScenarioMetadata) -> str:
+        """Read and return the scenario C source code."""
+        return Path(scenario.source_path).read_text(encoding="utf-8")
+
+    def build_and_capture(self, scenario: ScenarioMetadata) -> dict:
+        """Build the scenario via Bazel, run it under Xvfb with OpenGPA shim, capture frame.
+
+        Returns a dict with keys:
+          - framebuffer_png: bytes (always empty under the Tier-1 native
+            backend; metadata-only signature matchers tolerate this)
+          - metadata: dict with draw_call_count and draw_calls
+        """
+        target, bin_path = self._bazel_target_for(scenario)
+        # 1. Build
+        subprocess.run(
+            [self._bazel, "build", target],
+            cwd=str(self._repo_root),
+            check=True,
+        )
+        env = {
+            "DISPLAY": ":99",
+            "LD_PRELOAD": str(self._shim_path),
+            "GPA_TOKEN": self._token,
+        }
+        proc = subprocess.Popen(
+            ["xvfb-run", "-a", str(bin_path)],
+            env=env,
+        )
+        try:
+            return _capture_via_rest(self._base_url, self._token)
+        finally:
+            proc.terminate()
+            proc.wait(timeout=5)
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def _get_latest_frame_id(self) -> int:
+        """Query OpenGPA server for the most recent frame_id."""
+        import urllib.request
+        import json
+
+        url = f"{self._base_url}/api/v1/frames/current/overview"
+        headers = {}
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
+
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as resp:
+                data = json.loads(resp.read().decode())
+                return int(data.get("frame_id", 0))
+        except Exception:
+            return 0

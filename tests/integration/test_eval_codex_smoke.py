@@ -32,8 +32,8 @@ pytestmark = pytest.mark.skipif(
 @pytest.mark.slow
 def test_codex_eval_code_only_smoke(tmp_path):
     """Run smallest synthetic scenario via codex-cli, code_only mode."""
-    from gpa.eval.harness import EvalHarness
-    from gpa.eval.agents.factory import build_agent_fn
+    from bhdr.eval.harness import EvalHarness
+    from bhdr.eval.agents.factory import build_agent_fn
 
     # Pick a scenario that's small, code-only friendly, and exists in tree.
     # e1_state_leak is the canonical synthetic scenario referenced in CLAUDE.md.

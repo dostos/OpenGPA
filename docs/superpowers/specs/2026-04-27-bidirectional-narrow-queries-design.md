@@ -468,8 +468,8 @@ draw + pop ⇒ captured `debug_group_path == "foo"`.
 **Step 2 — Ship `gpa explain-draw` and `gpa diff-draws`.** Work on bare GL
 data + debug markers; degrade gracefully (scene-node column blank when
 plugin absent). Land:
-- `src/python/gpa/cli/commands/{explain_draw,diff_draws}.py`
-- `src/python/gpa/api/routes_{explain_draw,diff_draws}.py`
+- `src/python/bhdr/cli/commands/{explain_draw,diff_draws}.py`
+- `src/python/bhdr/api/routes_{explain_draw,diff_draws}.py`
 - `tests/unit/python/test_api_{explain_draw,diff_draws}.py`
 
 **Step 3 — Reference three.js plugin emits debug markers per node; then
@@ -478,8 +478,8 @@ plugin absent). Land:
 with `gl.pushDebugGroup(uuid + ":" + path)` / `gl.popDebugGroup()` per mesh.
 Land:
 - Plugin update (≤30 LoC).
-- `src/python/gpa/cli/commands/{scene_find,scene_explain}.py`
-- `src/python/gpa/api/routes_{scene_find,explain_pixel}.py`
+- `src/python/bhdr/cli/commands/{scene_find,scene_explain}.py`
+- `src/python/bhdr/api/routes_{scene_find,explain_pixel}.py`
 - Eval re-run on r10, r22, r27 per §5.
 
 Tests: `bazel test //tests/unit/python/...` after each step. Spec-only
@@ -506,7 +506,7 @@ are reproduced below.
 | `r22_point_sprite_rendering_issues_with_three` | `gpa scene-explain --pixel 100,100` | `scene-explain frame 2  pixel (100,100)` / `  rgba=(28,36,46,255)  depth=1.0` / `  draw      (no draw covers this pixel)` / `  resolved  miss` |
 | `r27_bug_black_squares_appear_when_rendering_` | `gpa explain-draw 0` | `draw 0  frame 3` / `shader    program 1` / `uniforms  (none decoded)` / `textures  (none bound)` / `state     GL_BLEND=0  GL_CULL_FACE=0  GL_DEPTH_TEST=0` |
 | `r27_bug_black_squares_appear_when_rendering_` | `gpa diff-draws 0 1 --scope all` | `[gpa] one of draws 0,1 not found in frame latest.` / `  Example: gpa diff-draws 4 5` (exit 1; r27 only emits one draw call) |
-| (all three) | `gpa scene-find type:Mesh` | `[gpa] no scene-graph annotation for frame N — need a Tier-3 plugin. See src/python/gpa/framework/threejs_link_plugin.js for a sketch.` (exit 1) |
+| (all three) | `gpa scene-find type:Mesh` | `[gpa] no scene-graph annotation for frame N — need a Tier-3 plugin. See src/python/bhdr/framework/threejs_link_plugin.js for a sketch.` (exit 1) |
 
 ### Notes
 
@@ -550,9 +550,9 @@ into `gpa run-browser`.
 
 **Plugin loading mechanism:** the runner's static-server handler now
 exposes the canonical plugin file
-(`src/python/gpa/framework/threejs_link_plugin.js`) at the alias path
+(`src/python/bhdr/framework/threejs_link_plugin.js`) at the alias path
 `/_plugins/threejs-link.js` (see
-`src/python/gpa/browser/runner.py::_make_quiet_handler`). The scenario's
+`src/python/bhdr/browser/runner.py::_make_quiet_handler`). The scenario's
 `<script type="importmap">` adds a `gpa-threejs-link` entry pointing at
 that alias, and the module script does
 `await import('gpa-threejs-link')` followed by

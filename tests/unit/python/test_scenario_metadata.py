@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from gpa.eval.scenario_metadata import Scenario, Source, Taxonomy, Backend
+from bhdr.eval.scenario_metadata import Scenario, Source, Taxonomy, Backend
 
 
 def test_scenario_dataclass_minimum():
@@ -22,7 +22,7 @@ def test_scenario_dataclass_minimum():
 
 
 def test_validate_unknown_category_rejected(tmp_path):
-    from gpa.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
+    from bhdr.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
     s = Scenario(
         path=tmp_path, slug="x", round="r1", mined_at="2026-01-01",
         source=Source(type="synthetic"),
@@ -35,7 +35,7 @@ def test_validate_unknown_category_rejected(tmp_path):
 
 
 def test_validate_unknown_framework_rejected(tmp_path):
-    from gpa.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
+    from bhdr.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
     s = Scenario(
         path=tmp_path, slug="x", round="r1", mined_at="2026-01-01",
         source=Source(type="synthetic"),
@@ -48,7 +48,7 @@ def test_validate_unknown_framework_rejected(tmp_path):
 
 
 def test_validate_required_fields_complete(tmp_path):
-    from gpa.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
+    from bhdr.eval.scenario_metadata import validate_scenario, Scenario, Source, Taxonomy, Backend
     s = Scenario(
         path=tmp_path, slug="godot_1_x", round="r1", mined_at="2026-01-01",
         source=Source(type="github_issue", url="https://github.com/x/y/issues/1",
@@ -63,7 +63,7 @@ def test_validate_required_fields_complete(tmp_path):
 
 
 def test_scenario_yaml_round_trip(tmp_path):
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend,
         dump_scenario_yaml, load_scenario_yaml,
     )
@@ -88,7 +88,7 @@ def test_scenario_yaml_round_trip(tmp_path):
 
 
 def test_scenario_yaml_load_missing_file_raises(tmp_path):
-    from gpa.eval.scenario_metadata import load_scenario_yaml
+    from bhdr.eval.scenario_metadata import load_scenario_yaml
     import pytest
     with pytest.raises(FileNotFoundError):
         load_scenario_yaml(tmp_path / "nope.yaml")
@@ -96,7 +96,7 @@ def test_scenario_yaml_load_missing_file_raises(tmp_path):
 
 def _make_scenario_at(dir_path, slug, category, framework):
     """Helper: write minimum scenario.md + scenario.yaml in dir_path."""
-    from gpa.eval.scenario_metadata import (
+    from bhdr.eval.scenario_metadata import (
         Scenario, Source, Taxonomy, Backend, dump_scenario_yaml,
     )
     dir_path.mkdir(parents=True)
@@ -112,7 +112,7 @@ def _make_scenario_at(dir_path, slug, category, framework):
 
 
 def test_iter_scenarios_finds_all(tmp_path):
-    from gpa.eval.scenario_metadata import iter_scenarios
+    from bhdr.eval.scenario_metadata import iter_scenarios
     _make_scenario_at(tmp_path / "synthetic" / "uniform" / "e1_x", "e1_x", "synthetic", "synthetic")
     _make_scenario_at(tmp_path / "synthetic" / "depth" / "e2_y", "e2_y", "synthetic", "synthetic")
     found = list(iter_scenarios(tmp_path))
@@ -121,7 +121,7 @@ def test_iter_scenarios_finds_all(tmp_path):
 
 
 def test_validate_all_reports_slug_mismatch(tmp_path):
-    from gpa.eval.scenario_metadata import validate_all
+    from bhdr.eval.scenario_metadata import validate_all
     _make_scenario_at(tmp_path / "synthetic" / "x" / "actually_named_this",
                       "but_yaml_says_this", "synthetic", "synthetic")
     errors = validate_all(tmp_path)
@@ -130,7 +130,7 @@ def test_validate_all_reports_slug_mismatch(tmp_path):
 
 def test_validate_all_flags_path_taxonomy_mismatch(tmp_path):
     """yaml says category=web-3d but it lives under native-engine/godot/."""
-    from gpa.eval.scenario_metadata import validate_all
+    from bhdr.eval.scenario_metadata import validate_all
     _make_scenario_at(tmp_path / "native-engine" / "godot" / "x1",
                       "x1", "web-3d", "synthetic")
     errors = validate_all(tmp_path)
@@ -140,7 +140,7 @@ def test_validate_all_flags_path_taxonomy_mismatch(tmp_path):
 
 def test_validate_all_flags_wrong_depth(tmp_path):
     """scenario placed only 1 level deep instead of 3."""
-    from gpa.eval.scenario_metadata import validate_all
+    from bhdr.eval.scenario_metadata import validate_all
     _make_scenario_at(tmp_path / "x1", "x1", "synthetic", "synthetic")
     errors = validate_all(tmp_path)
     assert any("3 parts" in e or "parts" in e.lower() for e in errors)
@@ -148,7 +148,7 @@ def test_validate_all_flags_wrong_depth(tmp_path):
 
 def test_validate_all_passes_well_formed(tmp_path):
     """Well-formed scenario with matching path produces zero errors."""
-    from gpa.eval.scenario_metadata import validate_all
+    from bhdr.eval.scenario_metadata import validate_all
     _make_scenario_at(tmp_path / "synthetic" / "synthetic" / "e1_x",
                       "e1_x", "synthetic", "synthetic")
     errors = validate_all(tmp_path)

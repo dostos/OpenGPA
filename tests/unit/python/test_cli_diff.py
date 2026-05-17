@@ -7,7 +7,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from gpa.cli.commands import diff as diff_mod
+from bhdr.cli.commands import diff as diff_mod
 
 
 # --------------------------------------------------------------------------- #
@@ -79,7 +79,7 @@ def test_diff_frames_depth_pixels():
 
 def test_diff_frames_no_session(monkeypatch):
     monkeypatch.setenv("GPA_SESSION", "")
-    import gpa.cli.session as _sess
+    import bhdr.cli.session as _sess
     monkeypatch.setattr(_sess.Session, "discover", staticmethod(lambda **kw: None))
     buf = io.StringIO()
     rc = diff_mod.run_frames(a=1, b=2, print_stream=buf)

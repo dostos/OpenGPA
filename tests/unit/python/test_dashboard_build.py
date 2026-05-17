@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from gpa.eval.dashboard.build import build_index
+from bhdr.eval.dashboard.build import build_index
 
 
 def _write_result(path, scenario_id, mode, solved, **kw):

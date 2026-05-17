@@ -1,17 +1,17 @@
 """Unit tests for the Phase-3 ranking layer.
 
-Exercises :func:`gpa.api.trace_ranking.rank_candidates` independently
+Exercises :func:`bhdr.api.trace_ranking.rank_candidates` independently
 from the REST/CLI wiring.
 """
 from __future__ import annotations
 
 import pytest
 
-from gpa.api.trace_ranking import (
+from bhdr.api.trace_ranking import (
     build_corpus_for_value,
     rank_candidates,
 )
-from gpa.api.trace_store import TraceStore
+from bhdr.api.trace_store import TraceStore
 
 
 # ----------------------------------------------------------------------

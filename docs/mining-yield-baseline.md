@@ -4,7 +4,7 @@
 > (`gpa.eval.curation.measure_yield`, `gpa.eval.curation.pipeline`)
 > were retired on 2026-05-01 by the single-path mining migration
 > (`feat/single-path-mining`). The current mining entry point is
-> `python -m gpa.eval.curation.run` — see
+> `python -m bhdr.eval.curation.run` — see
 > `docs/superpowers/eval/framework-app-dev-hard-cases.md` for the
 > new invocation. This document is preserved for the prompt-tuning
 > iteration history (2026-04-26) it captures.
@@ -59,7 +59,7 @@ FBXLoader-style threads were filtered out under the framing "loader bug, not GPU
 state bug" or "feature gap, not rendering bug"; (b) **shader-compile errors are
 rejected** as "shader compile, not GPU-observable rendering" even though
 shader_compile is one of our 10 official fingerprint categories. Both are
-prompt-side problems in `src/python/gpa/eval/curation/prompts/triage_system.md`,
+prompt-side problems in `src/python/bhdr/eval/curation/prompts/triage_system.md`,
 not signal-side problems in the queries.
 
 **#2 bottleneck: draft_invalid eats the only candidate that survives triage.**
@@ -303,7 +303,7 @@ scaling to real R12 mining.
   keplergl/kepler.gl, processing/p5.js, pixijs/pixijs, regl-project/regl,
   greggman/twgl.js. Bug-shape diversity: shadow, tone-mapping, color-space,
   instancing, transparency-sorting, stencil, post-processing, mipmap, blend.
-- Stored at `src/python/gpa/eval/curation/queries/generalization_queries.yaml`
+- Stored at `src/python/bhdr/eval/curation/queries/generalization_queries.yaml`
   for repeatability.
 
 ### Per-stage table — baseline vs. iter 2 vs. iter 3 vs. iter 4
@@ -390,9 +390,9 @@ real mining without further prompt tuning.
 ### Reproducing iter 4
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \\
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.pipeline --dry-run-stats \\
     --batch-quota 30 \\
-    --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
+    --config src/python/bhdr/eval/curation/queries/generalization_queries.yaml
 ```
 
 Per-candidate JSONL: `/tmp/yield-records.jsonl` (default).
@@ -528,9 +528,9 @@ would commit ~60-80 in-scope drafts per batch.
 ### Reproducing iter 5
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.pipeline --dry-run-stats \
     --batch-quota 30 \
-    --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
+    --config src/python/bhdr/eval/curation/queries/generalization_queries.yaml
 ```
 
 Per-candidate JSONL: `/tmp/yield-records.jsonl` (default).
@@ -544,7 +544,7 @@ Iter 5 exposed two issues: PR URLs lost 6/28 to `fetch_failed` and triage was th
 
 ### What changed
 
-- **`src/python/gpa/eval/curation/triage.py`** — added `fetch_pr_thread()` to dispatch `/pull/<n>` URLs to `repos/<o>/<r>/pulls/<n>` (was falling through to issue handler and 404'ing). Linked-issue context still pulled via existing `_extract_pr_refs` + `_fetch_linked_context` helpers so the drafter sees the originating bug report.
+- **`src/python/bhdr/eval/curation/triage.py`** — added `fetch_pr_thread()` to dispatch `/pull/<n>` URLs to `repos/<o>/<r>/pulls/<n>` (was falling through to issue handler and 404'ing). Linked-issue context still pulled via existing `_extract_pr_refs` + `_fetch_linked_context` helpers so the drafter sees the originating bug report.
 - **`generalization_queries.yaml`** — expanded from 18 → 30 queries, adding 9 new framework groups: pmndrs/react-three-fiber, pmndrs/drei, pmndrs/postprocessing, CesiumGS/cesium, Kitware/vtk-js, KhronosGroup/glTF-Sample-Viewer, gpujs/gpu.js, iTowns/itowns, antvis/L7, visgl/luma.gl.
 - **`tests/unit/python/test_curation_triage.py`** — added 3 tests covering the PR-URL dispatch, PR body+comments fetch shape, and PR linked-issue context.
 
@@ -780,9 +780,9 @@ steady-state ceiling on issue-driven mining with these prompts.
 ### Reproducing iter 8
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.pipeline --dry-run-stats \
     --batch-quota 40 \
-    --config src/python/gpa/eval/curation/queries/generalization_queries.yaml
+    --config src/python/bhdr/eval/curation/queries/generalization_queries.yaml
 ```
 
 ## Iteration 9 — drafter bifurcation by bug_class (2026-04-27)
@@ -920,7 +920,7 @@ why r200, r201, r202, r204, r206, r209 (all `bug_class: legacy` with
 
 ### Fix
 
-- `Validator._validate_maintainer_framing` (`src/python/gpa/eval/curation/
+- `Validator._validate_maintainer_framing` (`src/python/bhdr/eval/curation/
   validate.py`): when `fix.bug_class == "legacy"`, accept any non-empty
   `fix_sha` (or absent). For non-legacy bug classes the SHA gate is
   unchanged: real hex (7+ chars) OR contains `auto-resolve`.
@@ -1155,9 +1155,9 @@ ceiling remains the production benchmark.
 ### Reproducing iter 11
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.pipeline --dry-run-stats \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.pipeline --dry-run-stats \
     --batch-quota 20 \
-    --config src/python/gpa/eval/curation/queries/cat2_expansion_queries.yaml
+    --config src/python/bhdr/eval/curation/queries/cat2_expansion_queries.yaml
 ```
 
 Wall-time: ~7 minutes (faster than iter 8 at ~25 min for n=40 because

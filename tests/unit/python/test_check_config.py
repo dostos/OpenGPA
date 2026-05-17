@@ -5,8 +5,8 @@ from typing import Any, Dict
 
 import pytest
 
-from gpa.checks import Finding, RuleEngine, default_engine
-from gpa.checks.rules import (
+from bhdr.checks import Finding, RuleEngine, default_engine
+from bhdr.checks.rules import (
     AutoClearWithNoExplicitClearRule,
     ColorSpaceEncodingMismatchRule,
     DepthWriteWithoutDepthTestRule,
@@ -408,7 +408,7 @@ class TestEngineRun:
 
     def test_rule_crash_does_not_break_run(self):
         # Inject a deliberately broken rule.
-        from gpa.checks.rules import Rule
+        from bhdr.checks.rules import Rule
 
         class Boom(Rule):
             id = "boom"

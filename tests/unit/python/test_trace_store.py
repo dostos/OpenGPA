@@ -3,7 +3,7 @@ import threading
 
 import pytest
 
-from gpa.api.trace_store import TraceStore
+from bhdr.api.trace_store import TraceStore
 
 
 def _sources(path: str, vhash: str = "h1", value_type: str = "number"):

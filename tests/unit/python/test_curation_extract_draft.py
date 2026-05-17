@@ -8,7 +8,7 @@ ExtractionFailure when required fields can't be extracted.
 import json
 from pathlib import Path
 
-from gpa.eval.curation.extract_draft import extract_draft, ExtractionFailure
+from bhdr.eval.curation.extract_draft import extract_draft, ExtractionFailure
 
 FIXTURES = Path(__file__).parent / "fixtures" / "curation" / "issue_threads"
 
@@ -103,7 +103,7 @@ def test_extract_godot_style_issue_body():
 def test_filter_source_files_drops_tests_docs_examples():
     """Path-segment + basename filter must drop test/doc/example/md files,
     leaving only real source files. Plan step 3.6."""
-    from gpa.eval.curation.extract_draft import _filter_source_files
+    from bhdr.eval.curation.extract_draft import _filter_source_files
 
     raw = [
         "crates/bevy_pbr/src/render/mesh.rs",

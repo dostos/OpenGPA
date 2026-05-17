@@ -293,7 +293,7 @@ opus), both modes → 108 runs × $60.70. First round with native
 | code_only | $0.37 | $0.53 | $0.75 |
 | with_gpa | $0.37 | $0.61 | $0.75 |
 
-**Opus multiplier recalibrated 5.0 → 1.4** in `src/python/gpa/eval/models.py`
+**Opus multiplier recalibrated 5.0 → 1.4** in `src/python/bhdr/eval/models.py`
 (list pricing says ~5× raw input tokens, but Opus terminates faster on
 hard problems; effective per-run cost is 1.33×). Budget planner now much
 less restrictive.

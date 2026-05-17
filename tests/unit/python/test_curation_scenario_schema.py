@@ -1,7 +1,7 @@
 """Tests for extended ScenarioMetadata fields (real-world curation pipeline)."""
 import textwrap
 from pathlib import Path
-from gpa.eval.scenario import ScenarioMetadata, ScenarioLoader, _parse_upstream_snapshot
+from bhdr.eval.scenario import ScenarioMetadata, ScenarioLoader, _parse_upstream_snapshot
 
 
 def test_parser_extracts_new_sections(tmp_path):

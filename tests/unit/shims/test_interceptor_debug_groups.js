@@ -8,7 +8,7 @@
 //
 // The acceptance criteria mirrored here come from the spec for the
 // Tier-3 `gpa scene-find` link primitive (see
-// `src/python/gpa/framework/threejs_link_plugin.js` and the
+// `src/python/bhdr/framework/threejs_link_plugin.js` and the
 // `NormalizedDrawCall::debug_groups` C++ field).
 //
 // Run:

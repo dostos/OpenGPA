@@ -1,5 +1,5 @@
 import pytest
-from gpa.eval.agents.factory import build_agent_fn
+from bhdr.eval.agents.factory import build_agent_fn
 
 
 def test_build_api_returns_callable():

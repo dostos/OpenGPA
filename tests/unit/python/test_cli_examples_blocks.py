@@ -12,7 +12,7 @@ from contextlib import redirect_stdout
 
 import pytest
 
-from gpa.cli.main import build_parser
+from bhdr.cli.main import build_parser
 
 
 # Subcommands that MUST have an Examples block in their --help output.

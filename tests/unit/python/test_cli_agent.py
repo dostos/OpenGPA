@@ -1,8 +1,8 @@
 import subprocess
 from dataclasses import dataclass
 import pytest
-from gpa.eval.agents.cli_agent import CliAgent, CLAUDE_CLI_SPEC, CODEX_CLI_SPEC
-from gpa.eval.agents.cli_spec import CliBackendSpec, CliRunMetrics
+from bhdr.eval.agents.cli_agent import CliAgent, CLAUDE_CLI_SPEC, CODEX_CLI_SPEC
+from bhdr.eval.agents.cli_spec import CliBackendSpec, CliRunMetrics
 
 
 @dataclass
@@ -476,7 +476,7 @@ def test_cli_agent_raises_on_rate_limit_response(monkeypatch, tmp_path):
     silently recorded these as scenario failures; one rate-limited
     cohort produced 11 fake-failure rows. CliAgent now raises so the
     cohort stops cleanly."""
-    from gpa.eval.agents.cli_agent import CliRateLimitError
+    from bhdr.eval.agents.cli_agent import CliRateLimitError
 
     def fake_run(*a, **kw):
         return subprocess.CompletedProcess(
@@ -539,7 +539,7 @@ def test_cli_agent_raises_on_mid_session_rate_limit(monkeypatch, tmp_path):
     output_tokens but the final diagnosis is still the rate-limit
     message. Pre-fix the original heuristic (tokens==0 only) missed
     this case and recorded the rate-limit message as a real failure."""
-    from gpa.eval.agents.cli_agent import CliRateLimitError
+    from bhdr.eval.agents.cli_agent import CliRateLimitError
 
     def fake_run(*a, **kw):
         return subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")

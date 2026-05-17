@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock
 from pathlib import Path
-from gpa.eval.curation.validate import Validator, ValidationResult
-from gpa.eval.curation.draft import DraftResult
-from gpa.eval.curation.llm_client import LLMResponse
+from bhdr.eval.curation.validate import Validator, ValidationResult
+from bhdr.eval.curation.draft import DraftResult
+from bhdr.eval.curation.llm_client import LLMResponse
 
 
 # Minimal `## Fix` block injected into each test's md_body.  The Phase-1
@@ -344,7 +344,7 @@ def test_validator_uses_llm_fallback_on_ambiguous(tmp_path):
         "framebuffer_png": red_png,
         "metadata": {},
     }
-    from gpa.eval.curation.validate import Validator
+    from bhdr.eval.curation.validate import Validator
     v = Validator(eval_dir=tmp_path, runner=fake_runner, llm_fallback=llm)
     result = v.validate(draft)
     assert result.ok is True

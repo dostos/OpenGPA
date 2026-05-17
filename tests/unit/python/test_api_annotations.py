@@ -2,9 +2,9 @@
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.api.annotations_store import AnnotationsStore
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
+from bhdr.api.annotations_store import AnnotationsStore
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
 
 from conftest import AUTH_TOKEN, AUTH_HEADERS
 

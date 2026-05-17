@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from gpa.eval.llm_agent import EvalAgent
+from bhdr.eval.llm_agent import EvalAgent
 
 
 _SENTINEL_USER_REPORT = (
@@ -42,7 +42,7 @@ def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
     (= User Report) from the scenario object, never `ground_truth_diagnosis`
     or `gpa_advantage` (the How-OpenGPA-Helps hint).
     """
-    from gpa.eval.llm_agent import build_agent_fn
+    from bhdr.eval.llm_agent import build_agent_fn
 
     scenario = MagicMock()
     scenario.description = ""  # force fallback to bug_description
@@ -83,7 +83,7 @@ def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
             r.time_seconds = 0.0
             return r
 
-    monkeypatch.setattr("gpa.eval.agents.api_agent.ApiAgent", StubAgent)
+    monkeypatch.setattr("bhdr.eval.agents.api_agent.ApiAgent", StubAgent)
 
     factory = build_agent_fn(model="x", api_key="k")
     tools = {
@@ -101,7 +101,7 @@ def test_scenario_loader_does_not_merge_ground_truth_into_user_report(tmp_path):
     """Belt-and-braces: loading a scenario.md with both sections yields a
     bug_description that contains only the User Report content.
     """
-    from gpa.eval.scenario import ScenarioLoader
+    from bhdr.eval.scenario import ScenarioLoader
 
     sdir = tmp_path / "e_x"
     sdir.mkdir()

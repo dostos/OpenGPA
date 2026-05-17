@@ -11,8 +11,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from gpa.eval.metrics import EvalResult, ReportGenerator
-from gpa.eval.scenario import ScenarioLoader
+from bhdr.eval.metrics import EvalResult, ReportGenerator
+from bhdr.eval.scenario import ScenarioLoader
 
 
 _BASE_MD = """\

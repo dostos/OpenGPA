@@ -2,9 +2,9 @@
 import pytest
 from starlette.testclient import TestClient
 
-from gpa.api.app import create_app
-from gpa.backends.native import NativeBackend
-from gpa.framework.metadata_store import MetadataStore
+from bhdr.api.app import create_app
+from bhdr.backends.native import NativeBackend
+from bhdr.framework.metadata_store import MetadataStore
 
 
 AUTH_TOKEN = "test-token"

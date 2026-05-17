@@ -22,9 +22,9 @@ For `framework-app-dev`, the useful cases are not generic framework bugs. They a
 Use:
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
-  --queries src/python/gpa/eval/curation/queries/framework_app_dev_hard_cases.yaml \
-  --rules   src/python/gpa/eval/curation/mining_rules.yaml \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
+  --queries src/python/bhdr/eval/curation/queries/framework_app_dev_hard_cases.yaml \
+  --rules   src/python/bhdr/eval/curation/mining_rules.yaml \
   --max-phase select \
   --workdir .eval-pipeline
 ```
@@ -42,7 +42,7 @@ it reads the cross-run `scope-log.jsonl` and asks an LLM to propose
 queries that bias toward unexplored repos:
 
 ```bash
-PYTHONPATH=src/python python3 -m gpa.eval.curation.gen_queries \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.gen_queries \
   --instruction "WebGPU compute shader artifacts" \
   --scope-log .eval-pipeline/scope-log.jsonl \
   --out /tmp/new_queries.yaml \

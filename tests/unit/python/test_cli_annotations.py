@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 import pytest
 
-from gpa.cli.commands import annotations as ann_mod
+from bhdr.cli.commands import annotations as ann_mod
 
 
 # --------------------------------------------------------------------------- #

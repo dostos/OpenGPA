@@ -70,7 +70,7 @@ The JS-side default roots are a tuple inside `gpa-trace.js`. Prefer
 `addRoot()` over editing the defaults — the allowlist is intentionally
 short to avoid scanning irrelevant globals. Ranking hints (the
 Phase-3 "prefix → confidence bump" rules) live in
-`src/python/gpa/api/trace_ranking.py::FRAMEWORK_HINT_PATTERNS`. Any
+`src/python/bhdr/api/trace_ranking.py::FRAMEWORK_HINT_PATTERNS`. Any
 additions must carry evidence that the prefix reliably holds
 app-visible state.
 

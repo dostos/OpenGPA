@@ -1,4 +1,4 @@
-"""Tests for gpa.eval.cli -- Task 26.
+"""Tests for bhdr.eval.cli -- Task 26.
 
 Verifies that:
 1. --agent-backend causes build_agent_fn to be called with the right backend.
@@ -18,7 +18,7 @@ import pytest
 
 def test_agent_backend_flag_calls_factory(monkeypatch):
     """--agent-backend codex-cli passes backend='codex-cli' to build_agent_fn."""
-    import gpa.eval.cli as cli_mod
+    import bhdr.eval.cli as cli_mod
 
     factory_calls: list[dict] = []
 
@@ -31,7 +31,7 @@ def test_agent_backend_flag_calls_factory(monkeypatch):
 
     # Patch the factory at the import-time location used by _cmd_run.
     monkeypatch.setattr(
-        "gpa.eval.agents.factory.build_agent_fn",
+        "bhdr.eval.agents.factory.build_agent_fn",
         _fake_build_agent_fn,
     )
 
@@ -48,7 +48,7 @@ def test_agent_backend_flag_calls_factory(monkeypatch):
         def save_results(self, path):
             pass
 
-    monkeypatch.setattr("gpa.eval.harness.EvalHarness", _FakeHarness)
+    monkeypatch.setattr("bhdr.eval.harness.EvalHarness", _FakeHarness)
 
     rc = cli_mod.main([
         "run",
@@ -68,7 +68,7 @@ def test_agent_backend_flag_calls_factory(monkeypatch):
 
 def test_dry_run_uses_stub_agent_not_factory(monkeypatch):
     """--dry-run should use _stub_agent and NOT call build_agent_fn."""
-    import gpa.eval.cli as cli_mod
+    import bhdr.eval.cli as cli_mod
 
     factory_called = []
 
@@ -79,7 +79,7 @@ def test_dry_run_uses_stub_agent_not_factory(monkeypatch):
         return _agent
 
     monkeypatch.setattr(
-        "gpa.eval.agents.factory.build_agent_fn",
+        "bhdr.eval.agents.factory.build_agent_fn",
         _spy_build_agent_fn,
     )
 
@@ -103,7 +103,7 @@ def test_dry_run_uses_stub_agent_not_factory(monkeypatch):
         def save_results(self, path):
             pass
 
-    monkeypatch.setattr("gpa.eval.harness.EvalHarness", _FakeHarness)
+    monkeypatch.setattr("bhdr.eval.harness.EvalHarness", _FakeHarness)
 
     rc = cli_mod.main([
         "run",
@@ -127,7 +127,7 @@ def test_dry_run_uses_stub_agent_not_factory(monkeypatch):
 )
 def test_live_api_backend_runs_scenario(tmp_path):
     """Smoke test: --agent-backend api creates a real ApiAgent."""
-    import gpa.eval.cli as cli_mod
+    import bhdr.eval.cli as cli_mod
 
     rc = cli_mod.main([
         "run",

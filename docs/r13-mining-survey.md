@@ -1,7 +1,7 @@
 # Mining Yield Baseline
 
 _Generated: 2026-04-29T10:39:01.356463+00:00_
-_Config: `src/python/gpa/eval/curation/queries/r13_check_config_queries.yaml`_
+_Config: `src/python/bhdr/eval/curation/queries/r13_check_config_queries.yaml`_
 
 Queries:                11
 URLs from discovery:    10

@@ -1,6 +1,6 @@
-from gpa.eval.curation.discover import DiscoveryCandidate
-from gpa.eval.curation.rules import score_candidate, select_stratified
-from gpa.eval.curation.triage import IssueThread
+from bhdr.eval.curation.discover import DiscoveryCandidate
+from bhdr.eval.curation.rules import score_candidate, select_stratified
+from bhdr.eval.curation.triage import IssueThread
 
 
 def make_synthetic_candidate(*, body: str, url: str, has_fix_pr_linked: bool):
@@ -126,7 +126,7 @@ def test_select_stratified_caps_per_taxonomy_cell():
 
 
 def test_classify_score_drops_when_triage_required_unmet():
-    from gpa.eval.curation.rules import score_candidate, load_rules
+    from bhdr.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()  # default rules file
     cand = make_synthetic_candidate(
         body="Cubes flicker on Vulkan. Repro: ...",
@@ -139,7 +139,7 @@ def test_classify_score_drops_when_triage_required_unmet():
 
 
 def test_classify_score_drops_feature_request_via_reject_rule():
-    from gpa.eval.curation.rules import score_candidate, load_rules
+    from bhdr.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()
     cand = make_synthetic_candidate(
         body=(
@@ -158,7 +158,7 @@ def test_visual_keyword_accepts_expanded_terms():
     """Bodies using 'incorrect', 'broken', 'fails', 'regression', 'crash',
     'corrupted', 'distortion' should now satisfy the visual_keyword_present
     gate (previously rejected as 'missing_visual_keyword_present')."""
-    from gpa.eval.curation.rules import score_candidate, load_rules
+    from bhdr.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()
     expanded_terms = [
         "Rendering is incorrect when alpha blending is on.",
@@ -187,7 +187,7 @@ def test_pr_url_auto_satisfies_fix_pr_linked():
     even when the body has no explicit 'Closes #N' reference. A merged PR
     is itself the fix; requiring a separate referencing PR rejects valid
     candidates (~25% of fix_pr_linked rejections in the smoke-test sample)."""
-    from gpa.eval.curation.rules import score_candidate, load_rules
+    from bhdr.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()
     cand = DiscoveryCandidate(
         url="https://github.com/foo/bar/pull/12345",
@@ -206,7 +206,7 @@ def test_pr_url_auto_satisfies_fix_pr_linked():
 def test_issue_url_does_not_auto_satisfy_fix_pr_linked():
     """An issue URL (.../issues/<n>) without a closing-PR reference must
     still fail fix_pr_linked. Confirms the URL match is PR-specific."""
-    from gpa.eval.curation.rules import score_candidate, load_rules
+    from bhdr.eval.curation.rules import score_candidate, load_rules
     rules = load_rules()
     cand = make_synthetic_candidate(
         body="Rendering is broken on Metal.",

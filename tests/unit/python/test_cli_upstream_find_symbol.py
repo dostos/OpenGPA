@@ -66,7 +66,7 @@ def _populate_polyglot_root(root: Path) -> None:
 
 
 def test_find_symbol_cpp_function(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -87,7 +87,7 @@ def test_find_symbol_cpp_function(tmp_path, monkeypatch):
 
 
 def test_find_symbol_cpp_static_function(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -103,7 +103,7 @@ def test_find_symbol_cpp_static_function(tmp_path, monkeypatch):
 
 
 def test_find_symbol_typescript_function(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -119,7 +119,7 @@ def test_find_symbol_typescript_function(tmp_path, monkeypatch):
 
 
 def test_find_symbol_typescript_class(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -135,7 +135,7 @@ def test_find_symbol_typescript_class(tmp_path, monkeypatch):
 
 
 def test_find_symbol_python_def_and_class(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -159,7 +159,7 @@ def test_find_symbol_python_def_and_class(tmp_path, monkeypatch):
 
 
 def test_find_symbol_godot_func(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -174,7 +174,7 @@ def test_find_symbol_godot_func(tmp_path, monkeypatch):
 
 
 def test_find_symbol_no_match(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -192,7 +192,7 @@ def test_find_symbol_no_match(tmp_path, monkeypatch):
 def test_find_symbol_lang_filter(tmp_path, monkeypatch):
     """When --lang is given, only files matching that lang's extensions
     are searched."""
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     _populate_polyglot_root(root)
@@ -217,7 +217,7 @@ def test_find_symbol_lang_filter(tmp_path, monkeypatch):
 
 
 def test_read_default_max_bytes_is_512k():
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     assert upstream_cmd._DEFAULT_MAX_BYTES >= 512_000
 
 
@@ -227,7 +227,7 @@ def test_read_default_max_bytes_is_512k():
 
 
 def test_grep_with_context_includes_surrounding_lines(tmp_path, monkeypatch):
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     (root / "main.c").write_text(
@@ -253,7 +253,7 @@ def test_grep_with_context_includes_surrounding_lines(tmp_path, monkeypatch):
 def test_grep_default_context_zero_keeps_old_shape(tmp_path, monkeypatch):
     """Default context=0 — match shape is back-compat (no context_before /
     context_after fields)."""
-    from gpa.cli.commands import upstream as upstream_cmd
+    from bhdr.cli.commands import upstream as upstream_cmd
     root = tmp_path / "snap"
     root.mkdir()
     (root / "main.c").write_text("line one\nMATCH HERE\nline three\n")

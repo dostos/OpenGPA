@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import pytest
 
-from gpa.eval.scorer_giveup import is_gave_up
+from bhdr.eval.scorer_giveup import is_gave_up
 
 
 _GAVE_UP_BODIES = [

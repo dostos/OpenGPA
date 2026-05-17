@@ -1,5 +1,5 @@
 import json
-from gpa.eval.curation.workdir import IssueWorkdir
+from bhdr.eval.curation.workdir import IssueWorkdir
 
 def test_issue_id_from_url():
     wd = IssueWorkdir.for_url("/tmp/x", "https://github.com/mrdoob/three.js/issues/12345")

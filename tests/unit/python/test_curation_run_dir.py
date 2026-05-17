@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from gpa.eval.curation.run_dir import RunDir, generate_run_id
+from bhdr.eval.curation.run_dir import RunDir, generate_run_id
 
 def test_generate_run_id_format():
     rid = generate_run_id(config_text="queries: []\nrules: foo")

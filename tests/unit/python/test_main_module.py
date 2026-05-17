@@ -1,8 +1,8 @@
 """Tests for the ``python -m gpa`` module entry point.
 
 Asserts that ``python -m gpa`` dispatches to the user-facing CLI
-(``gpa.cli.main.main``), not the engine launcher.  The engine launcher
-remains independently accessible at ``python -m gpa.launcher``.
+(``bhdr.cli.main.main``), not the engine launcher.  The engine launcher
+remains independently accessible at ``python -m bhdr.launcher``.
 """
 
 from __future__ import annotations
@@ -18,10 +18,10 @@ import pytest
 def test_main_module_imports_cli_main():
     """``gpa.__main__`` must import the CLI main (not the launcher)."""
     # Reload to make sure we observe the current __main__.py contents.
-    import gpa.__main__ as gpa_main  # noqa: F401
+    import bhdr.__main__ as gpa_main  # noqa: F401
     importlib.reload(gpa_main)
 
-    from gpa.cli import main as cli_main
+    from bhdr.cli import main as cli_main
 
     # The exported `main` reference should be the CLI's `main` function,
     # which takes an optional argv list.  The launcher's main takes no
@@ -31,7 +31,7 @@ def test_main_module_imports_cli_main():
 
 def test_main_module_help_output(monkeypatch, capsys):
     """``python -m gpa --help`` should show CLI help, not launcher help."""
-    import gpa.__main__ as gpa_main
+    import bhdr.__main__ as gpa_main
     importlib.reload(gpa_main)
 
     # argparse exits with 0 on --help and writes to stdout.
@@ -54,14 +54,14 @@ def test_main_module_dispatches_subcommand(monkeypatch):
     matters is that dispatch reached the CLI codepath and *not* the
     engine launcher (which would have tried to import ``_gpa_core``).
     """
-    import gpa.__main__ as gpa_main
+    import bhdr.__main__ as gpa_main
     importlib.reload(gpa_main)
 
     # Make sure no stale GPA_SESSION leaks in.
     monkeypatch.delenv("GPA_SESSION", raising=False)
 
     # Point the session-discovery link at a path that does not exist.
-    from gpa.cli import session as session_mod
+    from bhdr.cli import session as session_mod
     monkeypatch.setattr(
         session_mod, "CURRENT_SESSION_LINK", "/tmp/no-such-gpa-session-link"
     )
@@ -74,12 +74,12 @@ def test_main_module_dispatches_subcommand(monkeypatch):
 
 
 def test_launcher_module_still_importable():
-    """``python -m gpa.launcher`` must remain a valid entry point."""
+    """``python -m bhdr.launcher`` must remain a valid entry point."""
     # We don't actually run the launcher (it would try to bind sockets and
     # spawn an engine thread). We just assert the module loads cleanly and
-    # advertises a `main` function — which is what `python -m gpa.launcher`
+    # advertises a `main` function — which is what `python -m bhdr.launcher`
     # invokes.
-    import gpa.launcher as launcher_mod
+    import bhdr.launcher as launcher_mod
 
     assert hasattr(launcher_mod, "main")
     assert callable(launcher_mod.main)

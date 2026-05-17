@@ -6,7 +6,7 @@
 
 **Architecture:** Pure deletion + neutral-rephrasing. The trace ranker drops signal #3 (regex allowlist) and runs on signals 1+2 (hop distance + value rarity) only. User-facing strings stop mentioning specific plugin names / file paths. No public API change; one new structural-neutrality regression test plus one rewritten test confirms behavior.
 
-**Tech Stack:** Python 3.11, pytest. Touches `src/python/gpa/api/trace_ranking.py`, `src/python/gpa/cli/main.py`, `src/python/gpa/mcp/server.py`, `src/python/gpa/cli/commands/scene_find.py`, `tests/unit/python/test_trace_ranking.py`.
+**Tech Stack:** Python 3.11, pytest. Touches `src/python/bhdr/api/trace_ranking.py`, `src/python/bhdr/cli/main.py`, `src/python/bhdr/mcp/server.py`, `src/python/bhdr/cli/commands/scene_find.py`, `tests/unit/python/test_trace_ranking.py`.
 
 **Spec:** `docs/superpowers/specs/2026-04-28-plugin-agnostic-core-design.md`.
 
@@ -16,10 +16,10 @@
 
 | File | Purpose | Change type |
 |------|---------|-------------|
-| `src/python/gpa/api/trace_ranking.py` | Confidence ranker for trace candidates | Modify — remove allowlist + 2 helpers; update docstring |
-| `src/python/gpa/cli/main.py` | Top-level CLI parser config | Modify — neutral `gpa trace` help text |
-| `src/python/gpa/mcp/server.py` | MCP tool registry | Modify — neutral `query_annotations` + `gpa_trace_value` descriptions |
-| `src/python/gpa/cli/commands/scene_find.py` | `gpa scene-find` CLI command | Modify — drop plugin-name cite, point at spec doc |
+| `src/python/bhdr/api/trace_ranking.py` | Confidence ranker for trace candidates | Modify — remove allowlist + 2 helpers; update docstring |
+| `src/python/bhdr/cli/main.py` | Top-level CLI parser config | Modify — neutral `gpa trace` help text |
+| `src/python/bhdr/mcp/server.py` | MCP tool registry | Modify — neutral `query_annotations` + `gpa_trace_value` descriptions |
+| `src/python/bhdr/cli/commands/scene_find.py` | `gpa scene-find` CLI command | Modify — drop plugin-name cite, point at spec doc |
 | `tests/unit/python/test_trace_ranking.py` | Ranker unit tests | Modify — drop 5 tests, rewrite 1, update 1 comment, add 1 |
 
 No new files; no file split needed (each touched file already has a single clear responsibility).
@@ -29,7 +29,7 @@ No new files; no file split needed (each touched file already has a single clear
 ## Task 1: Drop framework-hint logic from the trace ranker
 
 **Files:**
-- Modify: `src/python/gpa/api/trace_ranking.py`
+- Modify: `src/python/bhdr/api/trace_ranking.py`
 - Test: `tests/unit/python/test_trace_ranking.py`
 
 This task removes the `FRAMEWORK_HINT_PATTERNS` regex allowlist + its two helpers (`_framework_bump`, `_apply_bump`) and updates the module docstring. Tests get reworked: 5 hint-specific tests deleted, 1 rewritten (`test_raw_confidence_preserved`), 1 comment-only update (`test_unique_rare_framework_path_beats_common_deep_path`), 1 new test added (`test_no_framework_specific_bump`), 1 import line removed.
@@ -64,7 +64,7 @@ Expected: **FAIL** — the framework-shaped paths currently get bumped from "low
 
 - [ ] **Step 3: Delete the framework-hint constants and helpers**
 
-In `src/python/gpa/api/trace_ranking.py`, delete:
+In `src/python/bhdr/api/trace_ranking.py`, delete:
 
 1. The `FRAMEWORK_HINT_PATTERNS` block (lines 27-47, the section header comment plus the constant definition).
 2. The `_framework_bump` function (lines 70-75).
@@ -99,7 +99,7 @@ The remaining body of the loop should look like:
 
 - [ ] **Step 4: Update the module docstring**
 
-Replace lines 1-20 of `src/python/gpa/api/trace_ranking.py` with:
+Replace lines 1-20 of `src/python/bhdr/api/trace_ranking.py` with:
 
 ```python
 """Confidence ranking for ``gpa trace`` candidates (Phase 3).
@@ -199,7 +199,7 @@ Expected: green. Test count drops by 4 (deleted 5, added 1). Previous baseline w
 - [ ] **Step 11: Commit**
 
 ```bash
-git add src/python/gpa/api/trace_ranking.py tests/unit/python/test_trace_ranking.py
+git add src/python/bhdr/api/trace_ranking.py tests/unit/python/test_trace_ranking.py
 git commit -m "$(cat <<'EOF'
 refactor(api/trace): drop framework-hint allowlist from ranker (Phase 1)
 
@@ -219,13 +219,13 @@ EOF
 ## Task 2: Neutralize CLI `gpa trace` help text
 
 **Files:**
-- Modify: `src/python/gpa/cli/main.py:280-286`
+- Modify: `src/python/bhdr/cli/main.py:280-286`
 
 The `gpa trace` parser's help string mentions only the WebGL shim, but the trace endpoints serve **both** native (DWARF) and WebGL scanners. This task makes the help string neutral.
 
 - [ ] **Step 1: Apply the edit**
 
-In `src/python/gpa/cli/main.py`, around line 280, replace:
+In `src/python/bhdr/cli/main.py`, around line 280, replace:
 
 ```python
     p_trace = sub.add_parser(
@@ -265,7 +265,7 @@ Expected: all 16 cases **PASS**. No test references the old wording.
 - [ ] **Step 4: Commit**
 
 ```bash
-git add src/python/gpa/cli/main.py
+git add src/python/bhdr/cli/main.py
 git commit -m "$(cat <<'EOF'
 docs(cli): neutralize gpa trace help — both native + WebGL backends supported
 
@@ -281,13 +281,13 @@ EOF
 ## Task 3: Neutralize MCP `query_annotations` + `gpa_trace_value` descriptions
 
 **Files:**
-- Modify: `src/python/gpa/mcp/server.py` (two description blocks around lines 185-200 and 230-240)
+- Modify: `src/python/bhdr/mcp/server.py` (two description blocks around lines 185-200 and 230-240)
 
 Two MCP tool descriptions name specific frameworks ("mapbox tile cache") or hardcode WebGL-only assumptions. This task makes them backend/framework-neutral.
 
 - [ ] **Step 1: Edit `query_annotations` description**
 
-In `src/python/gpa/mcp/server.py`, around line 186-191, replace:
+In `src/python/bhdr/mcp/server.py`, around line 186-191, replace:
 
 ```python
         "description": (
@@ -311,7 +311,7 @@ with:
 
 - [ ] **Step 2: Edit `gpa_trace_value` description**
 
-In `src/python/gpa/mcp/server.py`, around line 232-239, replace:
+In `src/python/bhdr/mcp/server.py`, around line 232-239, replace:
 
 ```python
         "description": (
@@ -352,7 +352,7 @@ Expected: green. Same count as after Task 1.
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/python/gpa/mcp/server.py
+git add src/python/bhdr/mcp/server.py
 git commit -m "$(cat <<'EOF'
 docs(mcp): neutralize query_annotations + gpa_trace_value descriptions
 
@@ -370,19 +370,19 @@ EOF
 ## Task 4: Drop plugin-name cite from `gpa scene-find`
 
 **Files:**
-- Modify: `src/python/gpa/cli/commands/scene_find.py:80-87` and `:178-186`
+- Modify: `src/python/bhdr/cli/commands/scene_find.py:80-87` and `:178-186`
 
-Two strings (Examples-block fallback message + error hint) name `src/python/gpa/framework/threejs_link_plugin.js` directly. After this task, both point at the spec doc instead.
+Two strings (Examples-block fallback message + error hint) name `src/python/bhdr/framework/threejs_link_plugin.js` directly. After this task, both point at the spec doc instead.
 
 - [ ] **Step 1: Edit the empty-result fallback message**
 
-In `src/python/gpa/cli/commands/scene_find.py`, around line 80-84, replace:
+In `src/python/bhdr/cli/commands/scene_find.py`, around line 80-84, replace:
 
 ```python
         if not payload.get("annotation_present"):
             lines.append(
                 "(no scene-graph annotation found — install a Tier-3 plugin "
-                "such as src/python/gpa/framework/threejs_link_plugin.js)"
+                "such as src/python/bhdr/framework/threejs_link_plugin.js)"
             )
 ```
 
@@ -399,13 +399,13 @@ with:
 
 - [ ] **Step 2: Edit the missing-annotation error hint**
 
-In `src/python/gpa/cli/commands/scene_find.py`, around line 180-185, replace:
+In `src/python/bhdr/cli/commands/scene_find.py`, around line 180-185, replace:
 
 ```python
         print(
             f"[gpa] no scene-graph annotation for frame {payload.get('frame_id')}"
             " — need a Tier-3 plugin. See "
-            "src/python/gpa/framework/threejs_link_plugin.js for a sketch.",
+            "src/python/bhdr/framework/threejs_link_plugin.js for a sketch.",
             file=sys.stderr,
         )
 ```
@@ -443,7 +443,7 @@ Expected: green.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/python/gpa/cli/commands/scene_find.py
+git add src/python/bhdr/cli/commands/scene_find.py
 git commit -m "$(cat <<'EOF'
 docs(cli/scene-find): point at Tier-3 spec instead of threejs_link_plugin.js
 
@@ -470,8 +470,8 @@ Run:
 
 ```bash
 git grep -E '\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b' \
-    -- 'src/python/gpa/cli/' 'src/python/gpa/mcp/' 'src/python/gpa/api/' \
-       ':(exclude)src/python/gpa/api/routes_trace.py'
+    -- 'src/python/bhdr/cli/' 'src/python/bhdr/mcp/' 'src/python/bhdr/api/' \
+       ':(exclude)src/python/bhdr/api/routes_trace.py'
 ```
 
 Expected: **zero output, exit code 1** (`git grep` returns 1 when no matches). If anything matches outside `routes_trace.py`, that file still has a framework-specific reference and Task 1-4 missed it — go back and fix. (`routes_trace.py` is excluded because its docstrings reference `gpa-trace.js` as the canonical wire-format reference implementation — those mentions are spec contracts, not framework coupling.)
