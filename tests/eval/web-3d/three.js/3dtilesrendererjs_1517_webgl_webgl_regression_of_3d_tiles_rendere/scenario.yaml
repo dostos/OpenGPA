@@ -18,7 +18,12 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:53.179859+00:00'
+  checked_at: '2026-05-17T07:22:23.200809+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['branch', 'current', 'environment', 'master', 'used', 'your']; file\
+    \ tokens: ['c3dengine', 'cjs', 'config', 'debug', 'geographic', 'geotiffparser'])\
+    \ \u2014 fix may be wrong PR"

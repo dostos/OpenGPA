@@ -18,7 +18,12 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:53.366667+00:00'
+  checked_at: '2026-05-17T07:22:23.396532+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['behavior', 'browsers', 'cast', 'chrome', 'cloudflare', 'demo']; file\
+    \ tokens: ['glsl', 'renderers', 'shaderchunk', 'shaders', 'shadowmap', 'vertex'])\
+    \ \u2014 fix may be wrong PR"

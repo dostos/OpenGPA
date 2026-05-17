@@ -18,7 +18,10 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:53.017617+00:00'
+  checked_at: '2026-05-17T07:22:23.013965+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - 'bug_class-mismatch: fix touches 19 files but bug_class=''user-config''; framework-internal
+    is the more plausible label. Mining likely mis-classified.'

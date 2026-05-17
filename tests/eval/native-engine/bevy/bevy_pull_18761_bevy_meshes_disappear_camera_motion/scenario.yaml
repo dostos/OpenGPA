@@ -18,7 +18,11 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:52.909133+00:00'
+  checked_at: '2026-05-17T07:22:22.888728+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['about', 'absent', 'after', 'also', 'another', 'appear']; file tokens:\
+    \ ['bevy', 'crates', 'mod', 'phase']) \u2014 fix may be wrong PR"

@@ -18,7 +18,12 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:52.996307+00:00'
+  checked_at: '2026-05-17T07:22:22.991675+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['about', 'actually', 'all', 'appeared', 'attached', 'because']; file\
+    \ tokens: ['canvas', 'cpp', 'glsl', 'rendering', 'servers', 'shaders']) \u2014\
+    \ fix may be wrong PR"

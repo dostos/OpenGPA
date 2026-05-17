@@ -18,7 +18,12 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:52.903853+00:00'
+  checked_at: '2026-05-17T07:22:22.881562+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['above', 'add', 'all', 'another', 'apple', 'are']; file tokens: ['bevy',\
+    \ 'crates', 'instance', 'manager', 'mesh', 'meshlet']) \u2014 fix may be wrong\
+    \ PR"

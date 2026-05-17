@@ -389,7 +389,7 @@ def test_loader_load_one_does_not_filter(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _make_md(report: str, files: list[str]) -> str:
+def _make_md(report: str, files: list[str], bug_class: str = "framework-internal") -> str:
     files_yaml = "\n".join(f"  - {f}" for f in files) if files else " []"
     return (
         f"## User Report\n\n{report}\n\n"
@@ -398,7 +398,7 @@ def _make_md(report: str, files: list[str]) -> str:
         "fix_pr_url: https://github.com/o/r/pull/1\n"
         "fix_sha: abc123def456789012345678901234567890aaaa\n"
         "fix_parent_sha: 0000aaaa11112222333344445555666677778888\n"
-        "bug_class: framework-internal\n"
+        f"bug_class: {bug_class}\n"
         f"files:\n{files_yaml}\n"
         "```\n"
     )
@@ -512,3 +512,81 @@ def test_mining_quality_warning_persists_to_yaml(tmp_path):
     assert yml["status"] == "verified"  # not quarantined
     warnings = yml["verification"].get("warnings") or []
     assert any("mining-quality" in w for w in warnings)
+
+
+# ---------------------------------------------------------------------------
+# R19-P4: bug_class plausibility check (soft warning when mining
+# tagged a multi-file fix as consumer-misuse / user-config — both
+# normally indicate the bug isn't in framework code, but a multi-file
+# fix almost certainly is)
+# ---------------------------------------------------------------------------
+
+
+def test_bug_class_mismatch_warns_on_3plus_file_consumer_misuse(tmp_path):
+    """13-file fix classified as consumer-misuse → warn."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Glow shows on every sprite, not just bright ones.",
+        ["servers/rendering/forward_clustered/render.cpp",
+         "servers/rendering/forward_mobile/render.cpp",
+         "servers/rendering/scene_render.cpp"],
+        bug_class="consumer-misuse",
+    ))
+    warnings = _check_mining_quality(sd)
+    assert any("bug_class-mismatch" in w for w in warnings)
+    msg = next(w for w in warnings if "bug_class-mismatch" in w)
+    assert "consumer-misuse" in msg
+    assert "framework-internal is the more plausible" in msg
+
+
+def test_bug_class_mismatch_warns_on_3plus_file_user_config(tmp_path):
+    """Multi-file fix classified as user-config → also warns."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Tile blocks loading triggers crash.",
+        ["src/sprites/tile.cpp", "src/sprites/atlas.cpp",
+         "src/sprites/cache.cpp", "src/sprites/util.cpp"],
+        bug_class="user-config",
+    ))
+    warnings = _check_mining_quality(sd)
+    assert any("bug_class-mismatch" in w for w in warnings)
+
+
+def test_bug_class_mismatch_silent_for_framework_internal(tmp_path):
+    """The whole point of the warning is mis-labelled non-framework-
+    internal classes — framework-internal at any file count never
+    triggers it."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Sprite atlas issue.",
+        ["src/sprites/tile.cpp", "src/sprites/atlas.cpp",
+         "src/sprites/cache.cpp", "src/sprites/util.cpp"],
+        bug_class="framework-internal",
+    ))
+    warnings = _check_mining_quality(sd)
+    assert not any("bug_class-mismatch" in w for w in warnings)
+
+
+def test_bug_class_mismatch_silent_for_single_file_misuse(tmp_path):
+    """Single-file consumer-misuse fix is plausible — agent likely
+    fixed a doc / example. Don't warn."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Sprite atlas usage docs are wrong.",
+        ["src/sprites/atlas.cpp"],
+        bug_class="consumer-misuse",
+    ))
+    warnings = _check_mining_quality(sd)
+    assert not any("bug_class-mismatch" in w for w in warnings)
+
+
+def test_bug_class_mismatch_silent_for_two_file_misuse(tmp_path):
+    """Boundary: 2-file consumer-misuse fix still plausible."""
+    sd = tmp_path / "scn"; sd.mkdir()
+    (sd / "scenario.md").write_text(_make_md(
+        "Atlas usage example is wrong.",
+        ["src/sprites/atlas.cpp", "examples/sprite_demo.cpp"],
+        bug_class="consumer-misuse",
+    ))
+    warnings = _check_mining_quality(sd)
+    assert not any("bug_class-mismatch" in w for w in warnings)

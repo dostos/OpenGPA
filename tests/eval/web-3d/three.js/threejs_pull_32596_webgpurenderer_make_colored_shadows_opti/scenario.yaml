@@ -18,7 +18,12 @@ status: verified
 tags: []
 notes: ''
 verification:
-  checked_at: '2026-05-05T04:25:53.353491+00:00'
+  checked_at: '2026-05-17T07:22:23.383184+00:00'
   checks_run:
   - static
   failures: []
+  warnings:
+  - "mining-quality: zero keyword overlap between user report and fix.files (report\
+    \ tokens: ['add', 'added', 'after', 'android', 'another', 'are']; file tokens:\
+    \ ['lighting', 'nodes', 'renderers', 'shadowmap', 'shadownode']) \u2014 fix may\
+    \ be wrong PR"

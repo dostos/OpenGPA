@@ -85,19 +85,27 @@ def test_scorer_skips_consumer_misuse_when_no_json_tail(monkeypatch):
     assert res.parsed_json is False
 
 
-def test_scorer_still_fires_for_framework_internal_without_json(monkeypatch):
-    """Existing behavior preserved: framework-internal scenarios are
-    expected to emit JSON; missing JSON is itself a 'failed' signal,
-    so scoring fires and records solved=False."""
+def test_scorer_skipped_for_framework_internal_without_json(monkeypatch):
+    """R19-P3 contract: missing JSON → file scorer does not fire,
+    regardless of bug_class. Pre-R19 (R10-era) the harness short-
+    circuited framework-internal scenarios to solved=False on missing
+    JSON; R19-P3 deleted that bug_class clause because R18-P2 routes
+    every class through the maintainer prompt (which always asks for
+    JSON). The verdict orchestrator records the failure via
+    prose/judge fallback now.
+    """
     h = _bare_harness()
     s = _make_scenario(bug_class="framework-internal", fix_files=_FIX_FILES)
     h.loader.load.return_value = s
     diagnosis = "no JSON here"
     res = h.run_scenario(s.id, "code_only", _stub_agent(diagnosis))
-    # File-level scoring fired even though no JSON
-    assert res.file_score is not None
-    assert res.maintainer_solved is False
+    # File-level scoring did NOT fire — that's the new contract.
+    assert res.file_score is None
+    assert res.maintainer_solved is None
     assert res.parsed_json is False
+    # Verdict orchestrator still records the failure.
+    assert (res.verdict or {}).get("solved") is False
+    assert (res.verdict or {}).get("scorer") == "no_signal"
 
 
 def test_scorer_skipped_when_no_fix_files():

@@ -319,6 +319,23 @@ def _check_mining_quality(scenario_dir: Path) -> list[str]:
             f"and fix.files (report tokens: {sample_report}; "
             f"file tokens: {sample_files}) — fix may be wrong PR"
         )
+
+    # R19-P4: bug_class plausibility check. If the canonical fix touches
+    # ≥3 framework files, the bug is almost certainly framework-internal.
+    # Mining classifying it as consumer-misuse or user-config is a known
+    # failure mode (R18 forensic: 100% of mined cohort was mis-classified).
+    # The R18-P2 prompt-dispatch deletion removed the *consequence* of
+    # this mislabel, but the label is still surfaced via
+    # ScenarioMetadata.fix.bug_class — this warning lets the verifier
+    # flag the mismatch for human review before it pollutes future
+    # tier-by-bug_class analyses.
+    if bug_class and bug_class not in ("framework-internal", "legacy"):
+        if len(files) >= 3:
+            warnings.append(
+                f"bug_class-mismatch: fix touches {len(files)} files but "
+                f"bug_class={bug_class!r}; framework-internal is the more "
+                "plausible label. Mining likely mis-classified."
+            )
     return warnings
 
 

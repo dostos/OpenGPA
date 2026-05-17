@@ -457,8 +457,10 @@ class EvalHarness:
         # curated fix.files list — this is "size and area" only, never the
         # filenames themselves (the hint helper enforces this).
         scope_hint = None
+        fix_files_count = 0
         if scenario.fix is not None and scenario.fix.files:
             scope_hint = compute_scope_hint(scenario.fix.files)
+            fix_files_count = len(scenario.fix.files)
 
         return render_prompt(
             template_name,
@@ -468,6 +470,7 @@ class EvalHarness:
             upstream_snapshot_sha=scenario.upstream_snapshot_sha,
             mode=mode,
             scope_hint=scope_hint,
+            fix_files_count=fix_files_count,
         )
 
     # ------------------------------------------------------------------

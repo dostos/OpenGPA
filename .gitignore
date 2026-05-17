@@ -27,3 +27,4 @@ core.*
 .superpowers/
 
 dashboard/index.json
+bazel-beholder

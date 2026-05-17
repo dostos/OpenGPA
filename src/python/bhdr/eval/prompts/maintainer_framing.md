@@ -29,20 +29,12 @@ minimal repro.
 
 # Task
 
-Investigate thoroughly. Locate the bug. Cite **every** framework file
-you believe is involved in the fix — bugs in this domain typically
-span 5-15 files (renderer + shader + storage + headers). Naming only
-the most obvious file misses the surrounding refactor and the harness
-will score you below threshold.
+Investigate the bug and locate the framework file(s) that need to
+change. Write your reasoning in prose with concrete file paths inline
+like ``servers/rendering/foo.cpp:621``. Then end your response with
+the output JSON below.
 
-Write your reasoning in prose with concrete file paths inline like
-``servers/rendering/foo.cpp:621``. Then end your response with the
-output JSON below.
-
-(Maintainer-class scenarios genuinely need extensive investigation —
-13-file refactor PRs are normal in this domain. Don't artificially
-short-circuit; do enough work to identify every file that should be
-touched.)
+{depth_section}
 
 # Output (REQUIRED — last line)
 
