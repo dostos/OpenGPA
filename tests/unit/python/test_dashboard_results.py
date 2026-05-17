@@ -6,6 +6,7 @@ import pytest
 
 from gpa.eval.dashboard._results import (
     load_and_merge_results, load_or_seed_tier_meta, derive_scenario_type,
+    derive_inferred_api, derive_depth_bucket, derive_fix_scope_bucket,
     enrich_results,
 )
 from gpa.eval.metrics import EvalResult
@@ -104,10 +105,49 @@ def test_derive_scenario_type_empty():
     assert derive_scenario_type("") == "unknown"
 
 
+@pytest.mark.parametrize("scenario_type,expected", [
+    ("web-map/cesium", "webgl"),
+    ("web-2d/three.js", "webgl"),
+    ("native-engine/godot", "vulkan"),
+    ("native-engine/bevy", "vulkan"),
+    ("native-engine/some_old_engine", "opengl"),
+    ("graphics-lib/raylib", "opengl"),
+    ("unknown", "unknown"),
+    ("", "unknown"),
+])
+def test_derive_inferred_api(scenario_type, expected):
+    assert derive_inferred_api(scenario_type) == expected
+
+
+@pytest.mark.parametrize("calls,expected", [
+    (0, "shallow"), (5, "shallow"), (9, "shallow"),
+    (10, "moderate"), (20, "moderate"), (29, "moderate"),
+    (30, "deep"), (60, "deep"),
+])
+def test_derive_depth_bucket(calls, expected):
+    assert derive_depth_bucket(calls) == expected
+
+
+@pytest.mark.parametrize("nfiles,expected", [
+    (0, "unknown"), (1, "single"),
+    (2, "few"), (5, "few"),
+    (6, "many"), (22, "many"),
+])
+def test_derive_fix_scope_bucket(nfiles, expected):
+    assert derive_fix_scope_bucket(nfiles) == expected
+
+
+class _FakeFix:
+    def __init__(self, bug_class=None, files=None):
+        self.bug_class = bug_class
+        self.files = files or []
+
+
 class _FakeScenario:
-    def __init__(self, scenario_dir, expected_failure=None):
+    def __init__(self, scenario_dir, expected_failure=None, fix=None):
         self.scenario_dir = scenario_dir
         self.expected_failure = expected_failure
+        self.fix = fix
 
 
 class _FakeLoader:
@@ -118,25 +158,62 @@ class _FakeLoader:
         return self._by_id[sid]
 
 
-def test_enrich_results_attaches_type_and_expected_failure():
+def test_enrich_results_attaches_capability_fields():
     rows = [
-        EvalResult.from_dict(_make_result_dict("scen_a")),
-        EvalResult.from_dict(_make_result_dict("scen_b")),
+        EvalResult.from_dict(_make_result_dict("scen_a", tool_calls=8)),
+        EvalResult.from_dict(_make_result_dict("scen_b", tool_calls=44)),
     ]
     loader = _FakeLoader({
-        "scen_a": _FakeScenario("/x/tests/eval/web-map/cesium/scen_a"),
+        "scen_a": _FakeScenario(
+            "/x/tests/eval/web-map/cesium/scen_a",
+            fix=_FakeFix(bug_class="consumer-misuse", files=["a.js"]),
+        ),
         "scen_b": _FakeScenario(
             "/x/tests/eval/native-engine/godot/scen_b",
             expected_failure={"reason": "model-tier ceiling"},
+            fix=_FakeFix(bug_class="framework-internal",
+                         files=["a.cpp", "b.cpp", "c.cpp", "d.cpp",
+                                "e.cpp", "f.cpp", "g.cpp"]),
         ),
     })
     enriched = list(enrich_results(rows, tier="opus", scenario_loader=loader))
-    assert enriched[0]["scenario_id"] == "scen_a"
+    # scen_a: web-map + single-file + shallow + consumer-misuse
     assert enriched[0]["scenario_type"] == "web-map/cesium"
-    assert enriched[0]["tier"] == "opus"
-    assert enriched[0]["expected_failure"] is None
+    assert enriched[0]["inferred_api"] == "webgl"
+    assert enriched[0]["bug_nature"] == "consumer-misuse"
+    assert enriched[0]["fix_scope"] == "single"
+    assert enriched[0]["depth_bucket"] == "shallow"
+    assert enriched[0]["qualified"] is True  # solved=True default + file_level/high
+    # scen_b: native + many-file + deep + framework-internal + stable failure
     assert enriched[1]["scenario_type"] == "native-engine/godot"
+    assert enriched[1]["inferred_api"] == "vulkan"
+    assert enriched[1]["bug_nature"] == "framework-internal"
+    assert enriched[1]["fix_scope"] == "many"
+    assert enriched[1]["depth_bucket"] == "deep"
     assert enriched[1]["expected_failure"] == {"reason": "model-tier ceiling"}
+
+
+def test_enrich_results_qualified_requires_file_level_high():
+    """`qualified` is the false-positive proxy. A solved-by-judge row
+    does NOT qualify even if the verdict says solved=True."""
+    rows = [
+        EvalResult.from_dict(_make_result_dict(
+            "scen_a", verdict={"solved": True, "scorer": "judge", "confidence": "medium"},
+        )),
+        EvalResult.from_dict(_make_result_dict(
+            "scen_b", verdict={"solved": True, "scorer": "file_level", "confidence": "low"},
+        )),
+        EvalResult.from_dict(_make_result_dict(
+            "scen_c", verdict={"solved": True, "scorer": "file_level", "confidence": "high"},
+        )),
+    ]
+    loader = _FakeLoader({
+        sid: _FakeScenario(f"/x/tests/eval/web-map/cesium/{sid}") for sid in ("scen_a", "scen_b", "scen_c")
+    })
+    enriched = {r["scenario_id"]: r for r in enrich_results(rows, tier="opus", scenario_loader=loader)}
+    assert enriched["scen_a"]["qualified"] is False  # judge → not qualified
+    assert enriched["scen_b"]["qualified"] is False  # low confidence → not qualified
+    assert enriched["scen_c"]["qualified"] is True
 
 
 def test_enrich_results_handles_loader_failure_gracefully():
@@ -147,7 +224,10 @@ def test_enrich_results_handles_loader_failure_gracefully():
             raise FileNotFoundError(sid)
 
     enriched = list(enrich_results(rows, tier="opus", scenario_loader=_FailingLoader()))
-    # Loader failure → scenario_type "unknown", expected_failure None,
-    # row still kept (it has eval data even without metadata)
+    # Loader failure → all capability fields default to unknown / 0
     assert enriched[0]["scenario_type"] == "unknown"
+    assert enriched[0]["inferred_api"] == "unknown"
+    assert enriched[0]["bug_nature"] == "unknown"
+    assert enriched[0]["fix_scope"] == "unknown"
+    assert enriched[0]["fix_files_count"] == 0
     assert enriched[0]["expected_failure"] is None
