@@ -1,6 +1,6 @@
 """Browser-based eval runner (Phase 1 MVP).
 
-See ``docs/superpowers/specs/2026-04-20-gpa-browser-eval-design.md``.
+See ``docs/superpowers/specs/2026-04-20-bhdr-browser-eval-design.md``.
 
 Public API:
 

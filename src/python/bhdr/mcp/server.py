@@ -1073,7 +1073,7 @@ def run(base_url: str, token: str) -> None:
             _write(_response(req_id, {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "opengpa-mcp", "version": "0.1.0"},
+                "serverInfo": {"name": "beholder-mcp", "version": "0.1.0"},
             }))
             continue
 

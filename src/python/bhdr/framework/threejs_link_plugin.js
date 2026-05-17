@@ -116,7 +116,7 @@ function _post(endpoint, frameId, token, body) {
 export function installGpaLinkPlugin(options) {
   const { scene, renderer } = options || {};
   if (!scene || !renderer) {
-    console.warn("[gpa-threejs-link] scene/renderer missing; plugin disabled");
+    console.warn("[bhdr-threejs-link] scene/renderer missing; plugin disabled");
     return;
   }
   const endpoint =

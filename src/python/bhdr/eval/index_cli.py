@@ -86,7 +86,7 @@ def build_round_table(scenarios: List[Scenario]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="gpa-eval")
+    p = argparse.ArgumentParser(prog="bhdr-eval")
     sub = p.add_subparsers(dest="cmd", required=True)
     px = sub.add_parser("index")
     px.add_argument("--by", choices=["taxonomy", "backend", "round"], default="taxonomy")

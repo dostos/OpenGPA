@@ -197,7 +197,7 @@ static void test_dwarf_parser_rejects_dwarf5(void) {
 
 static void test_scan_hashes_values_match_js_scanner(void) {
     /* Canonical hash body (cross-origin parity with
-     * src/shims/webgl/extension/gpa-trace.js::canonicalNumber and
+     * src/shims/webgl/extension/bhdr-trace.js::canonicalNumber and
      * src/python/gpa/api/routes_trace.py::_parse_canonical_number):
      *   NaN/Inf/-Inf/0           -> sentinel tokens
      *   integer, |v| < 2^53      -> signed decimal

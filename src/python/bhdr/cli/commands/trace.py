@@ -4,7 +4,7 @@ Hits the engine's trace endpoints to resolve a captured value back to
 the app-level JS fields that currently hold it. Plain-text output is
 agent-friendly; ``--json`` emits the raw REST response.
 
-See ``docs/superpowers/specs/2026-04-20-gpa-trace-design.md``.
+See ``docs/superpowers/specs/2026-04-20-bhdr-trace-design.md``.
 """
 
 from __future__ import annotations

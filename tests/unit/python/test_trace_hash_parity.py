@@ -4,7 +4,7 @@ parser.
 
 The canonical number-hash format is documented in
 ``src/shims/gl/native_trace.c::number_to_js_base36`` and matched by
-``src/shims/webgl/extension/gpa-trace.js::canonicalNumber``. This test
+``src/shims/webgl/extension/bhdr-trace.js::canonicalNumber``. This test
 verifies the three implementations agree byte-for-byte on a curated set
 of values that previously exercised the divergence (integers, zero,
 fractional doubles, negative zero, NaN, +/- Inf, subnormal, boundary).
@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-JS_EXT = REPO_ROOT / "src" / "shims" / "webgl" / "extension" / "gpa-trace.js"
+JS_EXT = REPO_ROOT / "src" / "shims" / "webgl" / "extension" / "bhdr-trace.js"
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ JS_EXT = REPO_ROOT / "src" / "shims" / "webgl" / "extension" / "gpa-trace.js"
 # ---------------------------------------------------------------------------
 def canonical_py(v: float) -> str:
     """Mirror of `number_to_js_base36` in native_trace.c (C side) and
-    `canonicalNumber` in gpa-trace.js (JS side)."""
+    `canonicalNumber` in bhdr-trace.js (JS side)."""
     if math.isnan(v):
         return "NaN"
     if math.isinf(v):
@@ -120,7 +120,7 @@ JS_TEST = REPO_ROOT / "tests" / "unit" / "shims" / "test_bhdr_trace_js_hash.js"
 @pytest.mark.skipif(not _have_node(), reason="node not installed")
 def test_js_canonical_matches_python_mirror():
     """Run tests/unit/shims/test_bhdr_trace_js_hash.js under node and
-    assert it exits 0. That test loads gpa-trace.js into a VM sandbox
+    assert it exits 0. That test loads bhdr-trace.js into a VM sandbox
     and verifies `window.gpa.trace._hashValue()` emits the same
     canonical strings the C shim + Python parser use, for 12
     hand-computed boundary values (NaN, Inf, zero, signed ints,

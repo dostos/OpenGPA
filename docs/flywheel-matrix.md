@@ -222,8 +222,8 @@ These problems exist but we explicitly don't address them:
 - `docs/eval-results.md` — full per-round journal (rounds 4–9)
 - `docs/eval-lessons-consolidated.md` — rolling cross-round lessons pre-2026-04-21
 - `docs/superpowers/specs/2026-04-19-gpa-cli-design.md` — CLI surface rationale
-- `docs/superpowers/specs/2026-04-20-gpa-trace-design.md` — trace (JS) design
-- `docs/superpowers/specs/2026-04-20-gpa-trace-native-design.md` — trace (native DWARF)
+- `docs/superpowers/specs/2026-04-20-bhdr-trace-design.md` — trace (JS) design
+- `docs/superpowers/specs/2026-04-20-bhdr-trace-native-design.md` — trace (native DWARF)
 - `docs/superpowers/specs/2026-04-20-gpa-browser-eval-design.md` — browser eval scaffold
 - `docs/superpowers/specs/2026-04-21-maintainer-framing-design.md` — maintainer-framing scorer
 - `docs/superpowers/plans/2026-04-18-framework-integration.md` — Tier-3 plan

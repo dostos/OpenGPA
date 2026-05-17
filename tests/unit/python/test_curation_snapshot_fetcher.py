@@ -168,9 +168,9 @@ def test_two_refs_same_repo_different_sha_use_different_cache_dirs(tmp_path):
     assert fetcher.cache_path(r1).parent == fetcher.cache_path(r2).parent
 
 def test_default_cache_root_is_data3():
-    """When no cache_root passed, default is /data3/opengpa-snapshots."""
+    """When no cache_root passed, default is /data3/beholder-snapshots."""
     f = SnapshotFetcher()
-    assert str(f.cache_root) == "/data3/opengpa-snapshots"
+    assert str(f.cache_root) == "/data3/beholder-snapshots"
 
 
 def test_resolve_parent_changes_cache_key():

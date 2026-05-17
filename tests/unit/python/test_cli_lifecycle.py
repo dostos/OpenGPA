@@ -99,7 +99,7 @@ def fake_spawn(monkeypatch, tmp_path):
 
 @pytest.fixture
 def isolated_current_link(monkeypatch, tmp_path):
-    link = tmp_path / "gpa-session-current"
+    link = tmp_path / "bhdr-session-current"
     monkeypatch.setattr(session_mod, "CURRENT_SESSION_LINK", str(link))
     monkeypatch.delenv("BHDR_SESSION", raising=False)
     return link

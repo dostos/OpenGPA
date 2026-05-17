@@ -1,5 +1,5 @@
 {
-  "name": "gpa-webgl-bridge",
+  "name": "bhdr-webgl-bridge",
   "version": "0.1.0",
   "description": "WebSocket-to-Unix-socket bridge for OpenGPA WebGL shim",
   "main": "bridge.js",

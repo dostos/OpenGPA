@@ -3,7 +3,7 @@ three.js bundle vendored for the OpenGPA browser-eval scenario
 
 Source repo : https://github.com/mrdoob/three.js
 Source SHA  : c2c5685879290d304c226a493061f6461021864c
-Bundle date : 2025 (snapshot via /data3/opengpa-snapshots/github_com__mrdoob__three__c2c568587929)
+Bundle date : 2025 (snapshot via /data3/beholder-snapshots/github_com__mrdoob__three__c2c568587929)
 
 Files
 -----

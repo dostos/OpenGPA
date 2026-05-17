@@ -56,7 +56,7 @@ Each is simple enough to fit in a single HTML page + one npm-cached framework bu
 
 - **Static server** serves scenario HTML + pinned framework bundles from `tests/eval-browser/`
 - **Python browser runner** spawns Chromium, waits for captured frames in `TraceStore`, tears down on exit
-- **Extension** already built in `src/shims/webgl/extension/` (has `gpa-trace.js` + `interceptor.js`)
+- **Extension** already built in `src/shims/webgl/extension/` (has `bhdr-trace.js` + `interceptor.js`)
 
 ## Scenario file layout
 
@@ -104,7 +104,7 @@ Flags:
 
 ### Extension config
 
-The extension needs a way to target the local engine. Currently hardcoded in `gpa-trace.js` to `http://127.0.0.1:18080`. Add env/localStorage injection during scenario boot:
+The extension needs a way to target the local engine. Currently hardcoded in `bhdr-trace.js` to `http://127.0.0.1:18080`. Add env/localStorage injection during scenario boot:
 
 ```html
 <script>

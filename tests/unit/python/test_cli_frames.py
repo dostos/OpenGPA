@@ -38,7 +38,7 @@ def session_dir(tmp_path) -> Path:
     d.mkdir()
     (d / "token").write_text(AUTH_TOKEN)
     (d / "port").write_text("18080")
-    (d / "shm-name").write_text("/gpa-test")
+    (d / "shm-name").write_text("/bhdr-test")
     return d
 
 

@@ -300,7 +300,7 @@ The migration PR includes a separate commit per consumer:
 |---|---|
 | `tests/eval/README.md` | Rewrite for new layout; describe `scenario.yaml`; explain topic buckets. |
 | `scripts/run-eval-claude-code.sh` | Update example path. |
-| `docs/gpa-trace-native-usage.md` | Update `bazel-bin/tests/eval/<name>` references. |
+| `docs/bhdr-trace-native-usage.md` | Update `bazel-bin/tests/eval/<name>` references. |
 | `docs/eval-results.md` | Update `tests/eval/r15_*` references. |
 | `docs/superpowers/specs/2026-04-17-eval-set-real-world-design.md` | "Superseded by this spec" pointer at top. |
 | `docs/superpowers/specs/2026-04-28-omnispace-gen-integration-design.md` | Update `tests/eval/r37_joint_offset_smplx/` reference. |

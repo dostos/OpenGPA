@@ -10,13 +10,13 @@
   canvas { border: 1px solid #444; display: block; }
 </style>
 <!-- Importmap so `import 'three'` resolves to the vendored bundle, and
-     `gpa-threejs-link` resolves to the runner-mounted plugin. The runner
+     `bhdr-threejs-link` resolves to the runner-mounted plugin. The runner
      serves /_plugins/threejs-link.js via an alias on the static-server
      handler (see src/python/gpa/browser/runner.py::_make_quiet_handler). -->
 <script type="importmap">
 { "imports": {
     "three": "./framework/three.module.min.js",
-    "gpa-threejs-link": "/_plugins/threejs-link.js"
+    "bhdr-threejs-link": "/_plugins/threejs-link.js"
 } }
 </script>
 </head>
@@ -28,7 +28,7 @@
   // Hand the WebGL extension our engine endpoint + token BEFORE three.js
   // loads, so gpa.trace.enable() finds them via localStorage. Also expose
   // the same values to the page on `window` so the Tier-3 link plugin
-  // (gpa-threejs-link) can POST scene-graph annotations to the engine.
+  // (bhdr-threejs-link) can POST scene-graph annotations to the engine.
   (function configureTrace() {
     const params = new URLSearchParams(window.location.search);
     const token  = params.get("token") || "";
@@ -75,10 +75,10 @@
   // /_plugins/threejs-link.js via the static-server alias map.
   let installGpaLinkPlugin = null;
   try {
-    const mod = await import('gpa-threejs-link');
+    const mod = await import('bhdr-threejs-link');
     installGpaLinkPlugin = mod.installGpaLinkPlugin;
   } catch (e) {
-    console.warn('[r10] gpa-threejs-link plugin not available:', e.message);
+    console.warn('[r10] bhdr-threejs-link plugin not available:', e.message);
   }
 
   const TRANSMISSION_VALUE = 0.875;   // distinctive non-trivial number for trace lookup
@@ -126,7 +126,7 @@
   window.camera   = camera;
 
   // 4. Enable the OpenGPA JS trace and register roots ------------------
-  // gpa-trace.js is injected by the WebGL extension. If it didn't load
+  // bhdr-trace.js is injected by the WebGL extension. If it didn't load
   // (e.g. running this file standalone without the extension) we still
   // render so the page is debuggable in a normal browser.
   if (window.gpa && window.gpa.trace) {

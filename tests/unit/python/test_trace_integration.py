@@ -4,7 +4,7 @@ Exercises the full scanner-side POST → TraceStore → query REST → CLI
 plain-text render path without a real browser. The scanner's JS hashing
 is reproduced by parsing stored hash keys back into numbers on the
 server side, so we feed in realistic payloads (the same shape
-``gpa-trace.js`` would send) and query them with the CLI-layer
+``bhdr-trace.js`` would send) and query them with the CLI-layer
 plumbing.
 """
 
@@ -47,7 +47,7 @@ def _rest_client(client: TestClient) -> RestClient:
 
 
 def _scanner_payload_16_58(extra_paths=None):
-    """Mimic the payload ``gpa-trace.js`` would POST for the scenario
+    """Mimic the payload ``bhdr-trace.js`` would POST for the scenario
     'uZoom uniform = 16.58, produced by map._transform._maxZoom'.
 
     The key ``n:g.kvoha2voh`` is the exact hash that the JS scanner

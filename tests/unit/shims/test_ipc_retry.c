@@ -52,9 +52,9 @@
  * ------------------------------------------------------------------------ */
 
 static void make_socket_path(char* out, size_t cap, const char* tag) {
-    /* /tmp/gpa-ipc-test-<pid>-<tag>.sock — short enough to fit in
+    /* /tmp/bhdr-ipc-test-<pid>-<tag>.sock — short enough to fit in
      * sun_path (108 bytes) on every Linux. */
-    snprintf(out, cap, "/tmp/gpa-ipc-test-%d-%s.sock", (int)getpid(), tag);
+    snprintf(out, cap, "/tmp/bhdr-ipc-test-%d-%s.sock", (int)getpid(), tag);
     unlink(out);  /* clean any leftover */
 }
 

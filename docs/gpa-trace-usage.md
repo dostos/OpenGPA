@@ -5,12 +5,12 @@ literal) to the **app-level JS field** that currently holds it. Narrows
 "which of 300K lines produced this value" to "these three fields."
 
 For design context see
-[`docs/superpowers/specs/2026-04-20-gpa-trace-design.md`](superpowers/specs/2026-04-20-gpa-trace-design.md).
+[`docs/superpowers/specs/2026-04-20-bhdr-trace-design.md`](superpowers/specs/2026-04-20-bhdr-trace-design.md).
 
 ## Enabling capture in the browser
 
 The reflection scanner lives in
-`src/shims/webgl/extension/gpa-trace.js`. It ships as an opt-in module
+`src/shims/webgl/extension/bhdr-trace.js`. It ships as an opt-in module
 — no work is done unless the page enables it.
 
 ### Option A — auto-enable via `localStorage`
@@ -66,7 +66,7 @@ the three subcommands. Pass either `field` (uniform name) *or* `value`
 
 ## Extending the default root list
 
-The JS-side default roots are a tuple inside `gpa-trace.js`. Prefer
+The JS-side default roots are a tuple inside `bhdr-trace.js`. Prefer
 `addRoot()` over editing the defaults — the allowlist is intentionally
 short to avoid scanning irrelevant globals. Ranking hints (the
 Phase-3 "prefix → confidence bump" rules) live in

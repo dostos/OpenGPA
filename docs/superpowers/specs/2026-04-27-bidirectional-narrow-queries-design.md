@@ -395,7 +395,7 @@ Re-run the four R9 carryover scenarios with the four new commands available.
 |---|---|
 | 4 new CLI commands | All flag lists from §3 implemented; `--help` carries ≥3 examples; integration test against fixture frame. |
 | 4 new REST endpoints | Each routes via `safe_json_response()`; each has unit tests in `tests/unit/python/test_api_NAME.py`. |
-| Reference three.js plugin emits debug markers | Updated `gpa-threejs-plugin.js` adds `gl.pushDebugGroup(node.uuid)` around each node's draws; one eval scenario shows non-empty `debug_group_path` on captured draws. |
+| Reference three.js plugin emits debug markers | Updated `bhdr-threejs-plugin.js` adds `gl.pushDebugGroup(node.uuid)` around each node's draws; one eval scenario shows non-empty `debug_group_path` on captured draws. |
 | Eval re-run | Cost delta on 3 three.js carryovers (r10, r22, r27) ≤ +$0.10/pair on Sonnet (target ≤$0; ceiling +$0.10 because point-sprite class may not benefit). |
 
 If cost delta does not move ≤$0.10, decompose by command: which command did the
@@ -474,7 +474,7 @@ plugin absent). Land:
 
 **Step 3 — Reference three.js plugin emits debug markers per node; then
 `scene-find` and `scene-explain --pixel` light up.** Modify
-`src/shims/webgl/extension/gpa-threejs-plugin.js` to wrap `renderer.render()`
+`src/shims/webgl/extension/bhdr-threejs-plugin.js` to wrap `renderer.render()`
 with `gl.pushDebugGroup(uuid + ":" + path)` / `gl.popDebugGroup()` per mesh.
 Land:
 - Plugin update (≤30 LoC).

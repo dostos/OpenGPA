@@ -2,7 +2,7 @@
 
 Phase 1 (shipped): POST/GET ``/frames/{id}/drawcalls/{dc}/sources`` —
 raw per-drawcall reflection-scan payloads from the WebGL shim
-(``src/shims/webgl/extension/gpa-trace.js``).
+(``src/shims/webgl/extension/bhdr-trace.js``).
 
 Phase 2 (this module): query-side endpoints for reverse-lookup:
 
@@ -19,7 +19,7 @@ values and comparing with the requested literal. Hash key format:
   hex chars>`` (IEEE-754 bit pattern for fractional doubles). This
   canonical format is matched byte-for-byte by the C shim
   (``src/shims/gl/native_trace.c``) and the JS extension
-  (``src/shims/webgl/extension/gpa-trace.js``).
+  (``src/shims/webgl/extension/bhdr-trace.js``).
 - Strings: ``"s:<djb2-of-lowered>"``
 - Booleans: ``"b:<0|1>"``
 - Arrays: ``"a:<djb2-of-json>"``
@@ -132,7 +132,7 @@ def _parse_canonical_number(token: str) -> Optional[float]:
     """Parse a canonical number hash body.
 
     Canonical format (matches src/shims/gl/native_trace.c and
-    src/shims/webgl/extension/gpa-trace.js)::
+    src/shims/webgl/extension/bhdr-trace.js)::
 
         NaN | Inf | -Inf        → float sentinels
         0                       → 0.0

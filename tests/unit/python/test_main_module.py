@@ -63,7 +63,7 @@ def test_main_module_dispatches_subcommand(monkeypatch):
     # Point the session-discovery link at a path that does not exist.
     from bhdr.cli import session as session_mod
     monkeypatch.setattr(
-        session_mod, "CURRENT_SESSION_LINK", "/tmp/no-such-gpa-session-link"
+        session_mod, "CURRENT_SESSION_LINK", "/tmp/no-such-bhdr-session-link"
     )
 
     err = io.StringIO()

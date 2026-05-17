@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# Wrapper that invokes the gpa CLI from a source checkout without needing
+# Wrapper that invokes the bhdr CLI from a source checkout without needing
 # `pip install -e .`.
 #
 # Autodetects the bazel-built Python 3.11 interpreter and the pybind11
-# extension `_gpa_core.so` so users don't have to plumb PYTHONPATH /
-# GPA_PYTHON manually. Honours an explicit $GPA_PYTHON if set.
+# extension `_bhdr_core.so` so users don't have to plumb PYTHONPATH /
+# BHDR_PYTHON manually. Honours an explicit $BHDR_PYTHON if set.
 #
 # Interpreter search order:
-#   1. $GPA_PYTHON, if set.
+#   1. $BHDR_PYTHON, if set.
 #   2. Default bazel cache: ~/.cache/bazel/_bazel_$USER/.../external/
 #      rules_python~~python~python_3_11_<triple>/bin/python3.11.
 #   3. $BAZEL_OUTPUT_BASE, if set (short-circuits the `bazel info` call;
@@ -21,11 +21,11 @@ here="$(cd "$(dirname "$0")" && pwd)"
 root="$(cd "$here/.." && pwd)"
 
 # ---------------------------------------------------------------------------
-# 1. Locate `_gpa_core.so` under <repo>/bazel-bin/src/bindings/.
+# 1. Locate `_bhdr_core.so` under <repo>/bazel-bin/src/bindings/.
 # ---------------------------------------------------------------------------
 bindings_dir="$root/bazel-bin/src/bindings"
 have_bindings=0
-if [ -f "$bindings_dir/_gpa_core.so" ]; then
+if [ -f "$bindings_dir/_bhdr_core.so" ]; then
     have_bindings=1
 fi
 
@@ -87,14 +87,14 @@ detect_bazel_python() {
     return 1
 }
 
-if [ -n "$GPA_PYTHON" ]; then
-    py="$GPA_PYTHON"
+if [ -n "$BHDR_PYTHON" ]; then
+    py="$BHDR_PYTHON"
 else
     py="$(detect_bazel_python || true)"
     if [ -z "$py" ]; then
         if [ "$have_bindings" = "1" ]; then
-            echo "[gpa] warning: bazel python 3.11 not found; falling back to python3." \
-                 "Set GPA_PYTHON to override." >&2
+            echo "[bhdr] warning: bazel python 3.11 not found; falling back to python3." \
+                 "Set BHDR_PYTHON to override." >&2
         fi
         py="python3"
     fi
@@ -107,15 +107,15 @@ pypath="$root/src/python"
 if [ "$have_bindings" = "1" ]; then
     pypath="$bindings_dir:$pypath"
 else
-    echo "[gpa] warning: $bindings_dir/_gpa_core.so not found; native backend will fail." \
-         "Build it with 'bazel build //src/bindings:_gpa_core.so'." >&2
+    echo "[bhdr] warning: $bindings_dir/_bhdr_core.so not found; native backend will fail." \
+         "Build it with 'bazel build //src/bindings:_bhdr_core.so'." >&2
 fi
 
-export GPA_PYTHON="$py"
+export BHDR_PYTHON="$py"
 
 # Diagnostic hook used by unit tests (and humans): dump the resolved env and exit 0.
 if [ "${GPA_DIAG:-0}" = "1" ]; then
-    printf 'GPA_PYTHON=%s\n' "$py"
+    printf 'BHDR_PYTHON=%s\n' "$py"
     printf 'PYTHONPATH=%s\n' "$pypath${PYTHONPATH:+:$PYTHONPATH}"
     printf 'bindings_found=%s\n' "$have_bindings"
     exit 0

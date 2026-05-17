@@ -153,7 +153,7 @@ def test_unrelated_bash_stays_bash(tmp_path):
 
 
 def test_curl_without_bhdr_port_stays_bash(tmp_path):
-    # curl to some other site — not counted as gpa-curl.
+    # curl to some other site — not counted as bhdr-curl.
     lines = [
         json.dumps({
             "type": "assistant",

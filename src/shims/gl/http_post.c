@@ -79,7 +79,7 @@ int bhdr_http_post_json(const char* host, int port,
         hlen = snprintf(header, sizeof(header),
             "POST %s HTTP/1.0\r\n"
             "Host: %s:%d\r\n"
-            "User-Agent: opengpa-shim/1.0\r\n"
+            "User-Agent: beholder-shim/1.0\r\n"
             "Authorization: Bearer %s\r\n"
             "Content-Type: application/json\r\n"
             "Content-Length: %zu\r\n"
@@ -89,7 +89,7 @@ int bhdr_http_post_json(const char* host, int port,
         hlen = snprintf(header, sizeof(header),
             "POST %s HTTP/1.0\r\n"
             "Host: %s:%d\r\n"
-            "User-Agent: opengpa-shim/1.0\r\n"
+            "User-Agent: beholder-shim/1.0\r\n"
             "Content-Type: application/json\r\n"
             "Content-Length: %zu\r\n"
             "\r\n",

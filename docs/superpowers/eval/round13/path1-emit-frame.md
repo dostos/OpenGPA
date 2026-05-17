@@ -11,7 +11,7 @@ without ever calling `glXSwapBuffers`.*
 |------|--------|
 | `src/shims/gl/gl_wrappers.c` | Added `bhdr_emit_frame()` definition immediately below `glXSwapBuffers`. Body mirrors the swap wrapper exactly, minus the real swap call. Marked `__attribute__((visibility("default")))`. |
 | `src/shims/gl/gl_wrappers.h` | Added prototype with documentation. |
-| `scripts/demo_gpa_emit_frame.js` | Node + `headless-gl` + `koffi` demo that drives N frames of capture from JS. |
+| `scripts/demo_bhdr_emit_frame.js` | Node + `headless-gl` + `koffi` demo that drives N frames of capture from JS. |
 
 The function body:
 
@@ -51,7 +51,7 @@ In a directory **outside the repo** (we don't want `node_modules` in git):
 mkdir -p /data3/p1-poc && cd /data3/p1-poc
 npm init -y
 npm install gl koffi --no-audit --no-fund
-cp /home/jingyulee/gh/gla/scripts/demo_gpa_emit_frame.js demo.js
+cp /home/jingyulee/gh/gla/scripts/demo_bhdr_emit_frame.js demo.js
 ```
 
 `gl` is `headless-gl` (offscreen GL context for Node). `koffi` is a

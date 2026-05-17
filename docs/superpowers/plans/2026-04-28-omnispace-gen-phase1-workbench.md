@@ -30,11 +30,11 @@
 
 | File | Action | Responsibility |
 |---|---|---|
-| `clients/threejs/index.js` | Create | The `OpenGPAThreePlugin` class (moved from `src/shims/webgl/extension/gpa-threejs-plugin.js`). |
+| `clients/threejs/index.js` | Create | The `OpenGPAThreePlugin` class (moved from `src/shims/webgl/extension/bhdr-threejs-plugin.js`). |
 | `clients/threejs/package.json` | Create | `@opengpa/threejs-sidecar` package metadata. ES module, no runtime deps. |
 | `clients/threejs/README.md` | Create | Quickstart: install, instantiate after renderer, call `capture(scene, camera)` after each render. |
 | `clients/threejs/test.js` | Create | Smoke test: module loads, `capture()` POSTs to a stub server with documented payload shape. |
-| `src/shims/webgl/extension/gpa-threejs-plugin.js` | Modify | Becomes a one-line re-export from `clients/threejs/index.js` so the Chrome extension still works unchanged. |
+| `src/shims/webgl/extension/bhdr-threejs-plugin.js` | Modify | Becomes a one-line re-export from `clients/threejs/index.js` so the Chrome extension still works unchanged. |
 
 **omnispace-gen repo:**
 
@@ -64,7 +64,7 @@
 - Create: `clients/threejs/package.json`
 - Create: `clients/threejs/README.md`
 - Create: `clients/threejs/test.js`
-- Modify: `src/shims/webgl/extension/gpa-threejs-plugin.js`
+- Modify: `src/shims/webgl/extension/bhdr-threejs-plugin.js`
 
 - [ ] **Step 1: Write the failing smoke test**
 
@@ -117,7 +117,7 @@ Expected: FAIL — `Cannot find module './index.js'`.
 
 - [ ] **Step 3: Move the existing plugin**
 
-Copy `/home/jingyulee/gh/gla/src/shims/webgl/extension/gpa-threejs-plugin.js` (120 LOC, already self-contained) to `clients/threejs/index.js`.
+Copy `/home/jingyulee/gh/gla/src/shims/webgl/extension/bhdr-threejs-plugin.js` (120 LOC, already self-contained) to `clients/threejs/index.js`.
 
 Replace the bottom export block with a clean ES default + named export:
 
@@ -164,7 +164,7 @@ Expected: PASS, 1 test.
 
 **Load-bearing check first** — the existing plugin uses `module.exports` and `window.OpenGPAThreePlugin`, which means the extension almost certainly loads it via `<script src=...>` (script-tag, not ES module). An `export` re-export would silently break the extension. Read `src/shims/webgl/extension/manifest.json` and `src/shims/webgl/extension/content.js` first to confirm the load mechanism.
 
-- If `<script>`-tag loaded (most likely): replace `src/shims/webgl/extension/gpa-threejs-plugin.js` with a **plain copy** of the canonical file's content (same source as `clients/threejs/index.js`, but with the original `module.exports` / `window` blocks at the bottom — not the ES `export`). Add a top-of-file comment: `// COPY of clients/threejs/index.js — kept here for the Chrome extension's <script>-tag loader. Edit clients/threejs/index.js, then re-copy.`
+- If `<script>`-tag loaded (most likely): replace `src/shims/webgl/extension/bhdr-threejs-plugin.js` with a **plain copy** of the canonical file's content (same source as `clients/threejs/index.js`, but with the original `module.exports` / `window` blocks at the bottom — not the ES `export`). Add a top-of-file comment: `// COPY of clients/threejs/index.js — kept here for the Chrome extension's <script>-tag loader. Edit clients/threejs/index.js, then re-copy.`
 - If ES-module loaded: use the one-line re-export `export { default, OpenGPAThreePlugin } from '../../../clients/threejs/index.js';`.
 
 This is the only step where getting the load mechanism wrong silently breaks the extension — verify before committing.
@@ -206,7 +206,7 @@ If the engine is not running, POSTs fail silently — your app is unaffected.
 
 ```bash
 cd /home/jingyulee/gh/gla
-git add clients/threejs/ src/shims/webgl/extension/gpa-threejs-plugin.js
+git add clients/threejs/ src/shims/webgl/extension/bhdr-threejs-plugin.js
 git commit -m "feat(clients): extract Three.js sidecar as @opengpa/threejs-sidecar"
 ```
 

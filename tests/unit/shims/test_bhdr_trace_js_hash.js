@@ -1,6 +1,6 @@
 // Canonical-hash parity test for the JS side of `gpa trace`.
 //
-// Loads src/shims/webgl/extension/gpa-trace.js into a minimal DOM-less
+// Loads src/shims/webgl/extension/bhdr-trace.js into a minimal DOM-less
 // sandbox + asserts that its `_hashValue()` emits the same canonical
 // numeric format as the C shim (`native_trace.c::number_to_js_base36`)
 // and the Python parser (`routes_trace.py::_parse_canonical_number`).
@@ -25,12 +25,12 @@ const vm = require('vm');
 
 const EXT_PATH = path.resolve(
   __dirname, '..', '..', '..',
-  'src', 'shims', 'webgl', 'extension', 'gpa-trace.js');
+  'src', 'shims', 'webgl', 'extension', 'bhdr-trace.js');
 
 // ---- minimal browser-ish sandbox -------------------------------------
 const sandbox = {
   window: {},
-  // IIFEs in gpa-trace.js probe `typeof Node` etc; a blank object is enough.
+  // IIFEs in bhdr-trace.js probe `typeof Node` etc; a blank object is enough.
   Node: undefined,
   WeakSet: WeakSet,
   ArrayBuffer: ArrayBuffer,
@@ -51,7 +51,7 @@ sandbox.globalThis = sandbox;
 vm.createContext(sandbox);
 
 const src = fs.readFileSync(EXT_PATH, 'utf-8');
-vm.runInContext(src, sandbox, { filename: 'gpa-trace.js' });
+vm.runInContext(src, sandbox, { filename: 'bhdr-trace.js' });
 
 const trace = sandbox.window.gpa && sandbox.window.gpa.trace;
 if (!trace || typeof trace._hashValue !== 'function') {

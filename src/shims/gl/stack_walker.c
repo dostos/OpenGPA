@@ -142,7 +142,7 @@ void bhdr_stack_snapshot_free(BhdrStackSnapshot* s) {
  * dozens of sites, we just fail the walk cleanly on other arches — the
  * driver already treats an empty snapshot as "stack trace unavailable".
  *
- * Documented in docs/gpa-trace-native-usage.md (stack-scan section). */
+ * Documented in docs/bhdr-trace-native-usage.md (stack-scan section). */
 
 #include <stdio.h>
 

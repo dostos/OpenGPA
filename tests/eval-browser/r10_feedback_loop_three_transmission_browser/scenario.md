@@ -181,7 +181,7 @@ copied verbatim from the upstream snapshot above. See
 
 This scenario imports the OpenGPA three.js link plugin
 (`src/python/bhdr/framework/threejs_link_plugin.js`, mounted by the
-runner at `/_plugins/threejs-link.js`) via the `gpa-threejs-link`
+runner at `/_plugins/threejs-link.js`) via the `bhdr-threejs-link`
 importmap entry. The plugin wraps `renderer.render()`, pushes
 `gl.pushDebugGroup` markers per Mesh/Light/Group around each node's
 draws, and POSTs the flattened scene tree to

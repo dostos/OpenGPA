@@ -1,6 +1,6 @@
 """``BrowserRunner`` — launch Chromium with the WebGL extension, poll for frames.
 
-Phase 1 MVP per ``docs/superpowers/specs/2026-04-20-gpa-browser-eval-design.md``.
+Phase 1 MVP per ``docs/superpowers/specs/2026-04-20-bhdr-browser-eval-design.md``.
 
 Design notes:
 
@@ -170,7 +170,7 @@ def _start_static_server(
     server = _ThreadingTCPServer(("127.0.0.1", port), _handler_factory)
     actual_port = server.server_address[1]
     thread = threading.Thread(
-        target=server.serve_forever, name=f"gpa-static-{actual_port}", daemon=True
+        target=server.serve_forever, name=f"bhdr-static-{actual_port}", daemon=True
     )
     thread.start()
     return _StaticServerHandle(server=server, thread=thread, port=actual_port)
@@ -267,7 +267,7 @@ class BrowserRunner:
         # windowed run, see _build_chromium_argv comment).
         import tempfile as _tempfile
         user_data_dir = Path(_tempfile.mkdtemp(
-            prefix=f"gpa-chrome-{opts.scenario_name}-",
+            prefix=f"bhdr-chrome-{opts.scenario_name}-",
         ))
         argv = self._build_chromium_argv(
             chromium_path=chromium_path,
@@ -366,7 +366,7 @@ class BrowserRunner:
         # Chromium MV3 extensions do NOT load in any --headless mode
         # (neither the legacy nor --headless=new; chrome.runtime is
         # undefined inside content scripts). For scenarios that depend
-        # on the WebGL extension's content scripts (gpa-trace.js,
+        # on the WebGL extension's content scripts (bhdr-trace.js,
         # interceptor.js) we MUST run a real window. When a DISPLAY is
         # set (Xvfb is fine) we drop --headless and run windowed; when
         # there is no DISPLAY we fall back to --headless=new and accept

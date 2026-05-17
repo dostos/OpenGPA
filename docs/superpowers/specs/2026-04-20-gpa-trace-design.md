@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-20
 **Status:** Phases 1–3 shipped; Phase 4 (Round-9 measurement) pending
-**Usage:** see [`docs/gpa-trace-usage.md`](../../gpa-trace-usage.md)
+**Usage:** see [`docs/bhdr-trace-usage.md`](../../bhdr-trace-usage.md)
 **Motivation:** Rounds 5–8 showed OpenGPA loses on "source-logical" bugs (r27 fractional `maxZoom`, r28 16-bit index overflow, r29 mapbox symbol-layer collision). These bugs have consistent GL state; the error is in app-level logic that *produced* the value. Call-stack attribution alone is insufficient — it points to the call site, but the value itself is typically a N-hop transformation of deeper framework fields. In a 300K-line codebase the agent still has to trace.
 
 `gpa trace` inverts the problem: **given a captured value, list app-level fields that currently equal it.** Narrows the search radius from "entire codebase" to "these 3 fields." The agent spends one query instead of twenty greps.
@@ -176,7 +176,7 @@ One new tool `bhdr_trace_value(frame_id, field?, value?, dc_id?)` that wraps the
 
 ### Phase 1 — WebGL capture (shipped)
 
-- `src/shims/webgl/extension/gpa-trace.js` — BFS scanner with depth/size
+- `src/shims/webgl/extension/bhdr-trace.js` — BFS scanner with depth/size
   caps, gated/lazy/eager modes, SDK `gpa.trace.addRoot()`, POSTs to
   `/frames/{id}/drawcalls/{dc}/sources`.
 - `src/python/bhdr/api/trace_store.py` — in-memory LRU-per-frame store

@@ -86,7 +86,7 @@ gpa inspect-scene --setup-help
 
 ```
 gpa inspect-scene — frame 7 (session /tmp/gpa-session-1000-…/)
-plugin: gpa-threejs-plugin@0.1   framework: three.js@r161   nodes: 12
+plugin: bhdr-threejs-plugin@0.1   framework: three.js@r161   nodes: 12
 
 Scene  [Group, name="root"]
 ├── Camera  [PerspectiveCamera, name="MainCam", fov=50, position=(0,1.6,5)]
@@ -234,7 +234,7 @@ Already shipped at commit `b720e9c`. Returns the dict that a Tier-3 plugin POSTe
 Response (excerpt):
 ```json
 {
-  "plugin": "gpa-threejs-plugin",
+  "plugin": "bhdr-threejs-plugin",
   "plugin_version": "0.1",
   "framework": "three.js",
   "framework_version": "r161",
@@ -285,14 +285,14 @@ The `run_rules()` function lives in `src/python/bhdr/checks/config_rules.py` (ne
 
 ## 4. Tier-3 three.js plugin sketch (≤80 lines)
 
-Recommended starter plugin. Ships under `src/shims/webgl/extension/gpa-threejs-plugin.js` (path consistent with the framework-integration plan).
+Recommended starter plugin. Ships under `src/shims/webgl/extension/bhdr-threejs-plugin.js` (path consistent with the framework-integration plan).
 
 ```javascript
-// gpa-threejs-plugin.js — Tier-3 scene-graph reporter for OpenGPA.
+// bhdr-threejs-plugin.js — Tier-3 scene-graph reporter for OpenGPA.
 // Drop into a three.js page after creating `scene` and `renderer`.
 //
 // Usage:
-//   import { installGpaPlugin } from './gpa-threejs-plugin.js';
+//   import { installGpaPlugin } from './bhdr-threejs-plugin.js';
 //   installGpaPlugin({ scene, renderer,
 //                      endpoint: 'http://localhost:18080',
 //                      token: 'YOUR_TOKEN' });
@@ -365,7 +365,7 @@ export function installGpaPlugin({scene, renderer, endpoint, token}) {
     origRender(s, cam);
     requestAnimationFrame(() => {
       post({
-        plugin: 'gpa-threejs-plugin',
+        plugin: 'bhdr-threejs-plugin',
         plugin_version: '0.1',
         framework: 'three.js',
         framework_version: (window.THREE && window.THREE.REVISION) || 'unknown',
@@ -401,7 +401,7 @@ Notes:
 | `gpa inspect-scene` CLI | All flags listed in §2.1 implemented; `--help` shows ≥3 examples; integration test against a fixture annotation. |
 | `gpa check-config` CLI | All flags listed in §2.2 implemented; ≥6 of the 8 starter rules pass unit tests; `--rules` lists them. |
 | `GET /frames/<id>/check-config` endpoint | Returns via `safe_json_response()`; covered by `tests/unit/python/test_api_check_config.py`. |
-| `gpa-threejs-plugin.js` | One eval scenario successfully POSTs scene-graph annotations and they are retrievable via `gpa inspect-scene`. |
+| `bhdr-threejs-plugin.js` | One eval scenario successfully POSTs scene-graph annotations and they are retrievable via `gpa inspect-scene`. |
 | Eval delta | Cost delta on Cat-2 carryover slice flips negative or to ~$0 on Sonnet. |
 
 **Eval rerun.** Take the four R9 carryover scenarios that regressed:

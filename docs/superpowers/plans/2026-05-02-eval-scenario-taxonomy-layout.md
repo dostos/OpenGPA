@@ -32,7 +32,7 @@
 - `src/python/bhdr/eval/curation/journey.py` — wherever `tests/eval/<slug>/` is constructed, switch to taxonomy-aware path.
 - `pyproject.toml` — add `gpa-eval = "gpa.eval.index_cli:main"` script entry.
 - `scripts/run-eval-claude-code.sh` — update example path.
-- `docs/gpa-trace-native-usage.md` — update binary path examples.
+- `docs/bhdr-trace-native-usage.md` — update binary path examples.
 - `docs/eval-results.md` — update referenced scenario paths.
 - `docs/superpowers/specs/2026-04-17-eval-set-real-world-design.md` — superseded pointer at top.
 - `docs/superpowers/specs/2026-04-28-omnispace-gen-integration-design.md` — update `r37_joint_offset_smplx` reference.
@@ -1848,7 +1848,7 @@ validator now applies the strict schema check from this commit forward."
 
 **Files:**
 - Modify: `scripts/run-eval-claude-code.sh`
-- Modify: `docs/gpa-trace-native-usage.md`
+- Modify: `docs/bhdr-trace-native-usage.md`
 - Modify: `docs/eval-results.md`
 - Modify: `docs/superpowers/specs/2026-04-17-eval-set-real-world-design.md`
 - Modify: `docs/superpowers/specs/2026-04-28-omnispace-gen-integration-design.md`

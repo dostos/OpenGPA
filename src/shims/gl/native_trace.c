@@ -152,7 +152,7 @@ static void number_to_js_base36(double v, char* out, size_t n) {
 
 char* bhdr_trace_hash_double(double v) {
     char s[64]; number_to_js_base36(v, s, sizeof(s));
-    /* "n:" prefix matches hashValue() in gpa-trace.js. */
+    /* "n:" prefix matches hashValue() in bhdr-trace.js. */
     size_t sl = strlen(s);
     char* with_prefix = (char*)malloc(sl + 3);
     with_prefix[0] = 'n'; with_prefix[1] = ':';

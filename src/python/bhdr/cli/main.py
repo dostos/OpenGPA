@@ -106,8 +106,8 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             "  gpa stop                                        # 1) stop active session\n"
-            "  gpa stop --session /tmp/gpa-abc                 # 2) stop a specific session\n"
-            "  BHDR_SESSION=/tmp/gpa-abc gpa stop               # 3) via env\n"
+            "  gpa stop --session /tmp/bhdr-abc                 # 2) stop a specific session\n"
+            "  BHDR_SESSION=/tmp/bhdr-abc gpa stop               # 3) via env\n"
         ),
     )
     _add_session_arg(p_stop)
@@ -120,7 +120,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Examples:\n"
             "  gpa env                                         # 1) print exports\n"
             "  eval \"$(gpa env)\"                               # 2) load into shell\n"
-            "  gpa env --session /tmp/gpa-abc                  # 3) specific session\n"
+            "  gpa env --session /tmp/bhdr-abc                  # 3) specific session\n"
         ),
     )
     _add_session_arg(p_env)

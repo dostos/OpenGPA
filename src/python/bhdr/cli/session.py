@@ -11,7 +11,7 @@ A *session* is a directory on disk holding all state for one engine instance:
         engine.log   (stdout/stderr of the engine subprocess)
 
 Single-session MVP: the most-recently-created session is pointed to by a
-symlink at ``/tmp/gpa-session-current``.  Multi-session use requires setting
+symlink at ``/tmp/bhdr-session-current``.  Multi-session use requires setting
 ``$BHDR_SESSION`` explicitly.
 """
 
@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Optional
 
 
-CURRENT_SESSION_LINK = "/tmp/gpa-session-current"
+CURRENT_SESSION_LINK = "/tmp/bhdr-session-current"
 
 # Filenames that, if present in a directory, indicate an active or recent
 # session lives there.  ``Session.create`` refuses to clobber any of these.
@@ -162,7 +162,7 @@ class Session:
         if dir is None:
             uid = os.getuid()
             ts = time.time_ns()
-            dir = Path(f"/tmp/gpa-session-{uid}-{ts}")
+            dir = Path(f"/tmp/bhdr-session-{uid}-{ts}")
 
         dir = Path(dir)
 
@@ -189,7 +189,7 @@ class Session:
         os.chmod(sess.token_path, 0o600)
 
         if shm_name is None:
-            shm_name = f"/gpa-{os.getuid()}-{time.time_ns()}"
+            shm_name = f"/bhdr-{os.getuid()}-{time.time_ns()}"
         sess.shm_name_path.write_text(shm_name)
 
         sess.port_path.write_text(str(port))
@@ -202,7 +202,7 @@ class Session:
         Resolution order:
           1. ``explicit`` argument (from ``--session``)
           2. ``$BHDR_SESSION`` env var
-          3. ``/tmp/gpa-session-current`` symlink
+          3. ``/tmp/bhdr-session-current`` symlink
         """
         candidate: Optional[Path] = None
         if explicit is not None:
@@ -223,7 +223,7 @@ class Session:
         return sess
 
     def mark_current(self) -> None:
-        """Point the ``/tmp/gpa-session-current`` symlink at this session."""
+        """Point the ``/tmp/bhdr-session-current`` symlink at this session."""
         try:
             if os.path.islink(CURRENT_SESSION_LINK) or os.path.exists(CURRENT_SESSION_LINK):
                 os.unlink(CURRENT_SESSION_LINK)

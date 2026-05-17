@@ -60,8 +60,8 @@ For synthetic scenarios:
 
 ## Querying the Index
 
-    gpa-eval index --by taxonomy        # category × framework counts
-    gpa-eval index --by backend         # api × status counts
+    bhdr-eval index --by taxonomy        # category × framework counts
+    bhdr-eval index --by backend         # api × status counts
 
 ## See Also
 

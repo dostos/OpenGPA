@@ -40,7 +40,7 @@ The shared artifact across phases is a single joint-naming module — without it
 
 | New location | What | Notes |
 |---|---|---|
-| `clients/threejs/index.js` + `package.json` | Tier-3 client for Three.js. Adapted from `src/shims/webgl/extension/gpa-threejs-plugin.js`. Publishable as `@opengpa/threejs-sidecar`. | Existing extension keeps depending on it via relative import — no behavior change. |
+| `clients/threejs/index.js` + `package.json` | Tier-3 client for Three.js. Adapted from `src/shims/webgl/extension/bhdr-threejs-plugin.js`. Publishable as `@opengpa/threejs-sidecar`. | Existing extension keeps depending on it via relative import — no behavior change. |
 | `clients/python/opengpa_client/` | Python Tier-3 client. Pip-installable. Exposes `Tier3Sidecar` ABC + HTTP POST helper. | Renderer-agnostic; backends subclass and implement `walk_scene()`. |
 
 ### omnispace-gen — consume + add joint convention
@@ -107,7 +107,7 @@ Agent: same MCP queries; same joint names; same diagnostic logic.
 
 | Failure | Behavior | Why |
 |---|---|---|
-| Engine not running | Sidecar's HTTP POST fails → swallow silently. Render proceeds normally. | Matches existing `gpa-threejs-plugin.js` (`.catch(() => {})`). Debugger never breaks the app. |
+| Engine not running | Sidecar's HTTP POST fails → swallow silently. Render proceeds normally. | Matches existing `bhdr-threejs-plugin.js` (`.catch(() => {})`). Debugger never breaks the app. |
 | LD_PRELOAD captures, sidecar POST is delayed/lost | Engine has GL data without metadata. `query_object` returns 404 for that frame. | Acceptable — agent retries on next frame. Frames are commodity. |
 | Sidecar POST succeeds, GL capture missed (Phase 2) | Engine has metadata for a frame_id with no overview. `query_pixel` returns 404; `query_object` works. | Same shape as Phase 1 — degrades to metadata-only. |
 | Joint name mismatch between renderers | Caught by cross-language schema test (see Testing). | Single source of truth (`opengpa_joint_names.py`) prevents this by construction. |
@@ -142,8 +142,8 @@ Agent: same MCP queries; same joint names; same diagnostic logic.
 
 ## Migration notes
 
-- Existing `src/shims/webgl/extension/gpa-threejs-plugin.js` becomes a re-export from `clients/threejs/index.js`. Behavior preserved; the extension's manifest still picks it up.
-- `bridge.js`, `interceptor.js`, `gpa-trace.js` unchanged in this spec — they're Phase 3 territory.
+- Existing `src/shims/webgl/extension/bhdr-threejs-plugin.js` becomes a re-export from `clients/threejs/index.js`. Behavior preserved; the extension's manifest still picks it up.
+- `bridge.js`, `interceptor.js`, `bhdr-trace.js` unchanged in this spec — they're Phase 3 territory.
 - omnispace-gen `configs/paths.yaml` gains an `opengpa` section under `modules`. Other modules unaffected.
 
 ## Open questions

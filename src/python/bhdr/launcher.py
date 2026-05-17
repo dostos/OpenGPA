@@ -47,7 +47,7 @@ def main():
         engine = _bhdr_core.Engine(args.socket, args.shm, args.shm_slots, args.slot_size)
 
         # Start engine in background thread
-        engine_thread = threading.Thread(target=engine.run, daemon=True, name="opengpa-engine")
+        engine_thread = threading.Thread(target=engine.run, daemon=True, name="beholder-engine")
         engine_thread.start()
 
         def _shutdown():

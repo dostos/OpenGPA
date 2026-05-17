@@ -26,7 +26,7 @@ those boundaries:
 | # | Site | Coupling |
 |---|------|----------|
 | 1 | `src/python/bhdr/api/trace_ranking.py:35-47` | `FRAMEWORK_HINT_PATTERNS` regex allowlist (`THREE.uniforms.*`, `map._transform.*`, `app.stage.*`) bumps confidence tier on framework-shaped paths |
-| 2 | `src/python/bhdr/cli/main.py:283-284` | `gpa trace value` help text: *"Requires the WebGL shim (gpa-trace.js)"* — implies WebGL-only when native DWARF backend also feeds the same endpoint |
+| 2 | `src/python/bhdr/cli/main.py:283-284` | `gpa trace value` help text: *"Requires the WebGL shim (bhdr-trace.js)"* — implies WebGL-only when native DWARF backend also feeds the same endpoint |
 | 3 | `src/python/bhdr/mcp/server.py:189, 237` | MCP `bhdr_trace_value` description mirrors the WebGL-only claim and gives JS-specific examples (mapbox tile cache) |
 | 4 | `src/python/bhdr/cli/commands/scene_find.py:83, 183` | CLI Examples block + error hint cite `src/python/bhdr/framework/threejs_link_plugin.js` by name |
 
@@ -92,9 +92,9 @@ not via a `THREE.` regex match. Real-world cost ≈ 0.
 
 | Site | Before | After |
 |------|--------|-------|
-| `cli/main.py:283-284` | "Requires the WebGL shim (gpa-trace.js) to be enabled in the target." | "Requires a value scanner (native DWARF symbols or WebGL Tier-3 SDK) to be active in the target." |
+| `cli/main.py:283-284` | "Requires the WebGL shim (bhdr-trace.js) to be enabled in the target." | "Requires a value scanner (native DWARF symbols or WebGL Tier-3 SDK) to be active in the target." |
 | `mcp/server.py:189` | "for JS-layer state upstream of GL calls (e.g. mapbox tile cache, …)" | "for app-level state upstream of the GL/WebGL/Vulkan call site." |
-| `mcp/server.py:237` | "Requires the WebGL gpa-trace shim to have been enabled in the …" | "Requires a value scanner (native DWARF symbols or WebGL Tier-3 SDK) to be active in the target." |
+| `mcp/server.py:237` | "Requires the WebGL bhdr-trace shim to have been enabled in the …" | "Requires a value scanner (native DWARF symbols or WebGL Tier-3 SDK) to be active in the target." |
 
 ### 3. Scene-find — drop plugin-name cite
 
@@ -146,7 +146,7 @@ longer receive the +1 bump); paths that didn't match are unchanged.
 - `tests/unit/python/test_trace_ranking.py` passes with the new test
   set.
 - Full Python unit test suite (`pytest tests/unit/python/`) is green.
-- `git grep -E "\bgpa-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b|\bIn three\.js,|\bThree\.js bug class\b" -- 'src/python/bhdr/cli/' 'src/python/bhdr/mcp/' 'src/python/bhdr/api/' 'src/python/bhdr/checks/' ':(exclude)src/python/bhdr/api/routes_trace.py'`
+- `git grep -E "\bbhdr-trace\.js\b|\bthreejs_link_plugin\b|\bmapbox tile cache\b|\bTHREE\.uniforms\b|\bmap\._transform\b|\bapp\.stage\b|\bIn three\.js,|\bThree\.js bug class\b" -- 'src/python/bhdr/cli/' 'src/python/bhdr/mcp/' 'src/python/bhdr/api/' 'src/python/bhdr/checks/' ':(exclude)src/python/bhdr/api/routes_trace.py'`
   returns zero hits. (The grep is intentionally precise so legitimate
   occurrences of "WebGL Tier-3 SDK" — the new neutral phrasing — don't
   self-trip, and so legitimate parenthetical examples like `(e.g.
@@ -157,7 +157,7 @@ longer receive the +1 bump); paths that didn't match are unchanged.
   describe the GL state to fix in API-neutral terms first, with
   framework-specific syntax shown as parenthetical examples — never as
   primary advice. `routes_trace.py` is excluded from the grep because
-  its module + helper docstrings reference `gpa-trace.js` as the
+  its module + helper docstrings reference `bhdr-trace.js` as the
   canonical wire-format reference implementation — those mentions are
   wire-format spec contracts, not framework coupling, and Phase 2's
   manifest contract should not retire them.)
@@ -174,5 +174,5 @@ longer receive the +1 bump); paths that didn't match are unchanged.
 - `tests/unit/python/test_trace_ranking.py` — existing test coverage.
 - `docs/superpowers/specs/2026-04-18-framework-integration-design.md` —
   Tier-3 plugin contract (current).
-- `docs/superpowers/specs/2026-04-20-gpa-trace-design.md` — trace
+- `docs/superpowers/specs/2026-04-20-bhdr-trace-design.md` — trace
   endpoint design.

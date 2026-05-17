@@ -27,7 +27,7 @@ def test_create_populates_directory(tmp_path: Path) -> None:
     assert mode == 0o600
 
     # shm name, port recorded.
-    assert sess.read_shm_name().startswith("/gpa-")
+    assert sess.read_shm_name().startswith("/bhdr-")
     assert sess.read_port() == 12345
 
 
@@ -36,7 +36,7 @@ def test_create_auto_allocates_dir(tmp_path: Path, monkeypatch) -> None:
     sess = Session.create(port=18080)
     try:
         assert sess.dir.exists()
-        assert sess.dir.name.startswith("gpa-session-")
+        assert sess.dir.name.startswith("bhdr-session-")
         assert str(sess.dir).startswith("/tmp/")
     finally:
         sess.cleanup()

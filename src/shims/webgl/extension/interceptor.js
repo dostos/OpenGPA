@@ -95,7 +95,7 @@
       debug_groups: state.debugGroupStack.slice(),
     });
     // Publish current (frame, drawcall) indices for orthogonal shims
-    // (e.g. gpa-trace.js) to correlate their sidecar POSTs.
+    // (e.g. bhdr-trace.js) to correlate their sidecar POSTs.
     window.__gpaState = {
       frameId: state.frameNumber,
       dcCount: state.drawCalls.length,

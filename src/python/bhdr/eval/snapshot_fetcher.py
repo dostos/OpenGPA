@@ -4,7 +4,7 @@ Used by the OpenGPA eval harness when a scenario references an upstream
 repo snapshot (via `upstream_snapshot_repo` + `upstream_snapshot_sha`
 fields in ScenarioMetadata).
 
-The cache lives at `/data3/opengpa-snapshots/` by default (per the
+The cache lives at `/data3/beholder-snapshots/` by default (per the
 project's convention that large data stays out of the repo). Each
 snapshot is stored under `<cache>/<host>__<owner>__<repo>__<sha>/`
 with a `.complete` sentinel file marking successful fetches.
@@ -21,7 +21,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-DEFAULT_CACHE_ROOT = Path("/data3/opengpa-snapshots")
+DEFAULT_CACHE_ROOT = Path("/data3/beholder-snapshots")
 
 
 class SnapshotError(Exception):

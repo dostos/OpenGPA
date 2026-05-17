@@ -1,5 +1,5 @@
-// gpa-trace.js — Phase 1 of `gpa trace` (see
-// docs/superpowers/specs/2026-04-20-gpa-trace-design.md).
+// bhdr-trace.js — Phase 1 of `gpa trace` (see
+// docs/superpowers/specs/2026-04-20-bhdr-trace-design.md).
 //
 // Reflection scanner that, on each uniform/bindTexture call (in gated
 // mode), BFS-walks registered JS globals, hashes primitive values, and
