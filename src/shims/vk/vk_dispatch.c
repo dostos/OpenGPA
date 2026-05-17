@@ -42,7 +42,7 @@ void bhdr_instance_dispatch_store(VkInstance instance, BhdrInstanceDispatch *dis
             return;
         }
     }
-    fprintf(stderr, "[OpenGPA-VK] instance dispatch table full!\n");
+    fprintf(stderr, "[Beholder-VK] instance dispatch table full!\n");
     pthread_mutex_unlock(&g_inst_mutex);
 }
 
@@ -106,7 +106,7 @@ void bhdr_device_dispatch_store(VkDevice device, BhdrDeviceDispatch *disp) {
             return;
         }
     }
-    fprintf(stderr, "[OpenGPA-VK] device dispatch table full!\n");
+    fprintf(stderr, "[Beholder-VK] device dispatch table full!\n");
     pthread_mutex_unlock(&g_dev_mutex);
 }
 

@@ -1,14 +1,14 @@
-# OpenGPA ↔ omnispace-gen Integration — Design
+# Beholder ↔ omnispace-gen Integration — Design
 
 **Date**: 2026-04-28
 **Status**: Approved (brainstorming complete, plan to follow)
-**Affects**: `gla/` (OpenGPA), `omnispace-gen/`
+**Affects**: `gla/` (Beholder), `omnispace-gen/`
 
 ## Problem
 
 omnispace-gen renders human motion in two places: a live React/three-fiber workbench, and an offline Python pipeline (Open3D default, pyrender/OSMesa fallback). The project's feedback pipeline already classifies "visual/3D" bugs into a bucket that requires human verification — there is no automated way for an agent to inspect the rendered output and reason about it.
 
-OpenGPA exists to give agents structured access to graphics state, but its WebGL Tier-3 plugin is currently a single file inside a Chrome extension subtree, and there is no Python client at all. omnispace-gen is the first non-self consumer; its needs will shape the public API surface.
+Beholder exists to give agents structured access to graphics state, but its WebGL Tier-3 plugin is currently a single file inside a Chrome extension subtree, and there is no Python client at all. omnispace-gen is the first non-self consumer; its needs will shape the public API surface.
 
 ## Goal
 
@@ -36,7 +36,7 @@ The shared artifact across phases is a single joint-naming module — without it
 
 ## Components
 
-### OpenGPA (`gla/`) — extract reusable clients
+### Beholder (`gla/`) — extract reusable clients
 
 | New location | What | Notes |
 |---|---|---|
@@ -54,7 +54,7 @@ The shared artifact across phases is a single joint-naming module — without it
 | `workbench-ui/src/lib/opengpaSidecar.ts` | Thin glue: instantiates `@opengpa/threejs-sidecar` in `<Canvas onCreated>` and calls `capture(scene, camera)` after each render. | ~30 |
 | `configs/paths.yaml` | Add `modules.opengpa: { engine_url, token }` per the project's path-resolution convention. | +5 |
 
-### OpenGPA — no new code in MVP
+### Beholder — no new code in MVP
 
 `/api/v1/frames/{id}/metadata`, `query_object`, `list_objects`, `explain_pixel` already exist and accept this payload. We consume only.
 
@@ -111,12 +111,12 @@ Agent: same MCP queries; same joint names; same diagnostic logic.
 | LD_PRELOAD captures, sidecar POST is delayed/lost | Engine has GL data without metadata. `query_object` returns 404 for that frame. | Acceptable — agent retries on next frame. Frames are commodity. |
 | Sidecar POST succeeds, GL capture missed (Phase 2) | Engine has metadata for a frame_id with no overview. `query_pixel` returns 404; `query_object` works. | Same shape as Phase 1 — degrades to metadata-only. |
 | Joint name mismatch between renderers | Caught by cross-language schema test (see Testing). | Single source of truth (`opengpa_joint_names.py`) prevents this by construction. |
-| OpenGPA `clients/threejs/` or `clients/python/` not installed | Hard fail at workbench/render startup with a clear error pointing at install instructions. | Matches the project's Rust-extension precedent (`omnispace-gen/CLAUDE.md`: "All imports are unconditional"). Silent broken integrations are worse than loud failures. |
-| User toggles "OpenGPA capture" off in workbench | Sidecar instantiates as no-op; joint markers still rendered (separate flag). | Capture and visualization are independently toggleable. |
+| Beholder `clients/threejs/` or `clients/python/` not installed | Hard fail at workbench/render startup with a clear error pointing at install instructions. | Matches the project's Rust-extension precedent (`omnispace-gen/CLAUDE.md`: "All imports are unconditional"). Silent broken integrations are worse than loud failures. |
+| User toggles "Beholder capture" off in workbench | Sidecar instantiates as no-op; joint markers still rendered (separate flag). | Capture and visualization are independently toggleable. |
 
 ## Testing
 
-### OpenGPA-side (`gla/`)
+### Beholder-side (`gla/`)
 
 | Test | Where | Asserts |
 |---|---|---|
@@ -130,7 +130,7 @@ Agent: same MCP queries; same joint names; same diagnostic logic.
 |---|---|---|
 | Joint name registry | `tests/unit/skeletal/test_opengpa_joint_names.py` | Python list and JS-exported list match (cross-language schema test; fails on drift). |
 | Open3D Tier3Sidecar | `tests/integration/test_opengpa_sidecar_open3d.py` | Spin up engine, render a known scene with markers, POST goes through, `GET /frames/{N}/metadata` returns expected joint count. |
-| Workbench plugin (E2E) | extend `tests/e2e/test_workbench_browser.py` | With OpenGPA capture toggle on, generate a motion, then `curl :18080/api/v1/frames/{N}/objects` returns joint markers with expected names. |
+| Workbench plugin (E2E) | extend `tests/e2e/test_workbench_browser.py` | With Beholder capture toggle on, generate a motion, then `curl :18080/api/v1/frames/{N}/objects` returns joint markers with expected names. |
 | Quality scenario | `configs/quality_scenarios.yaml` | At least one scenario gates on "joint markers POSTed correctly" — keeps integration alive in CI. |
 
 ## Out of scope (Phase 3, deferred)

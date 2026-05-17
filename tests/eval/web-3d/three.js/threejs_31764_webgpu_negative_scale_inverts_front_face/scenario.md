@@ -42,8 +42,8 @@ Only the left triangle renders. The negative-Y-scaled right triangle is culled b
 - backend-convention-mismatch
 - no-gl-error-silent-cull
 
-## How OpenGPA Helps
-An OpenGPA query like "for draw N, what were `GL_CULL_FACE_MODE` and `GL_FRONT_FACE`, and what is the sign of det(model matrix) in uniform `u_model`?" surfaces the combination: `BACK` + `CCW` + `det(u_model) < 0`, i.e., the back-face cull is eating the mirrored mesh's visible side. That pinpoints the fix (swap front face or cull mode on negative-determinant transforms) without guessing between blending, depth, or shader bugs.
+## How Beholder Helps
+An Beholder query like "for draw N, what were `GL_CULL_FACE_MODE` and `GL_FRONT_FACE`, and what is the sign of det(model matrix) in uniform `u_model`?" surfaces the combination: `BACK` + `CCW` + `det(u_model) < 0`, i.e., the back-face cull is eating the mirrored mesh's visible side. That pinpoints the fix (swap front face or cull mode on negative-determinant transforms) without guessing between blending, depth, or shader bugs.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/31764
@@ -79,10 +79,10 @@ spec:
   - src/renderers/webgpu/utils/WebGPUPipelineUtils.js
   - src/renderers/common/nodes/NodeMaterial.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is a per-draw interaction between static pipeline state (`GL_FRONT_FACE`, `GL_CULL_FACE_MODE`) and a per-object uniform (model matrix determinant). OpenGPA's ability to correlate cull state with shader-uniform values for a specific draw call lets a developer see that mirrored meshes silently drop primitive counts, directly implicating the winding/cull convention rather than blending, depth, or geometry upload.
+- **Reasoning**: The bug is a per-draw interaction between static pipeline state (`GL_FRONT_FACE`, `GL_CULL_FACE_MODE`) and a per-object uniform (model matrix determinant). Beholder's ability to correlate cull state with shader-uniform values for a specific draw call lets a developer see that mirrored meshes silently drop primitive counts, directly implicating the winding/cull convention rather than blending, depth, or geometry upload.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

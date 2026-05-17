@@ -60,7 +60,7 @@ The accepted fix (see https://github.com/mrdoob/three.js/issues/14104) computes 
 - diagnosis_requires_shader_source_reading
 - bug_invisible_on_opaque_scene
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the bloom blur pass's fragment shader source via `/api/v1/draw_calls/<id>/shaders` reveals the `vec4(..., 1.0)` literal at the output, which directly identifies why destination alpha is saturating. `/api/v1/frames/<id>/pixel` confirms that the default-framebuffer alpha becomes 255 outside the glow even though the scene-pass FBO had alpha=0 there.
 
 ## Source
@@ -89,10 +89,10 @@ spec:
   note: "Default framebuffer alpha should remain near 0 outside the glow region but is saturated to 255 everywhere by the buggy blur output."
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is literally a constant in shader source. OpenGPA's shader-source and per-draw-call output-FBO inspection expose both the constant and its effect on destination alpha, which is exactly what the human debugger had to dig up manually.
+- **Reasoning**: The root cause is literally a constant in shader source. Beholder's shader-source and per-draw-call output-FBO inspection expose both the constant and its effect on destination alpha, which is exactly what the human debugger had to dig up manually.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

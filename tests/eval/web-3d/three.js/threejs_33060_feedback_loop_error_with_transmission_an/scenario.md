@@ -95,11 +95,11 @@ on every draw.
 - multi-PR regression (a fix's invariant is broken by a later refactor)
 - platform-conditional reproduction (extension presence hides the bug)
 
-## How OpenGPA Helps
+## How Beholder Helps
 A single query — "for the current draw call, list every bound texture
 object and every framebuffer attachment object" — reveals that
 `transmissionTex` appears in both lists. Inspecting `glGetError` after the
-draw further confirms the feedback loop. Without OpenGPA the developer
+draw further confirms the feedback loop. Without Beholder the developer
 sees only "the back faces don't render" and a wall of WebGL warnings.
 
 ## Source
@@ -140,10 +140,10 @@ spec:
   - src/renderers/WebGLRenderTarget.js
   - src/renderers/webgl/WebGLTextures.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is purely a binding-state collision visible at draw-call time. OpenGPA's per-draw inventory of texture-unit bindings and framebuffer attachments makes the feedback loop directly observable; no heuristic is required to identify the offending object — it is literally the same GL name on both sides.
+- **Reasoning**: The bug is purely a binding-state collision visible at draw-call time. Beholder's per-draw inventory of texture-unit bindings and framebuffer attachments makes the feedback loop directly observable; no heuristic is required to identify the offending object — it is literally the same GL name on both sides.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

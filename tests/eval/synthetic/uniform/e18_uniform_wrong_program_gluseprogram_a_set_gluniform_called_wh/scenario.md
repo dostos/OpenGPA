@@ -45,9 +45,9 @@ The code compiles without warnings, both `glUniform4f` calls have plausible argu
 - **Wrong context**: `glUniform*` acts on hidden program-bind state rather than on a program argument. The defect is an *absence* — a missing `glUseProgram(progFg)` — which is much harder to spot than a wrong call.
 - **Name-based ambiguity**: Both programs expose a uniform named `uColor`, and the two uniform-location values are both 0. Every local textual check — "did we query the right location?", "did we pass the right color?" — looks correct.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports each draw call's bound program along with the resolved
+Beholder reports each draw call's bound program along with the resolved
 values of that program's uniforms, so a uniform sitting at its link-time
 default on one program while another program shows the value the code
 intended makes the misdirected write obvious.

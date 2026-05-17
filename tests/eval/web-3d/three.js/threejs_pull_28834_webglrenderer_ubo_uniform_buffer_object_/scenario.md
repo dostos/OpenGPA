@@ -116,7 +116,7 @@ change_summary: >
 - silent-spec-violation
 - alignment-invisible-from-source
 
-## How OpenGPA Helps
+## How Beholder Helps
 Dumping the bound UBO's raw bytes alongside the fragment shader's reflected
 std140 member offsets makes the mismatch obvious: the CPU has `33.0f` at byte
 offset 4 while the shader reads `resolution.x` from byte offset 8. A single
@@ -152,10 +152,10 @@ spec:
   tolerance: 2
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is entirely in the byte-level contents of a uniform buffer versus the std140 layout the shader expects. OpenGPA's per-draw-call uniform-buffer dump plus reflected block layout gives both sides of that mismatch in one query, whereas a source-only reviewer has to manually trace three.js's offset bookkeeping and mentally simulate std140 alignment to see the discrepancy.
+- **Reasoning**: The bug is entirely in the byte-level contents of a uniform buffer versus the std140 layout the shader expects. Beholder's per-draw-call uniform-buffer dump plus reflected block layout gives both sides of that mismatch in one query, whereas a source-only reviewer has to manually trace three.js's offset bookkeeping and mentally simulate std140 alignment to see the discrepancy.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

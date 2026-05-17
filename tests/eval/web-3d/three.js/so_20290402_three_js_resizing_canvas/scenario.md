@@ -64,7 +64,7 @@ The root cause is that `EffectComposer` allocates its read/write `WebGLRenderTar
 - offscreen_render_target_stale_dimensions
 - upscale_artifact_from_undersized_source
 
-## How OpenGPA Helps
+## How Beholder Helps
 A frame-overview query exposes, per draw call, the bound framebuffer's color-attachment dimensions and the current viewport; the scene-render draw call reports `color_attachment0.size = 200x150` and `viewport = 0,0,200,150`, while the final blit / present targets the 800x600 default framebuffer. A single cross-check "does the offscreen RT used to compose this frame match the presentation surface size?" directly surfaces the bug.
 
 ## Source
@@ -93,10 +93,10 @@ spec:
   actual: offscreen color-attachment dimensions are 200x150 while the frame is presented at 800x600
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: OpenGPA's frame overview exposes per-draw-call viewport and bound-framebuffer color-attachment dimensions plus the final presented framebuffer size. A simple cross-comparison between the scene-render target's size and the presentation surface's size surfaces the mismatch deterministically. Without OpenGPA, the agent must reason backward from the visual symptom ("looks pixelated") to guess at the cause — possibly blaming texture filtering, DPR, or shader code before landing on stale composer render targets.
+- **Reasoning**: Beholder's frame overview exposes per-draw-call viewport and bound-framebuffer color-attachment dimensions plus the final presented framebuffer size. A simple cross-comparison between the scene-render target's size and the presentation surface's size surfaces the mismatch deterministically. Without Beholder, the agent must reason backward from the visual symptom ("looks pixelated") to guess at the cause — possibly blaming texture filtering, DPR, or shader code before landing on stale composer render targets.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

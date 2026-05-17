@@ -59,7 +59,7 @@ secondary:
 - per-eye-stereoscopic-mismatch-not-visible-in-mono-capture
 - root-cause-is-wrong-coordinate-frame-selection
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` capture across consecutive frames in VR mode would show two draw calls per lens flare (one per rig camera) with differing view matrices — the agent could query `/draw_calls/<id>/uniforms` to compare the projection-space positions used for each eye and observe they are computed from the rig camera's view matrix rather than the parent XR camera's. The captured per-eye uniform divergence is the literal breadcrumb pointing at "wrong camera used for lens-flare position math."
 
 ## Source
@@ -87,6 +87,6 @@ spec:
   fix_commit: (unresolved)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: partial
 - **Reasoning**: GPA can capture the per-eye draw calls and reveal that the lens flare's projected position is computed against the rig-camera view matrix (the literal symptom), which strongly hints at the camera-selection root cause. However, locating the actual fix file requires source navigation through Babylon.js's lens flare system, and the issue lacks a concrete fix PR — so GPA helps surface the diagnosis but cannot point at the specific patched lines.

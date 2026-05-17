@@ -46,9 +46,9 @@ The two fragment shaders look nearly identical, the location query and the re-li
 - **Caching across invalidation**: A handle (uniform location) captured from the resource's old state (first link) is reused after the resource is invalidated (re-link). The cache is a local integer that silently drifts out of sync with the GL object it once referred to.
 - **Silent no-op**: `glUniform4f` on a stale location raises `GL_INVALID_OPERATION` and does nothing. No crash, no exception, no divergent control flow — just a uniform stuck at its default and a draw that quietly produces the wrong color.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA's per-frame capture surfaces each draw's bound program, the
+Beholder's per-frame capture surfaces each draw's bound program, the
 program's current uniform reflection (active names ↔ locations), and the
 set of `glUniform*` writes during the frame. Comparing "what location did
 the code write" to "what location does the active uniform actually live

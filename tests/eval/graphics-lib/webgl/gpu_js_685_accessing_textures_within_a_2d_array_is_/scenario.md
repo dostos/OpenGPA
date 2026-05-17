@@ -100,8 +100,8 @@ secondary:
 - diagnosis-requires-reading-emitted-glsl-not-pixel-comparison
 - legacy-bug-no-merged-fix-pr-to-anchor-on
 
-## How OpenGPA Helps
-Capturing the failed `glCompileShader` with OpenGPA's GL shim surfaces the framework-generated GLSL source and the InfoLog verbatim — including the offending `getMemoryOptimized32(..., (1.0-1.0))` call site and the undeclared `user_oSize` / `user_oDim` identifiers. Querying `/api/v1/frames/current/shaders/<id>/source` plus `/api/v1/frames/current/shaders/<id>/log` lets the agent jump from a JS-level "kernel compile failed" symptom directly to the line of emitted GLSL, which then points at the codegen branch in gpu.js that produced it. Without OpenGPA the agent only sees the JS exception text and must reverse-engineer the codegen path from the kernel source.
+## How Beholder Helps
+Capturing the failed `glCompileShader` with Beholder's GL shim surfaces the framework-generated GLSL source and the InfoLog verbatim — including the offending `getMemoryOptimized32(..., (1.0-1.0))` call site and the undeclared `user_oSize` / `user_oDim` identifiers. Querying `/api/v1/frames/current/shaders/<id>/source` plus `/api/v1/frames/current/shaders/<id>/log` lets the agent jump from a JS-level "kernel compile failed" symptom directly to the line of emitted GLSL, which then points at the codegen branch in gpu.js that produced it. Without Beholder the agent only sees the JS exception text and must reverse-engineer the codegen path from the kernel source.
 
 ## Source
 - **URL**: https://github.com/gpujs/gpu.js/issues/685
@@ -133,6 +133,6 @@ spec:
     / src/utils.js) rather than to a user kernel file.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The user-visible error is a JS exception, but the actual defect is in the GLSL the framework synthesized. OpenGPA's shim captures `glShaderSource` and `glGetShaderInfoLog` so the agent can read the emitted GLSL and the compile log directly, which is exactly the evidence the maintainer used in the upstream thread to pinpoint the float-vs-int mismatch and the undeclared `*Size`/`*Dim` identifiers.
+- **Reasoning**: The user-visible error is a JS exception, but the actual defect is in the GLSL the framework synthesized. Beholder's shim captures `glShaderSource` and `glGetShaderInfoLog` so the agent can read the emitted GLSL and the compile log directly, which is exactly the evidence the maintainer used in the upstream thread to pinpoint the float-vs-int mismatch and the undeclared `*Size`/`*Dim` identifiers.

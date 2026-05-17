@@ -1,4 +1,4 @@
-"""Model registry + budget-aware round planner for OpenGPA eval rounds.
+"""Model registry + budget-aware round planner for Beholder eval rounds.
 
 Shared source of truth for model tier -> Claude CLI ``--model`` argument
 mapping, and helpers used by per-round dispatcher scripts (see

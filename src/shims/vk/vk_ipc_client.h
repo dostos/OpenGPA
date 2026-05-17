@@ -2,7 +2,7 @@
 #define VK_IPC_CLIENT_H
 
 /*
- * vk_ipc_client.h — IPC client for the OpenGPA Vulkan layer.
+ * vk_ipc_client.h — IPC client for the Beholder Vulkan layer.
  *
  * Implements the same SHM ring buffer + Unix socket protocol as the GL shim
  * (src/shims/gl/ipc_client.c).  The only difference is the api_type field
@@ -16,7 +16,7 @@ extern "C" {
 #endif
 
 /*
- * Connect to the OpenGPA engine.
+ * Connect to the Beholder engine.
  * Reads BHDR_SOCKET_PATH and BHDR_SHM_NAME from the environment.
  * Returns 0 on success, -1 if the engine is not running (passthrough mode).
  */

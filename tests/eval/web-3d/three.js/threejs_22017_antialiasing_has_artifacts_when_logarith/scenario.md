@@ -51,8 +51,8 @@ The fix discussed in the thread is to keep the software-emulation path available
 - cross-feature-interaction — MSAA, depth test, and fragment shader depth output interact via implicit GPU scheduling rules
 - shader-write-has-pipeline-side-effect — a seemingly benign assignment (`gl_FragDepth = gl_FragCoord.z`) reconfigures upstream rasterization behavior
 
-## How OpenGPA Helps
-An agent diagnosing jagged edges on an MSAA framebuffer can query OpenGPA for the draw call's active shader source and the framebuffer's sample count. Seeing `GL_SAMPLES > 1` alongside a fragment shader that assigns `gl_FragDepth` is the diagnostic signature; without that correlation the agent would likely misattribute the aliasing to driver/GPU settings (as the thread's early comments did).
+## How Beholder Helps
+An agent diagnosing jagged edges on an MSAA framebuffer can query Beholder for the draw call's active shader source and the framebuffer's sample count. Seeing `GL_SAMPLES > 1` alongside a fragment shader that assigns `gl_FragDepth` is the diagnostic signature; without that correlation the agent would likely misattribute the aliasing to driver/GPU settings (as the thread's early comments did).
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/22017
@@ -100,10 +100,10 @@ spec:
   - src/renderers/shaders/ShaderChunk/logdepthbuf_fragment.glsl.js
   - src/renderers/WebGLRenderer.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The diagnosis requires correlating two facts that live in different parts of the pipeline: the framebuffer sample count (GL state) and the presence of a `gl_FragDepth` write in the active fragment shader (program introspection). OpenGPA's Tier 1 capture exposes both raw facts, and its per-draw-call view lets an agent check them together. Without OpenGPA, an agent would have to either reason about GLSL from source (often unavailable in a running app) or guess at GPU-scheduling semantics from screenshots alone — which is exactly where the thread's reporters initially stalled ("Sounds like a Linux driver issue indeed. Unfortunately there's not much we can do about this.") before the shader-level cause was identified.
+- **Reasoning**: The diagnosis requires correlating two facts that live in different parts of the pipeline: the framebuffer sample count (GL state) and the presence of a `gl_FragDepth` write in the active fragment shader (program introspection). Beholder's Tier 1 capture exposes both raw facts, and its per-draw-call view lets an agent check them together. Without Beholder, an agent would have to either reason about GLSL from source (often unavailable in a running app) or guess at GPU-scheduling semantics from screenshots alone — which is exactly where the thread's reporters initially stalled ("Sounds like a Linux driver issue indeed. Unfortunately there's not much we can do about this.") before the shader-level cause was identified.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

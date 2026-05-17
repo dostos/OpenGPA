@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Round-changes: enumerate commits that touched the OpenGPA system vs.
+# Round-changes: enumerate commits that touched the Beholder system vs.
 # the eval pipeline between two round-tags.
 #
 # Usage:
@@ -26,7 +26,7 @@ fi
 since="$1"
 until="${2:-HEAD}"
 
-# Path patterns. SYSTEM = OpenGPA the product (shims, engine, API, MCP,
+# Path patterns. SYSTEM = Beholder the product (shims, engine, API, MCP,
 # bindings, backends, framework integration). EVAL = the harness +
 # scoring + mining + scenarios + prompts. Anything not matching either
 # (docs, scripts, root configs) is "other" and reported separately.
@@ -75,7 +75,7 @@ print_section() {
 echo "## Changes since \`$since\` (to \`$until\`)"
 echo
 
-print_section "System (OpenGPA itself)" "${SYSTEM_PATHS[@]}"
+print_section "System (Beholder itself)" "${SYSTEM_PATHS[@]}"
 print_section "Eval pipeline" "${EVAL_PATHS[@]}"
 
 # Other changes: subtract system+eval matched commits from total.

@@ -71,7 +71,7 @@ That is: `OutputPass` (and/or the intermediate render targets that `EffectCompos
 - colorspace-at-pipeline-boundaries
 - silent-default-overrides-user-configuration
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent can query `/api/v1/frames/current/draw_calls` to locate the final blit/OutputPass draw and inspect its bound framebuffer format and any sRGB-encode state (`GL_FRAMEBUFFER_SRGB`), then compare against the draw that wrote the direct path. The mismatch — direct path writes with sRGB encoding to a wide-gamut swapchain, composed path writes from an RGBA8 intermediate without the encoding step — surfaces the missing colorspace propagation through the composer chain.
 
 ## Source
@@ -111,10 +111,10 @@ spec:
   - src/constants.js
   - examples/webgl_test_wide_gamut.html
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA can clearly surface the *mechanical* discrepancy — the intermediate RGBA8 FBO, the missing `GL_FRAMEBUFFER_SRGB` on the final composed write, and the divergence from the direct render path. That's enough for an agent to point at the post-process chain as the culprit. But mapping "intermediate FBO has wrong format / encode state" back to the specific three.js abstraction ("OutputPass doesn't read `renderer.outputColorSpace`") still requires the agent to read the JS pipeline — OpenGPA shows the symptom, not the API-level cause.
+- **Reasoning**: Beholder can clearly surface the *mechanical* discrepancy — the intermediate RGBA8 FBO, the missing `GL_FRAMEBUFFER_SRGB` on the final composed write, and the divergence from the direct render path. That's enough for an agent to point at the post-process chain as the culprit. But mapping "intermediate FBO has wrong format / encode state" back to the specific three.js abstraction ("OutputPass doesn't read `renderer.outputColorSpace`") still requires the agent to read the JS pipeline — Beholder shows the symptom, not the API-level cause.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

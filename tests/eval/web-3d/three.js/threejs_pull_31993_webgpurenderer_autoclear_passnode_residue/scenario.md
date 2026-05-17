@@ -89,7 +89,7 @@ secondary:
 - behavioral-divergence-between-backends-points-at-shared-abstraction-not-backend-driver
 - user-level-fix-attempts-fail-because-state-is-internal-to-a-node-class
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 `gpa report` against a captured WebGL frame would surface the
 `auto-clear-with-no-explicit-clear` rule firing on the post-processing
@@ -125,7 +125,7 @@ spec:
   fix_commit: ec4c9b2e0da04bcc5fe0f597c13c20b44f8ba637
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The `gpa check-config` rule
   `auto-clear-with-no-explicit-clear` fires precisely on this pattern
@@ -136,6 +136,6 @@ spec:
   user-level `renderer.clear()`. From there, the captured drawcall
   sequence around `PassNode` is the natural next step to inspect.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (committed via direct gh-driven fetch, no eval run yet)

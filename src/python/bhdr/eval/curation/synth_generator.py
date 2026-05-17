@@ -92,7 +92,7 @@ class SyntheticGenerator:
             "## Ground Truth Diagnosis",
             "## Difficulty",
             "## Adversarial Principles",
-            "## How OpenGPA Helps",
+            "## How Beholder Helps",
             "## Tier",
             "## API",
             "## Framework",

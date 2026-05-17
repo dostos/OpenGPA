@@ -78,7 +78,7 @@ change_summary: >
 ## Adversarial Principles
 - bug-lives-inside-framework-not-user-code
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa report` would surface +Inf in the framebuffer; tracing the literal
 `0.5` from the fragment shader leads back to the visibility-term file.
 
@@ -107,7 +107,7 @@ spec:
   fix_commit: 7716cd94
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The +Inf reaches the framebuffer; trace surfaces the literal.
 """
@@ -273,14 +273,14 @@ def test_draft_dispatches_to_legacy_path_when_bug_class_unset():
         "bug_class: legacy\nfiles: []\n```\n\n"
         "## Difficulty Rating\n3/5\n\n"
         "## Adversarial Principles\n- p\n\n"
-        "## How OpenGPA Helps\n.\n\n"
+        "## How Beholder Helps\n.\n\n"
         "## Source\n- **URL**: https://github.com/x/y/issues/1\n"
         "- **Type**: issue\n- **Date**: 2024-01-01\n"
         "- **Commit SHA**: (n/a)\n- **Attribution**: u\n\n"
         "## Tier\ncore\n\n## API\nopengl\n\n## Framework\nnone\n\n"
         "## Bug Signature\n```yaml\ntype: unexpected_color\n"
         "spec:\n  region: center\n```\n\n"
-        "## Predicted OpenGPA Helpfulness\n- **Verdict**: yes\n"
+        "## Predicted Beholder Helpfulness\n- **Verdict**: yes\n"
         "- **Reasoning**: .\n"
     )
     response = (

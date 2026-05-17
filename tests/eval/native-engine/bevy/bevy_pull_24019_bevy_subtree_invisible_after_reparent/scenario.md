@@ -98,7 +98,7 @@ secondary:
 - bug-only-fires-when-detach-and-insert-happen-in-the-same-system
 - bug-is-graph-walker-early-out-not-data-corruption
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture of the broken frame shows that the moved row's
 container quad is drawn with the correct width and height, but
@@ -134,7 +134,7 @@ spec:
   fix_commit: c3dab1a37eabebae95c4e31d709c1aa73e1732fc
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user describes the symptom in UI terms
   (`detach_children`, `insert_children`, "moved row"). Grep on
@@ -144,6 +144,6 @@ spec:
   parent-has-size-children-don't pattern is the strongest signal
   for finding it.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

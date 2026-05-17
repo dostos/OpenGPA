@@ -85,8 +85,8 @@ No fix PR or commit was cited in the thread, so the diagnosis rests on the batch
 - slot_priority_contract_violation
 - hidden_draw_order_from_performance_batching
 
-## How OpenGPA Helps
-`list_draw_calls` shows the two quads in registration order with no depth test — making the bug's mechanism (second draw paints over first) directly visible. `get_pixel` at the overlap region returns the middle-layer color instead of the top-layer color, confirming which draw won the overlap. An agent still needs external knowledge that the top layer was *supposed* to render above the middle layer; OpenGPA can expose order but not slot intent.
+## How Beholder Helps
+`list_draw_calls` shows the two quads in registration order with no depth test — making the bug's mechanism (second draw paints over first) directly visible. `get_pixel` at the overlap region returns the middle-layer color instead of the top-layer color, confirming which draw won the overlap. An agent still needs external knowledge that the top layer was *supposed* to render above the middle layer; Beholder can expose order but not slot intent.
 
 ## Source
 - **URL**: https://github.com/mapbox/mapbox-gl-js/issues/13206
@@ -133,10 +133,10 @@ spec:
   - src/render/draw_line.ts
   - src/render/painter.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA exposes the raw draw order (top quad issued before middle quad, no depth test, identical blend state) and a color probe showing gray where blue is expected — both are necessary evidence. But the diagnosis "this is a slot-priority inversion caused by batching" requires the agent to know the Mapbox slot contract; OpenGPA cannot surface that intent. An agent that only sees "two quads drawn in this order" may just call it a straightforward overdraw, not a slot violation. Helpfulness depends on the querying agent bringing slot semantics to the table.
+- **Reasoning**: Beholder exposes the raw draw order (top quad issued before middle quad, no depth test, identical blend state) and a color probe showing gray where blue is expected — both are necessary evidence. But the diagnosis "this is a slot-priority inversion caused by batching" requires the agent to know the Mapbox slot contract; Beholder cannot surface that intent. An agent that only sees "two quads drawn in this order" may just call it a straightforward overdraw, not a slot violation. Helpfulness depends on the querying agent bringing slot semantics to the table.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

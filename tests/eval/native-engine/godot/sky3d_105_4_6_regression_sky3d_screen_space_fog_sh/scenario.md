@@ -78,7 +78,7 @@ a solution proposed in
 - depth attachment reused across post-process passes with subtly different
   expected near/far mapping
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent can compare the depth texture sampled by the QuadMesh draw in the
 broken frame against a known-good frame and spot the half-screen discontinuity
 directly (`framebuffer_dominant_color` on the two halves, or pixel reads along
@@ -122,16 +122,16 @@ spec:
   - servers/rendering/renderer_rd/forward_clustered/render_forward_clustered.cpp
   - servers/rendering/renderer_rd/storage_rd/render_buffers_rd.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA's Tier-1 capture can clearly visualize the half-screen
+- **Reasoning**: Beholder's Tier-1 capture can clearly visualize the half-screen
   seam in the depth attachment sampled by the screen-space fog draw, which
   helps an agent localize the bug to the depth pipeline rather than the fog
   shader. However, root-causing the regression requires reading Godot's
   volumetric-fog + render-buffer bookkeeping code across several files, which
-  OpenGPA does not inspect directly. The snapshot reference bridges that gap,
+  Beholder does not inspect directly. The snapshot reference bridges that gap,
   but the diagnosis is genuinely engine-internal.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

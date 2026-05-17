@@ -73,8 +73,8 @@ With the define set, the shader runs `perspectiveDepthToViewZ(depth, near, far)`
 - endpoint-aliased-correctness — the bug is invisible at the near and far clip planes, where the linear and perspective encodings agree by construction
 - preprocessor-define-gates-correctness — a missing `#define PERSPECTIVE_CAMERA` silently switches the shader into the wrong depth-linearization branch with no compilation failure
 
-## How OpenGPA Helps
-An agent looking at a washed-out / uniformly blurred CoC pass can ask OpenGPA for the active fragment shader source and the set of `#define`s applied to the post-process draw call, alongside the projection matrix of the scene draw that wrote the sampled depth texture. Seeing a perspective projection matrix in the producer draw plus a CoC shader whose depth-linearization branch lacks `PERSPECTIVE_CAMERA` — or reads the depth texel as if it were linear — is the diagnostic signature. Without this, the agent is left guessing whether the issue is logarithmic-depth, camera-settings timing, or world-vs-view coordinates (each of which came up on the thread before the root cause was identified).
+## How Beholder Helps
+An agent looking at a washed-out / uniformly blurred CoC pass can ask Beholder for the active fragment shader source and the set of `#define`s applied to the post-process draw call, alongside the projection matrix of the scene draw that wrote the sampled depth texture. Seeing a perspective projection matrix in the producer draw plus a CoC shader whose depth-linearization branch lacks `PERSPECTIVE_CAMERA` — or reads the depth texel as if it were linear — is the diagnostic signature. Without this, the agent is left guessing whether the issue is logarithmic-depth, camera-settings timing, or world-vs-view coordinates (each of which came up on the thread before the root cause was identified).
 
 ## Source
 - **URL**: https://github.com/pmndrs/postprocessing/issues/426
@@ -116,10 +116,10 @@ spec:
   - src/materials/glsl/convolution.coc.frag
   - src/effects/DepthOfFieldEffect.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The diagnosis requires correlating state across two draw calls (the scene geometry's projection matrix and the post-process CoC fragment shader's defines/source), which is exactly what OpenGPA's per-draw-call Tier 1 capture exposes as raw facts without heuristics. The thread itself shows the failure mode of screenshot-only debugging: reporters churned through camera-setting timing, logarithmic depth, world-vs-view coordinates, and `getWorldPosition` bugs before the depth-linearization branch was identified months later.
+- **Reasoning**: The diagnosis requires correlating state across two draw calls (the scene geometry's projection matrix and the post-process CoC fragment shader's defines/source), which is exactly what Beholder's per-draw-call Tier 1 capture exposes as raw facts without heuristics. The thread itself shows the failure mode of screenshot-only debugging: reporters churned through camera-setting timing, logarithmic depth, world-vs-view coordinates, and `getWorldPosition` bugs before the depth-linearization branch was identified months later.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

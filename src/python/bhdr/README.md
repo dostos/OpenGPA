@@ -1,6 +1,6 @@
-# OpenGPA Python Package
+# Beholder Python Package
 
-Root of the `gpa` Python package. Provides the REST API, MCP server, capture backends, framework integration layer, and eval harness that together form the OpenGPA surface exposed to LLM agents.
+Root of the `gpa` Python package. Provides the REST API, MCP server, capture backends, framework integration layer, and eval harness that together form the Beholder surface exposed to LLM agents.
 
 ## Key Subdirectories
 - `api/` — FastAPI REST endpoints

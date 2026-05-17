@@ -94,7 +94,7 @@ secondary:
 - root-cause-is-a-too-aggressive-defensive-skip
 - broken-output-is-solid-black-not-corrupted
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture of the broken case would show the canvas-group
 composite draw call sampling from a render-target whose backing
@@ -130,7 +130,7 @@ spec:
   fix_commit: 04e3d906f9f9a81f4078ac6bce4e73b9a7470581
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user-visible symptom is "small CanvasGroup
   goes black". A code_only agent grepping for "CanvasGroup"
@@ -141,6 +141,6 @@ spec:
   broken case" — a fact the user couldn't have known to mention,
   pointing past the canvas-group class into texture allocation.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

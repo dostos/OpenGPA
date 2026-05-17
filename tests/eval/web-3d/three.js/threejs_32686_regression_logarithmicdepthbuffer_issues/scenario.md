@@ -44,8 +44,8 @@ See PR #32109 (mrdoob/three.js) for the behavioral change that introduced the re
 - logarithmic_depth_clipspace_dependency
 - instanced_rendering_interaction
 
-## How OpenGPA Helps
-OpenGPA's per-draw-call shader source capture lets the agent diff the generated fragment shader between v180 and v181 for the same `InstancedMesh` material with `logarithmicDepthBuffer: true`, isolating the exact `positionView`/`gl_FragDepth` snippet that is missing or misplaced. Combined with uniform and varying dumps per instance, the agent can see that `vViewPosition.z` (or its TSL equivalent) is no longer being assigned in the fragment stage, which otherwise requires reading tens of TSL source files to reason about statically.
+## How Beholder Helps
+Beholder's per-draw-call shader source capture lets the agent diff the generated fragment shader between v180 and v181 for the same `InstancedMesh` material with `logarithmicDepthBuffer: true`, isolating the exact `positionView`/`gl_FragDepth` snippet that is missing or misplaced. Combined with uniform and varying dumps per instance, the agent can see that `vViewPosition.z` (or its TSL equivalent) is no longer being assigned in the fragment stage, which otherwise requires reading tens of TSL source files to reason about statically.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/32686
@@ -89,10 +89,10 @@ spec:
   symptom: "per-instance quad clipping varying with camera angle"
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug's visible symptom (angle-dependent clipping of instanced sprites) is far from its root cause (missing fragment-stage reapplication of a scoped TSL node). Without OpenGPA, the agent has to reason purely from the JS source across many node files to connect `logarithmicDepthBuffer` to `positionView.z` scoping. With OpenGPA, the agent can dump the two generated fragment shaders (v180-equivalent vs v181) for the same material, observe the missing `positionView`/`vViewPosition` reassignment, and localize the bug to the stack-scoping change in #32109 without having to mentally simulate the TSL compiler. This converts a multi-file static-analysis task into a direct shader-text diff.
+- **Reasoning**: The bug's visible symptom (angle-dependent clipping of instanced sprites) is far from its root cause (missing fragment-stage reapplication of a scoped TSL node). Without Beholder, the agent has to reason purely from the JS source across many node files to connect `logarithmicDepthBuffer` to `positionView.z` scoping. With Beholder, the agent can dump the two generated fragment shaders (v180-equivalent vs v181) for the same material, observe the missing `positionView`/`vViewPosition` reassignment, and localize the bug to the stack-scoping change in #32109 without having to mentally simulate the TSL compiler. This converts a multi-file static-analysis task into a direct shader-text diff.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

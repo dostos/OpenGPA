@@ -131,7 +131,7 @@ secondary:
 - ecs-state-tracking-invariant-violation-not-a-render-state-bug
 - mesh-is-still-in-the-scene-but-no-vkCmdDraw-is-issued-for-it
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A captured frame **before** pressing Space contains a `vkCmdDraw`
 for the cube mesh. A captured frame **after** pressing Space does
@@ -144,7 +144,7 @@ plugins to `mesh.rs`. The CPU-culling vs. GPU-culling bucket
 distinction is internal Bevy state, not GL/Vulkan state, so the
 capture is necessary to confirm "the mesh is gone from the actual
 device draw stream" and not "the mesh is invisible because of
-shader/material/transform". That elimination is the core OpenGPA
+shader/material/transform". That elimination is the core Beholder
 contribution here.
 
 ## Source
@@ -172,7 +172,7 @@ spec:
   fix_commit: 96e4074109adc588a8f5366dafe6d6d4edf4662a
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: This bug looks like a typical "shader bug" or a
   "transform bug" from the user's vantage — the mesh is in the scene
@@ -183,8 +183,8 @@ spec:
   mesh's draw is simply absent from the command stream — which forces
   the investigation into "why didn't the renderer record a draw for
   this entity", which is exactly the right question. That redirection
-  is the core OpenGPA value here.
+  is the core Beholder value here.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: no
 - **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.

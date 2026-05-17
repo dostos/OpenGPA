@@ -46,7 +46,7 @@ def render_prompt(
       upstream_snapshot_repo: Repo URL of the framework at the pre-fix SHA.
       upstream_snapshot_sha: The pre-fix parent SHA.
       mode: ``"with_bhdr"`` or ``"code_only"`` — controls whether the
-        OpenGPA tool block is included.
+        Beholder tool block is included.
       scope_hint: Optional pre-computed scope-hint text from
         :func:`bhdr.eval.scope_hint.compute_scope_hint`. When provided,
         the ``{scope_hint_block}`` placeholder is filled with a short

@@ -78,9 +78,9 @@ discourages deep investigation. Finding the root cause requires:
   different bugs (wrong normals, wrong depth test, wrong indices, wrong
   matrices).
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA surfaces the complete pipeline state and active matrices at draw
+Beholder surfaces the complete pipeline state and active matrices at draw
 time, so the combination of front-face mode and the model matrix
 determinant is observable in a single snapshot. A code-only agent must
 mentally trace winding-affecting state across multiple functions and files.

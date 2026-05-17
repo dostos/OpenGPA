@@ -102,7 +102,7 @@ secondary:
 - subpixel-rounding-feedback-loop
 - bug-is-cross-frame-state-not-single-frame-defect
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame-by-frame capture of the text quad's vertex positions and
 the glyph atlas's quad positions reveals that the per-frame text
@@ -138,7 +138,7 @@ spec:
   fix_commit: edba496697d3918ca5a2110363c502692ef9d2dd
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user-report mentions "wrap" but does not name
   any rounding or layout subsystem. Grep on "wrap" returns many
@@ -147,6 +147,6 @@ spec:
   problem to the layout step that consumes node size — pointing
   the agent at the rounding feedback loop.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

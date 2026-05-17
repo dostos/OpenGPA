@@ -36,7 +36,7 @@ void bhdr_ensure_ipc(void) {
     if (bhdr_ipc_ready) return;
     bhdr_ipc_ready = 1;
     bhdr_ipc_connect();
-    fprintf(stderr, "[OpenGPA] Shim active (pid=%d)\n", getpid());
+    fprintf(stderr, "[Beholder] Shim active (pid=%d)\n", getpid());
 }
 
 /* NO constructor — init is lazy on first GL call.

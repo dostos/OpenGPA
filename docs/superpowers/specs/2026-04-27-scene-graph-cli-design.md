@@ -288,7 +288,7 @@ The `run_rules()` function lives in `src/python/bhdr/checks/config_rules.py` (ne
 Recommended starter plugin. Ships under `src/shims/webgl/extension/bhdr-threejs-plugin.js` (path consistent with the framework-integration plan).
 
 ```javascript
-// bhdr-threejs-plugin.js — Tier-3 scene-graph reporter for OpenGPA.
+// bhdr-threejs-plugin.js — Tier-3 scene-graph reporter for Beholder.
 // Drop into a three.js page after creating `scene` and `renderer`.
 //
 // Usage:

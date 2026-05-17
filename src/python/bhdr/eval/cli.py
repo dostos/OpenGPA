@@ -1,4 +1,4 @@
-"""CLI entry point for the OpenGPA evaluation harness.
+"""CLI entry point for the Beholder evaluation harness.
 
 Usage:
     python -m bhdr.eval.cli run --scenario e1_state_leak --mode with_bhdr
@@ -174,7 +174,7 @@ def _cmd_report(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="bhdr.eval.cli",
-        description="OpenGPA evaluation harness CLI",
+        description="Beholder evaluation harness CLI",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -191,9 +191,9 @@ def build_parser() -> argparse.ArgumentParser:
                        help="Comma-separated modes when using --all")
     run_p.add_argument("--output", "-o", help="Output path for results JSON (default: results.json)")
     run_p.add_argument("--config", help="Path to JSON config file")
-    run_p.add_argument("--bhdr-url", help="OpenGPA server base URL")
-    run_p.add_argument("--token", help="OpenGPA auth token")
-    run_p.add_argument("--shim", help="Path to OpenGPA shim shared library")
+    run_p.add_argument("--bhdr-url", help="Beholder server base URL")
+    run_p.add_argument("--token", help="Beholder auth token")
+    run_p.add_argument("--shim", help="Path to Beholder shim shared library")
     run_p.add_argument("--model", help="LLM model identifier (for metadata)")
     run_p.add_argument(
         "--agent-backend", default="api",

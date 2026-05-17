@@ -119,7 +119,7 @@ reverse-search the captured literal and land directly on the fix site.
 - bug-lives-in-constructor-not-shader
 - lighting-model-convention-drift
 
-## How OpenGPA Helps
+## How Beholder Helps
 The bug is a single pre-upload multiplier on the CPU. Capturing the uniform
 block that carries `sh_coefficient_0` and reading back its scalar magnitude
 shows a value ~3× (π×) larger than the reference `HemisphereLight` upload
@@ -161,7 +161,7 @@ spec:
     the probe uploads its SH coefficient with an extra factor of sqrt(PI).
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Classic captured-literal-breadcrumb shape. The wrong value
   (`≈1.7725`) is written *exactly once* into a uniform that the shader
@@ -169,6 +169,6 @@ spec:
   constructor files immediately, while the user-visible symptom
   ("too bright") gives no source-location hint at all.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

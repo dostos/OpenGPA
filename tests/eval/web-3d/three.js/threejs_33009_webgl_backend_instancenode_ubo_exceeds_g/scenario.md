@@ -59,8 +59,8 @@ Program link fails with a "Size of uniform block … exceeds GL_MAX_UNIFORM_BLOC
 - hardcoded-capability-assumption
 - link-stage-failure-masquerades-as-missing-geometry
 
-## How OpenGPA Helps
-An OpenGPA query for "why is my InstancedMesh not drawing on Chrome?" should surface the program link status and the driver infolog containing the `GL_MAX_UNIFORM_BLOCK_SIZE` diagnostic, pointing directly at the oversized UBO instead of the usual suspects (matrix uploads, frustum culling, attribute bindings).
+## How Beholder Helps
+An Beholder query for "why is my InstancedMesh not drawing on Chrome?" should surface the program link status and the driver infolog containing the `GL_MAX_UNIFORM_BLOCK_SIZE` diagnostic, pointing directly at the oversized UBO instead of the usual suspects (matrix uploads, frustum culling, attribute bindings).
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/33009
@@ -97,10 +97,10 @@ spec:
   - src/nodes/accessors/BufferNode.js
   - src/renderers/webgl-fallback/WebGLBackend.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The failure mode is a link error whose text names the exact root cause (`exceeds GL_MAX_UNIFORM_BLOCK_SIZE`), but application code that ignores `GL_LINK_STATUS` or buries the infolog will show only a missing mesh. An OpenGPA query that inspects program link status, info log, and `GL_MAX_UNIFORM_BLOCK_SIZE` versus declared UBO size will deterministically identify the mismatch — far more directly than visual or geometry-level diagnostics.
+- **Reasoning**: The failure mode is a link error whose text names the exact root cause (`exceeds GL_MAX_UNIFORM_BLOCK_SIZE`), but application code that ignores `GL_LINK_STATUS` or buries the infolog will show only a missing mesh. An Beholder query that inspects program link status, info log, and `GL_MAX_UNIFORM_BLOCK_SIZE` versus declared UBO size will deterministically identify the mismatch — far more directly than visual or geometry-level diagnostics.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

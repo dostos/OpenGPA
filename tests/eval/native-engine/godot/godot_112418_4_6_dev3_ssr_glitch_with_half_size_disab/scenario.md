@@ -41,8 +41,8 @@ The reporter's scene contains a material that writes NaN into the color buffer c
 - single_pixel_defect_amplified_by_multi_pass_pipeline
 - regression_introduced_by_recent_overhaul
 
-## How OpenGPA Helps
-An OpenGPA query that inspects the contents of each mip level of the SSR reflection target (or diffs expected-vs-observed colors in a central region) would reveal NaN values present at level 0 but absent at levels ≥ 1, immediately localizing the missing sanitization to the base-level write rather than the downsample passes.
+## How Beholder Helps
+An Beholder query that inspects the contents of each mip level of the SSR reflection target (or diffs expected-vs-observed colors in a central region) would reveal NaN values present at level 0 but absent at levels ≥ 1, immediately localizing the missing sanitization to the base-level write rather than the downsample passes.
 
 ## Source
 - **URL**: https://github.com/godotengine/godot/issues/112418
@@ -79,10 +79,10 @@ spec:
   - servers/rendering/renderer_rd/effects/copy_effects.cpp
   - servers/rendering/renderer_rd/effects/ss_effects.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is a classic numeric-precision defect that is invisible in shader source review (each pass "looks fine") but trivial to spot by inspecting intermediate render targets: level 0 contains NaN, levels 1+ do not. OpenGPA's ability to dump and compare texture-level contents turns a multi-hour hunt into a one-query answer.
+- **Reasoning**: The bug is a classic numeric-precision defect that is invisible in shader source review (each pass "looks fine") but trivial to spot by inspecting intermediate render targets: level 0 contains NaN, levels 1+ do not. Beholder's ability to dump and compare texture-level contents turns a multi-hour hunt into a one-query answer.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

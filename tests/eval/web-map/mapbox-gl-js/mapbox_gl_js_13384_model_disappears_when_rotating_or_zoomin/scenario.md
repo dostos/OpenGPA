@@ -63,8 +63,8 @@ https://github.com/mapbox/mapbox-gl-js/issues/13384.
 - anchor_vs_extent_mismatch
 - visually_plausible_disappearance
 
-## How OpenGPA Helps
-An OpenGPA draw-call listing for the broken frame shows that the model's
+## How Beholder Helps
+An Beholder draw-call listing for the broken frame shows that the model's
 draw call is absent even though the framebuffer region where it should
 appear is still the clear color. Comparing to a frame captured before
 the rotation reveals a missing `glDrawArrays`/`glDrawElements` for that
@@ -100,15 +100,15 @@ spec:
   observed_draw_calls: 0
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The symptom (object vanishes) maps cleanly to a
-  missing-draw-call signal. OpenGPA's per-frame draw-call inventory and
+  missing-draw-call signal. Beholder's per-frame draw-call inventory and
   frame-to-frame diff make "the draw call for this object is gone"
   trivially visible, whereas the agent staring at pixels alone would
   struggle to distinguish CPU-side culling from shader/alpha/depth
   failures.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

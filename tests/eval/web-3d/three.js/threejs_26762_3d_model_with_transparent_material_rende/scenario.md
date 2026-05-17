@@ -52,8 +52,8 @@ legs and hair.
 - draw_order_dependence
 - invisible_state_toggle
 
-## How OpenGPA Helps
-OpenGPA's per-draw state inspection surfaces `depth_mask = GL_FALSE` on
+## How Beholder Helps
+Beholder's per-draw state inspection surfaces `depth_mask = GL_FALSE` on
 the offending draw calls while `depth_test = GL_TRUE` — a combination
 that is almost always wrong for opaque geometry. The agent can query
 `/api/v1/frames/current/draws/{i}` and compare the depth mask on each
@@ -98,14 +98,14 @@ spec:
   - src/renderers/webgl/WebGLState.js
   - src/materials/Material.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is invisible from shader source and vertex data —
-  it lives entirely in per-draw pipeline state. OpenGPA's raw capture of
+  it lives entirely in per-draw pipeline state. Beholder's raw capture of
   `glDepthMask` state per draw call directly exposes the discrepancy.
-  Without OpenGPA, an agent would have to infer depthMask state from
-  pixel patterns across many frames; with OpenGPA one query answers it.
+  Without Beholder, an agent would have to infer depthMask state from
+  pixel patterns across many frames; with Beholder one query answers it.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -42,7 +42,7 @@ Taken together, the thread's evidence localises the defect to Godot 3's rewritte
 - Shared/batched per-instance buffer with stale residual data
 - Workaround exists but root cause not upstreamed
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the per-draw snapshot for the batched quadrant draw call exposes the full per-instance transform array in the VBO region being read: an agent can spot that instance[2]'s translate is far outside the viewport while its color is still the correct tile color, pointing immediately at a stale transform in the instance buffer rather than a shader or texture bug.
 
 ## Source
@@ -82,10 +82,10 @@ spec:
   - drivers/gles2/rasterizer_canvas_gles2.cpp
   - scene/2d/tile_map.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is a stale per-instance transform inside a batched draw call. OpenGPA's draw-call snapshot surfaces the raw instance attribute buffer contents, letting an agent directly compare intended vs. actual per-instance transforms — exactly the data the Godot thread lacked and which a screenshot alone cannot show.
+- **Reasoning**: The root cause is a stale per-instance transform inside a batched draw call. Beholder's draw-call snapshot surfaces the raw instance attribute buffer contents, letting an agent directly compare intended vs. actual per-instance transforms — exactly the data the Godot thread lacked and which a screenshot alone cannot show.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

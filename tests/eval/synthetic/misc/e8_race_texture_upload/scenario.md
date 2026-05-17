@@ -54,9 +54,9 @@ for `GL_TEXTURE_WIDTH` at the right time requires knowing to look.
 - **Visually benign placeholder**: a 1×1 white texture looks like an
   intentional design choice.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the actual dimensions and contents of the texture sampled
+Beholder reports the actual dimensions and contents of the texture sampled
 by the draw, so the discrepancy between the intended 64x64 asset and the
 1x1 placeholder is visible without adding probe code or instrumenting the
 loader.

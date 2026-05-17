@@ -46,9 +46,9 @@ stripping the uniform entirely.
 - **Silent no-op**: `glUniform3f(-1, ...)` is not a GL error — no `GL_INVALID_OPERATION`, no debug message, no indication at runtime that the call did nothing.
 - **Dead-code elimination**: The uniform is syntactically declared and syntactically referenced (`vBase * uTint` computes `tinted`), so a reader skimming the shader sees nothing wrong. Only end-to-end dataflow analysis reveals it's dead.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports each program's active uniforms with their resolved
+Beholder reports each program's active uniforms with their resolved
 locations, so a declared uniform appearing with location -1 (or absent
 from the active uniform list) directly indicates the linker pruned it
 and any host-side writes were discarded.

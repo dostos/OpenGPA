@@ -72,7 +72,7 @@ secondary:
 - symptom-is-stateful-not-deterministic-on-minimal-repro
 - consumer-misuse-shadowing-real-framework-bug
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of the WebGL2 fallback path captures every `pixelStorei` call and every `texSubImage2D` / `copyTexSubImage2D` / framebuffer blit in order — making it visually obvious that `UNPACK_FLIP_Y_WEBGL=true` and a non-default `UNPACK_COLORSPACE_CONVERSION_WEBGL` set during the last DataTexture upload are still in effect when `copyTextureToTexture` later binds its scratch source/destination framebuffers. The `/uniforms` and per-draw-call state diff between the failing copy and the working copy points the agent straight at "global pixel-storage state was not reset" — which is exactly the invariant PR #33227 fixes by caching those modes in `WebGLState`.
 
 ## Source
@@ -104,10 +104,10 @@ spec:
   fix_commit: c6167f9077245c7deab47214ee4e7684d301ed4f
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The root cause is a global GL state leak (`pixelStorei` modes persisting across texture operations) — exactly the class of bug a per-call GL trace surfaces immediately. An agent reading source alone has to reason about which `gl.pixelStorei` calls survive between `setTextureParameters`, `uploadTexture`, and `copyTextureToTexture`; an agent reading a GPA trace sees the sticky unpack state directly in the captured call sequence and is led to `WebGLState` / `WebGLTextureUtils` without guessing.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

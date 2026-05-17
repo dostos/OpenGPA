@@ -59,7 +59,7 @@ change_summary: >
 - depth-encoding-mismatch
 - silent-correctness-failure-without-error
 
-## How OpenGPA Helps
+## How Beholder Helps
 A query that dumps the per-draw-call fragment shader sources alongside the depth-buffer values they write would immediately reveal that the world-geometry draw writes a remapped `gl_FragDepth` while the reflector draw does not. A `get_pixel(depth)` lookup on the wall region versus the reflector region would show two depth values whose ordering is inconsistent with the geometry's view-space z, pointing the agent at a depth-encoding mismatch between materials.
 
 ## Source
@@ -100,10 +100,10 @@ spec:
   tolerance: 16
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is purely a shader-stage depth-encoding mismatch between two draw calls. OpenGPA's per-draw-call shader source dump plus depth-buffer pixel lookup directly surface the mismatch — much faster than reading three.js' shader-chunk plumbing top-down to discover that one material opted out of the log-depth chunks.
+- **Reasoning**: The root cause is purely a shader-stage depth-encoding mismatch between two draw calls. Beholder's per-draw-call shader source dump plus depth-buffer pixel lookup directly surface the mismatch — much faster than reading three.js' shader-chunk plumbing top-down to discover that one material opted out of the log-depth chunks.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

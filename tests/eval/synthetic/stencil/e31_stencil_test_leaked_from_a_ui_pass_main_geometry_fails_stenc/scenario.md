@@ -40,9 +40,9 @@ The UI and scene passes are structurally separated and look correct individually
 - **Cross-pass state leak**: The bug is not in the draw call that fails but in the absence of a state reset between two otherwise-correct passes.
 - **Invisible failure mode**: Stencil rejection produces no GL error, no validation warning, and no partial geometry — just nothing, which reads as "the draw never happened" rather than "the draw was discarded."
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the full stencil state at each draw call, so a stencil
+Beholder reports the full stencil state at each draw call, so a stencil
 test active on a draw that doesn't expect one is visible in a single
 record without simulating state across passes.
 

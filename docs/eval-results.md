@@ -1,11 +1,11 @@
-# OpenGPA Eval Results
+# Beholder Eval Results
 
 ## Methodology
 
 - 18 scenarios: 10 synthetic (e1-e10) + 8 real-world (r-prefix, from Three.js/Godot GitHub issues)
-- Two modes: **Code-Only** (source + description) and **With OpenGPA** (source + description + live REST API)
+- Two modes: **Code-Only** (source + description) and **With Beholder** (source + description + live REST API)
 - Agent: Claude Sonnet, non-directive prompts ("use whatever approach you think is best")
-- Tracked: accuracy, tool sequence, unique OpenGPA insights
+- Tracked: accuracy, tool sequence, unique Beholder insights
 
 ## Round 1: Synthetic Scenarios (e1-e10) — WITH hint comments
 
@@ -19,11 +19,11 @@ Both modes: 7/7 correct, high confidence. Again, comments made it too easy.
 
 Comments stripped. The bugs are structurally present but not self-documented. This is the fair comparison. **Not yet run.**
 
-## OpenGPA Unique Insights (from Round 2)
+## Beholder Unique Insights (from Round 2)
 
-Even when both modes get the right answer, OpenGPA provides **runtime evidence** that code-only cannot:
+Even when both modes get the right answer, Beholder provides **runtime evidence** that code-only cannot:
 
-| Scenario | OpenGPA Signal | Why Code-Only Can't See It |
+| Scenario | Beholder Signal | Why Code-Only Can't See It |
 |----------|-----------|---------------------------|
 | r16 shadow cull | cull_mode=GL_FRONT (1028) | Distinguishes from r14's GL_BACK — same visual symptom, different root cause |
 | r20 neg scale | det(model_matrix)=-1 from captured mat4 | Need to compute 4x4 determinant mentally from code |
@@ -35,7 +35,7 @@ Even when both modes get the right answer, OpenGPA provides **runtime evidence**
 
 ## Tool Usage Patterns
 
-**With OpenGPA mode tool sequence (consistent across all scenarios):**
+**With Beholder mode tool sequence (consistent across all scenarios):**
 ```
 read_source → query_drawcalls → inspect_drawcall → query_pixel
 ```
@@ -45,7 +45,7 @@ read_source → query_drawcalls → inspect_drawcall → query_pixel
 - **Texture queries**: Used when textures relevant (r5, e8)
 - **Scene queries**: 0% — not useful without Tier 3 metadata
 
-## OpenGPA Capture Limitations Found
+## Beholder Capture Limitations Found
 
 | Limitation | Impact | Fix Needed |
 |-----------|--------|-----------|
@@ -63,16 +63,16 @@ Several scenarios (r17, e10) depend on reading vec3/vec4 uniform values. Current
 `explain_pixel` is the most powerful query but currently can't map pixel → draw call.
 
 ### P2: Add glClear interception
-r31 (missing clear) would be immediately diagnosable if OpenGPA tracked clear calls between draw calls.
+r31 (missing clear) would be immediately diagnosable if Beholder tracked clear calls between draw calls.
 
 ### P3: Track FBO attachments in shadow state
 r5 (feedback loop) requires knowing which texture is attached to the current FBO. Currently not captured.
 
 ## Conclusions
 
-1. **OpenGPA's primary value is distinguishing bugs with identical symptoms.** r14 and r16 both produce black screens from culling. Code analysis can find both, but OpenGPA instantly distinguishes them via `cull_mode` (1028 vs 1029).
+1. **Beholder's primary value is distinguishing bugs with identical symptoms.** r14 and r16 both produce black screens from culling. Code analysis can find both, but Beholder instantly distinguishes them via `cull_mode` (1028 vs 1029).
 
-2. **OpenGPA detects silent/compensating bugs.** e5's uniform collision doesn't manifest at runtime. Only OpenGPA can confirm this (code-only reports a false positive).
+2. **Beholder detects silent/compensating bugs.** e5's uniform collision doesn't manifest at runtime. Only Beholder can confirm this (code-only reports a false positive).
 
 3. **The eval scenarios need hint-stripped code** for a fair comparison. Round 3 (pending) will show the real accuracy gap.
 
@@ -90,7 +90,7 @@ to the REST API in `with_bhdr` mode. Ground truth withheld. Max 40 turns
 (80 for retries that hit the limit).
 
 ### Setup
-- Xvfb :99 + OpenGPA engine on :18080 (token `EVALTOKEN`, socket
+- Xvfb :99 + Beholder engine on :18080 (token `EVALTOKEN`, socket
   `/tmp/bhdr_eval.sock`, shm `/bhdr_eval`).
 - All 4 scenarios captured successfully into frames 1–4.
 - Snapshot cache pre-populated under `/data3/opengpa-snapshots/` (three.js
@@ -158,7 +158,7 @@ Per-scenario (code_only | with_bhdr):
    sampler list and the FBO attachment list, then wrote "GPA frame
    capture confirmed: texture ID 1 is bound as both COLOR_ATTACHMENT0 and
    sampler slot 0." That's exactly the "no heuristic required" case
-   predicted in the scenario's `## How OpenGPA Helps`.
+   predicted in the scenario's `## How Beholder Helps`.
 
 2. **r27 is a universal miss across all four (scenario × mode) cells.**
    The bug lives in a JS numeric mistake (fractional `maxZoom` forwarded
@@ -166,11 +166,11 @@ Per-scenario (code_only | with_bhdr):
    `src/terrain/terrain.ts`, fixed by wrapping in `Math.ceil`). Every
    agent — including the two with full GPA access — went down the
    transform.ts / source_cache.ts quadtree path instead and produced
-   sophisticated-sounding but wrong root causes. OpenGPA has no
+   sophisticated-sounding but wrong root causes. Beholder has no
    visibility into the JS `SourceCache.maxzoom` field upstream of any
    GL call, so GPA's runtime evidence could not steer the agent toward
-   the right file. The scenario's own `## How OpenGPA Helps` predicts
-   this ("an agent with OpenGPA would still need to read terrain.ts").
+   the right file. The scenario's own `## How Beholder Helps` predicts
+   this ("an agent with Beholder would still need to read terrain.ts").
    Confirmed.
 
 3. **Code-only agents burn turns on blind greps; with-GPA agents
@@ -182,8 +182,8 @@ Per-scenario (code_only | with_bhdr):
    source to explain *why*, rather than reading files and trying to
    build a theory top-down.
 
-4. **r15 shows OpenGPA's scope boundary.** The bug is in Godot's Metal
-   backend (macOS/Metal only). OpenGPA cannot capture it — the repro in
+4. **r15 shows Beholder's scope boundary.** The bug is in Godot's Metal
+   backend (macOS/Metal only). Beholder cannot capture it — the repro in
    `tests/eval/native-engine/godot/godot_114069_godot_mobile_renderer_macos_transparent_flicker/main.c` just submits a black frame as a stub.
    Nevertheless all four r15 agents (both modes) correctly identified the
    Metal dynamic-UBO path as the culprit, each pointing at a different
@@ -201,17 +201,17 @@ Per-scenario (code_only | with_bhdr):
    without GPA by reading more framework source (5 files vs Haiku's 3).
    The working interpretation: GPA turns the smaller model's runtime
    evidence into what the bigger model would otherwise compensate for
-   with broader source reading. Consistent with the "OpenGPA as
+   with broader source reading. Consistent with the "Beholder as
    force-multiplier for smaller models" hypothesis.
 
 ### Capture gaps surfaced
 
 - **r27**: JavaScript-level state (`SourceCache.maxzoom`) upstream of any
-  GL call is invisible to OpenGPA's Tier 1 shim. A Tier 3 framework
+  GL call is invisible to Beholder's Tier 1 shim. A Tier 3 framework
   plugin for mapbox-gl-js that POSTs `SourceCache` metadata per frame
   would close this — but no such integration exists. Candidate for the
   backlog.
-- **r15**: No Metal capture backend. Already flagged in `## How OpenGPA
+- **r15**: No Metal capture backend. Already flagged in `## How Beholder
   Helps`; not new, but confirmed.
 - **r10**: `get_draw_call` returns bound textures + FBO attachments as
   separate lists, but the agent had to cross-reference GL names
@@ -223,7 +223,7 @@ Per-scenario (code_only | with_bhdr):
 ### Next-iteration backlog (from Round 4 findings)
 
 1. **Framework plugin for at least one non-trivial JS framework**
-   (mapbox-gl-js or three.js) — Tier 3 metadata lets OpenGPA cover bugs
+   (mapbox-gl-js or three.js) — Tier 3 metadata lets Beholder cover bugs
    whose root cause is upstream of the GL call stream. Without this, any
    scenario like r27 is unreachable regardless of model size.
 2. **Derived "collision" fields on draw-call queries**: mark bound
@@ -1232,7 +1232,7 @@ naming the value the agent should reverse-look-up.
 The fix-applied infrastructure works for *single* runs but the GL shim's
 IPC handshake fails when many bazel-bin processes connect to per-session
 sockets simultaneously. **Of 33 with_bhdr runs, only 9 (27%) had a frame
-captured**; the other 24 saw `[OpenGPA] handshake send failed` and the
+captured**; the other 24 saw `[Beholder] handshake send failed` and the
 final-prompt logged "no frames captured" warning.
 
 Cross-tab on the 33 with_bhdr runs:
@@ -1464,7 +1464,7 @@ See "with_bhdr blockers" below.
 |---|---|
 | No Bazel BUILD targets for any of the 14 scenarios | `runner.build_scenario` would fail at `bazel build //tests/eval:<id>` |
 | No reproducer binaries (mined GitHub issues, not C apps) | Even if a target existed, nothing to capture |
-| OpenGPA engine not running on `:18080` | No live frame to query |
+| Beholder engine not running on `:18080` | No live frame to query |
 | `bug_class ∈ {consumer-misuse, user-config}` for all 14 | Maintainer scorer doesn't apply (`maintainer_solved=None` everywhere) |
 
 Decision: run `code_only` only; document the with_bhdr axis as gated

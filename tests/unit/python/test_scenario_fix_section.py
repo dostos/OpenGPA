@@ -44,7 +44,7 @@ Root cause blockquote:
 ## Adversarial Principles
 - some-principle
 
-## How OpenGPA Helps
+## How Beholder Helps
 Tier 1 capture.
 
 ## Source

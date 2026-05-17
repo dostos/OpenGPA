@@ -99,7 +99,7 @@ matching the "last one is repeated" symptom.
 - sampler_array_partial_binding
 - missing_validation_error
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw call's uniform state shows `holes[0]=0`, `holes[1]=1`,
 and `holes[2]=0` (the GL default) — the missing explicit binding for
 index 2 is directly visible. Cross-referencing with the bound textures on
@@ -138,13 +138,13 @@ spec:
       note: "unassigned sampler array slot defaults to texture unit 0"
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The root cause (a specific sampler array element never
   received an explicit `glUniform1i()` binding) is exactly the sort of
   fact a raw-uniform-state query exposes, while being nearly invisible
   from screenshots of the broken frame alone.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

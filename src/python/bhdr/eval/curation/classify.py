@@ -1,4 +1,4 @@
-"""Classify observed helpfulness of OpenGPA vs code-only from two EvalResult objects.
+"""Classify observed helpfulness of Beholder vs code-only from two EvalResult objects.
 
 6-rule decision table (first match wins):
   Rule 1: correct_with_bhdr AND NOT correct_code_only  -> yes
@@ -66,7 +66,7 @@ def classify_observed_helps(
     if not _solved(with_bhdr) and _solved(code_only):
         return ObservedClassification(
             "no",
-            "OpenGPA regressed vs code_only",
+            "Beholder regressed vs code_only",
         )
     # Rule 3: both wrong
     if not _solved(with_bhdr) and not _solved(code_only):
@@ -107,7 +107,7 @@ def attribute_failure_mode(
     code_only_diagnosis: str,
     ground_truth: str,
 ) -> FailureModeResult:
-    """Call the LLM to categorize WHY OpenGPA did not help in a given scenario."""
+    """Call the LLM to categorize WHY Beholder did not help in a given scenario."""
     system = load_prompt("classify_failure_mode_system")
     user = (
         f"SCENARIO_MD:\n{scenario_md}\n\n"

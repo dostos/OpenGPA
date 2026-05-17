@@ -57,7 +57,7 @@ The scoring agent should recognise the `positionGeometry` vs `positionLocal` dis
 - framework-contract-not-spec-compliance
 - unresolved-upstream-bug
 
-## How OpenGPA Helps
+## How Beholder Helps
 A Tier-1 GL capture shows the draw call executing with a shader program whose vertex output produces degenerate clip-space positions, but cannot name the TSL node at fault. A Tier-3 three.js sidecar that reports the compiled vertex shader string plus the list of nodes contributing to `positionLocal` would let the agent diff the node chain between the working (no override) and broken (override) cases and spot the missing morph/instance injection.
 
 ## Source
@@ -100,10 +100,10 @@ spec:
   observed_visible_instances: 0
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Reasoning**: Tier-1 GL capture reveals that a draw ran and produced no visible fragments, which narrows suspicion to vertex-stage transform breakage but cannot distinguish `positionGeometry` vs `positionLocal` semantics — those live entirely above the GL boundary in the TSL node graph. Real help requires a Tier-3 three.js sidecar reporting the node chain and compiled shader source; without that, an agent will correctly localise the problem to "vertex transform dropped" but cannot produce the `positionLocal` fix guidance that the maintainer provided.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

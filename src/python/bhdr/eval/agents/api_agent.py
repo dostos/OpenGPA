@@ -1,4 +1,4 @@
-"""OpenGPA REST-API agent backend.
+"""Beholder REST-API agent backend.
 
 Contains the canonical implementation previously in ``bhdr.eval.llm_agent``.
 ``bhdr.eval.llm_agent`` is now a thin compatibility shim that re-exports
@@ -16,7 +16,7 @@ from bhdr.eval.agents.base import AgentBackend, AgentResult
 
 
 class BhdrToolExecutor:
-    """Executes OpenGPA tool calls by proxying to the REST API."""
+    """Executes Beholder tool calls by proxying to the REST API."""
 
     def __init__(self, base_url: str, token: str, frame_id: int):
         self.base_url = base_url.rstrip("/")
@@ -25,7 +25,7 @@ class BhdrToolExecutor:
         self.headers = {"Authorization": f"Bearer {token}"}
 
     def execute(self, tool_name: str, tool_input: dict) -> str:
-        """Execute an OpenGPA tool and return the result as a string."""
+        """Execute an Beholder tool and return the result as a string."""
         if tool_name == "query_frame":
             return self._query_frame(tool_input)
         elif tool_name == "inspect_drawcall":
@@ -413,7 +413,7 @@ class ApiAgent(AgentBackend):
         extra_tools: dict | None = None,
         system_prompt: str | None = None,
     ) -> AgentResult:
-        """Run the agent WITH OpenGPA tools available.
+        """Run the agent WITH Beholder tools available.
 
         Args:
             extra_tools: optional dict of name -> callable for supplementary
@@ -490,7 +490,7 @@ class ApiAgent(AgentBackend):
 
         Args:
             tool_specs: Anthropic tool-use spec dicts sent to the API.
-            tool_executor: BhdrToolExecutor for OpenGPA REST API tools (or None).
+            tool_executor: BhdrToolExecutor for Beholder REST API tools (or None).
             extra_tools: dict of tool_name -> callable(tool_input: dict) -> str,
                 for tools dispatched locally (e.g. snapshot tools). The callable
                 receives the raw tool_input dict.
@@ -637,7 +637,7 @@ class ApiAgent(AgentBackend):
                 "- query_scene: Get scene info (requires framework metadata plugin)\n"
                 "- compare_frames: Diff two frames\n"
                 + snapshot_lines
-                + "\nThese tools are provided by OpenGPA (Open Graphics Profiler for Agents).\n"
+                + "\nThese tools are provided by Beholder (Beholder).\n"
                 "Use whatever approach you think is best.\n\n"
                 "End your response with:\n"
                 "DIAGNOSIS: <one-sentence root cause>\n"
@@ -682,7 +682,7 @@ def build_agent_fn(
              tool_calls, num_turns, time_seconds)
     matching :class:`bhdr.eval.harness.AgentFn`.
 
-    In "with_bhdr" mode the agent is given the full OpenGPA tool set plus the
+    In "with_bhdr" mode the agent is given the full Beholder tool set plus the
     source reader and is driven by a `BhdrToolExecutor` pointed at the
     captured frame. In "code_only" mode the agent only has `read_source_file`.
 

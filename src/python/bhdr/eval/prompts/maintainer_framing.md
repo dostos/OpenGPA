@@ -18,7 +18,7 @@ minimal repro.
   accessible via Read / Grep / Glob (or the harness-provided
   `read_upstream` / `list_upstream_files` / `grep_upstream` tools).
 <!-- WITH_BHDR_ONLY -->
-- OpenGPA live capture. Prefer:
+- Beholder live capture. Prefer:
   - `gpa report --frame latest --json` — all diagnostics in one call.
   - `gpa trace value <literal> --json` — reverse-lookup framework fields
     whose value matches a captured uniform / matrix / texture ID.

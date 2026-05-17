@@ -99,7 +99,7 @@ secondary:
 - regression-introduced-by-an-orthogonal-refactor-23098
 - ordering-bug-shows-up-as-pixel-flicker-not-as-an-error
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 `gpa frame-diff` between two consecutive captured frames would show
 the volumetric-fog draws in **different positions** in the
@@ -138,11 +138,11 @@ spec:
   fix_commit: b167b12983c9b872bb6a157a23d557f1fcd16f12
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Reasoning**: A single captured frame is not enough for this bug
   — the visual symptom is flicker across frames, and the diagnostic
-  is "draw order changes between consecutive frames". OpenGPA can
+  is "draw order changes between consecutive frames". Beholder can
   surface this with `gpa frame-diff` over multiple frames, but the
   agent must explicitly look at draw-call ordering across frames
   rather than at any single frame. Without that prompt, the agent
@@ -150,6 +150,6 @@ spec:
   the schedule. With the diff, the signal is strong; without it,
   the bug is harder to localise.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: no
 - **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.

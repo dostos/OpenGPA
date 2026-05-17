@@ -158,7 +158,7 @@ re-asserting the bind on slot 0 — into raw GL.
 - side effect on adjacent state (upload silently retargets to a sibling
   texture object instead of erroring)
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the per-call snapshot for the `glTexSubImage2D` reveals the
 bound `GL_TEXTURE_2D` object on the *active* texture unit at call time —
 which is the greenTex name, not the redTex name the application thought
@@ -206,17 +206,17 @@ spec:
     glTexSubImage2D upload was retargeted to greenTex instead of redTex.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is invisible at the framework layer (the JS code
   passes the correct texture handle into copyTextureToTexture) but is
   trivially visible in the raw GL trace: there is no glBindTexture between
   the last per-unit bind of phase 1 and the glTexSubImage2D in phase 2,
   and the active unit at upload time is GL_TEXTURE1 rather than the
-  expected GL_TEXTURE0. OpenGPA's per-draw snapshot of the active texture
+  expected GL_TEXTURE0. Beholder's per-draw snapshot of the active texture
   unit + bound texture name on each unit is exactly the signal needed to
   attribute the upload to the wrong object.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

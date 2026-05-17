@@ -1,7 +1,7 @@
 // Path-1 demo — programmatic frame emit from Node + headless-gl.
 //
 // What this proves:
-//   1. headless-gl creates a real GL context that the OpenGPA shim attaches
+//   1. headless-gl creates a real GL context that the Beholder shim attaches
 //      to under LD_PRELOAD (it dlopen()s libGL.so at runtime, so RTLD_NEXT
 //      resolution works for our wrappers).
 //   2. headless-gl never calls glXSwapBuffers, so the only existing
@@ -29,7 +29,7 @@ if (!gl) {
     process.exit(1);
 }
 
-// -- 2. Locate the OpenGPA GL shim ------------------------------------------
+// -- 2. Locate the Beholder GL shim ------------------------------------------
 //    We deliberately do NOT dlopen by absolute path here: under LD_PRELOAD
 //    the shim is already mapped into our process. Passing a soname-only
 //    string to koffi.load() resolves against the already-loaded image,

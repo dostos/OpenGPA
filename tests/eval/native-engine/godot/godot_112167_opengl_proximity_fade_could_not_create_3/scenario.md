@@ -77,8 +77,8 @@ and confirmed after the PR merged:
 - fbo-completeness-depends-on-texture-storage-validity
 - internalformat-format-type-combination-trap
 
-## How OpenGPA Helps
-An OpenGPA query that asks for the attachment state of each FBO — specifically the `internalformat` / `format` / `type` of the texture bound to `GL_DEPTH_STENCIL_ATTACHMENT` and the outcome of `glCheckFramebufferStatus` — immediately surfaces that the depth/stencil texture has no storage and that the FBO reports `GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT`. Cross-referencing the `glTexImage2D` call that produced `GL_INVALID_OPERATION` with the mismatched `type` argument pinpoints the root cause without the user having to read either code path.
+## How Beholder Helps
+An Beholder query that asks for the attachment state of each FBO — specifically the `internalformat` / `format` / `type` of the texture bound to `GL_DEPTH_STENCIL_ATTACHMENT` and the outcome of `glCheckFramebufferStatus` — immediately surfaces that the depth/stencil texture has no storage and that the FBO reports `GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT`. Cross-referencing the `glTexImage2D` call that produced `GL_INVALID_OPERATION` with the mismatched `type` argument pinpoints the root cause without the user having to read either code path.
 
 ## Source
 - **URL**: https://github.com/godotengine/godot/issues/112167
@@ -114,10 +114,10 @@ spec:
   - drivers/gles3/storage/render_scene_buffers_gles3.cpp
   - drivers/gles3/rasterizer_scene_gles3.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The failure is a direct, inspectable state anomaly — an FBO whose depth/stencil attachment texture has no storage because `glTexImage2D` was called with an illegal `type`/`internalformat` pairing. Both the GL error on the `glTexImage2D` call and the `GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT` status are exactly the kind of per-call and per-object facts OpenGPA exposes, so a single query about FBO completeness or recent GL errors will land on the root cause.
+- **Reasoning**: The failure is a direct, inspectable state anomaly — an FBO whose depth/stencil attachment texture has no storage because `glTexImage2D` was called with an illegal `type`/`internalformat` pairing. Both the GL error on the `glTexImage2D` call and the `GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT` status are exactly the kind of per-call and per-object facts Beholder exposes, so a single query about FBO completeness or recent GL errors will land on the root cause.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

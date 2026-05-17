@@ -42,9 +42,9 @@ The source looks entirely reasonable: a mirror transform, standard culling, CCW 
 - **Hidden determinant flip**: The defect is a property of the 4×4 matrix's determinant sign, not of any single call or parameter visible at the draw site.
 - **Matrix composition subtlety**: Reading the model construction (`scale(-1,1,1)`) in isolation does not suggest a culling interaction; the bug only emerges when combined with fixed-function culling state set far from the matrix code.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures the bound model matrix and the active cull state per
+Beholder captures the bound model matrix and the active cull state per
 draw, so a negative-determinant transform colliding with back-face
 culling is observable in a single record (along with the count of
 primitives that survived to rasterization).

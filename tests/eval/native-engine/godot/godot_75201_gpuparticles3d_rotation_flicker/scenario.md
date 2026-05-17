@@ -59,7 +59,7 @@ The issue was closed as not reproducible on 4.6.1.stable, but without a maintain
 - logic_render_rate_desync
 - cross_issue_diagnosis_required
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw-call uniforms for the first captured frame directly exposes `u_rotation = 0.0` for the spawned particle, which contradicts the particle material's configured `angle_max = 360`. An agent pulling `GET /frames/current/draw_calls/{id}` and inspecting uniforms can flag the default-valued rotation against the authored particle settings and conclude that the logic tick producing the randomized angle has not yet run for this particle.
 
 ## Source
@@ -96,10 +96,10 @@ spec:
   - servers/rendering/renderer_rd/storage_rd/particles_storage.cpp
   - servers/rendering/renderer_rd/shaders/particles.glsl
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is entirely expressible as a wrong uniform value on the very first draw call of the first captured frame. OpenGPA's Tier-1 raw-fact surface (per-draw uniform capture) directly contains the evidence needed to diagnose, and no heuristic interpretation of the value is required — the agent can compare the captured rotation against the particle material's authored `angle_max` to see that the logic tick has not run.
+- **Reasoning**: The bug is entirely expressible as a wrong uniform value on the very first draw call of the first captured frame. Beholder's Tier-1 raw-fact surface (per-draw uniform capture) directly contains the evidence needed to diagnose, and no heuristic interpretation of the value is required — the agent can compare the captured rotation against the particle material's authored `angle_max` to see that the logic tick has not run.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

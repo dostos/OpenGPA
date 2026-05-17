@@ -1,6 +1,6 @@
 # Framework Integration
 
-Tier-3 framework integration layer for OpenGPA. Accepts scene graph metadata from engine-side plugins (Unity, Unreal, custom), builds a debug group tree, correlates high-level objects with raw draw calls, and exposes the result through `FrameworkQueryEngine`.
+Tier-3 framework integration layer for Beholder. Accepts scene graph metadata from engine-side plugins (Unity, Unreal, custom), builds a debug group tree, correlates high-level objects with raw draw calls, and exposes the result through `FrameworkQueryEngine`.
 
 ## Key Files
 - `metadata_store.py` — persists per-frame metadata POSTed to `/frames/{id}/metadata`

@@ -52,7 +52,7 @@ The fix was shipped as v6.38.2 (reverting the blend-mode change). See release no
 - state_leak:blend_mode_final_pass
 - final_pass_not_opaque_copy
 
-## How OpenGPA Helps
+## How Beholder Helps
 Inspecting the last draw call's GL state shows `GL_BLEND = ENABLED` and an alpha-blending `blendFunc` even though the draw targets framebuffer 0 and the source fragment's alpha is `uOpacity = 0.5`. That combination — "compositing to the default framebuffer with non-1 source alpha" — is exactly the anti-pattern that produces the darkened output, and it is visible directly in `unexpected_state_in_draw` plus a pixel query on the result.
 
 ## Source
@@ -88,10 +88,10 @@ spec:
   - src/materials/EffectMaterial.ts  # parent of closing commit 3f6f8efcc (EffectPass blend revert for v6.38.2)
   - src/passes/EffectPass.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is a pure GL-state regression on the final draw call — blend enable + alpha-blending blendFunc when writing to FBO 0. Both the bad state (visible via per-draw-call state snapshot) and the resulting darkened pixel (visible via pixel query) are exactly what OpenGPA surfaces, and the Tier-1 raw-state view distinguishes this from shader-math bugs that look similar in screenshots.
+- **Reasoning**: The bug is a pure GL-state regression on the final draw call — blend enable + alpha-blending blendFunc when writing to FBO 0. Both the bad state (visible via per-draw-call state snapshot) and the resulting darkened pixel (visible via pixel query) are exactly what Beholder surfaces, and the Tier-1 raw-state view distinguishes this from shader-math bugs that look similar in screenshots.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

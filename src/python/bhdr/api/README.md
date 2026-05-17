@@ -1,6 +1,6 @@
 # REST API
 
-FastAPI application for OpenGPA. Exposes 22+ endpoints covering frames, draw calls, pixels, textures, and scene queries. All route handlers wrap responses in `safe_json_response()` to handle non-serializable GPU data types.
+FastAPI application for Beholder. Exposes 22+ endpoints covering frames, draw calls, pixels, textures, and scene queries. All route handlers wrap responses in `safe_json_response()` to handle non-serializable GPU data types.
 
 ## Key Files
 - `app.py` — application factory; mounts routers and configures middleware

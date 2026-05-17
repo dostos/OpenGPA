@@ -45,8 +45,8 @@ The fix in application code is to render the cube render target through a cube s
 - Cross-state interaction: the visible pixels depend on *what was previously bound* to the 2D slot, not on anything in the current draw call's own setup
 - View-dependent appearance in the original three.js case (frustum culling changes which material binds last) misleads the reporter toward camera/near-plane hypotheses
 
-## How OpenGPA Helps
-OpenGPA's per-draw GL state snapshot records the bound texture object per texture unit *together with each object's creation target*. A query like `/api/v1/frames/current/draw_calls/N/textures` will show texture unit 0 reporting an object whose own target is `TEXTURE_CUBE_MAP` while the sampler at the same unit expects `TEXTURE_2D`, plus the `INVALID_OPERATION` from the preceding `glBindTexture` in the error log. That single view collapses the three-layer confusion (user code, three.js material system, GL binding rules) into one observable state conflict.
+## How Beholder Helps
+Beholder's per-draw GL state snapshot records the bound texture object per texture unit *together with each object's creation target*. A query like `/api/v1/frames/current/draw_calls/N/textures` will show texture unit 0 reporting an object whose own target is `TEXTURE_CUBE_MAP` while the sampler at the same unit expects `TEXTURE_2D`, plus the `INVALID_OPERATION` from the preceding `glBindTexture` in the error log. That single view collapses the three-layer confusion (user code, three.js material system, GL binding rules) into one observable state conflict.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/31169
@@ -77,10 +77,10 @@ spec:
   expected_center_pixel_rgba: [0, 0, 0, 255]
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is a mismatch between a texture object's creation-time target and its sampling-time target. This is invisible in source code (the JS/GL call sequence looks symmetrical) but trivially visible in captured GL state that tracks per-object target alongside per-unit binding. OpenGPA's Tier 1 draw-call state dump surfaces this directly, whereas a baseline agent armed only with source and screenshots has to reason from the reporter's misleading "near-plane" hypothesis and the buried WebGL warning.
+- **Reasoning**: The root cause is a mismatch between a texture object's creation-time target and its sampling-time target. This is invisible in source code (the JS/GL call sequence looks symmetrical) but trivially visible in captured GL state that tracks per-object target alongside per-unit binding. Beholder's Tier 1 draw-call state dump surfaces this directly, whereas a baseline agent armed only with source and screenshots has to reason from the reporter's misleading "near-plane" hypothesis and the buried WebGL warning.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -1,7 +1,7 @@
-"""Minimal stdio-based MCP tool server for OpenGPA.
+"""Minimal stdio-based MCP tool server for Beholder.
 
 .. deprecated:: 0.x
-   The OpenGPA MCP server is deprecated in favor of the ``gpa`` CLI,
+   The Beholder MCP server is deprecated in favor of the ``gpa`` CLI,
    which agents call via their built-in shell tool with much lower
    per-turn token cost. See ``docs/cli/agent-integration.md`` (Task 29)
    for the recommended integration. The MCP server remains importable
@@ -143,7 +143,7 @@ TOOLS: List[Dict[str, Any]] = [
     },
     {
         "name": "control_capture",
-        "description": "Pause, resume, or step the OpenGPA capture engine.",
+        "description": "Pause, resume, or step the Beholder capture engine.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -1114,16 +1114,16 @@ def run(base_url: str, token: str) -> None:
 def main() -> None:
     import os
 
-    parser = argparse.ArgumentParser(description="OpenGPA MCP stdio server")
+    parser = argparse.ArgumentParser(description="Beholder MCP stdio server")
     parser.add_argument(
         "--base-url",
         default=None,
-        help="OpenGPA REST API base URL (default: BHDR_BASE_URL env or http://127.0.0.1:8080/api/v1)",
+        help="Beholder REST API base URL (default: BHDR_BASE_URL env or http://127.0.0.1:8080/api/v1)",
     )
     parser.add_argument(
         "--token",
         default=None,
-        help="Bearer token for the OpenGPA REST API (default: BHDR_TOKEN env)",
+        help="Bearer token for the Beholder REST API (default: BHDR_TOKEN env)",
     )
     args = parser.parse_args()
 

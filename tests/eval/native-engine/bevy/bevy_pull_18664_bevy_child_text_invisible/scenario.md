@@ -89,7 +89,7 @@ secondary:
 - intermittent-bug-tied-to-entity-id-reuse
 - bug-is-stale-state-in-system-local-not-in-the-data
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture on a broken navigation shows zero text-glyph quads
 for Menu B's children, while the panel rectangle still draws. The
@@ -124,7 +124,7 @@ spec:
   fix_commit: 17435c711846b43119b3f00e382d4c3daf38c818
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user report names "menu" and "text" but not
   any UI subsystem. Grep on "text" returns dozens of files;
@@ -134,6 +134,6 @@ spec:
   necessary to localize the bug to UI traversal rather than to
   text rendering or font handling.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

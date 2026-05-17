@@ -57,7 +57,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - symptom-is-sampling-from-uninitialized-mip-levels
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` on the broken frame shows the filter's draw call binds a render-target texture whose `GL_TEXTURE_MAX_LEVEL` / allocated mip count is greater than 0, while no `glGenerateMipmap` was ever called on that texture between the filter's render-into pass and its sample-from pass. That captured-state breadcrumb (mip levels allocated, mip levels never populated, sampler LOD bias / derivatives non-trivial) points the agent directly at the texture-pool allocation site rather than at the filter's shader — which is where a naïve agent without GPA state would start digging.
 
 ## Source
@@ -85,6 +85,6 @@ spec:
   fix_commit: (unresolved — issue open)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: GPA's per-draw-call texture state reveals that the filter samples from a render target with an allocated mip chain but no `glGenerateMipmap` call in the frame, which immediately reframes the bug from "filter shader is wrong" to "input render texture was over-allocated by something upstream." That pivot points the agent at `TexturePool` rather than at the filter pipeline — which is the same pivot the maintainer makes in the thread.

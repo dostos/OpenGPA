@@ -40,9 +40,9 @@ The two passes are textually close and the buggy pass has a uniform-location cal
 - **Stale state**: A binding from an earlier pass silently services a later pass that assumed a fresh environment.
 - **Module boundary leak**: Skybox renderer and terrain renderer appear independent but share mutable texture-unit state with no contract about who resets it.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the cube map object bound on each texture unit at every
+Beholder reports the cube map object bound on each texture unit at every
 draw call, so identical cube map ids appearing across the skybox draw and
 the terrain draw is visible directly without manually tracing binds across
 passes.

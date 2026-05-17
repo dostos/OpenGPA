@@ -1,8 +1,8 @@
-# OpenGPA CLI + Multi-Backend Eval Implementation Plan
+# Beholder CLI + Multi-Backend Eval Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make the OpenGPA eval pipeline backend-agnostic (api / claude-cli / codex-cli) by abstracting the agent loop, exposing a complete `gpa` CLI with consistent `noun verb` naming so CLI agents can call OpenGPA over their built-in shell tool, and marking the MCP server deprecated.
+**Goal:** Make the Beholder eval pipeline backend-agnostic (api / claude-cli / codex-cli) by abstracting the agent loop, exposing a complete `gpa` CLI with consistent `noun verb` naming so CLI agents can call Beholder over their built-in shell tool, and marking the MCP server deprecated.
 
 **Architecture:** Three layers change. The `gpa` CLI grows new noun-verb commands and harness-local `source`/`upstream` namespaces. The eval agent splits into a package with three backends (`api`, `claude-cli`, `codex-cli`) selected by a factory. The curation LLM client gains a parallel `codex-cli` backend. MCP gets a deprecation header but stays callable.
 
@@ -1065,7 +1065,7 @@ DIAGNOSIS: <one-sentence root cause>
 FIX: <specific code change>
 ```
 
-For `mode == "code_only"`, omit the OpenGPA tools and only list `gpa source` / `gpa upstream` plus the buggy-app source path.
+For `mode == "code_only"`, omit the Beholder tools and only list `gpa source` / `gpa upstream` plus the buggy-app source path.
 
 - [ ] **Step 3: Test prompt rendering** — verify the right tool list is selected per mode.
 - [ ] **Step 4: Run tests, commit.**
@@ -1317,7 +1317,7 @@ Add to `server.py` module docstring:
 
 ```
 .. deprecated:: 0.x
-   The OpenGPA MCP server is deprecated in favor of the ``gpa`` CLI,
+   The Beholder MCP server is deprecated in favor of the ``gpa`` CLI,
    which agents can call via their built-in shell tool with much lower
    per-turn token cost. See ``docs/cli/agent-integration.md``. The MCP
    server remains importable but is no longer the recommended agent
@@ -1350,7 +1350,7 @@ Skill stubs at `.codex/skills/gpa/SKILL.md` and `.claude/skills/gpa/SKILL.md`:
 ```markdown
 ---
 name: gpa
-description: Use when debugging an OpenGPA-captured graphics scenario via the gpa CLI.
+description: Use when debugging an Beholder-captured graphics scenario via the gpa CLI.
 ---
 
 See [docs/cli/agent-integration.md](../../../docs/cli/agent-integration.md).

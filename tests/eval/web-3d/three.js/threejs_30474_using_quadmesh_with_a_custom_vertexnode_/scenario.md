@@ -75,8 +75,8 @@ frame comes out black for the same reason.
 - default_pipeline_state_hides_the_cause
 - winding_convention_mismatch
 
-## How OpenGPA Helps
-An OpenGPA query for per-draw pipeline state on the single `glDrawArrays` call
+## How Beholder Helps
+An Beholder query for per-draw pipeline state on the single `glDrawArrays` call
 reveals `GL_CULL_FACE = enabled`, `GL_CULL_FACE_MODE = GL_BACK`, and
 `GL_FRONT_FACE = GL_CCW`, while a vertex-ordering check on the supplied
 positions shows a negative signed 2D area (clockwise) in clip space. That
@@ -118,16 +118,16 @@ spec:
   - src/renderers/common/nodes/NodeMaterial.js
   - src/renderers/webgpu/WebGPUBackend.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a classic "silent" failure — the draw is issued,
   no GL error is raised, and the framebuffer is simply empty. A human staring
-  at the shader/source will not see the problem. OpenGPA's ability to report
+  at the shader/source will not see the problem. Beholder's ability to report
   effective pipeline state at the draw call (cull face + front-face mode) plus
   a winding check on the submitted vertices turns an invisible cull into a
   one-line diagnosis: "triangle winding is CW but front-face is CCW with back
   culling enabled."
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

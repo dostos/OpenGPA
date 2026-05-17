@@ -45,9 +45,9 @@ Every individual ingredient looks defensible: `glDepthFunc(GL_GREATER)` with `gl
 - **Convention mismatch**: Two correct, well-known snippets (reversed-Z depth state, standard perspective) are individually valid but contractually incompatible. No single line is wrong.
 - **Hidden assumption**: The code never states "this is reversed-Z" — the convention is implicit in the depth-state pair, and the projection author's assumption silently diverges from the depth-state author's.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures the bound program's projection uniform alongside the
+Beholder captures the bound program's projection uniform alongside the
 depth-state snapshot for each draw call, so the convention mismatch
 between a reversed-Z depth pair and a forward-Z projection matrix is
 visible in a single record.

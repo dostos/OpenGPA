@@ -75,8 +75,8 @@ See PR #25483 for the change that introduced the bicubic path.
 - Minimal workarounds (remove `textureLod`, hard-code `textureSize`)
   fail — the triggering combination is unclear even to maintainers.
 
-## How OpenGPA Helps
-Minimal. OpenGPA captures GL state and draw-call metadata, but the GL
+## How Beholder Helps
+Minimal. Beholder captures GL state and draw-call metadata, but the GL
 state here is valid on every driver — the bug is in how AMD's HLSL
 backend (via ANGLE) lowers `textureLod` with a dynamic LOD over a
 mipmapped render-target texture. A capture on a non-AMD system shows
@@ -122,10 +122,10 @@ spec:
   tolerance: driver-dependent; not reproducible on Mesa/NVIDIA
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: no
-- **Reasoning**: Bug manifests only on AMD GPUs on Windows through ANGLE's D3D11 backend, where the HLSL compiler appears to miscompile the dynamic-LOD bicubic sampling introduced in PR #25483. Every GL/WebGL API call is valid and identical across machines; the artifact exists below the GL abstraction layer that OpenGPA captures. Both maintainer-suggested shader workarounds (dropping `textureLod`, hard-coding `textureSize`) failed to remove the artifacts, and the upstream issue was closed with no confirmed fix — there is no single state or call OpenGPA could highlight that distinguishes the broken frame from a working one on a different GPU. The scenario is also not reproducible in the eval harness (Linux/Xvfb/Mesa), so ground-truth scoring against a rendered frame isn't available.
+- **Reasoning**: Bug manifests only on AMD GPUs on Windows through ANGLE's D3D11 backend, where the HLSL compiler appears to miscompile the dynamic-LOD bicubic sampling introduced in PR #25483. Every GL/WebGL API call is valid and identical across machines; the artifact exists below the GL abstraction layer that Beholder captures. Both maintainer-suggested shader workarounds (dropping `textureLod`, hard-coding `textureSize`) failed to remove the artifacts, and the upstream issue was closed with no confirmed fix — there is no single state or call Beholder could highlight that distinguishes the broken frame from a working one on a different GPU. The scenario is also not reproducible in the eval harness (Linux/Xvfb/Mesa), so ground-truth scoring against a rendered frame isn't available.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

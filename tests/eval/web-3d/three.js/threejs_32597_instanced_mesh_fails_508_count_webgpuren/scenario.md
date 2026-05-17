@@ -84,12 +84,12 @@ The buggy assumption lives at
 - std140_block_size_vs_device_cap
 - threshold_dependent_repro
 
-## How OpenGPA Helps
-OpenGPA captures `glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE)` at context
+## How Beholder Helps
+Beholder captures `glGetIntegerv(GL_MAX_UNIFORM_BLOCK_SIZE)` at context
 creation and the size of every UBO bound for a draw call. An agent can
 query the UBO-bindings view for the failing draw, compare the bound
 buffer size against the context's advertised limit, and directly surface
-the size overrun that no `glGetError` reports. Without OpenGPA, the
+the size overrun that no `glGetError` reports. Without Beholder, the
 caller sees a clean `GL_NO_ERROR` and an empty framebuffer with no
 mechanical signal pointing at the UBO.
 
@@ -127,15 +127,15 @@ spec:
   tolerance: 40
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a quantitative mismatch between a captured
   GL integer (`MAX_UNIFORM_BLOCK_SIZE`) and a captured buffer size
-  (UBO bound to the draw). Both are raw facts OpenGPA already exposes,
+  (UBO bound to the draw). Both are raw facts Beholder already exposes,
   and neither is visible through the GL error mechanism, debuggers'
   default warning channels, or the rendered image alone — the hallmark
-  "silent failure" category OpenGPA is designed for.
+  "silent failure" category Beholder is designed for.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

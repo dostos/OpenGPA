@@ -55,9 +55,9 @@ A root cause citation (specific volumetric-fog pass change, uniform, or render t
 - orientation_dependent_artifact
 - no_upstream_diagnosis
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-An agent given access to OpenGPA can diff frame-level render-pass structure between the volumetric-fog-on and volumetric-fog-off captures, inspect the screen-space fog quad draw call's bound textures and uniforms, and check which pass writes the non-tinted half of the framebuffer — surfacing the pass/state divergence that upstream has not yet characterized.
+An agent given access to Beholder can diff frame-level render-pass structure between the volumetric-fog-on and volumetric-fog-off captures, inspect the screen-space fog quad draw call's bound textures and uniforms, and check which pass writes the non-tinted half of the framebuffer — surfacing the pass/state divergence that upstream has not yet characterized.
 
 ## Source
 
@@ -98,11 +98,11 @@ spec:
   divergence_from_lower_half_rgb_delta_min: 40
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 
 - **Verdict**: ambiguous
-- **Reasoning**: The artifact is clearly visible in the framebuffer, so OpenGPA's frame-level queries (pass list, draw-call bindings, per-region pixel histograms) can isolate which pass differs between the two halves and whether the screen-space fog quad draw sees different bound resources when volumetric fog is on. However, pinpointing the actual Godot 4.6 code change requires reading the engine's renderer source; OpenGPA narrows the search to a specific pass/uniform but does not close the gap to the changed line, especially given no upstream diagnosis exists yet to validate against.
+- **Reasoning**: The artifact is clearly visible in the framebuffer, so Beholder's frame-level queries (pass list, draw-call bindings, per-region pixel histograms) can isolate which pass differs between the two halves and whether the screen-space fog quad draw sees different bound resources when volumetric fog is on. However, pinpointing the actual Godot 4.6 code change requires reading the engine's renderer source; Beholder narrows the search to a specific pass/uniform but does not close the gap to the changed line, especially given no upstream diagnosis exists yet to validate against.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

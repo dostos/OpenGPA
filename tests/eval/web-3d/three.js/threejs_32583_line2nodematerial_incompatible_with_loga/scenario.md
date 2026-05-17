@@ -69,7 +69,7 @@ secondary:
 - symptom-and-root-cause-are-in-different-files
 - only-triggers-when-two-features-combine (Line2 + logarithmicDepthBuffer)
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of two adjacent draws (the Line2 instanced quad and a glb mesh triangle near the same world position) exposes the per-fragment depth written by each shader; comparing the captured `gl_FragDepth`/clip-space `z/w` against the view-space Z that `NodeMaterial.setupDepth()` would expect makes the discrepancy visible without needing a screenshot diff. `gpa report --uniforms` on the Line2 draw also confirms `cameraNear`/`cameraFar` are bound while `positionView` for that material is never written, pointing the agent at the `positionNode` vs `vertexNode` divergence inside `NodeMaterial`.
 
 ## Source
@@ -98,10 +98,10 @@ spec:
   fix_commit: 818a050b9c0da69122c9745618d0139ae5a6bea9
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The agent must connect a user-visible symptom (lines incorrectly occluded) to a two-file framework-internal interaction between `Line2NodeMaterial.vertexNode` and `NodeMaterial.setupDepth()`. OpenGPA's per-draw uniform/varying capture lets the agent observe that the Line2 draw never produces a view-space position while the log-depth path consumes one, narrowing the search to `setupDepth()` and the materials that override `vertexNode` without `positionNode`.
+- **Reasoning**: The agent must connect a user-visible symptom (lines incorrectly occluded) to a two-file framework-internal interaction between `Line2NodeMaterial.vertexNode` and `NodeMaterial.setupDepth()`. Beholder's per-draw uniform/varying capture lets the agent observe that the Line2 draw never produces a view-space position while the log-depth path consumes one, narrowing the search to `setupDepth()` and the materials that override `vertexNode` without `positionNode`.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

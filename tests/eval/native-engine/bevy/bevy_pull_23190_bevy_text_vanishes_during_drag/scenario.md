@@ -87,7 +87,7 @@ secondary:
 - bug-only-fires-during-continuous-input-not-on-single-events
 - bug-is-async-load-window-not-render-bug
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture during a drag shows that the text quad's bound
 texture is the *new* (still-empty) glyph atlas, while the previous
@@ -124,7 +124,7 @@ spec:
   fix_commit: 8d55916d2933586b266ada76b82873b88897f776
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user report contains only "text vanishes
   during drag", no naming of fonts, atlases, or async loads. Grep
@@ -133,6 +133,6 @@ spec:
   empty glyph texture being bound — pointing the agent at font
   instance lifecycle code.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

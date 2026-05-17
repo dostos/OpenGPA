@@ -60,7 +60,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - silent-failure-no-gl-error
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` on the failing frame would show the FBO bound for the depth-based effect's sampling has its depth attachment as a `RENDERBUFFER` (not a `TEXTURE`), even though `renderTarget.depthTexture` is set on the JS side — the mismatch between the framework's intent and the actual FBO attachment is the smoking gun. A follow-up `/draw-calls/<id>/framebuffer` query reveals the depth attachment type, pointing the agent at FBO lifecycle code rather than the effect's shader.
 
 ## Source
@@ -89,6 +89,6 @@ spec:
   fix_commit: (auto-resolve from v6.39.0 release tag)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: GPA's framebuffer-attachment introspection directly reveals that the depth attachment is a renderbuffer rather than the expected depth texture, redirecting the agent away from shader-level debugging and toward the render-target initialization lifecycle inside `postprocessing`'s pass classes.

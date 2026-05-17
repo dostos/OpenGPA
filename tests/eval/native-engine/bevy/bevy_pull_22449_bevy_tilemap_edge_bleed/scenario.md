@@ -93,7 +93,7 @@ secondary:
 - subpixel-uv-defect-only-visible-on-small-textures
 - bug-lives-in-fragment-shader-not-application-code
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A pixel-level capture of the bleed pixel reveals which texel of the
 tileset the fragment shader actually sampled. With per-pixel UV
@@ -129,7 +129,7 @@ spec:
   fix_commit: 6fbb2a3c2b39e253312ba2e454946c897a5d4238
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user-report names the API surface ("tilemap")
   but does **not** say "fragment shader" or "UV". Grep on
@@ -138,6 +138,6 @@ spec:
   miss-by-half-a-texel, focusing the search on shader code rather
   than the tile data structures or texture loader.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

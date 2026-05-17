@@ -55,7 +55,7 @@ secondary:
 - driver-specific-symptom-not-reproducible-on-most-hardware
 - visible-symptom-and-error-message-have-non-obvious-causal-link
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` would surface the offending `glBlitFramebuffer` call along with the source and destination framebuffer attachment formats side by side, making the format mismatch obvious without having to interpret the CHROMIUM-prefixed error string. `gpa report --gl-errors` would show the `GL_INVALID_OPERATION` correlated to that exact blit, and `/framebuffers/<id>` would list the depth/stencil attachment format of each FBO so the agent can see which side of the blit has the mismatched format.
 
 ## Source
@@ -82,6 +82,6 @@ spec:
   fix_commit: (none)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Even without a localizable fix, GPA's GL-error stream and framebuffer-attachment introspection would let an agent connect the visible fog-ordering bug to the failed depth/stencil blit — the exact diagnostic step the upstream thread was missing when the reporter could not get a more descriptive error from the browser. This is the kind of driver-edge-case triage that benefits from raw capture over user-side guessing.

@@ -54,7 +54,7 @@ No maintainer-authored root-cause post-mortem has been published; the issue pair
 - silently_dropped_draw
 - version_dependent_symptom
 
-## How OpenGPA Helps
+## How Beholder Helps
 Query `/api/v1/frames/current/draw_calls` to list every draw and inspect each call's bound VAO/EBO plus vertex count.  The missing or zero-primitive draw will be visible in the draw-call list even though the on-screen pixels look like a single layer, immediately distinguishing "layer skipped" from "layer drawn but hidden."
 
 ## Source
@@ -90,10 +90,10 @@ spec:
   - src/symbol/collision_index.ts
   - src/data/bucket/symbol_bucket.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The diagnostic question ("is the second layer being issued at all?") is exactly what a draw-call enumeration answers.  Without OpenGPA an agent would have to guess between "layer not rendered," "layer rendered but occluded," and "layer rendered off-screen" from pixel output alone; with the draw-call list the answer is direct.
+- **Reasoning**: The diagnostic question ("is the second layer being issued at all?") is exactly what a draw-call enumeration answers.  Without Beholder an agent would have to guess between "layer not rendered," "layer rendered but occluded," and "layer rendered off-screen" from pixel output alone; with the draw-call list the answer is direct.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

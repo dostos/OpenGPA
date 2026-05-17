@@ -12,7 +12,7 @@ Installation
    * macOS:  ``/Applications/RenderDoc.app/Contents/Resources/``
    * Windows: ``C:\\Program Files\\RenderDoc\\``
 
-3. Add that directory to ``PYTHONPATH`` before running OpenGPA, e.g.::
+3. Add that directory to ``PYTHONPATH`` before running Beholder, e.g.::
 
        export PYTHONPATH=/usr/lib/renderdoc:$PYTHONPATH
        python -m bhdr.server --backend renderdoc --path capture.rdc

@@ -1,6 +1,6 @@
 # Vulkan Example
 
-Minimal Vulkan test application for OpenGPA. Used to validate that `VK_LAYER_GPA_capture` intercepts correctly and that frame data reaches the core engine without loss.
+Minimal Vulkan test application for Beholder. Used to validate that `VK_LAYER_GPA_capture` intercepts correctly and that frame data reaches the core engine without loss.
 
 ## Usage
 ```sh

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Starts Xvfb, OpenGPA engine, and captures frames from eval scenarios
+# Starts Xvfb, Beholder engine, and captures frames from eval scenarios
 set -e
 
 DISPLAY_NUM=${BHDR_DISPLAY:-99}
@@ -17,8 +17,8 @@ if ! pgrep -f "Xvfb :${DISPLAY_NUM}" > /dev/null; then
 fi
 export DISPLAY=:${DISPLAY_NUM}
 
-# Start OpenGPA engine + API
-echo "Starting OpenGPA engine..."
+# Start Beholder engine + API
+echo "Starting Beholder engine..."
 PYTHONPATH="${REPO_ROOT}/src/python:${REPO_ROOT}/bazel-bin/src/bindings" \
     python3 -m bhdr.launcher \
     --socket "${SOCKET_PATH}" \
@@ -30,7 +30,7 @@ sleep 2
 
 echo ""
 echo "========================================="
-echo "OpenGPA Eval Server Running"
+echo "Beholder Eval Server Running"
 echo "========================================="
 echo "API:    http://127.0.0.1:${PORT}"
 echo "Token:  ${TOKEN}"
@@ -61,5 +61,5 @@ cat > "${REPO_ROOT}/.mcp.json" << MCPEOF
 }
 MCPEOF
 
-# Wait for OpenGPA engine
+# Wait for Beholder engine
 wait $BHDR_PID

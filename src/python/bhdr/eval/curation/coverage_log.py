@@ -76,7 +76,7 @@ class CoverageLog:
         )
 
         lines: list[str] = []
-        lines.append("# OpenGPA Coverage Gaps")
+        lines.append("# Beholder Coverage Gaps")
         lines.append("")
         lines.append(f"*Regenerated: {datetime.now(timezone.utc).isoformat()}*")
         lines.append("")

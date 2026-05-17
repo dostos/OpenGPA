@@ -44,13 +44,13 @@ the failing depth test in frame 2. There is no GL error.
 - **Conditional code path**: The clear logic is branched on `frame == 0`,
   making it easy to miss that the branches differ in their clear mask.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 ```
 inspect_drawcall(draw_id=1, query="depth_state")
 ```
 
-OpenGPA can report the depth buffer contents and the clear mask used at the
+Beholder can report the depth buffer contents and the clear mask used at the
 start of each frame. For frame 2 the output would show:
 
 ```json

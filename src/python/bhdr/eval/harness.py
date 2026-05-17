@@ -1,4 +1,4 @@
-"""Main orchestrator for the OpenGPA evaluation harness."""
+"""Main orchestrator for the Beholder evaluation harness."""
 from __future__ import annotations
 
 import json

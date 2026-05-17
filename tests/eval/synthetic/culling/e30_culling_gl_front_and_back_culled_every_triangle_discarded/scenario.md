@@ -45,9 +45,9 @@ everything."
 - **Silent nothing**: No GL error, no warning, no shader log — the only
   symptom is a frame that looks identical to a missed-clear.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the cull mode at each draw and the count of primitives
+Beholder exposes the cull mode at each draw and the count of primitives
 that reached rasterization, making "submitted vertices but zero
 fragments" visible without source tracing.
 

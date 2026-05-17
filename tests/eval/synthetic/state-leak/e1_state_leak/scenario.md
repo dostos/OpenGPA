@@ -50,9 +50,9 @@ than incorrect — readers tend to read what they expect to be there.
   source; understanding the bug requires knowing that `glBindTexture` is
   persistent.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures the full texture-unit state at the moment of each draw
+Beholder captures the full texture-unit state at the moment of each draw
 call. Inspecting per-draw bindings would surface the actual texture object
 sampled by Quad B's fragment shader, which a code-only agent must infer by
 manually tracing all `glBindTexture` calls in the program.

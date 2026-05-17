@@ -152,7 +152,7 @@ int bhdr_stack_walk_current(BhdrStackSnapshot* out) {
     if (!warned) {
         warned = 1;
         fprintf(stderr,
-                "[OpenGPA] native-trace: stack trace unavailable on this "
+                "[Beholder] native-trace: stack trace unavailable on this "
                 "architecture (x86_64 only)\n");
     }
     return 0;

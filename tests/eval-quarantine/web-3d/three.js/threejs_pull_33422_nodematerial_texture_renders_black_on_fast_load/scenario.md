@@ -139,7 +139,7 @@ outlier — and exactly the line the fix changes to `version: 0`.
 - symptom-only-on-fast-load-paths
 - silent-failure-no-error-no-log
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa report` query shows the bound texture for the affected draw
 call has dimensions `1 × 1` — the renderer's default placeholder, not
 the user's loaded image. Comparing two frames (one before the load
@@ -182,7 +182,7 @@ spec:
     with the live texture version, so the compare never fires.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bound texture for the affected draw call is the
   1×1 default placeholder — an immediate breadcrumb that the user's

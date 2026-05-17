@@ -40,11 +40,11 @@
       state.ws = new WebSocket('ws://127.0.0.1:18081');
       state.ws.onopen = function () {
         state.connected = true;
-        console.log('[OpenGPA] Connected to bridge');
+        console.log('[Beholder] Connected to bridge');
       };
       state.ws.onclose = function () {
         state.connected = false;
-        console.log('[OpenGPA] Disconnected from bridge');
+        console.log('[Beholder] Disconnected from bridge');
         // Attempt reconnect after 3 s so short bridge restarts are tolerated.
         setTimeout(connect, 3000);
       };
@@ -302,7 +302,7 @@
       };
     });
 
-    console.log('[OpenGPA] Patched ' + name + ' prototype');
+    console.log('[Beholder] Patched ' + name + ' prototype');
   }
 
   // ---------------------------------------------------------------------------

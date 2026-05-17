@@ -1,6 +1,6 @@
 """Lazy, cached shallow-clones of upstream repositories at specific SHAs.
 
-Used by the OpenGPA eval harness when a scenario references an upstream
+Used by the Beholder eval harness when a scenario references an upstream
 repo snapshot (via `upstream_snapshot_repo` + `upstream_snapshot_sha`
 fields in ScenarioMetadata).
 

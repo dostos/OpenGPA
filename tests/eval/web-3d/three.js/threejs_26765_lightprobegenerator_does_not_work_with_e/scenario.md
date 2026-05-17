@@ -76,7 +76,7 @@ render target's actual `type`, not assumed.
 - wrong-pixel-format
 - assumption-of-fixed-input-type
 
-## How OpenGPA Helps
+## How Beholder Helps
 A query for the GL error state after the draw/readback sequence surfaces
 the `GL_INVALID_OPERATION` that the JavaScript `console.error` log makes
 visible in the browser but that silent frameworks can swallow. A pixel
@@ -111,14 +111,14 @@ spec:
   channel: any
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is a single GL error on a single call. OpenGPA's
+- **Reasoning**: The bug is a single GL error on a single call. Beholder's
   per-draw-call error log and readback-buffer inspection make the mismatch
   between the attachment's internal format (`RGBA32F`) and the
   `readPixels` type (`HALF_FLOAT`) directly observable, without requiring
   the agent to instrument the app or reproduce the browser console.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

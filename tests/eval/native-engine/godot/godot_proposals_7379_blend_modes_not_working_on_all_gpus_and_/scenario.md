@@ -87,7 +87,7 @@ triggers on desktop GPUs whose typical limit is 4096 components.
 - gpu-capability-divergence
 - no-error-check-after-shader-build
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the active shader program exposes `GL_LINK_STATUS == GL_FALSE`
 and the info log ("fragment shader uses too many uniform components")
 immediately. Without that, the agent sees only a blank framebuffer and
@@ -124,15 +124,15 @@ spec:
   - src/Classes/ShaderImageEffect.gd  # parent of closing commit bc8a9de4d (BlendLayers uniform size reduction)
   - src/Shaders/BlendLayers.gdshader
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: OpenGPA's shader-program inspection surfaces
+- **Reasoning**: Beholder's shader-program inspection surfaces
   `GL_LINK_STATUS` and the program info log directly; the root cause
-  (uniform component overflow) is in that log line. Without OpenGPA, the
+  (uniform component overflow) is in that log line. Without Beholder, the
   agent only sees an empty frame and has to probe many candidate causes
   (clear-color mismatch, missing viewport, wrong VAO binding, etc.)
   before reaching the shader linker.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

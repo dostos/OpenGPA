@@ -50,8 +50,8 @@ The lit faces of the cube are speckled with stippled dark pixels — classic sha
 - bias-masks-root-cause (the usual "just add shadow bias" workaround hides the true bug)
 - no-gl-error (culling the wrong face is perfectly legal API usage — nothing raises an error)
 
-## How OpenGPA Helps
-A per-draw state query like "for the draw that wrote the depth-attachment of FBO `sFbo`, what was `GL_CULL_FACE_MODE` and what was the min/max depth of the rasterized fragments? Then compare against the `GL_CULL_FACE_MODE` of the lit-pass draws that sample that texture." immediately surfaces that both passes used `GL_BACK` and that the shadow map's depth range matches the lit draws' front-face depth range — the signature of wrong-side shadow capture. An agent without OpenGPA is left to guess between bias, near/far, precision, and sampler filtering.
+## How Beholder Helps
+A per-draw state query like "for the draw that wrote the depth-attachment of FBO `sFbo`, what was `GL_CULL_FACE_MODE` and what was the min/max depth of the rasterized fragments? Then compare against the `GL_CULL_FACE_MODE` of the lit-pass draws that sample that texture." immediately surfaces that both passes used `GL_BACK` and that the shadow map's depth range matches the lit draws' front-face depth range — the signature of wrong-side shadow capture. An agent without Beholder is left to guess between bias, near/far, precision, and sampler filtering.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/32698
@@ -87,10 +87,10 @@ spec:
   - src/renderers/common/ShadowMap.js
   - src/materials/MeshDepthMaterial.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is purely a per-pass state mismatch — `GL_CULL_FACE_MODE` during the shadow-FBO draw vs. the lit draws that sample the resulting depth texture. OpenGPA's per-draw state snapshot plus depth-range stats directly expose that the shadow-map draw captured front-face depths, turning the shadow compare into a degenerate self-comparison. A code-only agent must span renderer, shadow-material, and pass-management logic to notice the missing side inversion, which is exactly why the upstream reporter needed a full day and a SpectorJS diff to find it.
+- **Reasoning**: The bug is purely a per-pass state mismatch — `GL_CULL_FACE_MODE` during the shadow-FBO draw vs. the lit draws that sample the resulting depth texture. Beholder's per-draw state snapshot plus depth-range stats directly expose that the shadow-map draw captured front-face depths, turning the shadow compare into a degenerate self-comparison. A code-only agent must span renderer, shadow-material, and pass-management logic to notice the missing side inversion, which is exactly why the upstream reporter needed a full day and a SpectorJS diff to find it.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

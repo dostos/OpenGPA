@@ -43,7 +43,7 @@ The accepted fixes are raising `zNear` (e.g. to `500`) or enabling `logarithmicD
 - znear_too_small
 - non_coplanar_z_fighting
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the projection matrix uniform via `/draw_calls/<id>/uniforms` reveals `zNear/zFar = 0.1/60000`, a 6×10⁵ ratio that — combined with a visible z-fight on non-coplanar geometry — points directly at depth-buffer precision collapse rather than a shader or blending bug.
 
 ## Source
@@ -77,10 +77,10 @@ spec:
     znear_over_zfar_ratio_max: 1.0e-4
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause lives in a uniform value (the projection matrix), which OpenGPA exposes verbatim per draw call. An agent comparing the near/far box draw calls can read off the znear/zfar and compute the precision-collapse ratio without guessing — the same diagnosis that normally requires reading the OpenGL.org depth-buffer precision guide.
+- **Reasoning**: The root cause lives in a uniform value (the projection matrix), which Beholder exposes verbatim per draw call. An agent comparing the near/far box draw calls can read off the znear/zfar and compute the precision-collapse ratio without guessing — the same diagnosis that normally requires reading the OpenGL.org depth-buffer precision guide.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -93,7 +93,7 @@ change_summary: >
 - dropped-texture-modulation
 - shader-chunk-naming-collision
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the ORM output pixel and comparing it against the bound
 metalnessMap's B-channel value reveals the output is independent of the
 texture. Inspecting the active program's uniform/sampler bindings shows
@@ -128,14 +128,14 @@ spec:
   observed: 255
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: OpenGPA can read back the ORM output pixel, enumerate the
+- **Reasoning**: Beholder can read back the ORM output pixel, enumerate the
   bound textures and uniforms for the draw call, and show that the output
   B channel does not depend on the sampled metalnessMap. That evidence
   narrows the bug to the shader assignment without needing upstream source
   inspection.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

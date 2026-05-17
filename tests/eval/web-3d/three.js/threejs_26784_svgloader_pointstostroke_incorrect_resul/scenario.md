@@ -93,8 +93,8 @@ A follow-up commenter corrects the framing from "normal" to "winding" and confir
 - side_conditional_visibility
 - misattribution_to_normals
 
-## How OpenGPA Helps
-Querying the draw call reveals all 15 stroke vertices in the VBO with their positions, so the bevel triangle is present in the draw data. Cross-referencing that with the pipeline state (`GL_CULL_FACE=true`, `GL_FRONT_FACE=GL_CCW`) and computing the signed area / cross product per triangle surfaces exactly one triangle with reversed winding — the culprit. The pixel-level view alone only shows "a gap"; OpenGPA attributes the gap to a specific submitted-but-culled triangle.
+## How Beholder Helps
+Querying the draw call reveals all 15 stroke vertices in the VBO with their positions, so the bevel triangle is present in the draw data. Cross-referencing that with the pipeline state (`GL_CULL_FACE=true`, `GL_FRONT_FACE=GL_CCW`) and computing the signed area / cross product per triangle surfaces exactly one triangle with reversed winding — the culprit. The pixel-level view alone only shows "a gap"; Beholder attributes the gap to a specific submitted-but-culled triangle.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/26784
@@ -131,10 +131,10 @@ spec:
 - **Relevant Files**:
   - examples/jsm/loaders/SVGLoader.js  # base of fix PR #27121 (SVGLoader bevel winding)
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a per-triangle winding defect inside a single draw call whose effect (silent cull) leaves no trace in the framebuffer beyond "a gap." Surfacing per-triangle signed area against the current `GL_FRONT_FACE`/`GL_CULL_FACE` pipeline state pinpoints the offending triangle index directly, which a code-only agent would have to reconstruct by tracing SVGLoader's bevel-tessellation branch and the consumer's material side setting.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

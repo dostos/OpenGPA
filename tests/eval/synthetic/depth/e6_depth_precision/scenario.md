@@ -55,8 +55,8 @@ chasing floating-point rounding bugs in the geometry or transform code.
   root cause.
 - **No compile/runtime error**: the shader and geometry compile cleanly.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the camera's projection parameters and per-pixel depth
+Beholder exposes the camera's projection parameters and per-pixel depth
 buffer values, so the precision available at the fighting region can be
 read directly rather than inferred from the matrix on the CPU side.

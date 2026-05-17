@@ -78,9 +78,9 @@ visible in the current diff.
   `glUseProgram` ordering, shader compilation, or an off-by-one in the
   draw call's VAO binding.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures the active program and resolved uniform values at each
+Beholder captures the active program and resolved uniform values at each
 draw call, so the actual color reaching the GPU per program is observable
 without reasoning about the cache. A code-only agent must trace the enum
 through the cache and correlate the location integer with the right program.

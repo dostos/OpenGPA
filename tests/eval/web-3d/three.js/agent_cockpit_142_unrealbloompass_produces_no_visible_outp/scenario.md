@@ -106,11 +106,11 @@ framebuffer change" — is what this scenario reproduces in raw GL.
 - post_process_pipeline_invisible_break
 - glerror_zero_but_no_output
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw-call list shows the fullscreen-quad bloom draw was issued
 with the expected program and viewport, while a framebuffer dominant-color
 query shows the post-bloom framebuffer is identical to the pre-bloom
-framebuffer. Inspecting the program's link/info log via OpenGPA exposes the
+framebuffer. Inspecting the program's link/info log via Beholder exposes the
 silent shader breakage that `glGetError` does not surface.
 
 ## Source
@@ -139,14 +139,14 @@ spec:
   pass_name: bloom
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is precisely the kind of "draw call issued, no GL
   error, no visible effect" failure that a raw-fact graphics debugger
-  illuminates. OpenGPA's per-draw program info log + before/after framebuffer
+  illuminates. Beholder's per-draw program info log + before/after framebuffer
   comparison turn an invisible silent failure into a concrete, queryable
   fact.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

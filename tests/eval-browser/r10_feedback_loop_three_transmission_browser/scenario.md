@@ -84,7 +84,7 @@ sphere appear black or solid clear-color.
 - multi-PR regression (a fix's invariant is broken by a later refactor)
 - platform-conditional reproduction (extension presence hides the bug)
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 Two queries, both made trivial by Tier 3 + the JS reflection scanner:
 
@@ -99,7 +99,7 @@ Two queries, both made trivial by Tier 3 + the JS reflection scanner:
     pinpoint the offending material instance without grepping the
     minified bundle.
 
-Without OpenGPA the user sees only "back faces don't render" and a
+Without Beholder the user sees only "back faces don't render" and a
 scrolling wall of WebGL warnings.
 
 ## Source
@@ -136,10 +136,10 @@ spec:
   expected_gl_error: GL_INVALID_OPERATION
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 
 - **Verdict**: yes
-- **Reasoning**: A bind-state collision visible at draw-call time. OpenGPA's per-draw inventory of texture-unit bindings and framebuffer attachments makes the feedback loop directly observable. The JS-side trace additionally maps the offending uniform value back to the originating `MeshPhysicalMaterial` instance.
+- **Reasoning**: A bind-state collision visible at draw-call time. Beholder's per-draw inventory of texture-unit bindings and framebuffer attachments makes the feedback loop directly observable. The JS-side trace additionally maps the offending uniform value back to the originating `MeshPhysicalMaterial` instance.
 
 ## Fix
 
@@ -179,7 +179,7 @@ copied verbatim from the upstream snapshot above. See
 
 ## Tier-3 Link Plugin
 
-This scenario imports the OpenGPA three.js link plugin
+This scenario imports the Beholder three.js link plugin
 (`src/python/bhdr/framework/threejs_link_plugin.js`, mounted by the
 runner at `/_plugins/threejs-link.js`) via the `bhdr-threejs-link`
 importmap entry. The plugin wraps `renderer.render()`, pushes

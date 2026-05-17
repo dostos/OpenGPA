@@ -37,9 +37,9 @@ The render code looks correct in isolation — both draws are well-formed and th
 - **Missing clear**: The bug is an absent flag, not wrong code — inspection naturally focuses on what *is* there.
 - **Accumulated state**: The symptom depends on depth values written by a prior frame, invisible when examining frame 1 in isolation.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA can compare per-pixel depth values across frames, so depth values
+Beholder can compare per-pixel depth values across frames, so depth values
 in frame 1 that match frame 0's geometry rather than the cleared default
 indicate the depth buffer was not actually reset between frames.
 

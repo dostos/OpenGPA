@@ -1,4 +1,4 @@
-"""Scoring and reporting metrics for OpenGPA evaluation harness."""
+"""Scoring and reporting metrics for Beholder evaluation harness."""
 from __future__ import annotations
 
 import json
@@ -175,7 +175,7 @@ class ReportGenerator:
         summary = self.generate_summary(results, stable_failure_ids=stable_failure_ids)
         lines: list[str] = []
 
-        lines.append("# OpenGPA Evaluation Report")
+        lines.append("# Beholder Evaluation Report")
         lines.append("")
         lines.append(
             f"Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}"

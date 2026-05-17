@@ -2,16 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Wire OpenGPA's Tier-3 metadata sidecar into omnispace-gen's Three.js workbench so an agent can run `query_object("joint_<smplx_name>")` against MCP and read each joint's world transform from the rendered scene.
+**Goal:** Wire Beholder's Tier-3 metadata sidecar into omnispace-gen's Three.js workbench so an agent can run `query_object("joint_<smplx_name>")` against MCP and read each joint's world transform from the rendered scene.
 
-**Architecture:** Extract OpenGPA's existing Three.js plugin into a publishable client package (`clients/threejs/`). In omnispace-gen, consume the existing `SkeletonRegistry` for canonical joint names, expose them to the workbench via a generated TS file, render named joint markers as a new R3F component, and instantiate the sidecar in `Viewer3D`'s `<Canvas onCreated>` callback.
+**Architecture:** Extract Beholder's existing Three.js plugin into a publishable client package (`clients/threejs/`). In omnispace-gen, consume the existing `SkeletonRegistry` for canonical joint names, expose them to the workbench via a generated TS file, render named joint markers as a new R3F component, and instantiate the sidecar in `Viewer3D`'s `<Canvas onCreated>` callback.
 
 **Tech Stack:** TypeScript / React / `@react-three/fiber` (workbench), Python (joint name shim + build script), vanilla JS (extracted Three.js client), pytest + jest + Playwright.
 
 **Spec:** `docs/superpowers/specs/2026-04-28-omnispace-gen-integration-design.md`
 
 **Cross-repo:** This plan touches two repositories.
-- `gla/` (OpenGPA): extract reusable Three.js client.
+- `gla/` (Beholder): extract reusable Three.js client.
 - `omnispace-gen/`: consume the client; add joint markers, sidecar wiring, build script, tests.
 
 **Out of scope (deferred to Plan B / Phase 2):**
@@ -20,13 +20,13 @@
 - Eval scenario `tests/eval/r37_joint_offset_smplx/` (full agent-loop diagnosis).
 - OSMesa shim, `readPixels` bridge (Phase 3, conditional).
 
-**Definition of done:** With workbench running locally and OpenGPA engine on `:18080`, toggling "OpenGPA capture" in the workbench UI, generating a motion, and running `curl :18080/api/v1/frames/0/objects` returns the canonical SMPLX joint markers with the correct names — and the corresponding world transforms match the underlying `MotionSequence.joints`.
+**Definition of done:** With workbench running locally and Beholder engine on `:18080`, toggling "Beholder capture" in the workbench UI, generating a motion, and running `curl :18080/api/v1/frames/0/objects` returns the canonical SMPLX joint markers with the correct names — and the corresponding world transforms match the underlying `MotionSequence.joints`.
 
 ---
 
 ## File Structure
 
-**OpenGPA repo (`gla/`):**
+**Beholder repo (`gla/`):**
 
 | File | Action | Responsibility |
 |---|---|---|
@@ -47,9 +47,9 @@
 | `workbench-ui/src/components/JointMarkers.tsx` | Create | R3F component that renders `<mesh name="joint_<smplx_name>" position={...}>` per joint. |
 | `workbench-ui/src/lib/opengpaSidecar.ts` | Create | Wraps `@opengpa/threejs-sidecar` for use inside R3F (`useFrame` integration, capture toggle). |
 | `workbench-ui/src/components/Viewer3D.tsx` | Modify (line 782 area) | Add `onCreated` to Canvas; mount `<JointMarkers>`; wire sidecar. |
-| `workbench-ui/src/hooks/useOpenGPAToggle.ts` | Create | localStorage-backed toggle for OpenGPA capture (consistent with existing `usePersistedState` hook). |
+| `workbench-ui/src/hooks/useOpenGPAToggle.ts` | Create | localStorage-backed toggle for Beholder capture (consistent with existing `usePersistedState` hook). |
 | `workbench-ui/package.json` | Modify | Add `"@opengpa/threejs-sidecar": "file:../../gla/clients/threejs"` (local install during development). |
-| `tests/e2e/test_workbench_browser.py` | Modify | New test: toggle OpenGPA on, generate motion, assert `/api/v1/frames/{N}/objects` returns the markers. |
+| `tests/e2e/test_workbench_browser.py` | Modify | New test: toggle Beholder on, generate motion, assert `/api/v1/frames/{N}/objects` returns the markers. |
 
 ---
 
@@ -140,7 +140,7 @@ Create `clients/threejs/package.json`:
 {
   "name": "@opengpa/threejs-sidecar",
   "version": "0.1.0",
-  "description": "OpenGPA Tier-3 metadata sidecar for Three.js. POSTs scene-graph metadata to the OpenGPA engine for agent-driven debugging.",
+  "description": "Beholder Tier-3 metadata sidecar for Three.js. POSTs scene-graph metadata to the Beholder engine for agent-driven debugging.",
   "type": "module",
   "main": "index.js",
   "exports": "./index.js",
@@ -176,7 +176,7 @@ Create `clients/threejs/README.md`:
 ```markdown
 # @opengpa/threejs-sidecar
 
-OpenGPA Tier-3 metadata sidecar for Three.js.
+Beholder Tier-3 metadata sidecar for Three.js.
 
 ## Install
 
@@ -194,7 +194,7 @@ gpa.capture(scene, camera);
 ```
 
 The sidecar walks the Three.js scene graph and POSTs framework metadata
-(named objects, transforms, materials, lights, camera) to the OpenGPA
+(named objects, transforms, materials, lights, camera) to the Beholder
 engine's `/api/v1/frames/{id}/metadata` endpoint. The engine exposes this
 to agents via MCP tools (`query_object`, `list_objects`, `explain_pixel`).
 
@@ -225,7 +225,7 @@ git commit -m "feat(clients): extract Three.js sidecar as @opengpa/threejs-sidec
 Create `tests/unit/skeletal/test_opengpa_joint_names.py`:
 
 ```python
-"""Test the canonical joint-name list exposed for OpenGPA Tier-3 markers."""
+"""Test the canonical joint-name list exposed for Beholder Tier-3 markers."""
 from common.skeletal.opengpa_joint_names import get_canonical_joint_names
 
 
@@ -261,7 +261,7 @@ Expected: FAIL — `ModuleNotFoundError: No module named 'common.skeletal.opengp
 Create `src/common/skeletal/opengpa_joint_names.py`:
 
 ```python
-"""Canonical joint-name list for OpenGPA Tier-3 markers.
+"""Canonical joint-name list for Beholder Tier-3 markers.
 
 This is the single source of truth consumed by both the Python sidecar (Open3D
 renderer, Phase 2) and the workbench TypeScript layer (Phase 1, via the
@@ -299,7 +299,7 @@ Expected: PASS, 2 tests.
 ```bash
 cd /home/jingyulee/gh/omnispace-gen
 git add src/common/skeletal/opengpa_joint_names.py tests/unit/skeletal/test_opengpa_joint_names.py
-git commit -m "feat(skeletal): add OpenGPA canonical joint-name shim over SkeletonRegistry"
+git commit -m "feat(skeletal): add Beholder canonical joint-name shim over SkeletonRegistry"
 ```
 
 ---
@@ -419,7 +419,7 @@ Expected: PASS, 3 tests.
 cd /home/jingyulee/gh/omnispace-gen
 git add scripts/export_joint_names_ts.py workbench-ui/src/lib/jointNames.ts \
         tests/unit/skeletal/test_opengpa_joint_names.py
-git commit -m "feat(workbench): export canonical joint names to TS for OpenGPA markers"
+git commit -m "feat(workbench): export canonical joint names to TS for Beholder markers"
 ```
 
 ---
@@ -431,7 +431,7 @@ git commit -m "feat(workbench): export canonical joint names to TS for OpenGPA m
 **Files:**
 - Create: `workbench-ui/src/components/JointMarkers.tsx`
 
-This component renders one named mesh per joint at the joint's world position — the named meshes are what the OpenGPA sidecar serializes into the metadata POST.
+This component renders one named mesh per joint at the joint's world position — the named meshes are what the Beholder sidecar serializes into the metadata POST.
 
 - [ ] **Step 1: Implement the component**
 
@@ -448,15 +448,15 @@ interface Props {
   frame: number;
   /** Marker radius in world units. */
   radius?: number;
-  /** Visibility — markers are always part of the scene graph for OpenGPA, but
-      can be made invisible to the user. The OpenGPA sidecar serializes them
+  /** Visibility — markers are always part of the scene graph for Beholder, but
+      can be made invisible to the user. The Beholder sidecar serializes them
       regardless of `visible` (the Three.js plugin sets `visible: obj.visible`). */
   visible?: boolean;
 }
 
 /**
  * Renders one named THREE.Mesh per SMPLX joint at the joint's world position.
- * Each mesh has `name = "joint_<smplx_name>"`. The OpenGPA Three.js sidecar
+ * Each mesh has `name = "joint_<smplx_name>"`. The Beholder Three.js sidecar
  * picks these up automatically and POSTs them as Tier-3 metadata.
  *
  * Joints beyond `motion.shape[1]` are skipped (compact skeletons like
@@ -511,12 +511,12 @@ Expected: No errors related to `JointMarkers.tsx`. Pre-existing errors in other 
 ```bash
 cd /home/jingyulee/gh/omnispace-gen
 git add workbench-ui/src/components/JointMarkers.tsx
-git commit -m "feat(workbench): add JointMarkers R3F component for OpenGPA Tier-3"
+git commit -m "feat(workbench): add JointMarkers R3F component for Beholder Tier-3"
 ```
 
 ---
 
-### Task 5: OpenGPA sidecar wrapper + npm install
+### Task 5: Beholder sidecar wrapper + npm install
 
 **Repo:** `omnispace-gen/`
 
@@ -559,7 +559,7 @@ import { usePersistedState } from "./usePersistedState";
 const STORAGE_KEY = "opengpa.captureEnabled";
 
 /**
- * Returns the OpenGPA capture toggle state, persisted in localStorage.
+ * Returns the Beholder capture toggle state, persisted in localStorage.
  * When OFF, the sidecar is not instantiated and no metadata POSTs happen.
  */
 export function useOpenGPAToggle(): [boolean, (v: boolean) => void] {
@@ -587,7 +587,7 @@ const TOKEN = "";
  * Call captureFrame(scene, camera) from a useFrame() hook in the Canvas.
  *
  * Lifecycle: instantiated lazily on first captureFrame() call. To disable,
- * gate the call site on the OpenGPA toggle (useOpenGPAToggle) — this
+ * gate the call site on the Beholder toggle (useOpenGPAToggle) — this
  * module does not consult the toggle directly to keep the lib pure.
  */
 export class OpenGPASidecar {
@@ -664,7 +664,7 @@ const [openGPACapture, setOpenGPACapture] = useOpenGPAToggle();
     checked={openGPACapture}
     onChange={(e) => setOpenGPACapture(e.target.checked)}
   />{" "}
-  OpenGPA capture
+  Beholder capture
 </label>
 ```
 
@@ -733,7 +733,7 @@ Expected: no new errors related to the modifications.
 - [ ] **Step 6: Manual smoke check**
 
 ```bash
-# Terminal 1 — start OpenGPA engine (from gla repo, see gla/CLAUDE.md):
+# Terminal 1 — start Beholder engine (from gla repo, see gla/CLAUDE.md):
 cd /home/jingyulee/gh/gla
 PY311=$(bazel info output_base)/external/rules_python~~python~python_3_11_x86_64-unknown-linux-gnu/bin/python3.11
 PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m gpa.launcher \
@@ -745,7 +745,7 @@ motiongen workbench --port 8420 --mock
 
 # Browser:
 # 1. Open http://localhost:8420
-# 2. Click "OpenGPA capture" checkbox
+# 2. Click "Beholder capture" checkbox
 # 3. Generate a motion (any text prompt)
 
 # Terminal 3 — verify metadata reached the engine:
@@ -759,7 +759,7 @@ Expected: JSON response with `framework: "threejs"`, non-zero `object_count`. Th
 ```bash
 cd /home/jingyulee/gh/omnispace-gen
 git add workbench-ui/src/components/Viewer3D.tsx
-git commit -m "feat(workbench): wire OpenGPA sidecar + JointMarkers into Viewer3D"
+git commit -m "feat(workbench): wire Beholder sidecar + JointMarkers into Viewer3D"
 ```
 
 ---
@@ -785,15 +785,15 @@ import pytest
 
 @pytest.mark.e2e
 def test_opengpa_sidecar_emits_joint_markers(workbench_page, bhdr_engine):
-    """With OpenGPA capture toggled on, generated motion produces metadata
+    """With Beholder capture toggled on, generated motion produces metadata
     POSTs containing all canonical joint markers."""
     # bhdr_engine fixture: starts gla engine on :18080, yields its base URL.
     # workbench_page fixture: launches workbench in mock mode + Playwright page.
 
     page = workbench_page
 
-    # Toggle OpenGPA capture on.
-    page.get_by_label("OpenGPA capture").check()
+    # Toggle Beholder capture on.
+    page.get_by_label("Beholder capture").check()
 
     # Generate any motion (mock backend produces fixed output).
     page.get_by_role("button", name="Generate").click()
@@ -852,7 +852,7 @@ cd /home/jingyulee/gh/omnispace-gen
 git add tests/e2e/test_workbench_browser.py
 # Plus conftest changes if you added the bhdr_engine fixture:
 git add tests/e2e/conftest.py 2>/dev/null || true
-git commit -m "test(workbench): E2E asserts OpenGPA Tier-3 captures joint markers"
+git commit -m "test(workbench): E2E asserts Beholder Tier-3 captures joint markers"
 ```
 
 ---
@@ -884,7 +884,7 @@ from common.skeletal.opengpa_joint_names import get_canonical_joint_names
 
 If they match: Phase 1 plumbing works end-to-end. The agent can now ask "is joint X at the expected place" via standard MCP tools.
 
-If they don't match: investigate the most likely culprit — Three.js coordinate frame (Y-up by default in r3f) vs MotionSequence's coordinate frame (per `omnispace-gen/CLAUDE.md`: "Y-up or Z-up; auto-converted by `TransformRegistry`"). The OpenGPA payload reports world-space positions in whatever frame `position.toArray()` returns at capture time — if there's an outer `<group rotation=...>` reorienting the scene, the markers' world positions will reflect that reorientation. This is correct behavior for Phase 1; document the convention rather than "fix" it.
+If they don't match: investigate the most likely culprit — Three.js coordinate frame (Y-up by default in r3f) vs MotionSequence's coordinate frame (per `omnispace-gen/CLAUDE.md`: "Y-up or Z-up; auto-converted by `TransformRegistry`"). The Beholder payload reports world-space positions in whatever frame `position.toArray()` returns at capture time — if there's an outer `<group rotation=...>` reorienting the scene, the markers' world positions will reflect that reorientation. This is correct behavior for Phase 1; document the convention rather than "fix" it.
 
 - [ ] **Step 3: Document the result in the spec's "Open questions" section**
 
@@ -907,7 +907,7 @@ After all tasks land:
 - [ ] `gla/clients/threejs/` is a published-shape package; old extension path still works (back-compat re-export).
 - [ ] `omnispace-gen/src/common/skeletal/opengpa_joint_names.py` exists and is consumed by both Python tests and the TS export script.
 - [ ] `workbench-ui/src/lib/jointNames.ts` is committed; cross-language test catches drift.
-- [ ] Workbench has a visible "OpenGPA capture" toggle, persisted in localStorage.
+- [ ] Workbench has a visible "Beholder capture" toggle, persisted in localStorage.
 - [ ] With the toggle on and engine running, `curl :18080/api/v1/frames/{N}/objects/joint_pelvis` returns a valid transform.
 - [ ] E2E test `test_opengpa_sidecar_emits_joint_markers` passes against the workbench in mock mode.
 - [ ] Spec's Open questions section records the coordinate-frame result for Phase 2 to consume.

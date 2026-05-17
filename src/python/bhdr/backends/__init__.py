@@ -1,4 +1,4 @@
-"""Capture backend abstraction for OpenGPA.
+"""Capture backend abstraction for Beholder.
 
 All capture backends implement :class:`FrameProvider`.  The REST API,
 MCP server, and eval harness work through this interface only.

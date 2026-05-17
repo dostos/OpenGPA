@@ -1,9 +1,9 @@
-# OpenGPA Eval — Consolidated Lessons
+# Beholder Eval — Consolidated Lessons
 
 *Rolling consolidation across eval rounds 1–6; last updated 2026-04-19.*
 
 This is the single prioritized reference for "what worked, what didn't, what's
-next" across all OpenGPA eval rounds. It supersedes the per-round journal for
+next" across all Beholder eval rounds. It supersedes the per-round journal for
 decision-making purposes. Source docs (`eval-results.md`, `eval-lessons.md`,
 `round[4-6]-*.md`, `eval-next-steps.md`) remain as historical record.
 
@@ -16,7 +16,7 @@ See also `docs/superpowers/eval/coverage-gaps.md` (auto-generated, do not edit).
 1. **Hint-stripped minimal reproductions are too easy.** (R1–R3) 100%/100%
    accuracy for both modes on single-file scenarios with `// BUG:` style
    comments, and even after stripping, the bug-*is*-the-codebase in 200-line
-   reproductions. OpenGPA's value only becomes measurable when agents must
+   reproductions. Beholder's value only becomes measurable when agents must
    navigate a real upstream framework snapshot (kicked in at R4).
 
 2. **Scenario description quality + upstream source access dominates accuracy.**
@@ -125,7 +125,7 @@ mapbox-gl-js). 4 scenarios × 2 modes × 2 models = 16 runs via `claude -p`.
 - **r27 stub revealed the "dead scenario" problem.** `main.c` was a
   black-frame stub → `with_bhdr` had nothing to work with.
 - **r15 Godot Metal — all 4/4 correct despite GPA providing nothing.**
-  Metal is unreachable by OpenGPA's GL/Vulkan shims; agents succeeded
+  Metal is unreachable by Beholder's GL/Vulkan shims; agents succeeded
   purely from framework source reading. Confirms GPA scope boundary.
 
 Source: `eval-results.md` §Round 4, `round4-capture-gaps.md`.

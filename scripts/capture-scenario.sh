@@ -29,7 +29,7 @@ if [ ! -f "$BINARY" ]; then
     bazel build "//${PKG_REL}:${SCENARIO}"
 fi
 
-echo "Running ${SCENARIO} under OpenGPA capture..."
+echo "Running ${SCENARIO} under Beholder capture..."
 LD_PRELOAD="${REPO_ROOT}/bazel-bin/src/shims/gl/libbhdr_gl.so" \
     BHDR_SOCKET_PATH="${SOCKET_PATH}" \
     BHDR_SHM_NAME="${SHM_NAME}" \

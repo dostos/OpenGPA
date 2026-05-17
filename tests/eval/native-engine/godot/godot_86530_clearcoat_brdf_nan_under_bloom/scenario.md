@@ -99,8 +99,8 @@ source-line fix.
 - configuration-dependent: reproduces only when clearcoat-enabled materials
   are drawn, so a blanket "NaN in shader" fuzzer is unlikely to find it.
 
-## How OpenGPA Helps
-The agent can ask OpenGPA for the clearcoat draw call's bound fragment
+## How Beholder Helps
+The agent can ask Beholder for the clearcoat draw call's bound fragment
 shader source alongside a per-pixel readback of its render target; a
 histogram query over the HDR attachment immediately flags the NaN bin,
 pointing the agent at the exact draw that emits it rather than at the
@@ -145,7 +145,7 @@ spec:
   - servers/rendering/renderer_rd/shaders/scene_forward_clustered.glsl
   - servers/rendering/renderer_rd/shaders/scene_forward_mobile.glsl
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: A textual frame summary will miss a single NaN pixel, but a
   per-pixel histogram or NaN-pixel-count query over the clearcoat pass's
@@ -154,6 +154,6 @@ spec:
   screenshot has no way to distinguish "NaN poisoned by bloom" from
   "lights genuinely visible through geometry" — the two look identical.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

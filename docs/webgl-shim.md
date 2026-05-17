@@ -1,4 +1,4 @@
-# OpenGPA WebGL Shim — M6
+# Beholder WebGL Shim — M6
 
 WebGL interception via a Chromium browser extension + a Node.js WebSocket bridge.
 
@@ -14,7 +14,7 @@ Browser (page context)
        |
        | Unix domain socket  /tmp/gpa.sock
        v
-  OpenGPA engine
+  Beholder engine
 ```
 
 The content script (`content.js`) injects `interceptor.js` into the page context at
@@ -30,18 +30,18 @@ The content script (`content.js`) injects `interceptor.js` into the page context
 
 ### Step 3: Load Unpacked Extension
 1. Click **Load unpacked**
-2. Navigate to the OpenGPA repository and select `src/shims/webgl/extension/`
-3. The extension will appear in your extensions list as "OpenGPA WebGL Debugger"
+2. Navigate to the Beholder repository and select `src/shims/webgl/extension/`
+3. The extension will appear in your extensions list as "Beholder WebGL Debugger"
 
 The extension patches all WebGL contexts in every tab automatically once loaded.
 
 ### Step 4: Verify Extension is Running
-- You should see "OpenGPA WebGL Debugger (0.1.0)" in your extensions list
+- You should see "Beholder WebGL Debugger (0.1.0)" in your extensions list
 - Look for the extension icon in your toolbar (or in the extension menu)
 
 ## Starting the Bridge
 
-The bridge is a Node.js service that relays WebGL interception data from the browser to the OpenGPA engine.
+The bridge is a Node.js service that relays WebGL interception data from the browser to the Beholder engine.
 
 ### Prerequisites
 - Node.js 14+ installed
@@ -61,14 +61,14 @@ Bridge listening on ws://127.0.0.1:18081
 Bridge connected to IPC socket at /tmp/gpa.sock
 ```
 
-**Important**: The bridge must be running **before** the OpenGPA engine (or at least before the first
+**Important**: The bridge must be running **before** the Beholder engine (or at least before the first
 WebGL frame is rendered in the browser).
 
 ## Environment Variables
 
 | Variable          | Default          | Description                              |
 |-------------------|------------------|------------------------------------------|
-| `BHDR_SOCKET_PATH` | `/tmp/gpa.sock`  | Unix socket path to the OpenGPA engine   |
+| `BHDR_SOCKET_PATH` | `/tmp/gpa.sock`  | Unix socket path to the Beholder engine   |
 | `BHDR_WS_PORT`     | `18081`          | WebSocket port the bridge listens on     |
 
 ## Validation Status (as of 2026-04-16)
@@ -105,7 +105,7 @@ The following was verified with Node.js v20.19.5 / npm 10.8.2 on Linux:
    - Use `puppeteer` with `--load-extension` flag in a CI image that has Chrome.
    - Use Playwright with `--channel chromium` and `launchPersistentContext`
      (supports loading extensions).
-2. **Running OpenGPA engine** — the bridge forwards frame metadata to the engine
+2. **Running Beholder engine** — the bridge forwards frame metadata to the engine
    over a Unix socket (`/tmp/gpa.sock` by default).  Without the engine the
    bridge operates in passthrough (log-only) mode.
 3. **Shared-memory (SHM) native addon** — full pixel readback requires a native

@@ -51,9 +51,9 @@ actual terrain texture.
 - **Cross-module leak**: The bug's cause and effect are in different source
   modules, so neither file read in isolation reveals the conflict.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures the full per-unit texture binding table and the sampler
+Beholder captures the full per-unit texture binding table and the sampler
 uniform values active at each draw call, so the disconnect between which
 unit holds the terrain texture and which unit the sampler points at is
 visible in a single snapshot.

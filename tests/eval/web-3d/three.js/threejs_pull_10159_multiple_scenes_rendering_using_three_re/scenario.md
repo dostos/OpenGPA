@@ -90,7 +90,7 @@ or invokes `renderer.clearDepth()`. PR mrdoob/three.js#10159 added that call.
 - depth_buffer_lifecycle
 - silent_property_ignored
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the per-draw-call state for the second (text) draw call reveals
 `GL_DEPTH_TEST = GL_TRUE`, `GL_DEPTH_FUNC = GL_LESS`, and — crucially — that
 no `glClear(GL_DEPTH_BUFFER_BIT)` was issued between the terrain draw and the
@@ -137,16 +137,16 @@ spec:
     fragments failed the depth test against leftover terrain depth.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The diagnosis is a classic "what state was active when this
   draw call executed, and what cleared/didn't clear before it" question.
-  OpenGPA's per-draw-call state snapshot plus the command stream between
+  Beholder's per-draw-call state snapshot plus the command stream between
   draws (showing the absence of any depth-clear) makes the missing
   `glClear(GL_DEPTH_BUFFER_BIT)` immediately visible — far more directly
   than reading three.js's RenderPass source to discover the property is
   silently ignored.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

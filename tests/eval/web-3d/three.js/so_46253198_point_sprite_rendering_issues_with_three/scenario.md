@@ -79,7 +79,7 @@ depth-write-with-transparent-blend + coplanar-fragments pair.
 - transparent-depth-write-occludes-later-draws
 - symptom-at-framebuffer-requires-pipeline-state-inspection
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent inspecting the draw call sees `GL_DEPTH_TEST=ON`, `DepthMask=TRUE`,
 `GL_BLEND=ON` with `SRC_ALPHA/ONE_MINUS_SRC_ALPHA`, and a single
 `glDrawArrays(GL_POINTS, 0, N)` with all vertices having the same Y component
@@ -119,13 +119,13 @@ spec:
     all_equal: true
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Raw pipeline state (depth-write + alpha-blend) and vertex
   buffer inspection (all y components equal) together pinpoint both failure
   modes. Neither symptom is recoverable from a framebuffer screenshot alone,
   but both are obvious from one draw-call overview query.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -62,7 +62,7 @@ secondary:
 - pixel-ratio-bugs-only-manifest-on-hidpi-or-with-explicit-setpixelratio
 - multi-viewport-bugs-only-show-when-passes-are-composed-with-render
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` over a frame would reveal that the post-processing pass issues `glScissor`/`glViewport` (or the WebGPU equivalent) with rectangle dimensions that do not match the user-supplied `setScissor(W/2, 0, W/2, H)` once the device pixel ratio is non-1 — pointing at `PassNode` as the source of the wrong rectangle. `/feedback-loops` and the per-pass framebuffer overview would show the post-processing render target overlapping the previously-rendered left viewport rather than being confined to the right half.
 
 ## Source
@@ -90,10 +90,10 @@ spec:
   fix_commit: 21ae3131839e11323b4449c7374e876628b88a38
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug surfaces as a wrong-sized scissor/viewport rectangle on the post-processing draw — exactly the kind of per-call GL state OpenGPA's trace and framebuffer overview tools expose. An agent comparing the user's intended rectangle (`W/2, 0, W/2, H`) against the actual `glScissor` arguments captured during the pass would see the pixel-ratio mismatch and trace it back to `PassNode`'s scissor/viewport setup.
+- **Reasoning**: The bug surfaces as a wrong-sized scissor/viewport rectangle on the post-processing draw — exactly the kind of per-call GL state Beholder's trace and framebuffer overview tools expose. An agent comparing the user's intended rectangle (`W/2, 0, W/2, H`) against the actual `glScissor` arguments captured during the pass would see the pixel-ratio mismatch and trace it back to `PassNode`'s scissor/viewport setup.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

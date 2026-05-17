@@ -1743,7 +1743,7 @@ Use this skeleton (fill in concrete counts from `gpa-eval index --by taxonomy`):
 ```markdown
 # Eval Scenarios
 
-Adversarial rendering bug scenarios for OpenGPA's eval harness.
+Adversarial rendering bug scenarios for Beholder's eval harness.
 Organized by taxonomy: `<category>/<framework>/<slug>/` for mined
 real-world bugs, `synthetic/<topic>/<slug>/` for hand-authored ones.
 See `docs/superpowers/specs/2026-05-02-eval-scenario-taxonomy-layout-design.md`

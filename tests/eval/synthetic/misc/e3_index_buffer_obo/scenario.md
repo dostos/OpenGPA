@@ -65,9 +65,9 @@ frames away from the original array declaration.
   `indices_data` is declared with the correct size, but a pointer alias
   `indices` is created before the buggy `sizeof`.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA records the byte length of each bound buffer object at draw time,
+Beholder records the byte length of each bound buffer object at draw time,
 so a mismatch between buffer size and the expected index-count footprint
 is directly visible in a per-draw record. A code-only agent must trace the
 `sizeof` argument through the source.

@@ -81,7 +81,7 @@ depends on having more than one InstancedMesh sharing this codepath.
 - Symptom-obscures-cause: "only one mesh visible" invites wrong hypotheses (culling, depth, material, lighting) that are all red herrings.
 - Multi-object interaction: bug requires N>=2 InstancedMesh to manifest; single-mesh repros pass.
 
-## How OpenGPA Helps
+## How Beholder Helps
 A per-draw-call overview with bound uniform/storage buffers exposes
 whether each InstancedMesh draw sees a distinct instanceMatrix buffer
 binding or aliases a shared one. Comparing draw call 0 and draw call 1
@@ -126,10 +126,10 @@ spec:
   backend: webgpu
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA's value for this scenario depends on whether capture can observe WebGPU-side resource bindings per draw. The Tier 1 GL shim does not intercept WebGPU, so a useful signal requires either the WebGPU capture backend or the framework-sidecar (Tier 3) route where three.js posts its per-draw binding metadata. With that plumbing, OpenGPA clearly localizes the faulty binding; without it, an agent gets no more than what the issue already states.
+- **Reasoning**: Beholder's value for this scenario depends on whether capture can observe WebGPU-side resource bindings per draw. The Tier 1 GL shim does not intercept WebGPU, so a useful signal requires either the WebGPU capture backend or the framework-sidecar (Tier 3) route where three.js posts its per-draw binding metadata. With that plumbing, Beholder clearly localizes the faulty binding; without it, an agent gets no more than what the issue already states.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

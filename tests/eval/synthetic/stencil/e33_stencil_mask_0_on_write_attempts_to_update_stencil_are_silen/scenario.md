@@ -54,9 +54,9 @@ reported — the update simply does not happen.
   inspection sees both "write stencil 1" and "test stencil == 1" and
   reasonably assumes they will agree.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the full stencil state per draw, including the write
+Beholder exposes the full stencil state per draw, including the write
 mask and the configured op, so a `GL_REPLACE` op armed under a zero
 write mask is visible directly in the per-draw snapshot.
 

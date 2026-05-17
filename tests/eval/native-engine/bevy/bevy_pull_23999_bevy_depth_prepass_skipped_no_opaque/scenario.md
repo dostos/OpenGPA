@@ -94,7 +94,7 @@ secondary:
 - stale-attachment-state-when-pass-is-skipped-not-when-pass-runs
 - regression-only-visible-on-the-all-transparent-cycle-of-the-example
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 The Vulkan capture would show the **absence** of the prepass render
 pass on broken frames: the captured frame's `vkCmdBeginRenderPass`
@@ -131,7 +131,7 @@ spec:
   fix_commit: 073624d14daf3da15f2a4288b7d5b6747c36ca19
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: A frame capture of the broken scene shows the
   prepass render pass missing entirely (no `vkCmdBeginRenderPass`
@@ -142,6 +142,6 @@ spec:
   the prepass node is being skipped — directly pointing at
   `prepass/node.rs`.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: no
 - **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.

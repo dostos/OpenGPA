@@ -1,1 +1,1 @@
-# OpenGPA API package
+# Beholder API package

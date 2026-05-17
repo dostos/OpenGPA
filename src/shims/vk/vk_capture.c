@@ -76,7 +76,7 @@ BhdrVkCmdBufState *bhdr_capture_cmd_buf_begin(VkCommandBuffer cmd_buf) {
             return s;
         }
     }
-    fprintf(stderr, "[OpenGPA-VK] cmd_buf table full\n");
+    fprintf(stderr, "[Beholder-VK] cmd_buf table full\n");
     pthread_mutex_unlock(&g_cmd_mutex);
     return NULL;
 }
@@ -343,7 +343,7 @@ void bhdr_capture_on_present(VkQueue        queue,
     uint32_t slot_index;
     void    *slot = bhdr_vk_ipc_claim_slot(&slot_index);
     if (!slot) {
-        fprintf(stderr, "[OpenGPA-VK] SHM ring buffer full, skipping frame %llu\n",
+        fprintf(stderr, "[Beholder-VK] SHM ring buffer full, skipping frame %llu\n",
                 (unsigned long long)g_frame_id);
         goto reset_frame;
     }
@@ -405,7 +405,7 @@ void bhdr_capture_on_present(VkQueue        queue,
 
     VkResult res = dev_disp->CreateBuffer(device, &buf_info, NULL, &staging_buf);
     if (res != VK_SUCCESS) {
-        fprintf(stderr, "[OpenGPA-VK] CreateBuffer failed (%d), skipping readback\n",
+        fprintf(stderr, "[Beholder-VK] CreateBuffer failed (%d), skipping readback\n",
                 res);
         goto write_metadata_only;
     }
@@ -426,7 +426,7 @@ void bhdr_capture_on_present(VkQueue        queue,
          * For M5 MVP, iterate device dispatch physical device handle. */
         VkPhysicalDevice phys = dev_disp->physical_device;
         if (phys == VK_NULL_HANDLE) {
-            fprintf(stderr, "[OpenGPA-VK] no physical device in dispatch, skipping readback\n");
+            fprintf(stderr, "[Beholder-VK] no physical device in dispatch, skipping readback\n");
             dev_disp->DestroyBuffer(device, staging_buf, NULL);
             goto write_metadata_only;
         }
@@ -440,7 +440,7 @@ void bhdr_capture_on_present(VkQueue        queue,
         BhdrInstanceDispatch *idisp =
             bhdr_instance_dispatch_get((VkInstance)phys);
         if (!idisp || !idisp->GetPhysicalDeviceMemoryProperties) {
-            fprintf(stderr, "[OpenGPA-VK] cannot resolve GetPhysicalDeviceMemoryProperties\n");
+            fprintf(stderr, "[Beholder-VK] cannot resolve GetPhysicalDeviceMemoryProperties\n");
             dev_disp->DestroyBuffer(device, staging_buf, NULL);
             goto write_metadata_only;
         }
@@ -459,7 +459,7 @@ void bhdr_capture_on_present(VkQueue        queue,
         }
     }
     if (mem_type == UINT32_MAX) {
-        fprintf(stderr, "[OpenGPA-VK] no host-visible memory type found\n");
+        fprintf(stderr, "[Beholder-VK] no host-visible memory type found\n");
         dev_disp->DestroyBuffer(device, staging_buf, NULL);
         goto write_metadata_only;
     }
@@ -471,7 +471,7 @@ void bhdr_capture_on_present(VkQueue        queue,
 
     res = dev_disp->AllocateMemory(device, &alloc_info, NULL, &staging_mem);
     if (res != VK_SUCCESS) {
-        fprintf(stderr, "[OpenGPA-VK] AllocateMemory failed (%d)\n", res);
+        fprintf(stderr, "[Beholder-VK] AllocateMemory failed (%d)\n", res);
         dev_disp->DestroyBuffer(device, staging_buf, NULL);
         goto write_metadata_only;
     }
@@ -493,7 +493,7 @@ void bhdr_capture_on_present(VkQueue        queue,
 
     res = dev_disp->CreateCommandPool(device, &pool_info, NULL, &cmd_pool);
     if (res != VK_SUCCESS) {
-        fprintf(stderr, "[OpenGPA-VK] CreateCommandPool failed (%d)\n", res);
+        fprintf(stderr, "[Beholder-VK] CreateCommandPool failed (%d)\n", res);
         goto cleanup_mem;
     }
 
@@ -505,7 +505,7 @@ void bhdr_capture_on_present(VkQueue        queue,
 
     res = dev_disp->AllocateCommandBuffers(device, &cb_alloc, &cmd_buf);
     if (res != VK_SUCCESS) {
-        fprintf(stderr, "[OpenGPA-VK] AllocateCommandBuffers failed (%d)\n", res);
+        fprintf(stderr, "[Beholder-VK] AllocateCommandBuffers failed (%d)\n", res);
         goto cleanup_pool;
     }
 
@@ -610,12 +610,12 @@ void bhdr_capture_on_present(VkQueue        queue,
             dev_disp->WaitForFences(device, 1, &fence, VK_TRUE,
                                      kReadbackTimeoutNs);
         if (wait_res != VK_SUCCESS) {
-            fprintf(stderr, "[OpenGPA-VK] readback fence wait timed out (%d)\n",
+            fprintf(stderr, "[Beholder-VK] readback fence wait timed out (%d)\n",
                     wait_res);
             res = wait_res;
         }
     } else {
-        fprintf(stderr, "[OpenGPA-VK] readback QueueSubmit failed (%d)\n", res);
+        fprintf(stderr, "[Beholder-VK] readback QueueSubmit failed (%d)\n", res);
     }
 
     dev_disp->DestroyFence(device, fence, NULL);

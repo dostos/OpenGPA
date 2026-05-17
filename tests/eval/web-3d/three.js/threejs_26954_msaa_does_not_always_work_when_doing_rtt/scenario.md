@@ -57,7 +57,7 @@ The failure mode is non-local: the render target, the draw call, and the tone ma
 - **Visual symptom disguised as a different bug class**: "MSAA is broken" looks like a driver or state bug; it is actually a numerical-precision issue in the resolve-plus-tonemap pipeline.
 - **Default framebuffer bias**: the same scene works when rendered directly to the screen, so developers assume their scene is fine and the post-processing stack is broken.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 Tier 1 captures per-draw framebuffer format metadata. The query `get_draw_call(draw_id=0)` exposes that the color attachment is `GL_RGBA16F` with `samples=4`, and that the subsequent draw samples from a single-sample `RGBA16F` texture. `compare_frames` or `get_pixel` at edge vs interior coordinates in the FP16 resolve buffer reveals that the edge pixel holds `~10.0` and the interior `~20.0` — both pre-tone-map HDR values, making the dominant-sample problem quantitatively obvious instead of requiring the agent to guess at precision from visual aliasing alone.
 
@@ -94,11 +94,11 @@ spec:
   channel: r
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 
 - **Verdict**: yes
-- **Reasoning**: The root cause is a numerical property of an intermediate floating-point render target that is never observable from source code. OpenGPA's per-draw attachment format + pixel readback of the FP16 resolve buffer (pre tone-map) immediately reveals that the edge pixel holds ~10.0 and the interior ~20.0, turning an ambiguous "edges look jagged" symptom into a concrete HDR-resolve-then-saturating-tone-map diagnosis.
+- **Reasoning**: The root cause is a numerical property of an intermediate floating-point render target that is never observable from source code. Beholder's per-draw attachment format + pixel readback of the FP16 resolve buffer (pre tone-map) immediately reveals that the edge pixel holds ~10.0 and the interior ~20.0, turning an ambiguous "edges look jagged" symptom into a concrete HDR-resolve-then-saturating-tone-map diagnosis.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -120,7 +120,7 @@ secondary:
 - pipeline-creation-fails-silently-from-the-user-perspective-validation-is-only-in-logs
 - topology-state-mismatch-with-rasterizer-feature
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture would show **no draw calls bound to the
 `wireframe_2d_pipeline`** at all — the pipeline never made it to a
@@ -160,7 +160,7 @@ spec:
   fix_commit: 4329b04d78f00832f2c7a893e9c1ea9f49dcefb9
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured frame shows no `vkCmdBindPipeline`
   for the wireframe pipeline whatsoever. Combined with the wgpu
@@ -171,6 +171,6 @@ spec:
   are the only places `wireframe_2d_pipeline` /
   `wireframe_pipeline` are constructed.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: no
 - **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.

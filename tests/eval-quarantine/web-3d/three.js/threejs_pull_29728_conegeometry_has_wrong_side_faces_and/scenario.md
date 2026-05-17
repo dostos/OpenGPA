@@ -133,7 +133,7 @@ reverse-search to the source that writes indices per strip.
 - numeric-count-mismatch-buffer-length
 - only-triggers-with-heightsegments-gt-1
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa report` on the broken frame shows the cone's draw call issuing
 `glDrawElements(GL_TRIANGLES, count = 192, ...)`. Comparing to the
 expected count for the given `radialSegments` / `heightSegments`
@@ -172,7 +172,7 @@ spec:
     a gap and the pixel reads the background clear color.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured `glDrawElements(count=192)` literal is the
   direct breadcrumb. Reverse-searching the expected index-generation
@@ -180,6 +180,6 @@ spec:
   cylinders. The user-facing symptom — "some triangles disappear" —
   gives no source location.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

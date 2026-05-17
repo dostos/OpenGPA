@@ -56,8 +56,8 @@ write no longer collapses the UVs to the origin (see commit
 - uniform declared but never written by the CPU
 - symptom (solid fill) is far away from the cause (transform matrix)
 
-## How OpenGPA Helps
-An agent that asks OpenGPA for the uniform values bound to the draw call sees
+## How Beholder Helps
+An agent that asks Beholder for the uniform values bound to the draw call sees
 `transformation_matrix = mat2(0.0)` next to a `texture(...)` sampler read.
 That single fact — "the UV transform is the zero matrix" — collapses the
 search from the entire scaling pipeline to one unwritten uniform, and the
@@ -98,14 +98,14 @@ spec:
   - src/Shaders/Effects/Rotation/OmniScale.gdshader
   - src/Shaders/Effects/Rotation/cleanEdge.gdshader
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The root cause is a single uniform value that diverges from
-  the developer's mental model; OpenGPA's per-draw uniform dump surfaces the
-  zero matrix directly. Without OpenGPA the symptom (solid colour) looks
+  the developer's mental model; Beholder's per-draw uniform dump surfaces the
+  zero matrix directly. Without Beholder the symptom (solid colour) looks
   like a texture-binding or blend-state problem, which leads investigation
   away from the shader uniform.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

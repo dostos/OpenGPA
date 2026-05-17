@@ -135,7 +135,7 @@ to the `parameters.vertexNormals` plumbing in `WebGLPrograms.js` and
 - symptom-is-absence-of-shadow
 - shader-ifdef-guard-missing
 
-## How OpenGPA Helps
+## How Beholder Helps
 Dumping per-draw-call varyings at the shadow-receive draw shows
 `vShadowWorldNormal = (NaN, NaN, NaN)` on broken runs and a finite vector
 on working runs. A `gpa trace value NaN` on that varying immediately
@@ -176,7 +176,7 @@ spec:
     shadowWorldNormal is NaN and the shadow-map lookup falls outside [0, 1].
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The symptom is shadow-free output, which gives no
   source hint. The breadcrumb is a NaN in a specific varying; reverse-
@@ -185,6 +185,6 @@ spec:
   agent would have to read WebGLShadowMap.js plus all shadow shader
   chunks top-down.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

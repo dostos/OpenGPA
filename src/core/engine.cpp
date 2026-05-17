@@ -103,7 +103,7 @@ void Engine::run() {
 
             if (ret < 0) {
                 if (errno == EINTR) continue;
-                fprintf(stderr, "[OpenGPA Engine] poll() error: %s\n", strerror(errno));
+                fprintf(stderr, "[Beholder Engine] poll() error: %s\n", strerror(errno));
                 break; // unexpected error — stop loop
             }
 
@@ -112,9 +112,9 @@ void Engine::run() {
                 try {
                     accept_connections();
                 } catch (const std::exception& e) {
-                    fprintf(stderr, "[OpenGPA Engine] Error in accept_connections(): %s\n", e.what());
+                    fprintf(stderr, "[Beholder Engine] Error in accept_connections(): %s\n", e.what());
                 } catch (...) {
-                    fprintf(stderr, "[OpenGPA Engine] Unknown error in accept_connections()\n");
+                    fprintf(stderr, "[Beholder Engine] Unknown error in accept_connections()\n");
                 }
             }
 
@@ -130,7 +130,7 @@ void Engine::run() {
                     try {
                         process_client_messages(client_fds_[i]);
                     } catch (const std::exception& e) {
-                        fprintf(stderr, "[OpenGPA Engine] Error in process_client_messages(fd=%d): %s\n",
+                        fprintf(stderr, "[Beholder Engine] Error in process_client_messages(fd=%d): %s\n",
                                 client_fds_[i], e.what());
                         // Close and mark fd bad so it gets cleaned up below
                         if (client_fds_[i] >= 0) {
@@ -138,7 +138,7 @@ void Engine::run() {
                             client_fds_[i] = -1;
                         }
                     } catch (...) {
-                        fprintf(stderr, "[OpenGPA Engine] Unknown error in process_client_messages(fd=%d)\n",
+                        fprintf(stderr, "[Beholder Engine] Unknown error in process_client_messages(fd=%d)\n",
                                 client_fds_[i]);
                         if (client_fds_[i] >= 0) {
                             ::close(client_fds_[i]);
@@ -155,9 +155,9 @@ void Engine::run() {
             // Send pending control commands to shim clients
             send_control_to_clients();
         } catch (const std::exception& e) {
-            fprintf(stderr, "[OpenGPA Engine] Error in run loop: %s\n", e.what());
+            fprintf(stderr, "[Beholder Engine] Error in run loop: %s\n", e.what());
         } catch (...) {
-            fprintf(stderr, "[OpenGPA Engine] Unknown error in run loop\n");
+            fprintf(stderr, "[Beholder Engine] Unknown error in run loop\n");
         }
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "@opengpa/threejs-sidecar",
   "version": "0.1.0",
-  "description": "OpenGPA Tier-3 metadata sidecar for Three.js. POSTs scene-graph metadata to the OpenGPA engine for agent-driven debugging.",
+  "description": "Beholder Tier-3 metadata sidecar for Three.js. POSTs scene-graph metadata to the Beholder engine for agent-driven debugging.",
   "type": "module",
   "main": "index.js",
   "exports": "./index.js",

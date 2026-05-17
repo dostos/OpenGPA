@@ -58,8 +58,8 @@ In the raw-GL port above, the pattern manifests as: a VAO that once called `glVe
 - attribute_identity_not_tracked
 - framework_layer_caches_below_user_visible_api
 
-## How OpenGPA Helps
-`list_draw_calls` followed by an inspection of the draw's VAO attribute bindings exposes the concrete VBO id bound to attribute location 1. An agent comparing that id to the most-recently-created VBO (visible in the shim's buffer-creation trace) can immediately see that the draw is consuming an older buffer — the exact symptom the three.js maintainers spent a dozen comments localizing. Without OpenGPA, the JS-side `geometry.attributes.offset === newAttribute` check passes and the bug looks like a shader or data problem.
+## How Beholder Helps
+`list_draw_calls` followed by an inspection of the draw's VAO attribute bindings exposes the concrete VBO id bound to attribute location 1. An agent comparing that id to the most-recently-created VBO (visible in the shim's buffer-creation trace) can immediately see that the draw is consuming an older buffer — the exact symptom the three.js maintainers spent a dozen comments localizing. Without Beholder, the JS-side `geometry.attributes.offset === newAttribute` check passes and the bug looks like a shader or data problem.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/30168
@@ -106,10 +106,10 @@ spec:
     previous, cached offset buffer.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is purely about which VBO is bound to a vertex attribute at draw time. OpenGPA's Tier 1 raw-GL capture records per-draw VAO attribute bindings (VBO id, stride, offset) and buffer-creation history. An agent can diff "VBO bound to attribute 1" against "most recent VBO allocated by the app" and immediately flag the mismatch — a diagnosis that took upstream maintainers ~20 comments and three-way coordination to land on by reading code.
+- **Reasoning**: The bug is purely about which VBO is bound to a vertex attribute at draw time. Beholder's Tier 1 raw-GL capture records per-draw VAO attribute bindings (VBO id, stride, offset) and buffer-creation history. An agent can diff "VBO bound to attribute 1" against "most recent VBO allocated by the app" and immediately flag the mismatch — a diagnosis that took upstream maintainers ~20 comments and three-way coordination to land on by reading code.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

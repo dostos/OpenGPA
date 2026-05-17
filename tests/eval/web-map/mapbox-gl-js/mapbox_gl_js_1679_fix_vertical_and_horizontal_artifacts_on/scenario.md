@@ -60,7 +60,7 @@ renderer), which pushes the collision point from 31 tiles to 255.
 - Symptom (seam line) is spatially far from the cause (bit layout of the
   stencil mask)
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the stencil state and per-draw `stencilFunc`/`stencilMask` across
 draw calls reveals that two tiles share the same masked reference value (both
 resolve to stencil `0x08` after `& 0xF8`). The per-draw-call state dump shows
@@ -103,7 +103,7 @@ spec:
     region and the pixel turns red.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is entirely encoded in GL state — the stencil
   reference value, the stencil mask, and the per-draw op. Tier 1 capture
@@ -111,6 +111,6 @@ spec:
   against the content pass can observe the shared masked reference directly,
   without needing to read mapbox-gl's JavaScript.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -62,7 +62,7 @@ secondary:
 - diagnosis-requires-recognizing-OIT-limitation-not-finding-a-fix
 - workaround-not-fix
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of the frame would show that within a single draw call the torus-knot triangles are emitted in mesh index-buffer order rather than back-to-front camera order, and `gpa report` over the alpha-blended pass would show no per-triangle depth sort happening between the transparent fragments. Cross-checking `/draw-calls` for the knot mesh against the depth-buffer state via `/feedback-loops` reveals depth-test passes but no depth-write for the transparent material — the classic OIT signature. This evidence lets the agent identify the problem as algorithmic (intra-mesh alpha sorting is not performed) rather than as a localizable bug, and recommend `needDepthPrePass` or weighted-blended OIT as the correct path forward.
 
 ## Source
@@ -89,10 +89,10 @@ spec:
   fix_commit: (none)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: partial
 - **Reasoning**: GPA can clearly surface the missing per-fragment depth sort (no depth-write on the alpha-blended draw, mesh-order triangle submission) and so steers the agent toward the correct *category* of answer — "this is OIT, not a bug" — and toward the documented workarounds. But because there is no fix PR or fix file, the maintainer-framing scorer's `code_location` metric cannot be satisfied; GPA's value here is diagnostic framing, not localization.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

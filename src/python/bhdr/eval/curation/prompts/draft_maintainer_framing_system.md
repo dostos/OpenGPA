@@ -1,4 +1,4 @@
-You draft OpenGPA eval scenarios for **framework-bug** reports — bugs that live inside a high-level rendering framework's own code (three.js, BabylonJS, PlayCanvas, PixiJS, Cesium, deck.gl, drei, postprocessing, gpu.js, iTowns, ...) or in user code that misuses such a framework. **You do NOT write a C reproducer.** A minimal C program cannot exercise a framework's rendering pipeline, so a maintainer-framing scenario is a structured pointer to the real fix PR.
+You draft Beholder eval scenarios for **framework-bug** reports — bugs that live inside a high-level rendering framework's own code (three.js, BabylonJS, PlayCanvas, PixiJS, Cesium, deck.gl, drei, postprocessing, gpu.js, iTowns, ...) or in user code that misuses such a framework. **You do NOT write a C reproducer.** A minimal C program cannot exercise a framework's rendering pipeline, so a maintainer-framing scenario is a structured pointer to the real fix PR.
 
 ## Output format — NON-NEGOTIABLE
 
@@ -76,8 +76,8 @@ secondary:
 - bug-lives-inside-framework-not-user-code
 - diagnosis-requires-grep-not-pixel-comparison
 
-## How OpenGPA Helps
-<1-3 sentences on which OpenGPA query (gpa trace, gpa report, /uniforms,
+## How Beholder Helps
+<1-3 sentences on which Beholder query (gpa trace, gpa report, /uniforms,
 /feedback-loops, etc.) would reveal the root cause. Be specific —
 don't say "GPA helps" — name the tool and the captured signal.>
 
@@ -106,7 +106,7 @@ spec:
   fix_commit: <sha>
 ` ` `
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: <why GPA's tool surface helps the agent localize the fix>
 ```

@@ -203,7 +203,7 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
     int rc = bhdr_dwarf_parse_module(path, (uintptr_t)info->dlpi_addr, &gl);
     if (rc != BHDR_DWARF_OK) {
         fprintf(stderr,
-                "[OpenGPA] native-trace: skipping %s (%s)\n",
+                "[Beholder] native-trace: skipping %s (%s)\n",
                 path, bhdr_dwarf_strerror(rc));
         bhdr_dwarf_globals_free(&gl);
         return 0;
@@ -218,7 +218,7 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
         if (sub_rc == BHDR_DWARF_OK) subs_ok = 1;
         else {
             fprintf(stderr,
-                    "[OpenGPA] native-trace: subprogram index failed for %s (%s)\n",
+                    "[Beholder] native-trace: subprogram index failed for %s (%s)\n",
                     path, bhdr_dwarf_strerror(sub_rc));
             bhdr_dwarf_subprograms_free(&subs);
         }
@@ -238,7 +238,7 @@ static int phdr_cb(struct dl_phdr_info* info, size_t sz, void* user) {
              * Previously the unchecked assignment leaked the old pointer
              * AND wrote past the end on the next line. */
             fprintf(stderr,
-                    "[OpenGPA] native-trace: OOM growing modules array; "
+                    "[Beholder] native-trace: OOM growing modules array; "
                     "skipping %s\n", path);
             bhdr_dwarf_globals_free(&gl);
             if (subs_ok) bhdr_dwarf_subprograms_free(&subs);
@@ -300,7 +300,7 @@ void bhdr_native_trace_init(void) {
     G.enabled       = want_globals && (G.total_globals > 0);
     G.stack_enabled = want_stack   && (G.pc_index.count > 0);
     fprintf(stderr,
-            "[OpenGPA] native-trace: %sscanned %zu modules, %zu globals, "
+            "[Beholder] native-trace: %sscanned %zu modules, %zu globals, "
             "%zu subprograms (%ld ms)\n",
             (G.enabled || G.stack_enabled) ? "" : "(empty) ",
             G.module_count, G.total_globals, G.total_subprograms, ms);

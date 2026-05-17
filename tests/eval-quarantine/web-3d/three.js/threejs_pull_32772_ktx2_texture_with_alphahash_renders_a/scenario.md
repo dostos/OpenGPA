@@ -133,7 +133,7 @@ KTX2Loader as the fix file.
 - platform-gated-transcode-path
 - symptom-is-noise-not-missing-data
 
-## How OpenGPA Helps
+## How Beholder Helps
 A single `gpa report` query shows the texture-upload draw binding a
 `COMPRESSED_RGBA_S3TC_DXT3_EXT` texture where the mesh uses
 `alphaHash = true` and the downstream alpha noise is the root cause. The
@@ -174,7 +174,7 @@ spec:
     fragment discards at random and the pixel reads the clear color.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured GL internalformat is a specific numeric
   constant (`0x83F2`) that, when reverse-searched, surfaces exactly the
@@ -182,6 +182,6 @@ spec:
   description ("noise on Windows") gives no source location; the enum
   mismatch in the capture is the diagnostic breadcrumb.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

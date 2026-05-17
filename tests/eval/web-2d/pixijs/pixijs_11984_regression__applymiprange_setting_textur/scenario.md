@@ -99,7 +99,7 @@ secondary:
 - symptom-is-platform-conditional-freeze-not-deterministic-render-error
 - regressing-pr-is-known-but-fix-pr-is-not-yet-merged
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` capture taken on the broken iOS 18.0 build would show
 the `glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0)` call
 landing on every single-mip texture upload — that captured literal
@@ -141,11 +141,11 @@ spec:
     value: 0
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The root cause manifests as a specific captured GL
   literal (`TEXTURE_MAX_LEVEL = 0`) emitted on every single-mip texture
-  upload. OpenGPA's trace surface exposes that literal directly; a
+  upload. Beholder's trace surface exposes that literal directly; a
   text-only agent reading the PixiJS source can grep for the only call
   site that emits `TEXTURE_MAX_LEVEL` (`_applyMipRange`) and confirm
   the missing `mipLevelCount > 1` guard. Without the trace, the agent

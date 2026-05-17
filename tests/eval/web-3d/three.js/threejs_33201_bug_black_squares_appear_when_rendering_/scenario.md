@@ -94,7 +94,7 @@ The minimal C repro sweeps (view-angle, light-angle) across a quad with `alphaT=
 - anisotropic_visibility_unbounded
 - regression_from_refactor
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the framebuffer histogram in the lit region of the glass mesh reveals a bimodal distribution with a spike at (0,0,0) that shouldn't exist for a lit dielectric; combined with Tier-3 sidecar metadata identifying the draw as `MeshPhysicalMaterial` with `anisotropy > 0` and `transmission > 0`, the agent can cross-reference that the specific fragment shader chunk `lights_physical_pars_fragment.glsl` is in play and correlate the black pixels to negative values from the new per-channel diffuse term.
 
 ## Source
@@ -132,10 +132,10 @@ spec:
   - src/nodes/functions/PhysicalLightingModel.js
   - src/renderers/shaders/ShaderChunk/lights_fragment_end.glsl.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug manifests as anomalous black pixels in specific screen regions — exactly what framebuffer histogramming and per-draw state inspection are built for. OpenGPA's Tier-3 sidecar can identify the offending material (MeshPhysicalMaterial with anisotropy+transmission), and pixel-level queries can confirm the pre-clamp values are negative rather than dark-but-positive, pointing directly at the energy-conservation/visibility math rather than a lighting or geometry issue.
+- **Reasoning**: The bug manifests as anomalous black pixels in specific screen regions — exactly what framebuffer histogramming and per-draw state inspection are built for. Beholder's Tier-3 sidecar can identify the offending material (MeshPhysicalMaterial with anisotropy+transmission), and pixel-level queries can confirm the pre-clamp values are negative rather than dark-but-positive, pointing directly at the energy-conservation/visibility math rather than a lighting or geometry issue.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

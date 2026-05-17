@@ -86,7 +86,7 @@ secondary:
 - different-mesh-missing-on-different-frames-no-stable-signal
 - bug-is-off-by-one-in-batching-not-in-mesh-data
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture's draw-call list contains exactly N-1 calls when
 the user expects N (one mesh missing). The capture also exposes
@@ -123,7 +123,7 @@ spec:
   fix_commit: e8fd750274a04b0211c41dac0215af4e8c52a787
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user report ("camera motion makes meshes
   disappear") is a textbook case for runtime capture. Code_only
@@ -132,6 +132,6 @@ spec:
   draw-count showing N-1 instead of N goes straight to "the
   dispatch code is off by one", which is a much smaller search.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

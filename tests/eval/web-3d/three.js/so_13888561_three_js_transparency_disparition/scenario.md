@@ -66,7 +66,7 @@ the user's scene, anything drawn before it that the depth test hides).
 - two-flag-coupling (one of two related flags set, the other not)
 - intent-vs-state-divergence (author intent: translucent; GL state: opaque)
 
-## How OpenGPA Helps
+## How Beholder Helps
 A draw-call inspection on the outer quad surfaces both the per-fragment
 color (`uColor.a = 0.5`) and the pipeline state at draw time
 (`GL_BLEND = GL_FALSE`). Pairing those two facts immediately flags the
@@ -102,15 +102,15 @@ spec:
   violation: "Draw call writes a fragment color with alpha < 1.0 while GL_BLEND is disabled; the alpha is silently dropped and the fragment occludes geometry behind it."
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: This is exactly the kind of bug Tier-1 raw capture is built
   to surface. Both halves of the contradiction — the uniform value and the
   per-draw blend state — are first-class fields in `NormalizedDrawCall`,
   so a single `get_draw_call` query exposes the inconsistency without any
-  framework knowledge. An agent without OpenGPA must either reason about
+  framework knowledge. An agent without Beholder must either reason about
   three.js's internal pass-sorting rules or guess from screenshots.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

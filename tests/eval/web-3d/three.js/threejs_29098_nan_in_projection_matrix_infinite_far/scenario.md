@@ -77,12 +77,12 @@ are recognized as NaN.
   request (glTF's infinite perspective), so the matrix construction looks
   defensible until you trace the algebra.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 `get_draw_call(draw_id=0)` returns the uniform block for the draw call,
 including `uProjection`. Cells `[2][2]` and `[3][2]` (column-major indices
 10 and 14) are NaN, immediately localizing the bug to projection-matrix
-construction. Without OpenGPA, the agent must add debug readbacks,
+construction. Without Beholder, the agent must add debug readbacks,
 recompile, or mentally re-derive the perspective formulas.
 
 ## Source
@@ -123,14 +123,14 @@ spec:
   - src/math/Matrix4.js
   - src/cameras/PerspectiveCamera.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 
 - **Verdict**: yes
 - **Reasoning**: The root cause lives entirely in a uniform value that is
-  invisible to the source code at the draw site. OpenGPA's captured uniform
+  invisible to the source code at the draw site. Beholder's captured uniform
   values make the NaN entries trivially inspectable, collapsing what is
   otherwise an open-ended blank-frame debugging hunt into a single query.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

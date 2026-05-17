@@ -71,8 +71,8 @@ change_summary: >
 - framework-level per-light resource multiplication
 - backend parity regression (WebGPU vs WebGL)
 
-## How OpenGPA Helps
-A single-frame draw-call dump would show, for the scene-final pass, the set of sampled textures bound per shadow-casting light. An agent comparing WebGL and WebGPU captures of the same scene would immediately see **2× as many shadow-map-shaped texture bindings** on WebGPU — one depth, one color — per light. OpenGPA's texture-binding view surfaces that duplication directly, pointing at `ShadowNode`'s colored-shadow path without having to read the full shader-node graph.
+## How Beholder Helps
+A single-frame draw-call dump would show, for the scene-final pass, the set of sampled textures bound per shadow-casting light. An agent comparing WebGL and WebGPU captures of the same scene would immediately see **2× as many shadow-map-shaped texture bindings** on WebGPU — one depth, one color — per light. Beholder's texture-binding view surfaces that duplication directly, pointing at `ShadowNode`'s colored-shadow path without having to read the full shader-node graph.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/32588
@@ -100,10 +100,10 @@ spec:
   expected: per_shadow_light_texture_count == 1
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is fundamentally a texture-binding accounting issue. OpenGPA's per-draw-call texture-unit view exposes which samplers are bound during the scene pass, and a diff against the WebGLRenderer capture (or against r181 WebGPURenderer) immediately surfaces the doubled per-light shadow-texture count. Without OpenGPA, the agent would need to read the entire shader-node pipeline to infer the same conclusion.
+- **Reasoning**: The bug is fundamentally a texture-binding accounting issue. Beholder's per-draw-call texture-unit view exposes which samplers are bound during the scene pass, and a diff against the WebGLRenderer capture (or against r181 WebGPURenderer) immediately surfaces the doubled per-light shadow-texture count. Without Beholder, the agent would need to read the entire shader-node pipeline to infer the same conclusion.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

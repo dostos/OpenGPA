@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Local-only static HTML dashboard that visualizes per-round OpenGPA eval results, with `code_only` vs `with_bhdr` as the primary comparison axis per scenario type, across model tiers, across rounds.
+**Goal:** Local-only static HTML dashboard that visualizes per-round Beholder eval results, with `code_only` vs `with_bhdr` as the primary comparison axis per scenario type, across model tiers, across rounds.
 
 **Architecture:** A Python build script (`src/python/bhdr/eval/dashboard/build.py`) walks `/data3/bhdr-eval-results/*` and `docs/eval-rounds/*.md`, folds rerun/resume directories, and emits a single `dashboard/index.json`. A static `dashboard/index.html` (with vendored `app.js` + `index.css`) loads `index.json` and renders three sections: per-scenario-type Plotly chart panels, a scenario × round timeline grid, and expandable round-log narrative cards. Markdown rendering via marked.js. Plotly via CDN.
 
@@ -1092,7 +1092,7 @@ The HTML is one document. CSS lives separately so app.js doesn't have to inject 
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>OpenGPA Eval Dashboard</title>
+  <title>Beholder Eval Dashboard</title>
   <link rel="stylesheet" href="index.css">
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
@@ -1100,7 +1100,7 @@ The HTML is one document. CSS lives separately so app.js doesn't have to inject 
 </head>
 <body>
   <header>
-    <h1>OpenGPA Eval Dashboard</h1>
+    <h1>Beholder Eval Dashboard</h1>
     <div id="meta">
       <span id="built-at">—</span>
       <label>Metric

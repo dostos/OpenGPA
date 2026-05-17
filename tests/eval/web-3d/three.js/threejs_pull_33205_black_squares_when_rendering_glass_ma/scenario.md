@@ -123,7 +123,7 @@ the same `0.5 / ( gv + gl )` line.
 - only-triggers-with-direct-light
 - hdr-nan-clamped-to-zero
 
-## How OpenGPA Helps
+## How Beholder Helps
 Reading back an HDR intermediate framebuffer reveals `+Inf` at the black
 fragments — an immediate hint that a shader produced a division by zero.
 Dumping the active fragment program at that draw call shows the bare
@@ -162,7 +162,7 @@ spec:
     writes +Inf (or NaN) which tonemaps to pure black.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The symptom (black pixels on glass under direct light)
   gives no source-file hint. The root cause is a single divide-by-zero in
@@ -170,6 +170,6 @@ spec:
   literal `0.5` constrains the search to exactly the two files in the fix
   — the canonical captured-literal-breadcrumb pattern.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

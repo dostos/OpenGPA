@@ -69,7 +69,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - symptom-is-console-error-not-rendering-artifact
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of a frame around a missing tile would show the tile's draw call invoking a sampler bound to a 1×1 texture (or no texture upload at all), which contradicts the LayeredMaterial's expected tile-size constant. `/uniforms` on the failing draw call surfaces the texture-handle + dimensions, letting the agent grep iTowns' source for the literal "Texture dimensions mismatch" error string and follow it back to `LayeredMaterial.ts`, then upstream to the parser that produced the degenerate texture.
 
 ## Source
@@ -99,6 +99,6 @@ spec:
     - packages/Main/src/Renderer/LayeredMaterial.ts
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The console message "Texture dimensions mismatch" is a literal string in iTowns' source, so the agent's path is (a) confirm via `gpa trace` / `/uniforms` that the failing tile's bound texture is 1×1 rather than the expected tile size, then (b) grep the framework for the error literal to land on `LayeredMaterial.ts`, then (c) trace the texture's producer back to `CogParser.ts`. OpenGPA's per-draw-call texture-dimension capture short-circuits the "is the bug in my code or the framework's" question that would otherwise require ad-hoc instrumentation.
+- **Reasoning**: The console message "Texture dimensions mismatch" is a literal string in iTowns' source, so the agent's path is (a) confirm via `gpa trace` / `/uniforms` that the failing tile's bound texture is 1×1 rather than the expected tile size, then (b) grep the framework for the error literal to land on `LayeredMaterial.ts`, then (c) trace the texture's producer back to `CogParser.ts`. Beholder's per-draw-call texture-dimension capture short-circuits the "is the bug in my code or the framework's" question that would otherwise require ad-hoc instrumentation.

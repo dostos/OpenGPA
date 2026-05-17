@@ -102,7 +102,7 @@ secondary:
 - inconsistent-state-between-public-property-and-gpu-resource
 - visible-symptom-only-on-the-second-blit-after-resize
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A capture taken on step 4 would record the destination texture's
 actual GPU dimensions at the time of `blit_rect`. The Python
@@ -139,7 +139,7 @@ spec:
   fix_commit: 8e303ff6d930f8e82feb209e54606620d031cf4b
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user report names a specific API (`blit_rect`,
   `DrawableTexture2D`) but says nothing about the underlying
@@ -150,6 +150,6 @@ spec:
   almost immediately, narrowing the search to the resize
   pathway specifically.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

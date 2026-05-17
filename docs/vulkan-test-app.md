@@ -1,6 +1,6 @@
-# OpenGPA Vulkan Test App
+# Beholder Vulkan Test App
 
-This guide explains how to build and run the minimal Vulkan test application that validates the OpenGPA layer's interception capabilities.
+This guide explains how to build and run the minimal Vulkan test application that validates the Beholder layer's interception capabilities.
 
 ## Overview
 
@@ -11,7 +11,7 @@ The test app (`examples/vulkan/minimal_app.c`) demonstrates:
 - Creating a command pool
 - Recording simple command buffers
 
-It serves as a minimal, reproducible example for testing OpenGPA layer installation and functionality.
+It serves as a minimal, reproducible example for testing Beholder layer installation and functionality.
 
 ## Requirements
 
@@ -19,7 +19,7 @@ It serves as a minimal, reproducible example for testing OpenGPA layer installat
   - Linux: `libvulkan-dev` and `libvulkan1` packages
   - Or install the [Vulkan SDK](https://vulkan.lunarg.com/sdk/home)
 - **C Compiler**: GCC or Clang with C11 support
-- **OpenGPA Layer**: Built and installed (see [vulkan-layer.md](./vulkan-layer.md))
+- **Beholder Layer**: Built and installed (see [vulkan-layer.md](./vulkan-layer.md))
 
 ## Verify Vulkan SDK
 
@@ -61,7 +61,7 @@ If Makefile doesn't work:
 gcc -o minimal_app minimal_app.c -lvulkan -lm
 ```
 
-## Running Without the OpenGPA Layer
+## Running Without the Beholder Layer
 
 To verify the app runs without the layer:
 
@@ -72,26 +72,26 @@ cd examples/vulkan
 
 Expected output:
 ```
-=== OpenGPA Minimal Vulkan App ===
+=== Beholder Minimal Vulkan App ===
 This app tests basic Vulkan layer interception.
 
-[OpenGPA] Created Vulkan instance
-[OpenGPA] Using device: <your GPU name>
-[OpenGPA] Created Vulkan device and queue
-[OpenGPA] Created command pool
-[OpenGPA] Allocated command buffer
-[OpenGPA] Ended recording command buffer
+[Beholder] Created Vulkan instance
+[Beholder] Using device: <your GPU name>
+[Beholder] Created Vulkan device and queue
+[Beholder] Created command pool
+[Beholder] Allocated command buffer
+[Beholder] Ended recording command buffer
 
-[OpenGPA] Application ran successfully.
+[Beholder] Application ran successfully.
 If VK_LAYER_BHDR_capture was active, the layer should have
 intercepted all Vulkan calls above.
 
-[OpenGPA] Cleanup complete
+[Beholder] Cleanup complete
 ```
 
-## Running With the OpenGPA Layer
+## Running With the Beholder Layer
 
-First, ensure the OpenGPA layer is installed (see [vulkan-layer.md](./vulkan-layer.md) installation section).
+First, ensure the Beholder layer is installed (see [vulkan-layer.md](./vulkan-layer.md) installation section).
 
 ### Using Make Target
 
@@ -127,13 +127,13 @@ export VK_LOADER_DEBUG=all
 ./minimal_app 2>&1 | grep -i gpa
 ```
 
-This enables Vulkan loader debug output and filters for OpenGPA-related messages.
+This enables Vulkan loader debug output and filters for Beholder-related messages.
 
 ## Interpreting Results
 
 ### Success Indicators
 - App runs without errors
-- All `[OpenGPA]` tagged output lines appear
+- All `[Beholder]` tagged output lines appear
 - No "layer not found" or "symbol not found" errors
 
 ### Common Issues
@@ -153,7 +153,7 @@ ldd ~/.config/vulkan/implicit_layer.d/libVkLayer_bhdr_capture.so
 vulkaninfo | grep deviceName
 ```
 
-## Expected OpenGPA Layer Behavior
+## Expected Beholder Layer Behavior
 
 When the layer is active, it should intercept and log:
 - `vkCreateInstance`
@@ -169,7 +169,7 @@ When the layer is active, it should intercept and log:
 - `vkDestroyDevice`
 - `vkDestroyInstance`
 
-The layer should relay frame metadata and capture state to the OpenGPA engine via IPC (Unix socket by default).
+The layer should relay frame metadata and capture state to the Beholder engine via IPC (Unix socket by default).
 
 ## Extending the Test App
 
@@ -183,13 +183,13 @@ To add more functionality:
 
 See the [Vulkan specification](https://registry.khronos.org/vulkan/) and [Khronos tutorials](https://vulkan-tutorial.com/) for deeper examples.
 
-## Integration with OpenGPA Engine
+## Integration with Beholder Engine
 
 To validate full integration:
 
-1. Start the OpenGPA engine listening on `/tmp/gpa.sock`
-2. Ensure OpenGPA core services are running
+1. Start the Beholder engine listening on `/tmp/gpa.sock`
+2. Ensure Beholder core services are running
 3. Run the test app with the layer enabled
 4. Check engine logs for captured frame data
 
-Refer to the [OpenGPA engine documentation](../README.md) for engine setup.
+Refer to the [Beholder engine documentation](../README.md) for engine setup.

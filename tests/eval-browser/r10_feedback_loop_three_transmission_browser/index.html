@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>r10_feedback_loop_three_transmission_browser — OpenGPA browser eval</title>
+<title>r10_feedback_loop_three_transmission_browser — Beholder browser eval</title>
 <style>
   body { font-family: sans-serif; margin: 1rem; background: #111; color: #ddd; }
   #status { padding: 0.5rem 0.75rem; background: #222; border-radius: 4px;
@@ -62,7 +62,7 @@
   // from the very texture that is the bound framebuffer's color
   // attachment — a feedback loop.
   //
-  // The OpenGPA agent sees:
+  // The Beholder agent sees:
   //   * `addRoot(scene, 'scene')` — exposes scene.children[0].material.transmission
   //   * `addRoot(renderer, 'renderer')` — exposes renderer info, capabilities
   // and can reverse-resolve any captured uniform value back to the JS
@@ -125,7 +125,7 @@
   window.renderer = renderer;
   window.camera   = camera;
 
-  // 4. Enable the OpenGPA JS trace and register roots ------------------
+  // 4. Enable the Beholder JS trace and register roots ------------------
   // bhdr-trace.js is injected by the WebGL extension. If it didn't load
   // (e.g. running this file standalone without the extension) we still
   // render so the page is debuggable in a normal browser.

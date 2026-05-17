@@ -59,7 +59,7 @@ points at the pre-resize texture object.
 - render_target_lifetime_mismatch
 - silent_correctness_bug_no_gl_error
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent inspecting the final composite draw call via
 `/api/v1/frames/current/draw_calls/N/textures` sees that one of its bound
 sampler2Ds has dimensions `200x150` while the viewport is `800x600` — an
@@ -94,7 +94,7 @@ spec:
   actual_texture_size: [200, 150]
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The diagnosis is a direct lookup: "for each sampler bound to
   the compositing draw, what are the source texture's dimensions?" Tier-1 raw
@@ -102,8 +102,8 @@ spec:
   allocated size, so the mismatch (200x150 sampler feeding an 800x600 viewport)
   is visible without any framework metadata. A plain-eyeball LLM looking only
   at rendered pixels would likely misattribute the blur to filtering or DPR
-  issues; OpenGPA turns it into a structural state check.
+  issues; Beholder turns it into a structural state check.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

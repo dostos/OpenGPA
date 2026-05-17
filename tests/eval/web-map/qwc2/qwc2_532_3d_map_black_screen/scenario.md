@@ -27,7 +27,7 @@ The reporter quoted the browser's own error:
 
 Per the WebGL / OpenGL ES spec, this error is raised when a draw call would sample a texture image that is also attached to the currently-bound draw framebuffer (or a compatible read framebuffer) at an enabled attachment, because the driver cannot guarantee well-defined results. The driver turns the draw into a no-op and the attachment keeps whatever contents it had from the previous pass — most commonly the clear color (black), which is how the user sees it.
 
-The thread on qgis/qwc2#532 does not contain a maintainer root-cause for *which* specific three.js / QWC2 code path establishes this binding — the maintainer replied only that "this will need some WebGL debugging, impossible to say at distance" and no fix commit or PR is linked. The authoritative diagnosis at the class level — a framebuffer ↔ sampler feedback loop during `glDrawElements` — is directly cited from the runtime error in the thread; the *specific* binding pair is not published upstream and is the fact OpenGPA would need to reveal.
+The thread on qgis/qwc2#532 does not contain a maintainer root-cause for *which* specific three.js / QWC2 code path establishes this binding — the maintainer replied only that "this will need some WebGL debugging, impossible to say at distance" and no fix commit or PR is linked. The authoritative diagnosis at the class level — a framebuffer ↔ sampler feedback loop during `glDrawElements` — is directly cited from the runtime error in the thread; the *specific* binding pair is not published upstream and is the fact Beholder would need to reveal.
 
 ## Difficulty Rating
 3/5
@@ -37,8 +37,8 @@ The thread on qgis/qwc2#532 does not contain a maintainer root-cause for *which*
 - silent_noop_draw
 - stale_target_contents_presented
 
-## How OpenGPA Helps
-For each failing draw call, OpenGPA can list the currently-bound draw framebuffer and its color/depth attachments, plus the texture object bound to every active sampler uniform. When the set of FBO attachment texture IDs intersects the set of sampler-bound texture IDs for the same draw, OpenGPA has pinpointed the exact binding pair that is producing the feedback loop — a fact the browser's error message states as a symptom but does not attribute to a specific texture object, sampler, or draw call.
+## How Beholder Helps
+For each failing draw call, Beholder can list the currently-bound draw framebuffer and its color/depth attachments, plus the texture object bound to every active sampler uniform. When the set of FBO attachment texture IDs intersects the set of sampler-bound texture IDs for the same draw, Beholder has pinpointed the exact binding pair that is producing the feedback loop — a fact the browser's error message states as a symptom but does not attribute to a specific texture object, sampler, or draw call.
 
 ## Source
 - **URL**: https://github.com/qgis/qwc2/issues/532
@@ -68,10 +68,10 @@ spec:
   expected_gl_error: 0x0502  # GL_INVALID_OPERATION
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: Feedback loops are exactly the class of bug where per-draw state inspection — "what is bound to every sampler unit, and what are the current FBO attachments?" — collapses a vague "black screen + GL_INVALID_OPERATION" symptom into a named texture object that is simultaneously attached and sampled. Without that cross-reference, a developer must eyeball render-graph code; with OpenGPA the offending draw call and texture ID are a single query away.
+- **Reasoning**: Feedback loops are exactly the class of bug where per-draw state inspection — "what is bound to every sampler unit, and what are the current FBO attachments?" — collapses a vague "black screen + GL_INVALID_OPERATION" symptom into a named texture object that is simultaneously attached and sampled. Without that cross-reference, a developer must eyeball render-graph code; with Beholder the offending draw call and texture ID are a single query away.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -1,6 +1,6 @@
 # r10_feedback_loop_three_transmission_browser
 
-Phase 2 of the OpenGPA browser eval — the first scenario that actually
+Phase 2 of the Beholder browser eval — the first scenario that actually
 loads a real framework (three.js, pre-fix SHA) and exercises
 `gpa.trace.addRoot()` against framework objects.
 
@@ -10,7 +10,7 @@ notes: how to run the scenario locally and what the bundle is.
 ## Run
 
 ```bash
-# Headless capture via the OpenGPA CLI:
+# Headless capture via the Beholder CLI:
 PATH=$PWD/bin:$PATH DISPLAY=:99 gpa run-browser \
     --scenario r10_feedback_loop_three_transmission_browser \
     --chromium-path ~/opt/chromium/chrome-linux/chrome \
@@ -36,13 +36,13 @@ curl -s -H "Authorization: Bearer $TOKEN" \
     "http://127.0.0.1:$PORT/api/v1/frames/0/trace/value?query=0.875" | jq .
 ```
 
-## Manual repro (non-OpenGPA)
+## Manual repro (non-Beholder)
 
 ```bash
 # Serve the scenario dir and open it in a normal browser:
 cd tests/eval-browser/r10_feedback_loop_three_transmission_browser
 python3 -m http.server 8000
-# Open http://localhost:8000/index.html in Chrome with the OpenGPA
+# Open http://localhost:8000/index.html in Chrome with the Beholder
 # extension loaded (or just to inspect the GL warnings in DevTools).
 ```
 

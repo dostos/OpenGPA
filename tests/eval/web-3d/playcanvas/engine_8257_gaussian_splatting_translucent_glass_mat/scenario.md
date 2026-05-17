@@ -51,7 +51,7 @@ secondary:
 - diagnosis-requires-knowing-engine-sort-mode-rules
 - fix-lives-in-user-config-not-engine-source
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` across two camera angles around the flip threshold would show the same two transparent draw calls swapping submission order — the depth and blend state are identical, only the call order changes. That, combined with `gpa report`'s per-frame draw-call list, points the agent at a CPU-side sort decision rather than a depth/blend bug, narrowing diagnosis to PlayCanvas's transparent sort mode and its `drawBucket` override.
 
 ## Source
@@ -78,6 +78,6 @@ spec:
   fix_commit: n/a
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: partial
 - **Reasoning**: GPA can show that the two transparent draws swap submission order between frames with no state difference, which correctly points at a CPU sort decision rather than a GPU/depth bug. But the resolution is consumer-side configuration (`drawBucket`) inside PlayCanvas's documented sort semantics, so GPA narrows the search but cannot itself surface the API-level fix.

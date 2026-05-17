@@ -64,12 +64,12 @@ GL call pattern from the issue text alone.
 - no_upstream_diagnosis
 - second_tester_could_not_reproduce
 
-## How OpenGPA Helps
-If the crash is reached through a specific GL call on Adreno, OpenGPA's
+## How Beholder Helps
+If the crash is reached through a specific GL call on Adreno, Beholder's
 per-draw call log plus framebuffer completeness queries would show which
 operation immediately preceded the abort — information the reporter cannot
 extract from a stock Godot build on a phone. Without an upstream diagnosis,
-OpenGPA's contribution here is limited to surfacing the last GL state
+Beholder's contribution here is limited to surfacing the last GL state
 before the crash.
 
 ## Source
@@ -97,15 +97,15 @@ spec:
   observed: process abort on Adreno 710 before .exr output
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: no
 - **Reasoning**: No confirmed root cause exists upstream, the bug is
   device-specific to one Adreno SKU, and a second tester could not
-  reproduce. OpenGPA cannot add value to a report that is not reproducible
+  reproduce. Beholder cannot add value to a report that is not reproducible
   on the evaluator's hardware and has no grounded diagnosis to validate
   against.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)
 

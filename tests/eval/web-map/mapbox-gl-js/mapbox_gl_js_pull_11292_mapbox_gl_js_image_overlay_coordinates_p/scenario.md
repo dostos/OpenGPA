@@ -107,7 +107,7 @@ change_summary: >
 - two-triangle-quad-diagonal-discontinuity
 - shader-uniform-missing
 
-## How OpenGPA Helps
+## How Beholder Helps
 The shader source dump and per-draw vertex-attribute trace reveal a `vec2`
 UV varying with no `w`/reciprocal companion and a 4-vertex non-rectangular
 quad rendered as two triangles. Sampling pixels along the shared diagonal
@@ -159,14 +159,14 @@ spec:
     - [384, 384]
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: OpenGPA exposes the exact attributes (vec2 UV, no `w`
+- **Reasoning**: Beholder exposes the exact attributes (vec2 UV, no `w`
   companion), shader source (no perspective-correction term in the
   vertex shader), and per-pixel reads — which together let the agent
   identify a missing perspective-correct texturing setup that pure JS-side
   inspection of `boundsArray` cannot.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

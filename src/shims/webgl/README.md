@@ -1,6 +1,6 @@
 # WebGL Shim
 
-WebGL capture shim for OpenGPA. Monkey-patches `WebGLRenderingContext` and `WebGL2RenderingContext` methods inside the browser, then relays captured data to the core engine via a Node.js bridge.
+WebGL capture shim for Beholder. Monkey-patches `WebGLRenderingContext` and `WebGL2RenderingContext` methods inside the browser, then relays captured data to the core engine via a Node.js bridge.
 
 ## Subdirectories
 - `extension/` — Chrome extension that injects the monkey-patch into page contexts

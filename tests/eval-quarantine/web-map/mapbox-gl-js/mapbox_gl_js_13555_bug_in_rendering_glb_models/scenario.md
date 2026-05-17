@@ -82,7 +82,7 @@ because the truncation happens during the typed-array store, not at draw time.
   but the asset is in fact *incompatible* with this renderer's choice of
   index width.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 `list_draw_calls()` and `get_draw_call(0)` expose the triple
 `(mode=GL_POINTS, count=70000, type=GL_UNSIGNED_SHORT)`. The mismatch between
@@ -130,16 +130,16 @@ spec:
   - 3d-style/source/model_loader.ts
   - src/data/segment.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 
 - **Verdict**: yes
 - **Reasoning**: The diagnostic fact — that the draw call uses a 16-bit
   index type to address a 70,000-vertex buffer — is a direct property of
   the captured `glDrawElements` arguments. An agent reading raw source code
   sees only high-level mesh APIs and won't notice the index-width ceiling,
-  but OpenGPA surfaces `type=GL_UNSIGNED_SHORT` and `count=70000` in the same
+  but Beholder surfaces `type=GL_UNSIGNED_SHORT` and `count=70000` in the same
   record, where the contradiction is obvious.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

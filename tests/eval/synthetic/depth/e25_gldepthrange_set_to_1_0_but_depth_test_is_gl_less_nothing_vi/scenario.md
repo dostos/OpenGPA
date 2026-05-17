@@ -40,9 +40,9 @@ All three reverse-Z signals are adjacent in the source and read as an intentiona
 - **Inverted range**: `glDepthRange(1.0, 0.0)` is legal and common in reverse-Z pipelines, so its presence on its own does not look suspicious.
 - **Compensating errors**: The pairing of `glClearDepth(0.0)` with the inverted range reinforces the impression that a coherent reverse-Z regime is in force, masking the one state that was forgotten.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA returns the full depth-test configuration (range, clear value,
+Beholder returns the full depth-test configuration (range, clear value,
 function) together as a single snapshot, so contradictory combinations
 across the three knobs are visible at a glance.
 

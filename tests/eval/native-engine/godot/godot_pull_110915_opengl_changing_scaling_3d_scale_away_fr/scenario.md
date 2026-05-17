@@ -60,7 +60,7 @@ The companion fix for the clear-color tonemapping path is PR #111550 ("Always ap
 - duplicated_postprocess_in_two_passes
 - correctness_depends_on_runtime_toggle
 
-## How OpenGPA Helps
+## How Beholder Helps
 A draw-call dump on the broken frame shows two consecutive program uses that both contain a `tonemap`/`x/(x+1)` style operation (or, in Godot's case, the `APPLY_TONEMAPPING` define active in the scene shader AND the post tonemap shader bound for the resolve). An agent comparing the bound program for the scene draw and the bound program for the post draw — or doing a histogram comparison of the intermediate FBO color attachment vs. the default framebuffer — sees that the post pass darkens an already-tonemapped image instead of mapping HDR linear to display.
 
 ## Source
@@ -96,9 +96,9 @@ spec:
     further compresses the values and the frame appears dimmed.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is purely a pipeline-shape issue — "which programs ran, in what order, against which framebuffers." OpenGPA's draw-call list with bound program + bound FBO per draw exposes this directly: the agent sees scene_prog rendered into a non-zero FBO, then post_prog rendered into FBO 0 sampling that texture, with both fragment shaders containing tonemap math. No pixel-level oracle is needed — the state trace is the diagnosis.
+- **Reasoning**: The bug is purely a pipeline-shape issue — "which programs ran, in what order, against which framebuffers." Beholder's draw-call list with bound program + bound FBO per draw exposes this directly: the agent sees scene_prog rendered into a non-zero FBO, then post_prog rendered into FBO 0 sampling that texture, with both fragment shaders containing tonemap math. No pixel-level oracle is needed — the state trace is the diagnosis.
 
 ## Upstream Snapshot
 - **Repo**: https://github.com/godotengine/godot
@@ -112,6 +112,6 @@ spec:
   - drivers/gles3/shaders/sky.glsl
   - drivers/gles3/shaders/tonemap_inc.glsl
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

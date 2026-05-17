@@ -145,7 +145,7 @@ std::unique_ptr<ShmRingBuffer> ShmRingBuffer::open(const std::string& name)
     if (hdr->magic != BHDR_SHM_MAGIC) {
         ::munmap(hdr_base, hdr_map);
         ::close(fd);
-        throw std::runtime_error("ShmRingBuffer::open: bad magic (not an OpenGPA shm segment)");
+        throw std::runtime_error("ShmRingBuffer::open: bad magic (not an Beholder shm segment)");
     }
     const uint32_t num_slots = hdr->num_slots;
     const uint64_t slot_size = hdr->slot_size;

@@ -78,14 +78,14 @@ maintainer and bisecting reporter, not from a fix commit.
 - dynamic_buffer_ring_corruption
 - transparent_pass_only
 
-## How OpenGPA Helps
-OpenGPA does not target Metal, so it cannot capture the native Godot
+## How Beholder Helps
+Beholder does not target Metal, so it cannot capture the native Godot
 process where this bug manifests. If the same pattern were reproduced
-against an OpenGL/Vulkan backend, OpenGPA's per-draw uniform snapshot
+against an OpenGL/Vulkan backend, Beholder's per-draw uniform snapshot
 (`get_draw_call` → UBO binding + contents) would expose stale MVP/alpha
 values by diffing frame N against frame N-1 and showing a draw whose
 uniforms match a prior frame's bound slice. But on the bug's actual
-platform (Metal), OpenGPA is out of scope.
+platform (Metal), Beholder is out of scope.
 
 ## Source
 - **URL**: https://github.com/godotengine/godot/issues/114069
@@ -124,10 +124,10 @@ spec:
   observed_relation: matches_prior_frame_slice_in_ring
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: no
-- **Reasoning**: The bug is specific to Apple's Metal driver / Godot's Metal backend. OpenGPA intercepts OpenGL (and planned Vulkan) call streams via LD_PRELOAD / Vulkan layer on Linux; it has no Metal capture path and cannot attach to the macOS process where the corruption occurs. The analogous pattern (dynamic UBO ring slice aliasing) would be diagnosable by OpenGPA if it happened in GL/Vulkan, but this particular report will remain out of reach until a Metal-capable capture backend exists.
+- **Reasoning**: The bug is specific to Apple's Metal driver / Godot's Metal backend. Beholder intercepts OpenGL (and planned Vulkan) call streams via LD_PRELOAD / Vulkan layer on Linux; it has no Metal capture path and cannot attach to the macOS process where the corruption occurs. The analogous pattern (dynamic UBO ring slice aliasing) would be diagnosable by Beholder if it happened in GL/Vulkan, but this particular report will remain out of reach until a Metal-capable capture backend exists.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

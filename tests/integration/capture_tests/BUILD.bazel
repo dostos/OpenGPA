@@ -1,6 +1,6 @@
 load("@rules_cc//cc:defs.bzl", "cc_binary")
 
-# Capture pipeline integration tests — verify OpenGPA correctly captures
+# Capture pipeline integration tests — verify Beholder correctly captures
 # specific GL state (texture bindings, blend state, depth clears, FBO attachments).
 # These are NOT eval scenarios for LLM debugging.
 

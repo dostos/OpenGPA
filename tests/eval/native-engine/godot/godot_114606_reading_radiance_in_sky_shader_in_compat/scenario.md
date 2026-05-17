@@ -98,7 +98,7 @@ black.
 - sampler_uniform_vs_glActiveTexture_mismatch
 - silent_zero_read_from_unbound_unit
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw call's bound textures reveals a cubemap bound on unit
 `MAX_UNITS-2`, while the active program's `RADIANCE` sampler uniform points
 at unit `MAX_UNITS-1` (which has no cubemap). Cross-referencing the sampler
@@ -138,13 +138,13 @@ spec:
     (max_combined_texture_image_units - 2).
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is invisible from shader source and from the C++
   binding code in isolation — it only manifests as a *mismatch* between the
-  two. OpenGPA's per-draw-call view of (active program uniforms) ∪ (per-unit
+  two. Beholder's per-draw-call view of (active program uniforms) ∪ (per-unit
   texture bindings) is exactly the join needed to spot it.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

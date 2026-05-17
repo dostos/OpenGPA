@@ -1,11 +1,11 @@
-# OpenGPA CLI — Agent Integration
+# Beholder CLI — Agent Integration
 
 This document describes how an LLM agent (claude-cli, codex-cli, or any
-shell-equipped agent) interacts with OpenGPA via the `gpa` CLI.
+shell-equipped agent) interacts with Beholder via the `gpa` CLI.
 
 ## When to use
 
-When debugging an OpenGPA-captured graphics scenario. The eval harness
+When debugging an Beholder-captured graphics scenario. The eval harness
 sets up a captured frame and points the agent at it via env vars; the
 agent uses `gpa` shell calls to inspect the frame.
 

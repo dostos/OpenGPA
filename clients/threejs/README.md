@@ -1,6 +1,6 @@
 # @opengpa/threejs-sidecar
 
-OpenGPA Tier-3 metadata sidecar for Three.js.
+Beholder Tier-3 metadata sidecar for Three.js.
 
 ## Install
 
@@ -18,7 +18,7 @@ gpa.capture(scene, camera);
 ```
 
 The sidecar walks the Three.js scene graph and POSTs framework metadata
-(named objects, transforms, materials, lights, camera) to the OpenGPA
+(named objects, transforms, materials, lights, camera) to the Beholder
 engine's `/api/v1/frames/{id}/metadata` endpoint. The engine exposes this
 to agents via MCP tools (`query_object`, `list_objects`, `explain_pixel`).
 

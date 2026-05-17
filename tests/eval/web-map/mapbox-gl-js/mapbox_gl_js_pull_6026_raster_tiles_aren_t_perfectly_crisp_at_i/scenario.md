@@ -102,7 +102,7 @@ change_summary: >
   the proximate cause, leading to an anisotropic-filtering PR (#4443)
   that does not fix the actual defect.
 
-## How OpenGPA Helps
+## How Beholder Helps
 A single call to `get_draw_call(...)` and inspecting the `u_matrix`
 uniform exposes the translation row of the per-tile projection matrix.
 Comparing `m[12]*viewport_w/2` and `m[13]*viewport_h/2` against
@@ -158,7 +158,7 @@ spec:
     mid_high: 192
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug lives entirely inside a single uniform value
   (`u_matrix`) that the Tier-1 GL shim already captures verbatim. An
@@ -168,6 +168,6 @@ spec:
   reason about a half-pixel blur that is easily mistaken for expected
   bilinear behaviour.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

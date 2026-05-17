@@ -605,7 +605,7 @@ Iter 6 left 13 rejections under `out_of_scope_not_rendering_bug`. Hypothesis was
 
 | URL | repo | verdict | one-line summary |
 |-----|------|---------|------------------|
-| https://github.com/aframevr/aframe/issues/5816 | aframevr/aframe | **CORRECT** | Meta browser-extension throws `XRWebGLBinding` TypeError before WebXR session starts; no GL pipeline runs at all, so there is no GL state for OpenGPA to capture. |
+| https://github.com/aframevr/aframe/issues/5816 | aframevr/aframe | **CORRECT** | Meta browser-extension throws `XRWebGLBinding` TypeError before WebXR session starts; no GL pipeline runs at all, so there is no GL state for Beholder to capture. |
 | https://github.com/visgl/deck.gl/issues/10224 | visgl/deck.gl | **CORRECT** | JS `TypeError` in `WEBGLRenderPass` ctor (`framebuffer.colorAttachments` undefined) halts render pipeline; symptom is "rendering stops" / "stuck on first frame" diagnosable from a JS stack — frame capture would just show stale/no draw calls. |
 | https://github.com/pmndrs/react-three-fiber/issues/3686 | pmndrs/react-three-fiber | **CORRECT** | `useFrame({ fps: 60 })` actually runs at 40-50 fps — pure frame-pacing/perf bug, rendered pixels are correct. |
 | https://github.com/pmndrs/drei/issues/1968 | pmndrs/drei | **CORRECT** | `useTexture(..., onLoad)` callback fires every render due to wrong `useEffect` dep array; texture itself renders fine. |
@@ -618,7 +618,7 @@ Iter 6 left 13 rejections under `out_of_scope_not_rendering_bug`. Hypothesis was
 - **COUNT_OVER_AGGRESSIVE = 0 / 6**
 - **COUNT_AMBIGUOUS = 0 / 6**
 
-deck.gl#10224 is the one that came closest to "wrong-render-but-framed-as-config": the layer visibly stops updating. But the root cause is observable as a JS stack trace at pipeline-init time, not as a wrong-pixel state — OpenGPA's draw-call trace would show "no draw calls were issued" which is no better than the existing Chrome console error. So still CORRECT.
+deck.gl#10224 is the one that came closest to "wrong-render-but-framed-as-config": the layer visibly stops updating. But the root cause is observable as a JS stack trace at pipeline-init time, not as a wrong-pixel state — Beholder's draw-call trace would show "no draw calls were issued" which is no better than the existing Chrome console error. So still CORRECT.
 
 ### Decision
 
@@ -1113,7 +1113,7 @@ expected"`) surfaces threads where the maintainer's response is "this
 is not a framework bug; do X instead" — i.e. **the user's app code is
 wrong but the wrong code never reaches the GPU as wrong-state**. The
 triage prompt correctly rejects these as `out_of_scope_not_rendering_bug`
-because OpenGPA can't observe app-logic mistakes that resolve before
+because Beholder can't observe app-logic mistakes that resolve before
 draw-call dispatch (event-handler bugs, prop typos, layer-z fights
 fixed by a prop change, etc.). This matches the iter-7 audit
 conclusion that the triage rejections are accurate.

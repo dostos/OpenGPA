@@ -50,9 +50,9 @@ like a vertex-ordering or z-fighting issue at first glance.
   at setup (standing in for a prior transparent pass) and is never visible
   in the render loop where the symptom appears.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the full depth-related pipeline state per draw call,
+Beholder exposes the full depth-related pipeline state per draw call,
 including `depth_mask`, so a depth-test-on / depth-write-off combination
 is directly visible in the per-draw record.
 

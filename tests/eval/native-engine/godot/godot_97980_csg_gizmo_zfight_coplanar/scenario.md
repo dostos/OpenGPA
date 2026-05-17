@@ -46,8 +46,8 @@ The fix landed as PR #100211 ("Add Depth Offset property to BaseMaterial3D and f
 - triangulation_dependent_depth_interpolation
 - hardware_deterministic_but_content_addressed_artifact
 
-## How OpenGPA Helps
-Listing the frame's draw calls shows two draws whose vertex positions span the same 4 corners on the same plane, with identical depth state (`GL_LESS`, no `glPolygonOffset`, no depth bias). That mechanical signature — "two overlapping draws on the same plane, one trying to overpaint the other without depth separation" — is the textbook coplanar Z-fighting setup. An agent looking only at a screenshot sees "shimmering" and must guess the cause; an agent with access to OpenGPA's per-draw vertex positions and depth state can name the root cause deterministically.
+## How Beholder Helps
+Listing the frame's draw calls shows two draws whose vertex positions span the same 4 corners on the same plane, with identical depth state (`GL_LESS`, no `glPolygonOffset`, no depth bias). That mechanical signature — "two overlapping draws on the same plane, one trying to overpaint the other without depth separation" — is the textbook coplanar Z-fighting setup. An agent looking only at a screenshot sees "shimmering" and must guess the cause; an agent with access to Beholder's per-draw vertex positions and depth state can name the root cause deterministically.
 
 ## Source
 - **URL**: https://github.com/godotengine/godot/issues/97980
@@ -87,10 +87,10 @@ spec:
   - scene/resources/material.cpp
   - modules/csg/csg_shape.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is entirely in the captured GL state — two draws with matching vertex positions, same depth function, no depth offset. OpenGPA's Tier 1 raw capture exposes exactly those facts without any heuristics, so an agent can diagnose "coplanar Z-fight, add depth offset or polygon offset" directly rather than speculating from pixels.
+- **Reasoning**: The root cause is entirely in the captured GL state — two draws with matching vertex positions, same depth function, no depth offset. Beholder's Tier 1 raw capture exposes exactly those facts without any heuristics, so an agent can diagnose "coplanar Z-fight, add depth offset or polygon offset" directly rather than speculating from pixels.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

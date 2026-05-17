@@ -1,4 +1,4 @@
-"""OpenGPA framework integration package.
+"""Beholder framework integration package.
 
 Provides types and storage for framework plugins to supply scene graph metadata
 alongside captured GPU frames.

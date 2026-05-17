@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""OpenGPA Launcher — runs engine + REST API in one process.
+"""Beholder Launcher — runs engine + REST API in one process.
 
 Usage:
     python -m bhdr.launcher [options]
@@ -17,7 +17,7 @@ import sys
 import threading
 
 def main():
-    parser = argparse.ArgumentParser(description="OpenGPA Engine + REST API")
+    parser = argparse.ArgumentParser(description="Beholder Engine + REST API")
     parser.add_argument("--backend", default="native",
                         choices=["native", "renderdoc"],
                         help="Capture backend to use (default: native)")
@@ -84,7 +84,7 @@ def main():
         print(f"BHDR_SOCKET_PATH={args.socket}")
         print(f"BHDR_SHM_NAME={args.shm}")
     print(f"BHDR_AUTH_TOKEN={token}")
-    print(f"OpenGPA listening on http://127.0.0.1:{args.port}")
+    print(f"Beholder listening on http://127.0.0.1:{args.port}")
     sys.stdout.flush()
 
     # Handle SIGTERM gracefully

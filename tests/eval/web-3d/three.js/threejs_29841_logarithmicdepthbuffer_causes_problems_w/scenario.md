@@ -100,7 +100,7 @@ secondary:
 - gpu-driver-dependent-symptom-not-reproducible-on-dev-machine
 - no-clean-fix-pr-only-deprecation-guidance
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of the broken frame would expose two diagnostic signals the user
 can't see from JS: (1) the `RenderPass` draws into a `WebGLRenderTarget` whose
 depth attachment is being written via `gl_FragDepth` from three.js's
@@ -138,10 +138,10 @@ spec:
   fix_commit: (none)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: partial
 - **Reasoning**: GPA can localize the suspect shader chunk by surfacing the captured fragment shader source for the transparent draw and showing that `gl_FragDepth` is being written from the `logdepthbuf` snippet. That points an agent at `src/renderers/shaders/ShaderChunk/logdepthbuf_*` for the diagnosis. However, because no fix PR exists upstream — the resolution is "switch to reversed depth buffer" — the agent's reward signal is bounded: it can correctly identify the affected chunk and the workaround, but cannot match a merged-files list from a fix PR.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

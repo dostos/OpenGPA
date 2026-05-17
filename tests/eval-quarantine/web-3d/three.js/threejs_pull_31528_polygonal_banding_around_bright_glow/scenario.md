@@ -132,7 +132,7 @@ from the falloff and notices it equals `kernelRadius`, not
 - symptom-is-shape-blocky-not-color-wrong
 - post-process-far-from-source-of-bloom
 
-## How OpenGPA Helps
+## How Beholder Helps
 A pixel-walk along a radial line from the bright source captures the
 halo's intensity profile: it should be a smooth Gaussian falloff, but
 it's piecewise-constant tiers. Capturing the per-iteration
@@ -177,7 +177,7 @@ spec:
     "plateau" tier and reads near-saturated.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured per-coefficient uniform array shape
   uniquely identifies the implied sigma. Reverse-searching the

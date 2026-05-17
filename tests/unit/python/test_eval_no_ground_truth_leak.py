@@ -40,7 +40,7 @@ def test_user_message_excludes_ground_truth_content():
 def test_agent_factory_wires_only_bug_description_to_prompt(monkeypatch):
     """The factory in `build_agent_fn` must pull `bug_description`
     (= User Report) from the scenario object, never `ground_truth_diagnosis`
-    or `bhdr_advantage` (the How-OpenGPA-Helps hint).
+    or `bhdr_advantage` (the How-Beholder-Helps hint).
     """
     from bhdr.eval.llm_agent import build_agent_fn
 
@@ -114,7 +114,7 @@ def test_scenario_loader_does_not_merge_ground_truth_into_user_report(tmp_path):
         f"## Ground Truth\n{_SENTINEL_GROUND_TRUTH}\n\n"
         "## Difficulty Rating\n2/5\n\n"
         "## Adversarial Principles\n- x\n\n"
-        "## How OpenGPA Helps\nh\n\n"
+        "## How Beholder Helps\nh\n\n"
         "## Bug Signature\n```yaml\ntype: framebuffer_dominant_color\n"
         "spec:\n  expected_rgba: [1,0,0,1]\n  tolerance: 0.1\n```\n"
     )

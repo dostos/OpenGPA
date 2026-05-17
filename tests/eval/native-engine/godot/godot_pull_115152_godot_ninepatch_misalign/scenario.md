@@ -100,7 +100,7 @@ secondary:
 - only-visible-when-the-same-source-rect-is-drawn-at-different-screen-positions
 - code-path-touched-was-an-optimization-not-a-feature
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 The capture would record, per draw call, the actual UVs interpolated
 into the fragment shader for adjacent panels. Inspecting the
@@ -137,18 +137,18 @@ spec:
   fix_commit: dc57cd698d29915cd020b1c229735e4a7ec18b7d
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The reporter says "texture offset", "alignment",
   no other vocabulary. A code_only agent could grep
   `StyleBoxTexture` and reach `style_box_texture.cpp`, but the bug
-  is in the canvas renderer downstream. With OpenGPA capturing
+  is in the canvas renderer downstream. With Beholder capturing
   the per-fragment UV deltas across two panels, the divergence
   point shows up as "two adjacent draw calls with the same input
   parameters resolved to different per-fragment UVs" — a
   quantization signal that points at the varying-interpolation
   shader, not the style-box class.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

@@ -1,7 +1,7 @@
 #ifndef BHDR_DWARF_PARSER_H
 #define BHDR_DWARF_PARSER_H
 
-/* Minimal hand-rolled DWARF parser for OpenGPA native trace (Phase 1).
+/* Minimal hand-rolled DWARF parser for Beholder native trace (Phase 1).
  *
  * Goal: extract {name, address, byte_size, type_encoding} for every global
  * / file-scoped-static variable in a loaded ELF module. Enough to let the

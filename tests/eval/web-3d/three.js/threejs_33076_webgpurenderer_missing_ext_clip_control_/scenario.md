@@ -77,8 +77,8 @@ a non-reversed-Z configuration, as `WebGLRenderer` already does.
   driver state does not enforce)
 - capability-detection-gap (extension presence gates whole pipeline)
 
-## How OpenGPA Helps
-An OpenGPA query on the frame would show the draw call's depth state
+## How Beholder Helps
+An Beholder query on the frame would show the draw call's depth state
 (`clearDepth = 0.0`, `depthFunc = GL_GREATER`) together with the bound
 projection uniform (reversed-Z, `[0,1]` style) and the *absence* of a
 `glClipControl` call in the frame trace. The inconsistency between the
@@ -124,7 +124,7 @@ spec:
     fallback bug.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a cross-cutting state inconsistency (depth
   test configuration vs. clip-space configuration vs. projection matrix)
@@ -134,6 +134,6 @@ spec:
   projection uniform, which points to the exact fallback fix the
   upstream maintainer describes.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

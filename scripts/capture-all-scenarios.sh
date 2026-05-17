@@ -22,4 +22,4 @@ for s in "${SCENARIOS[@]}"; do
 done
 
 echo ""
-echo "All scenarios captured. Frames available via OpenGPA API."
+echo "All scenarios captured. Frames available via Beholder API."

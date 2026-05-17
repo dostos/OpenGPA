@@ -82,7 +82,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - shader-pass-coupling-hidden-in-switch-statement
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` of a single frame would show that the draw calls for
 alpha-tested foliage submitted during the prepass bind a shader
 program whose fragment source contains no `#define LIT_ALPHA_TEST`
@@ -119,12 +119,12 @@ spec:
   fix_commit: (auto-resolve from PR #8606)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The smoking-gun signal — alpha-tested geometry
   binding a prepass shader whose fragment source lacks the
   `LIT_ALPHA_TEST` define and any `discard` — is exactly the kind of
-  per-pass per-program comparison OpenGPA's frame capture surfaces
+  per-pass per-program comparison Beholder's frame capture surfaces
   natively. Diffing the prepass program against the shadow-pass
   program for the same material narrows the search to the shader
   preparation function and the pass-specific define setup, which

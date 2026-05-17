@@ -834,7 +834,7 @@ bhdr_CreateSwapchainKHR(VkDevice                        device,
 
         *pSwapchain = (VkSwapchainKHR)(uintptr_t)slot;
         fprintf(stderr,
-                "[OpenGPA-VK] emulated headless swapchain %p (%ux%u, %u images)\n",
+                "[Beholder-VK] emulated headless swapchain %p (%ux%u, %u images)\n",
                 (void*)slot, slot->extent.width, slot->extent.height,
                 slot->image_count);
 
@@ -1087,7 +1087,7 @@ bhdr_vkCreateHeadlessSurfaceEXT(VkInstance instance,
     slot->instance = instance;
     *pSurface = (VkSurfaceKHR)(uintptr_t)slot;
     pthread_mutex_unlock(&g_headless_mutex);
-    fprintf(stderr, "[OpenGPA-VK] emulated headless surface %p\n", (void*)slot);
+    fprintf(stderr, "[Beholder-VK] emulated headless surface %p\n", (void*)slot);
     return VK_SUCCESS;
 }
 

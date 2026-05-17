@@ -83,7 +83,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - regression-traceable-to-specific-prior-pr
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` on the affected camera angle would expose the per-draw GL state for
 each transparent gltf submesh — specifically `glDepthMask(GL_TRUE)` paired with
 `glEnable(GL_BLEND)` and a discard-on-alpha fragment shader, which is the exact
@@ -117,7 +117,7 @@ spec:
   fix_commit: (auto-resolve from PR #5705)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: GPA's per-draw-call depth-write + blend-state surface is exactly
   the signal that distinguishes "engine disables depth-write for transparents"

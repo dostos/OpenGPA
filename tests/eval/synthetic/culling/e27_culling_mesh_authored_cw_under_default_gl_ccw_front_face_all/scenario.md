@@ -43,9 +43,9 @@ plotting six 2D points in signed area order — easy to miscount.
 - **Invisible geometry**: Culled draws succeed silently — there is no GL
   error, no shader warning, no missing-draw-call indicator in vanilla GL.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the cull state and the raw vertex attributes for each
+Beholder exposes the cull state and the raw vertex attributes for each
 draw, so the geometric winding of submitted primitives can be cross-
 checked against the active front-face convention without reasoning about
 asset authoring.

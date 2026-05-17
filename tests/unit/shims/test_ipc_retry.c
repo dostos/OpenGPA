@@ -2,7 +2,7 @@
  * src/shims/gl/ipc_client.c.
  *
  * Background: under high parallel load (R10v2+R11 ran 33 with_bhdr scenarios
- * in parallel, 24/33 hit "[OpenGPA] handshake send failed") the original
+ * in parallel, 24/33 hit "[Beholder] handshake send failed") the original
  * single-shot connect() to the engine's Unix socket would fail under kernel
  * socket-backlog pressure with no recovery. We added a backoff retry loop
  * around connect()+handshake. These tests pin down its behavior:
@@ -14,7 +14,7 @@
  *   3. No listener at all → client returns -1 after ~750 ms total
  *      (4 sleeps × 50/100/200/400 ms) without crashing.
  *   4. Intermediate failures emit no log lines; only one stderr line on
- *      exhaustion ("[OpenGPA] handshake failed after 5 retries; ...").
+ *      exhaustion ("[Beholder] handshake failed after 5 retries; ...").
  *
  * Uses assert() — no external test framework. Mirrors the tiny TCP-listener
  * pattern in test_http_post.c, but speaks AF_UNIX + the GPA wire protocol
@@ -313,7 +313,7 @@ static void test_no_logs_on_intermediate_failures(void) {
         if (captured[i] == '\n') newlines++;
     }
     assert(newlines == 1);
-    assert(strstr(captured, "[OpenGPA]") != NULL);
+    assert(strstr(captured, "[Beholder]") != NULL);
     assert(strstr(captured, "handshake failed") != NULL);
     assert(strstr(captured, "5 retries") != NULL);
     /* Must NOT contain per-attempt failure spam. */

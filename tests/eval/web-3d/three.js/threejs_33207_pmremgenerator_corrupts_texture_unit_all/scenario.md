@@ -149,7 +149,7 @@ greenlit a PR in comment 3.
 - first_frame_only: the symptom self-heals after one frame because the
   triggering work is cached, making the bug easy to dismiss as transient.
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the failing draw call's bound texture units reveals that the
 uniform declared as `sampler2DShadow` resolves to a texture unit whose
 currently bound texture has internal format `RGBA16F` rather than a depth
@@ -201,18 +201,18 @@ spec:
   - src/renderers/webgl/WebGLEnvironments.js
   - src/extras/PMREMGenerator.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug's root cause maps cleanly onto a single per-draw
   cross-reference: sampler-uniform GLSL type vs. bound-texture internal
-  format on the uniform's assigned texture unit. OpenGPA already exposes
+  format on the uniform's assigned texture unit. Beholder already exposes
   per-draw uniform values and per-unit texture bindings through Tier 1
   capture, and an agent that asks "for each sampler uniform, what's the
   format of the texture on its assigned unit?" lands directly on the
   mismatch. The application-level error message ("GL_INVALID_OPERATION on
-  draw") gives no hint about which uniform or which unit; OpenGPA's
+  draw") gives no hint about which uniform or which unit; Beholder's
   structured view does.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

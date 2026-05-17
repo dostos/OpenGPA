@@ -131,7 +131,7 @@ through `decompose()` / `extractRotation()` to find the missing guard
 - symptom-is-flicker-not-divide-by-zero
 - common-degenerate-input-from-user-API
 
-## How OpenGPA Helps
+## How Beholder Helps
 Capturing the per-draw-call `u_mvp` uniform shows NaN values for any draw
 descended from the zero-scaled ancestor — an immediate breadcrumb that a
 divide-by-zero happened upstream of the matrix upload. A
@@ -173,7 +173,7 @@ spec:
     clear color.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured uniform value contains `NaN` — the
   smoking gun. Reverse-searching `NaN`/`Inf` against the framework

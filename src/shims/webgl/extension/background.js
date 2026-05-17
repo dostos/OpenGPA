@@ -1,3 +1,3 @@
 chrome.runtime.onInstalled.addListener(() => {
-  console.log('OpenGPA WebGL Debugger installed');
+  console.log('Beholder WebGL Debugger installed');
 });

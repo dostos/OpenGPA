@@ -56,7 +56,7 @@ See also linked issue [#22938](https://github.com/mrdoob/three.js/issues/22938) 
 - cross_object_resource_sharing
 - framebuffer_feedback_loop
 
-## How OpenGPA Helps
+## How Beholder Helps
 `/api/v1/frames/current/overview` lists each FBO's attachments by GL texture ID, and each draw call's bound samplers by texture ID. A single query shows that fboB's `GL_DEPTH_ATTACHMENT` and texture unit 0 on the feedback draw call reference the same GL texture name, which is exactly the shared-Source condition — a detail the user would never see from inspecting three.js objects alone because the JS-side `DepthTexture` instances are distinct.
 
 ## Source
@@ -95,10 +95,10 @@ spec:
   - src/textures/Source.js
   - examples/jsm/postprocessing/EffectComposer.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug reduces to "two framebuffer attachments and a sampler all reference the same GL texture name." This is a pure capture-layer observation — exactly what OpenGPA's per-draw snapshot of FBO attachments and bound texture units exposes. Without it the agent would need to trace JS-side object identity through three.js's Source/Texture wrapping, which is much harder.
+- **Reasoning**: The bug reduces to "two framebuffer attachments and a sampler all reference the same GL texture name." This is a pure capture-layer observation — exactly what Beholder's per-draw snapshot of FBO attachments and bound texture units exposes. Without it the agent would need to trace JS-side object identity through three.js's Source/Texture wrapping, which is much harder.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

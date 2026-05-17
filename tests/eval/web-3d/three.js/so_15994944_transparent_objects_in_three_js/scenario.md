@@ -66,7 +66,7 @@ When transparent objects write depth and are drawn front-to-back, the first draw
 - order_dependent_blending
 - ambiguous_sort_at_equal_depth
 
-## How OpenGPA Helps
+## How Beholder Helps
 `get_draw_call` exposes per-draw state: both draws have `GL_BLEND = enabled` AND `GL_DEPTH_WRITEMASK = GL_TRUE`, the canonical suspicious combo for transparency bugs. A pixel probe in the expected-overlap region via `get_pixel` returns pure green with no blue component, confirming the back object's fragments never reached the framebuffer.
 
 ## Source
@@ -102,10 +102,10 @@ spec:
     writes for transparent draws or sorts back-to-front strictly.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is fully diagnosable from per-draw GL state without needing to interpret the rendered image. `get_draw_call` reveals the blend-plus-depth-write combo on both transparent draws, which is the textbook transparency bug signature. A follow-up `get_pixel` in the overlap region confirms the back object contributed zero fragments, closing the loop.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

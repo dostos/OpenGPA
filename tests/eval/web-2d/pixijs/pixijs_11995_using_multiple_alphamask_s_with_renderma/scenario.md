@@ -98,7 +98,7 @@ the top of `MaskFilter.apply()` restores correct UVs (their
 - bug is invisible without comparing per-draw uniform values
 - visual symptom is "wrong size" — easily mistaken for a bounds/layout bug
 
-## How OpenGPA Helps
+## How Beholder Helps
 A single per-draw uniform inventory ("for each draw call, give me every
 sampler binding and the value of every active uniform that references the
 bound mask texture") shows draw call 1 and draw call 2 with identical
@@ -149,16 +149,16 @@ spec:
   - src/rendering/renderers/shared/texture/TextureMatrix.ts
   - src/rendering/renderers/shared/texture/TexturePool.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug surfaces as a per-draw uniform value that is
-  silently wrong relative to the bound texture's intended use. OpenGPA's
+  silently wrong relative to the bound texture's intended use. Beholder's
   Tier-1 raw uniform capture exposes the discrepancy directly: two draw
   calls sharing one texture object but expecting different UV transforms
   is a one-query diagnostic. No heuristic or framework hook is needed —
   the agent just compares `uMapCoord` between the two draws and notices
   it didn't change despite the mask sub-region having changed.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

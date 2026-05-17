@@ -44,7 +44,7 @@ Because no authoritative diagnosis exists, this scenario is included as a sympto
 - tile_boundary_artifact
 - framework_layer_bug_surfaced_as_gl_pattern
 
-## How OpenGPA Helps
+## How Beholder Helps
 Per-tile draw-call inspection (`list_draw_calls` + `get_draw_call`) lets the agent see that each tile's draw uses a disjoint vertex subset instead of a clipped-but-complete polygon, and pixel queries along tile seams surface the background color bleeding through — both observations that point at the tile-slicing step rather than at the shader or blend state.
 
 ## Source
@@ -72,10 +72,10 @@ spec:
   tolerance: 8
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA can reveal the per-tile draw-call slicing pattern, which is valuable structural evidence. However, the actual upstream root cause lives in maplibre's JS tile worker (not in GL state), so OpenGPA narrows the search but cannot point at the offending JS code path. Helpful for triage, insufficient for a full fix.
+- **Reasoning**: Beholder can reveal the per-tile draw-call slicing pattern, which is valuable structural evidence. However, the actual upstream root cause lives in maplibre's JS tile worker (not in GL state), so Beholder narrows the search but cannot point at the offending JS code path. Helpful for triage, insufficient for a full fix.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

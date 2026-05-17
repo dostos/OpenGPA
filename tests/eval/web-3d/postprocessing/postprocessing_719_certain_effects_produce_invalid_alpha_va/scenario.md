@@ -59,8 +59,8 @@ diff_excerpt: |
 - cross-pass contract: the upstream pass's alpha must survive downstream effects, but the violation is only visible after the final composite
 - single-line fragment-shader bug (no API misuse, no state leak — the root cause is a missing `max()` in a one-line expression)
 
-## How OpenGPA Helps
-Probing the output framebuffer's alpha channel at pixels where the upstream pass was opaque directly reveals the invariant violation: expected alpha = 255, actual alpha = 0. OpenGPA's per-draw framebuffer dump surfaces this immediately, whereas a human debugger staring at the on-screen RGB preview typically misses it because alpha is invisible until the final composite.
+## How Beholder Helps
+Probing the output framebuffer's alpha channel at pixels where the upstream pass was opaque directly reveals the invariant violation: expected alpha = 255, actual alpha = 0. Beholder's per-draw framebuffer dump surfaces this immediately, whereas a human debugger staring at the on-screen RGB preview typically misses it because alpha is invisible until the final composite.
 
 ## Source
 - **URL**: https://github.com/pmndrs/postprocessing/issues/719
@@ -100,10 +100,10 @@ spec:
   - src/effects/TextureEffect.js
   - src/materials/EffectMaterial.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The defect is directly observable in a single frame of captured GL state — the output framebuffer's alpha channel at a pixel where the upstream pass was opaque. An OpenGPA per-draw framebuffer query (or a pixel readback at a chosen coordinate) exposes the invariant violation without any reasoning about the shader source. With the shader source also available via OpenGPA's program dump, the one-line `texel.a` expression in `mainImage` is trivial to pair with the observed alpha.
+- **Reasoning**: The defect is directly observable in a single frame of captured GL state — the output framebuffer's alpha channel at a pixel where the upstream pass was opaque. An Beholder per-draw framebuffer query (or a pixel readback at a chosen coordinate) exposes the invariant violation without any reasoning about the shader source. With the shader source also available via Beholder's program dump, the one-line `texel.a` expression in `mainImage` is trivial to pair with the observed alpha.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

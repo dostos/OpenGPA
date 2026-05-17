@@ -1,4 +1,4 @@
-/* Minimal HTTP POST client for the OpenGPA native-trace shim. */
+/* Minimal HTTP POST client for the Beholder native-trace shim. */
 
 #define _GNU_SOURCE
 #include "http_post.h"

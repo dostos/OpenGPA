@@ -47,9 +47,9 @@ The two lines are adjacent and both reference the same `locTint`/`prog`, so a re
 - **Out-of-order ops**: The required precondition (program must be active) is invisible in the local code — it depends on GL's hidden "current program" state at the moment of the call.
 - **Silent no-op**: GL does not error when you call `glUniform` with no matching program; it either errors invisibly (GL_INVALID_OPERATION if no program is bound) or writes to the wrong program's storage. Either way, the visible symptom is "uniform stuck at default", not a crash.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA's per-draw record shows the bound program and the resolved
+Beholder's per-draw record shows the bound program and the resolved
 uniform values at draw time, so a uniform sitting at its link-time
 default on the active program — despite a CPU-side write — points
 straight at a program-binding ordering issue.

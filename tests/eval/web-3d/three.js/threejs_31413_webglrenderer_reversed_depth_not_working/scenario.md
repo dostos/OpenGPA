@@ -44,8 +44,8 @@ In raw GL terms: with `glDepthFunc(GL_GREATER)` active, the depth buffer must be
 - autoClear=false interacts with reversed-Z in a way that is silent unless the first-frame depth contents are exactly the reversed clear value
 - The failure is total (entire target black) rather than partial, so pixel diffs alone don't localize which stage dropped the geometry
 
-## How OpenGPA Helps
-Per-draw state inspection surfaces the mismatch: for the offending draw, the bound framebuffer's depth attachment was last cleared with clearDepth=1.0 while the pipeline's `DEPTH_FUNC` is `GL_GREATER`. A depth-attachment histogram before the draw (all 1.0) combined with the depth-func state makes the "GL_GREATER vs. 1.0 rejects everything" conclusion mechanical rather than speculative. Without OpenGPA the debugger typically has to bisect by commenting out lines upstream (as the reporter did in comment 3) to localize the offending render path.
+## How Beholder Helps
+Per-draw state inspection surfaces the mismatch: for the offending draw, the bound framebuffer's depth attachment was last cleared with clearDepth=1.0 while the pipeline's `DEPTH_FUNC` is `GL_GREATER`. A depth-attachment histogram before the draw (all 1.0) combined with the depth-func state makes the "GL_GREATER vs. 1.0 rejects everything" conclusion mechanical rather than speculative. Without Beholder the debugger typically has to bisect by commenting out lines upstream (as the reporter did in comment 3) to localize the offending render path.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/31413
@@ -73,10 +73,10 @@ spec:
   tolerance: 24
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is an invisible state/target coupling — a `GL_GREATER` depth func against a depth attachment whose cleared value is 1.0. An agent with per-draw access to the bound framebuffer, its last depth-clear value, and the current `DEPTH_FUNC` can derive the contradiction directly from the capture; from a screenshot alone the failure is indistinguishable from dozens of other "scene renders black" bugs.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

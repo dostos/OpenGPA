@@ -1,6 +1,6 @@
 # Shim Unit Tests
 
-C unit tests for OpenGPA's GL shadow state tracker. Uses `assert()` and a `main()` entry point rather than a test framework, keeping the tests buildable without any external dependencies.
+C unit tests for Beholder's GL shadow state tracker. Uses `assert()` and a `main()` entry point rather than a test framework, keeping the tests buildable without any external dependencies.
 
 ## Coverage
 - Texture binding / unbinding across units

@@ -120,7 +120,7 @@ secondary:
 - backend-spec-conformance-gap-desktop-vulkan-permissive-mobile-webgpu-strict
 - visibility-flag-overscoped-shader-doesnt-actually-use-the-binding
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 The captured frame on a Vulkan-desktop run will succeed (the
 permissive `wgpu` desktop path), while the WebGPU run produces no
@@ -157,7 +157,7 @@ spec:
   fix_commit: 7fc2e2da3078d6ce387ecff842437b122daa4532
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured-frame contrast (Vulkan: clustering
   pass present; WebGPU: clustering pass absent) is the strongest
@@ -169,6 +169,6 @@ spec:
   unspecific and the agent might chase shader compilation issues
   or texture format issues that aren't the cause.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: no
 - **Evidence**: code_only baseline scored 1.0 on file-level identification (Claude Code Explore subagent against the bevy snapshot at fix_parent_sha, ~20 file reads, ~30s wall time). The user-report keywords map directly onto the bug-bearing file path, leaving no headroom for runtime capture to add value. See docs/superpowers/eval/round13/bevy-code-only-results.md.

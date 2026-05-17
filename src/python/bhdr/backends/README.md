@@ -1,6 +1,6 @@
 # Capture Backends
 
-Capture backend abstraction layer for OpenGPA. Defines the `FrameProvider` ABC and ships two concrete implementations so the rest of the stack is decoupled from the capture source.
+Capture backend abstraction layer for Beholder. Defines the `FrameProvider` ABC and ships two concrete implementations so the rest of the stack is decoupled from the capture source.
 
 ## Key Files
 - `base.py` — `FrameProvider` ABC (interface all backends must implement)

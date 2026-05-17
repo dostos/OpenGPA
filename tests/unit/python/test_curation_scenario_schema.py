@@ -182,7 +182,7 @@ def test_parser_extracts_upstream_snapshot_section(tmp_path):
         ## Adversarial Principles
         - Distant cause
 
-        ## How OpenGPA Helps
+        ## How Beholder Helps
         ...
 
         ## Tier

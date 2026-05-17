@@ -86,7 +86,7 @@ window is Godot 4.6 pre-#114773 (reported against `4.6.stable [89cea1439]`).
 - silent_type_mismatch_direction_vs_uv
 - octahedral_coordinate_conversion_missing
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw call's bound textures reveals that `RADIANCE` is a 2D
 texture, not a cubemap — contradicting the shader's `textureCube`-style usage
 pattern. Reading the compiled sky fragment shader shows the sampler type and
@@ -131,15 +131,15 @@ spec:
   - drivers/gles3/shaders/sky.glsl
   - drivers/gles3/storage/light_storage.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The root cause is a type/format mismatch between a shader's
-  declared sampler usage and the actual bound texture. OpenGPA surfaces the
+  declared sampler usage and the actual bound texture. Beholder surfaces the
   bound texture target/format per draw call and the compiled shader source,
   which together expose the missing octahedral decode immediately. Without
-  OpenGPA an agent would need to read Godot's shader-compilation pipeline end
+  Beholder an agent would need to read Godot's shader-compilation pipeline end
   to end to find the same answer.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -1,4 +1,4 @@
-"""Scenario loader for OpenGPA evaluation harness.
+"""Scenario loader for Beholder evaluation harness.
 
 Parses adversarial eval scenario .md files and provides structured
 metadata for use by the evaluation harness.
@@ -139,7 +139,13 @@ _SECTION_ALIASES: dict[str, list[str]] = {
     "ground_truth_diagnosis": ["ground truth", "ground truth diagnosis"],
     "difficulty": ["difficulty rating", "difficulty"],
     "adversarial_principles": ["adversarial principles"],
-    "bhdr_advantage": ["how gpa helps", "how opengpa helps", "gpa advantage", "opengpa advantage"],
+    "bhdr_advantage": [
+        # Beholder-era section titles (new authoring)
+        "how beholder helps", "how bhdr helps", "beholder advantage", "bhdr advantage",
+        # Legacy section titles — preserved so pre-rename scenario.md
+        # files continue to parse without re-authoring.
+        "how gpa helps", "how opengpa helps", "gpa advantage", "opengpa advantage",
+    ],
     "source": ["source"],
     "tier": ["tier"],
     "api": ["api"],
@@ -436,7 +442,7 @@ def _parse_fix_section(section_text: str, scenario_id: str = "") -> Optional[Fix
 
 
 class ScenarioLoader:
-    """Loads OpenGPA evaluation scenarios from the tests/eval directory."""
+    """Loads Beholder evaluation scenarios from the tests/eval directory."""
 
     def __init__(self, eval_dir: str = "tests/eval"):
         # Allow both relative (resolved from cwd) and absolute paths

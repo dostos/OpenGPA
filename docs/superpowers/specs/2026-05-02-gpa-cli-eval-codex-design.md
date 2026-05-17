@@ -1,4 +1,4 @@
-# OpenGPA CLI + Multi-Backend Eval Design
+# Beholder CLI + Multi-Backend Eval Design
 
 **Date:** 2026-05-02
 **Status:** Draft (brainstorming output, pending user approval)
@@ -6,10 +6,10 @@
 
 ## Goal
 
-Make the OpenGPA evaluation pipeline backend-agnostic. Today it is hard-wired to the Anthropic SDK with native tool-use, and the agent reaches the engine through an MCP server whose per-turn tool schemas dominate context tokens. After this change:
+Make the Beholder evaluation pipeline backend-agnostic. Today it is hard-wired to the Anthropic SDK with native tool-use, and the agent reaches the engine through an MCP server whose per-turn tool schemas dominate context tokens. After this change:
 
 1. The eval harness can drive the agent loop with one of three interchangeable backends — `api` (Anthropic SDK), `claude-cli`, or `codex-cli`. Adding a fourth (any future MCP-aware or shell-aware CLI) is one preset, not a rewrite.
-2. CLI agent backends call into OpenGPA through a unified, low-token shell CLI named `gpa` rather than via MCP. The MCP server is marked deprecated.
+2. CLI agent backends call into Beholder through a unified, low-token shell CLI named `gpa` rather than via MCP. The MCP server is marked deprecated.
 3. The curation/text-completion path (`gen_queries`) gets the same backend choice for consistency.
 
 ## Non-goals
@@ -22,7 +22,7 @@ Make the OpenGPA evaluation pipeline backend-agnostic. Today it is hard-wired to
 ## Background — what already exists
 
 - `gpa` CLI at `src/python/bhdr/cli/`, wired in `pyproject.toml` as `[project.scripts] gpa = "gpa.cli.main:main"`. Existing commands: `start`, `stop`, `env`, `run`, `run-browser`, `report`, `check`, `dump {frame|drawcalls|pixel}`, `frames`, `check-config`, `explain-draw`, `diff-draws`, `scene-find`, `scene-explain`, `trace {uniform|value}`. Naming is mixed: top-level verbs, hyphenated multiword commands, and one `noun verb` (`trace`).
-- Eval agent at `src/python/bhdr/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `BHDR_TOOLS` (5 OpenGPA tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
+- Eval agent at `src/python/bhdr/eval/llm_agent.py`: a single `EvalAgent` class that uses the Anthropic SDK with native tool-use over `BHDR_TOOLS` (5 Beholder tools + `read_source_file`) and optional `SNAPSHOT_TOOLS` (3 upstream-snapshot tools). `build_agent_fn(...)` is the factory the harness uses.
 - Curation LLM client at `src/python/bhdr/eval/curation/llm_client.py`: `LLMClient` (Anthropic SDK) and `ClaudeCodeLLMClient` (shell out to `claude -p`). `gen_queries.py` selects between them via `--llm-backend {api,claude-cli}`.
 - MCP server at `src/python/bhdr/mcp/server.py`: ~17 tools, JSON-RPC over stdio. Substantially broader than what the eval agent calls today.
 
@@ -216,7 +216,7 @@ Single source of truth at `docs/cli/agent-integration.md`. Two thin wrappers sym
 
 Skill content (from codex's design, lightly trimmed):
 
-- When to use (debugging an OpenGPA-captured frame)
+- When to use (debugging an Beholder-captured frame)
 - Auth and env (`BHDR_BASE_URL`, `BHDR_TOKEN`, `BHDR_SOURCE_ROOT`, `BHDR_UPSTREAM_ROOT`, `BHDR_FRAME_ID`)
 - Frame workflow (`gpa frames overview --frame $BHDR_FRAME_ID --json` first)
 - Drawcall workflow (`gpa drawcalls list`, then `drawcalls explain` / `drawcalls diff`)

@@ -1,6 +1,6 @@
 # Python Bindings
 
-pybind11 bindings for OpenGPA's C++ core engine. Exposes `Engine`, `QueryEngine`, and associated data types so the Python layer can start/stop capture sessions and issue frame queries without subprocess overhead.
+pybind11 bindings for Beholder's C++ core engine. Exposes `Engine`, `QueryEngine`, and associated data types so the Python layer can start/stop capture sessions and issue frame queries without subprocess overhead.
 
 ## Key Files
 - `py_bhdr.cpp` — single-file binding; defines the `_bhdr_native` extension module

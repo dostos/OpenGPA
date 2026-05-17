@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-  OpenGPA WebGL Capture Path — Minimal Integration Test
+  Beholder WebGL Capture Path — Minimal Integration Test
   =====================================================
   This page creates a WebGL canvas and draws a colored triangle.
 
@@ -22,11 +22,11 @@
     3. Open this file in Chrome (file:// or via a local HTTP server).
 
     4. Open DevTools -> Console.  Expected output:
-         [OpenGPA] Patched WebGL prototype
-         [OpenGPA] Patched WebGL2 prototype
-         [OpenGPA] Connected to bridge
+         [Beholder] Patched WebGL prototype
+         [Beholder] Patched WebGL2 prototype
+         [Beholder] Connected to bridge
        Then per-frame:
-         [OpenGPA] frame posted  (from the status div below)
+         [Beholder] frame posted  (from the status div below)
 
     5. Bridge stdout will show:
          [bridge] WebGL client connected
@@ -39,7 +39,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>OpenGPA WebGL Test</title>
+  <title>Beholder WebGL Test</title>
   <style>
     body { background: #1a1a2e; color: #eee; font-family: monospace; padding: 1em; }
     canvas { border: 1px solid #555; display: block; margin: 1em 0; }
@@ -47,7 +47,7 @@
   </style>
 </head>
 <body>
-  <h2>OpenGPA WebGL Capture Path — Test</h2>
+  <h2>Beholder WebGL Capture Path — Test</h2>
   <p>A colored triangle is rendered via WebGL. With the extension active, each
      frame is intercepted and forwarded to the Node.js bridge.</p>
   <canvas id="c" width="300" height="150"></canvas>

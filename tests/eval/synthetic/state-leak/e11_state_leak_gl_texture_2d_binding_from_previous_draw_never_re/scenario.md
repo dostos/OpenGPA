@@ -39,9 +39,9 @@ Nothing in the source "looks wrong" — the second draw mirrors the structure of
 - **Absent code**: The defect is the absence of a call, not a wrong call — there is no incorrect line to highlight.
 - **Implicit state machine**: GL's global binding model hides dependency on prior calls; the second draw looks self-contained but silently depends on whatever was bound earlier.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the bound texture object on each unit at every draw call,
+Beholder reports the bound texture object on each unit at every draw call,
 so identical bindings across two draws that should differ are immediately
 visible in the per-draw record.
 

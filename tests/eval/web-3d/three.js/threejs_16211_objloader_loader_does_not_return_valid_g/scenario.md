@@ -38,7 +38,7 @@ The fix discussed in the thread is to either synthesise per-face normals (matchi
 - Diagnosis requires cross-referencing two attribute bindings, not inspecting any single draw-call argument
 - Driver-dependent symptom: undefined behaviour when fetching past the end of an attribute buffer
 
-## How OpenGPA Helps
+## How Beholder Helps
 Inspecting the bound vertex attributes for the offending draw call exposes the position VBO at 180 bytes (15 vec3s) and the normal VBO at 144 bytes (12 vec3s). Cross-referencing buffer size against `glDrawArrays(count=15)` makes the off-by-3-vertex shortfall on the normal stream immediately visible — a comparison no single GL error path surfaces on its own.
 
 ## Source
@@ -70,10 +70,10 @@ spec:
       vertex_count: 12
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is purely a mismatch between two pieces of structured GL state (attribute buffer sizes vs draw count). OpenGPA's per-draw attribute/buffer dump surfaces both numbers side by side; without it, the agent must either reason about the OBJ source or notice the count discrepancy in the loader's output, neither of which is observable from rendered pixels alone.
+- **Reasoning**: The root cause is purely a mismatch between two pieces of structured GL state (attribute buffer sizes vs draw count). Beholder's per-draw attribute/buffer dump surfaces both numbers side by side; without it, the agent must either reason about the OBJ source or notice the count discrepancy in the loader's output, neither of which is observable from rendered pixels alone.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

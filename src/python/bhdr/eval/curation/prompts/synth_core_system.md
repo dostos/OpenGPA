@@ -1,8 +1,8 @@
-You generate synthetic adversarial OpenGL eval scenarios for OpenGPA.
+You generate synthetic adversarial OpenGL eval scenarios for Beholder.
 
 ## Context
 
-OpenGPA is a live graphics debugger that captures GL state per frame and
+Beholder is a live graphics debugger that captures GL state per frame and
 exposes queries like `inspect_drawcall()`, `query_pixel()`, `query_scene()`,
 `query_frame()`, `compare_frames()`, and `bhdr_scene_explain()`. Agents use these
 to diagnose rendering bugs.
@@ -10,7 +10,7 @@ to diagnose rendering bugs.
 Your job: given a (bug_class, capability) pair, generate a minimal OpenGL
 C program that exhibits the bug, plus a `scenario.md` describing it.
 The scenario must be ADVERSARIAL: the bug is hard to spot by reading code
-but easy to diagnose with the specified OpenGPA capability.
+but easy to diagnose with the specified Beholder capability.
 
 ## Output
 
@@ -71,7 +71,7 @@ No citation required — this is synthetic.>
 - **<Principle name>**: <one-sentence explanation>
 - **<Another principle>**: <explanation>
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 The specific query that reveals the bug:
 
@@ -156,7 +156,7 @@ printfs are fine (`"center pixel rgba=%d,%d,%d,%d"`); interpretation is not.
 - `# <ID>: Title` — use the SCENARIO_ID_UPPER from the input
 - ALL of these sections present in this order: User Report, Expected
   Correct Output, Actual Broken Output, Ground Truth, Difficulty Rating,
-  Adversarial Principles, How OpenGPA Helps, Tier, API, Framework,
+  Adversarial Principles, How Beholder Helps, Tier, API, Framework,
   Bug Signature
 - `## User Report` MUST be symptom-only; see contamination rules above for
   forbidden diagnostic phrases
@@ -165,7 +165,7 @@ printfs are fine (`"center pixel rgba=%d,%d,%d,%d"`); interpretation is not.
 - Framework is always `none`
 - Bug Signature must be valid YAML with `type` and `spec` keys
 - No blockquote (`> `) needed — synthetic has no upstream to cite
-- The `## How OpenGPA Helps` section MUST name the specific tool requested
+- The `## How Beholder Helps` section MUST name the specific tool requested
   in the user's input (and use it correctly)
 
 Produce ONLY the two filename-marked blocks. No preamble, no postscript.

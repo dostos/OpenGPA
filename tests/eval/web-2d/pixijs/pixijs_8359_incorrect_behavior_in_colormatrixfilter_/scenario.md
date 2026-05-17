@@ -86,7 +86,7 @@ matrix that pixi would upload as a uniform.
 - offset_column_normalization
 - shader_uniform_scale_mismatch
 
-## How OpenGPA Helps
+## How Beholder Helps
 `GET /api/v1/frames/current/draw_calls/0` exposes the full `m[20]` uniform.
 An agent that inspects the values immediately sees the asymmetry: the
 diagonal entries are integer-scale (`2.0`) while the offset-column entries
@@ -128,10 +128,10 @@ spec:
   - src/filters/defaults/color-matrix/ColorMatrixFilter.ts  # base of fix PR #11925 (offset normalization)
   - packages/filters/filter-color-matrix/src/ColorMatrixFilter.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug manifests entirely as incorrect uniform values uploaded to the color-matrix shader. OpenGPA's draw-call inspection surfaces `m[20]` directly, and the 255x magnitude gap between diagonal and offset entries is a very legible diagnostic signature. Without OpenGPA an agent would need to instrument the JS filter or diff matrices between `multiply=true` / `multiply=false` paths manually.
+- **Reasoning**: The bug manifests entirely as incorrect uniform values uploaded to the color-matrix shader. Beholder's draw-call inspection surfaces `m[20]` directly, and the 255x magnitude gap between diagonal and offset entries is a very legible diagnostic signature. Without Beholder an agent would need to instrument the JS filter or diff matrices between `multiply=true` / `multiply=false` paths manually.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

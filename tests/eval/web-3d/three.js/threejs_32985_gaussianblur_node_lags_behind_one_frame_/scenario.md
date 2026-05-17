@@ -77,7 +77,7 @@ The root cause is scheduling inside the node pipeline: `GaussianBlurNode.updateB
 - stale-texture-read
 - post-process-producer-consumer-cycle
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent can query the draw call list for the final frame, find the blur-sampling draw, inspect which texture is bound to its sampler unit, and then ask "which draw call in this frame last wrote to that texture?" When the answer is "none" (or "an earlier frame's write"), the ordering bug is self-evident — no per-frame diff required.
 
 ## Source
@@ -107,9 +107,9 @@ spec:
   observed_producer_before_consumer: false
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: Tier 1 capture records the per-frame draw call list, the FBO bound to each draw, and the textures bound to each sampler. That is exactly the information needed to answer "does draw call B's sampled texture have a producing write earlier in this same frame?" The reporter already diagnosed the bug from `onBeforeRender` / `updateBefore` log ordering; OpenGPA exposes the equivalent ordering at the GL layer without needing framework instrumentation.
+- **Reasoning**: Tier 1 capture records the per-frame draw call list, the FBO bound to each draw, and the textures bound to each sampler. That is exactly the information needed to answer "does draw call B's sampled texture have a producing write earlier in this same frame?" The reporter already diagnosed the bug from `onBeforeRender` / `updateBefore` log ordering; Beholder exposes the equivalent ordering at the GL layer without needing framework instrumentation.
 
 ## Upstream Snapshot
 - **Repo**: https://github.com/mrdoob/three.js
@@ -120,6 +120,6 @@ spec:
   - src/nodes/accessors/ReflectorNode.js
   - examples/jsm/objects/Reflector.js
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -40,9 +40,9 @@ The main render loop looks textbook — back-to-front painter's order with depth
 - **Inverted predicate**: `GL_GREATER` is a single token swap from the default `GL_LESS`, silently flipping who-wins-depth with no other symptom (no GL error, no log).
 - **State pollution**: the depth function is set by a helper that is no longer responsible for the draw; the main path's "standard reset" misses it because comments suggest it was restored.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the active depth-test state (function, clear value, mask)
+Beholder exposes the active depth-test state (function, clear value, mask)
 on every draw call, so an inverted predicate left over from a helper is
 visible without source tracing.
 

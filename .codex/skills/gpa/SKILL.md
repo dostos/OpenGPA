@@ -1,6 +1,6 @@
 ---
 name: gpa
-description: Use when debugging an OpenGPA-captured graphics scenario via the gpa CLI.
+description: Use when debugging an Beholder-captured graphics scenario via the gpa CLI.
 ---
 
 See [docs/cli/agent-integration.md](../../../docs/cli/agent-integration.md) for the full guide.

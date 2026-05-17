@@ -8,7 +8,7 @@
 
 ## Summary
 
-A static, local-only HTML dashboard that curates per-round OpenGPA eval
+A static, local-only HTML dashboard that curates per-round Beholder eval
 results. Primary axis: `code_only` vs `with_bhdr` per scenario type,
 across model tiers, across rounds. Lives in `dashboard/`; built by a
 Python script that aggregates `/data3/bhdr-eval-results/*/*.json` and
@@ -392,7 +392,7 @@ testable without I/O when given a fake filesystem fixture.
 
 ## Open Questions
 
-None for v1. Follow-ups recorded in the OpenGPA strategic backlog:
+None for v1. Follow-ups recorded in the Beholder strategic backlog:
 
 - **Vendoring Plotly** (Q1 follow-up): bundle a copy for offline use
   when this becomes the daily-driver.

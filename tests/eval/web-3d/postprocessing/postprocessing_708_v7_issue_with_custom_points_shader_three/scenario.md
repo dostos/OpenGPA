@@ -82,8 +82,8 @@ buffers.
 - mrt_partial_write
 - shader_vs_fbo_contract
 
-## How OpenGPA Helps
-OpenGPA exposes the draw call's bound framebuffer attachments, the active
+## How Beholder Helps
+Beholder exposes the draw call's bound framebuffer attachments, the active
 `glDrawBuffers` set, and the fragment shader source. An agent can
 cross-reference the two and immediately see that the shader declares one
 output while two draw buffers are enabled, pinpointing the missing
@@ -129,15 +129,15 @@ spec:
   - src/materials/SpriteMaterial.ts
   - src/passes/GeometryPass.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a mismatch between static draw-time state (FBO
   draw-buffer count) and shader-declared outputs. Both are directly
-  inspectable through OpenGPA's per-draw snapshot. A baseline agent looking
+  inspectable through Beholder's per-draw snapshot. A baseline agent looking
   only at the rendered frame sees "points invisible" with no obvious cause;
-  an OpenGPA-equipped agent can diff outputs vs. enabled attachments and name
+  an Beholder-equipped agent can diff outputs vs. enabled attachments and name
   the missing declaration in one query.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

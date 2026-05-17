@@ -1,4 +1,4 @@
-/* Minimal hand-rolled DWARF parser — Phase 1 of OpenGPA native trace.
+/* Minimal hand-rolled DWARF parser — Phase 1 of Beholder native trace.
  *
  * Parses .debug_info + .debug_abbrev + .debug_str (and debug_str_offsets
  * for v4 with .debug_line_str; best-effort) just enough to extract:

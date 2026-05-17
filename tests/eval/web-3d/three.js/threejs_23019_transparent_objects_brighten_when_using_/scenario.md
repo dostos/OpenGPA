@@ -42,7 +42,7 @@ The architectural fix landed across r152/r153, where sRGB color management becam
 - encode-before-blend
 - visually-plausible-but-numerically-wrong
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw call for the transparent overlay reveals two facts simultaneously: (a) blending is enabled with `GL_SRC_ALPHA / GL_ONE_MINUS_SRC_ALPHA` against a linear RGBA8 framebuffer with `GL_FRAMEBUFFER_SRGB` disabled, and (b) the bound fragment shader's source contains a `pow(c, vec3(1.0/2.2))` on the outgoing color. Surfacing both facts together — without forcing the agent to guess which uniform or which texture is the "gamma" — is what lets the agent name "blending happens in sRGB space" instead of chasing the texture or the opacity uniform.
 
 ## Source
@@ -75,10 +75,10 @@ spec:
   channels: [r, g, b]
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The diagnosis requires correlating three pieces of GL state for the transparent draw call: the blend func/equation, the framebuffer's color encoding (`GL_FRAMEBUFFER_SRGB` state + attachment internal format), and the fragment shader source. A baseline agent without capture has to guess which of the many possible knobs (texture decode, material opacity, tone mapping, premultiplied alpha, `GL_FRAMEBUFFER_SRGB`) is at fault. OpenGPA's per-draw-call state dump — which already exposes blend state, bound program, and shader source — collapses that search into one query.
+- **Reasoning**: The diagnosis requires correlating three pieces of GL state for the transparent draw call: the blend func/equation, the framebuffer's color encoding (`GL_FRAMEBUFFER_SRGB` state + attachment internal format), and the fragment shader source. A baseline agent without capture has to guess which of the many possible knobs (texture decode, material opacity, tone mapping, premultiplied alpha, `GL_FRAMEBUFFER_SRGB`) is at fault. Beholder's per-draw-call state dump — which already exposes blend state, bound program, and shader source — collapses that search into one query.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

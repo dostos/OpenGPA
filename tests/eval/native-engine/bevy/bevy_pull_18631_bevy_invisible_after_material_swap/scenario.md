@@ -98,7 +98,7 @@ secondary:
 - bug-only-fires-during-an-instant-remove-then-insert-window
 - bug-leaves-entity-permanently-skipped-no-self-recovery
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture shows zero draw calls for the cubes' mesh, even
 though the entity exists in the world and has a valid pipeline.
@@ -133,7 +133,7 @@ spec:
   fix_commit: 17e3efac12fb0291f823ed4d381b14fad1ffffdd
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Grep on "hook" or "observer" leads to the ECS
   side; grep on "invisible" returns nothing useful. The bug is
@@ -142,6 +142,6 @@ spec:
   rendering, focusing the search on `bevy_pbr/src/render/mesh.rs`
   rather than on `bevy_ecs`.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

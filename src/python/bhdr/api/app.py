@@ -1,4 +1,4 @@
-"""OpenGPA FastAPI application factory.
+"""Beholder FastAPI application factory.
 
 MUST be served on 127.0.0.1 only (NFR-5.1 — localhost-only binding).
 """
@@ -68,7 +68,7 @@ def create_app(provider=None, auth_token: str = "",
                trace_store=None,
                # Legacy kwargs for backward compatibility
                query_engine=None, engine=None) -> FastAPI:
-    """Create and configure the OpenGPA REST API application.
+    """Create and configure the Beholder REST API application.
 
     Args:
         provider: A :class:`~bhdr.backends.base.FrameProvider` instance.
@@ -95,7 +95,7 @@ def create_app(provider=None, auth_token: str = "",
         from bhdr.backends.native import NativeBackend
         provider = NativeBackend(query_engine, engine)
 
-    app = FastAPI(title="OpenGPA", version="0.1.0")
+    app = FastAPI(title="Beholder", version="0.1.0")
 
     app.state.provider = provider
     app.state.auth_token = auth_token

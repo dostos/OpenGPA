@@ -62,7 +62,7 @@ The fix commit (7e814f9) is the ground-truth tiebreaker between these hypotheses
 - render_callback_vs_static_image_interaction
 - symptom_swaps_direction_between_versions
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame-capture view of the draw calls for the two symbol layers reveals whether (a) one of the layers is skipping its draw entirely (layer-level placement/culling bug) or (b) both draws execute but one samples from an atlas region whose pixels belong to the other layer's icon (atlas-sharing bug). Querying the sampled texture contents at the symbol's UV range, plus the bound texture ID per draw, distinguishes the two root-cause families and points directly at the atlas-cache subset-matching or render-callback-patching code.
 
@@ -120,10 +120,10 @@ spec:
   fix_commit: 7e814f92d6317cb2bcf28d7ee6bb7eed86963db3
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug manifests as one symbol draw missing or sampling wrong atlas pixels — both are directly observable in a frame-level capture (draw call list, bound texture IDs, sampled UV ranges). OpenGPA's per-draw state queries let the agent distinguish a placement/culling regression from an atlas-cache subset-match regression without reading mapbox-gl-js source, which is the main source of difficulty for a text-only agent.
+- **Reasoning**: The bug manifests as one symbol draw missing or sampling wrong atlas pixels — both are directly observable in a frame-level capture (draw call list, bound texture IDs, sampled UV ranges). Beholder's per-draw state queries let the agent distinguish a placement/culling regression from an atlas-cache subset-match regression without reading mapbox-gl-js source, which is the main source of difficulty for a text-only agent.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

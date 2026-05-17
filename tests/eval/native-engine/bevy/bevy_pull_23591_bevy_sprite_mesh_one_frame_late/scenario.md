@@ -122,7 +122,7 @@ secondary:
 - only-one-of-two-otherwise-identical-paths-fails
 - bug-is-system-ordering-not-data
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture of the broken frame shows that the right-hand image
 contributed **zero draw calls**, while the left-hand image (the
@@ -157,7 +157,7 @@ spec:
   fix_commit: f70f75a0193d77c94d0bd4a8d19ef7b9b8183614
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: With the file-pointer hint trimmed from the user
   report, the symptom alone ("only one of two near-identical paths
@@ -166,6 +166,6 @@ spec:
   draws — pointing the agent at extract/queue ordering for that
   specific component family rather than at material or mesh code.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

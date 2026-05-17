@@ -37,9 +37,9 @@ The mistake is a one-character difference (`glUniform1f` vs `glUniform3f`) at a 
 - **Silent no-op**: The faulty API call generates an error flag but has no visible effect on control flow or logs, so the bug manifests only as wrong pixels downstream.
 - **Type confusion**: The setter's scalar signature superficially resembles "set a single channel" and reads as plausible beside a shader the author wrote minutes ago, so code review tends to skip over it.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports each program's active uniforms with their declared GLSL
+Beholder reports each program's active uniforms with their declared GLSL
 type and the value resolved at draw time, plus per-uniform setter history.
 A `vec3` uniform sitting at its zero default after a "set" call surfaces
 the type mismatch directly.

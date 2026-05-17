@@ -77,7 +77,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - cross-package-version-skew-three-vs-drei
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` on the failing frame surfaces the `glLinkProgram`/`glGetProgramiv` failure with the captured fragment-shader source — `/programs/<id>/source` exposes the exact GLSL string that names `unpackRGBAToDepth`, letting the agent grep drei's source for that literal and land directly on `src/core/softShadows.tsx` rather than guessing among shadow-related chunks. `/programs/<id>/uniforms` further confirms the offending program is the SoftShadows-injected MeshStandardMaterial variant rather than three's own ShadowMaterial.
 
 ## Source
@@ -105,6 +105,6 @@ spec:
   fix_commit: (auto-resolve)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The captured fragment-shader source (via `/programs/<id>/source`) contains the literal `unpackRGBAToDepth` call drei injects. An agent with that captured string can grep drei's repo for the exact symbol and land on `src/core/softShadows.tsx` deterministically, instead of having to guess across three.js's many shadow-related shader chunks. Without GPA, the only signal is the runtime error message — which names the missing function but not the package or file that injected it.

@@ -60,9 +60,9 @@ alternative and recognizing that `max(x, 0)` is not a complete `saturate`.
 - **Comment noise**: The correct implementation is visibly present but marked
   as inactive, creating confusion about intent.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA can sample the raw fragment color at the highlight pixel,
+Beholder can sample the raw fragment color at the highlight pixel,
 revealing whether the shader is producing values out of the [0, 1] range
 before framebuffer clamping. That redirects attention from light/geometry
 to the shader's clamping logic.

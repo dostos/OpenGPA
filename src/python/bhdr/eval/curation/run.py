@@ -1,6 +1,6 @@
 """Single-path mining orchestrator (SELECT -> PRODUCE -> JUDGE).
 
-This is the unified CLI entry point for the OpenGPA mining pipeline. It
+This is the unified CLI entry point for the Beholder mining pipeline. It
 discovers candidates, scores them via deterministic rules, optionally
 extracts a DraftResult + validates it, and (in JUDGE phase) commits the
 scenario into ``tests/eval/`` while writing a coverage-log entry.

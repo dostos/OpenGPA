@@ -8,9 +8,9 @@ concrete capture capabilities to implement).
 
 **Round 4 trap:** After r27 (mapbox fractional `maxZoom`) scored 0/8, the
 instinct was to declare bugs whose root cause lives in JS logic "upstream of
-GL" as out-of-scope for OpenGPA. That's wrong. Every visible rendering bug
+GL" as out-of-scope for Beholder. That's wrong. Every visible rendering bug
 manifests as observable state somewhere in the capture — wrong uniform,
-missing draw call, unexpected binding. OpenGPA's job is to surface the
+missing draw call, unexpected binding. Beholder's job is to surface the
 anomaly; tracing the anomaly back to the upstream cause in JS / framework
 source is the agent's job.
 
@@ -21,7 +21,7 @@ question), not location-based. Triage prompt was reverted in this direction.
 
 **Round 4 r27 was universally missed because its `main.c` never reproduces
 the bug.** The file is a black-frame stub that issues `glClearColor` +
-`glClear` + `glXSwapBuffers` and nothing else. Round 4 agents querying OpenGPA
+`glClear` + `glXSwapBuffers` and nothing else. Round 4 agents querying Beholder
 saw an empty capture (zero draw calls, zero uniforms, zero textures). There
 was no signal to surface.
 
@@ -62,7 +62,7 @@ engineering cost. Not in any priority order.
   them skip the "grep randomly through framework source" phase.
 - **`gpa.mark(key, value)` user-SDK.** A framework-agnostic annotation
   API that lets power users / plugin authors POST suspect upstream state
-  without OpenGPA having to ship per-framework code. 1% of the work of
+  without Beholder having to ship per-framework code. 1% of the work of
   Tier 3 metadata integration, ~60% of the value for the bugs it covers.
 - **Differential capture.** Capture the same app at commit A (known-good)
   and commit B (buggy), then compute a diff over uniforms / bindings /

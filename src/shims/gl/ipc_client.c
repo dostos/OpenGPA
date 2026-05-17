@@ -278,7 +278,7 @@ int bhdr_ipc_connect_socket_with_retry(const char* socket_path) {
 
     /* Exhausted — log once, fall through to fail-open. */
     fprintf(stderr,
-            "[OpenGPA] handshake failed after %d retries; capture disabled\n",
+            "[Beholder] handshake failed after %d retries; capture disabled\n",
             BHDR_IPC_CONNECT_ATTEMPTS);
     return -1;
 }
@@ -299,7 +299,7 @@ int bhdr_ipc_connect(void) {
     /* Open shared memory (one-shot — backlog pressure is socket-only). */
     int shm_fd = shm_open(shm_name, O_RDWR, 0);
     if (shm_fd < 0) {
-        fprintf(stderr, "[OpenGPA] shm_open(%s) failed: %s\n", shm_name, strerror(errno));
+        fprintf(stderr, "[Beholder] shm_open(%s) failed: %s\n", shm_name, strerror(errno));
         return -1;
     }
 
@@ -307,7 +307,7 @@ int bhdr_ipc_connect(void) {
     void* hdr_map = mmap(NULL, sizeof(RingHeader), PROT_READ | PROT_WRITE,
                          MAP_SHARED, shm_fd, 0);
     if (hdr_map == MAP_FAILED) {
-        fprintf(stderr, "[OpenGPA] mmap header failed: %s\n", strerror(errno));
+        fprintf(stderr, "[Beholder] mmap header failed: %s\n", strerror(errno));
         close(shm_fd);
         return -1;
     }
@@ -316,7 +316,7 @@ int bhdr_ipc_connect(void) {
     munmap(hdr_map, sizeof(RingHeader));
 
     if (hdr.magic != BHDR_SHM_MAGIC) {
-        fprintf(stderr, "[OpenGPA] shm magic mismatch (got 0x%llx)\n",
+        fprintf(stderr, "[Beholder] shm magic mismatch (got 0x%llx)\n",
                 (unsigned long long)hdr.magic);
         close(shm_fd);
         return -1;
@@ -331,12 +331,12 @@ int bhdr_ipc_connect(void) {
     close(shm_fd);
     if (g_shm_base == MAP_FAILED) {
         g_shm_base = NULL;
-        fprintf(stderr, "[OpenGPA] mmap full shm failed: %s\n", strerror(errno));
+        fprintf(stderr, "[Beholder] mmap full shm failed: %s\n", strerror(errno));
         return -1;
     }
 
     /* Connect + handshake with retry/backoff. The retry helper itself
-     * logs once on exhaustion ("[OpenGPA] handshake failed after N
+     * logs once on exhaustion ("[Beholder] handshake failed after N
      * retries; capture disabled"); on intermediate failures it stays
      * silent so a 33-parallel run doesn't spam stderr with hundreds of
      * lines. */
@@ -346,7 +346,7 @@ int bhdr_ipc_connect(void) {
         return -1;
     }
 
-    fprintf(stderr, "[OpenGPA] IPC connected: shm=%s socket=%s slots=%u slot_size=%llu\n",
+    fprintf(stderr, "[Beholder] IPC connected: shm=%s socket=%s slots=%u slot_size=%llu\n",
             shm_name, socket_path, g_num_slots, (unsigned long long)g_slot_size);
     return 0;
 }
@@ -390,7 +390,7 @@ void bhdr_ipc_send_frame_ready(uint64_t frame_id, uint32_t slot_index) {
     fr.shm_slot_index = slot_index;
 
     if (send_msg(MSG_FRAME_READY, &fr, sizeof(fr)) != 0) {
-        fprintf(stderr, "[OpenGPA] send FRAME_READY failed, disconnecting\n");
+        fprintf(stderr, "[Beholder] send FRAME_READY failed, disconnecting\n");
         bhdr_ipc_disconnect();
     }
 }

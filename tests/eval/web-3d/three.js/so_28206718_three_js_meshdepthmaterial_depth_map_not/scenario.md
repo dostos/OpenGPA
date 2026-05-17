@@ -55,7 +55,7 @@ The `logarithmicDepthBuffer` flag fixes the symptom by swapping in a log-space d
 - tight_near_far_ratio_far_from_origin
 - visualization_vs_stored_representation
 
-## How OpenGPA Helps
+## How Beholder Helps
 A query that samples fragment depth (`gl_FragCoord.z`) across the four drawn quads would return values clustered near 1.0, letting the agent see the compression directly. Comparing `depth_win` at known world-space depths against an expected linear mapping immediately flags the 1/z non-linearity rather than an application-level bug.
 
 ## Source
@@ -86,10 +86,10 @@ spec:
   min_fraction_above_threshold: 0.8
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The root cause is visible in raw framebuffer and depth-buffer data — a query that dumps depth values at known pixel locations reveals the non-linear clustering without any framework knowledge. Without OpenGPA, the developer has to mentally model the 1/z curve or enable an engine flag as a black box; with OpenGPA, the agent can directly inspect that `gl_FragCoord.z` is >0.99 for all four quads and reason from there.
+- **Reasoning**: The root cause is visible in raw framebuffer and depth-buffer data — a query that dumps depth values at known pixel locations reveals the non-linear clustering without any framework knowledge. Without Beholder, the developer has to mentally model the 1/z curve or enable an engine flag as a black box; with Beholder, the agent can directly inspect that `gl_FragCoord.z` is >0.99 for all four quads and reason from there.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -3,7 +3,7 @@
 //
 // Reflection scanner that, on each uniform/bindTexture call (in gated
 // mode), BFS-walks registered JS globals, hashes primitive values, and
-// POSTs a value_index to the OpenGPA engine sidecar.
+// POSTs a value_index to the Beholder engine sidecar.
 //
 // Intentionally orthogonal to interceptor.js — the only shared state is
 // window.__gpaState.{frameId, dcCount} which interceptor.js exposes.

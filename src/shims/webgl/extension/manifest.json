@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "OpenGPA WebGL Debugger",
+  "name": "Beholder WebGL Debugger",
   "version": "0.1.0",
-  "description": "Open Graphics Profiler for Agents - WebGL interception",
+  "description": "Beholder - WebGL interception",
   "permissions": ["activeTab"],
   "content_scripts": [{
     "matches": ["<all_urls>"],

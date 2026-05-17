@@ -153,7 +153,7 @@ codebase (where `RENDER` is the standard for per-pass uniforms),
 - captured-uniform-equals-prior-pass-value
 - cross-pass-stale-value-symptom
 
-## How OpenGPA Helps
+## How Beholder Helps
 Capturing the texture-matrix uniform on the two consecutive `render()`
 calls within a single frame and comparing them shows a byte-for-byte
 match where the values must differ. A single
@@ -199,7 +199,7 @@ spec:
     mirror pass's value.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user-visible symptom ("zoom glitch on a reflected
   texture") gives no source-file hint at all. The captured GL state shows

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # round_runner_template.sh
 #
-# Reference template for per-round OpenGPA eval dispatchers (Round 9+).
+# Reference template for per-round Beholder eval dispatchers (Round 9+).
 # Validates the requested (scenarios x tiers x modes) matrix against a
 # USD budget via `python -m bhdr.eval.plan`, then dispatches one
 # `claude -p --output-format stream-json --max-turns 40` per cell in

@@ -92,7 +92,7 @@ which uniquely identifies this UB pattern in the GL spec.
 - depth_compare_mode_vs_non_shadow_sampler
 - undefined_behavior_with_implementation_defined_visual_output
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying `/api/v1/frames/current/draw_calls/<id>` shows the bound textures
 per unit and their `GL_TEXTURE_COMPARE_MODE`; cross-referencing the active
 program's sampler uniform types lets the agent flag "unit 0 has a depth
@@ -128,15 +128,15 @@ spec:
   sampler_uniform_type: sampler2D
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a per-draw-call state mismatch (sampler type vs.
   texture compare mode) that is invisible in the rendered pixels on many
-  drivers but trivially detectable from captured per-draw GL state. OpenGPA's
+  drivers but trivially detectable from captured per-draw GL state. Beholder's
   Tier-1 raw state capture is exactly the right shape for this query, and an
   agent doesn't need any heuristic — just compare the sampler uniform type
   against `GL_TEXTURE_COMPARE_MODE` of the bound texture.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

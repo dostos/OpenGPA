@@ -105,7 +105,7 @@ secondary:
 - bug-only-visible-mid-motion-not-static
 - root-cause-is-an-order-of-operations-error-in-shader
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A capture taken on a frame where the bleed is visible records the
 final clip-space vertex positions of the sprite quad. Comparing
@@ -143,16 +143,16 @@ spec:
   fix_commit: 5f5c6904815a5a0ae8690fff1409303a60f02680
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user's report uses zero engine vocabulary —
   "white line above sprite, only when moving". A code_only agent
   has nothing to grep for that lands in the right file; "sprite
-  bleed" matches dozens of files. With OpenGPA, capturing the
+  bleed" matches dozens of files. With Beholder, capturing the
   sprite-quad vertex positions across two adjacent frames
   directly exposes the sub-pixel snap drift, narrowing the
   search to "where do canvas vertices get snapped".
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

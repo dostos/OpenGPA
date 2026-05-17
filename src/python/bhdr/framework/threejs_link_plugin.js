@@ -1,4 +1,4 @@
-// threejs_link_plugin.js — OpenGPA Tier-3 link plugin for three.js
+// threejs_link_plugin.js — Beholder Tier-3 link plugin for three.js
 //
 // Walks `scene.traverse()` once per render(), pushes a debug-marker per
 // Mesh/Light/Group around the corresponding GL draw calls, and POSTs the

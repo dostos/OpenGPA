@@ -73,9 +73,9 @@ isolate individually.
 - **Deep pipeline knowledge required**: diagnosing this requires understanding
   the interaction between view and projection matrix handedness conventions.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the raw view and projection matrices and the derived
+Beholder exposes the raw view and projection matrices and the derived
 camera basis vectors as part of per-draw state. Both errors can be read
 out independently from the captured matrices, instead of being deduced
 from a "mostly correct" final image.

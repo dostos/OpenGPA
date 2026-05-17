@@ -44,9 +44,9 @@ skimming setup code.
   complete absence of geometry, which is often mistaken for a matrix,
   viewport, or culling problem rather than a stencil issue.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes the active stencil function and reference value per draw,
+Beholder exposes the active stencil function and reference value per draw,
 so a draw that submits geometry but writes no fragments while a stencil
 test is active surfaces the discard cause directly.
 

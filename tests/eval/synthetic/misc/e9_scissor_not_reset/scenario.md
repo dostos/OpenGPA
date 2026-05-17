@@ -47,8 +47,8 @@ time of the 3D draw call, not just at the start of the frame.
   frustum error.
 - **No error signal**: GL happily clips geometry; no warning is issued.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the per-draw pipeline state, including scissor test enable
+Beholder reports the per-draw pipeline state, including scissor test enable
 and rectangle, so the residual UI scissor active during the 3D pass is
 visible in a single record without manually tracing state across passes.

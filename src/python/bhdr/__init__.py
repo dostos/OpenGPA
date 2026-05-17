@@ -1,1 +1,1 @@
-# OpenGPA Python package
+# Beholder Python package

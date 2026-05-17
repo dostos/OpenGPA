@@ -67,8 +67,8 @@ i.e. the pool cache key fails to distinguish mipmapped vs. non-mipmapped render 
 - lod_sampling_without_mipmap_generation
 - cross_feature_state_pollution (text-mipmap setting leaks into filter pool via a cache key that ignores the mipmap flag)
 
-## How OpenGPA Helps
-OpenGPA's Tier-1 capture exposes per-texture metadata including the declared mip level range (`GL_TEXTURE_BASE_LEVEL`/`MAX_LEVEL`) and which levels actually received writes (via `glTexImage2D` with non-NULL data, FBO attachments, or `glGenerateMipmap`). A single `texture_mip_state` query on the filter render target immediately shows that levels 1..3 are allocated but unwritten while the sampler's min filter is `GL_LINEAR_MIPMAP_LINEAR`. That mismatch — declared vs. populated — is invisible to shader-level or code-level inspection alone.
+## How Beholder Helps
+Beholder's Tier-1 capture exposes per-texture metadata including the declared mip level range (`GL_TEXTURE_BASE_LEVEL`/`MAX_LEVEL`) and which levels actually received writes (via `glTexImage2D` with non-NULL data, FBO attachments, or `glGenerateMipmap`). A single `texture_mip_state` query on the filter render target immediately shows that levels 1..3 are allocated but unwritten while the sampler's min filter is `GL_LINEAR_MIPMAP_LINEAR`. That mismatch — declared vs. populated — is invisible to shader-level or code-level inspection alone.
 
 ## Source
 - **URL**: https://github.com/pixijs/pixijs/issues/11717
@@ -106,10 +106,10 @@ spec:
   - src/filters/defaults/FilterPipe.ts
   - src/rendering/renderers/shared/texture/TextureSource.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a state-vs-content mismatch on a specific texture: the sampler requests a mipmap level that was never written. A graphics debugger that records per-texture mip-level write history and sampler settings surfaces this directly, whereas static code inspection of either the filter shader or the pool allocation path in isolation does not reveal the problem — both are individually "correct," and the bug only exists in the interaction.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

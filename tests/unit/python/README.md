@@ -1,6 +1,6 @@
 # Python Tests
 
-pytest suite for OpenGPA's Python layer. All tests run without a live GPU; the native backend is replaced by a fixture that returns synthetic frame data.
+pytest suite for Beholder's Python layer. All tests run without a live GPU; the native backend is replaced by a fixture that returns synthetic frame data.
 
 ## Coverage
 - REST API endpoints (frame, draw call, pixel, scene routes)

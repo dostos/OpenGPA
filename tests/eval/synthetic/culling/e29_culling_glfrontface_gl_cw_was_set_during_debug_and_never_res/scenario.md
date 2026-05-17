@@ -38,9 +38,9 @@ Glancing at `main()` you see `glFrontFace(GL_CCW)` set explicitly before renderi
 - **Debug state leak**: a diagnostic helper mutates global pipeline state and forgets to restore it, corrupting the render path it was meant to instrument.
 - **Module boundary leak**: the winding convention is an implicit contract across modules; the helper crosses that boundary and breaks it without any compile-time or runtime signal.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA exposes per-draw front-face and cull state, so a mismatch with
+Beholder exposes per-draw front-face and cull state, so a mismatch with
 the engine's documented convention is visible directly in the draw
 record.
 

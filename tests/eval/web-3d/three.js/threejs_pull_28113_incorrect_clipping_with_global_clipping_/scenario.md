@@ -65,7 +65,7 @@ change_summary: >
 - camera-dependent-uniform-not-restored
 - symptom-delayed-from-cause (outer draw issued long after the offending nested pass)
 
-## How OpenGPA Helps
+## How Beholder Helps
 Comparing the uniform block / `uClipPlane` value used by outer draw A vs outer draw B in the per-draw-call snapshot immediately shows the plane vector changed between two draws that the agent believed shared one "global" clip plane. Querying `uniform_value_across_draws` for the clip uniform pinpoints the nested-pass boundary as the source of the mutation.
 
 ## Source
@@ -109,10 +109,10 @@ spec:
     never restored.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug is a silent mutation of a shader uniform between two outer-pass draw calls. Per-draw uniform snapshots expose the divergence directly; a diff of uniform state between draw N and draw N+1 reveals which value changed and, paired with the draw-call call-site, points at the nested render boundary. This is squarely in Tier-1 OpenGPA's sweet spot — raw state per draw, no heuristics needed.
+- **Reasoning**: The bug is a silent mutation of a shader uniform between two outer-pass draw calls. Per-draw uniform snapshots expose the divergence directly; a diff of uniform state between draw N and draw N+1 reveals which value changed and, paired with the draw-call call-site, points at the nested render boundary. This is squarely in Tier-1 Beholder's sweet spot — raw state per draw, no heuristics needed.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

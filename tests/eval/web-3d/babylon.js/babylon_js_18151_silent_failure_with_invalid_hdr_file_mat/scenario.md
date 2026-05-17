@@ -52,7 +52,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - missing-behavior-rather-than-wrong-behavior
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` would show that no environment cubemap texture is bound during PBR draw calls (uniform `environmentTexture` resolves to a 1x1 placeholder or null sampler), pointing the agent at the texture-upload path rather than the shader. Combined with the absence of any `glTexImage2D` call for the expected HDR cubemap faces, GPA's capture surfaces the silent load failure as a concrete missing-resource signal that the browser console doesn't provide.
 
 ## Source
@@ -79,10 +79,10 @@ spec:
   fix_commit: (unresolved)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug class — silent asset-load failure with no console signal — is exactly where a GPU-state capture tool adds value over browser devtools. `gpa report` on the affected frame would show the PBR material's environment sampler bound to nothing (or to a default placeholder), and the absence of cubemap-face uploads in the trace points the agent at the HDR loader path rather than the user's scene code.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

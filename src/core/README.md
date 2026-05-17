@@ -1,6 +1,6 @@
 # Core Engine
 
-C++ core engine for OpenGPA. Receives frame captures from shims over shared memory and Unix sockets, stores and normalizes the data, and answers structured queries from the Python layer.
+C++ core engine for Beholder. Receives frame captures from shims over shared memory and Unix sockets, stores and normalizes the data, and answers structured queries from the Python layer.
 
 ## Key Subdirectories
 - `ipc/` — shared memory ring buffer and control socket server

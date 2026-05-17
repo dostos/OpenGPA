@@ -70,7 +70,7 @@ bisection in the linked thread.
 - uniform_set_but_pass_skipped
 - classifier_short_circuits_on_opaque
 
-## How OpenGPA Helps
+## How Beholder Helps
 Listing draw calls for the affected mesh shows the base color draw call
 present with the expected SSS-related uniforms, but no subsequent SSS
 effect draw call against the SSS framebuffer. That mismatch — uniform
@@ -113,7 +113,7 @@ spec:
   - scene/resources/material.cpp
   - servers/rendering/shader_compiler.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is invisible from the shader source alone — the
   uniform is set and the GLSL is correct. Only by inspecting the actual
@@ -121,6 +121,6 @@ spec:
   which immediately redirects the investigation from "shader math" to
   "render-pass classifier".
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

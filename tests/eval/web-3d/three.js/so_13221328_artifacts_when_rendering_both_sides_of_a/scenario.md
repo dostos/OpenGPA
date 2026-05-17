@@ -52,12 +52,12 @@ front-facing ones.
 - order-dependent-blending
 - self-transparency-ordering
 
-## How OpenGPA Helps
-OpenGPA can confirm the draw state (blend enabled, depth-mask on, cull-face
+## How Beholder Helps
+Beholder can confirm the draw state (blend enabled, depth-mask on, cull-face
 off, single draw call for the sphere), which names the problem class. It
 cannot point to a "wrong uniform" because the defect is the pipeline choice
 itself — the correct remediation is adding a second draw call. This makes
-OpenGPA's contribution diagnostic, not prescriptive.
+Beholder's contribution diagnostic, not prescriptive.
 
 ## Source
 - **URL**: https://stackoverflow.com/questions/13221328/artifacts-when-rendering-both-sides-of-a-transparent-object-with-three-js
@@ -88,15 +88,15 @@ spec:
   expected_remediation: "split into two draws: one with cull=front, one with cull=back"
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA can surface the offending state combination (blend
+- **Reasoning**: Beholder can surface the offending state combination (blend
   on + depth-write on + cull off in a single draw) which is a recognizable
   fingerprint of the self-transparency class. However, the upstream resolution
   is a pipeline restructure (two passes with opposite culling), not a value
-  fix, so OpenGPA narrows the hypothesis space but does not hand the agent a
+  fix, so Beholder narrows the hypothesis space but does not hand the agent a
   one-line patch.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

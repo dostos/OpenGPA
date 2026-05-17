@@ -2,7 +2,7 @@
 # p2_chromium_capture.sh — chromium-headless harness for Path 2 capture POC.
 #
 # Goal: launch a non-snap chromium under Xvfb with our LD_PRELOAD GL shim
-# attached and a three.js page loaded, so the OpenGPA engine sees real
+# attached and a three.js page loaded, so the Beholder engine sees real
 # WebGL frames captured via the desktop-GL (libGL.so) path.
 #
 # Status (2026-04-30): blocked. The shim *does* load into chromium's GPU
@@ -29,7 +29,7 @@ mkdir -p "$LOG_DIR"
 mkdir -p "$PROFILE_ROOT"
 PROFILE_DIR="$(mktemp -d -p "$PROFILE_ROOT" prof-XXXXXX)"
 
-# --------- locate the OpenGPA shim ---------
+# --------- locate the Beholder shim ---------
 # bazel-bin symlink resolves to whichever bazel cache built it last.
 # We resolve to a real file path so LD_PRELOAD survives chromium's
 # zygote fork.

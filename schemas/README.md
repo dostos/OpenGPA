@@ -1,6 +1,6 @@
 # Schemas
 
-FlatBuffers schemas for IPC between OpenGPA's shims and the core engine.
+FlatBuffers schemas for IPC between Beholder's shims and the core engine.
 
 ## Key Files
 - `frame_capture.fbs` — defines `FrameCapture` (top-level capture payload), `DrawCallCapture` (per-draw metadata), `Handshake` (shim registration), and `ControlCommand` (engine directives)

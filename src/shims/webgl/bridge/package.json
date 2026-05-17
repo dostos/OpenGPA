@@ -1,7 +1,7 @@
 {
   "name": "bhdr-webgl-bridge",
   "version": "0.1.0",
-  "description": "WebSocket-to-Unix-socket bridge for OpenGPA WebGL shim",
+  "description": "WebSocket-to-Unix-socket bridge for Beholder WebGL shim",
   "main": "bridge.js",
   "scripts": { "start": "node bridge.js" },
   "dependencies": { "ws": "^8.0.0" }

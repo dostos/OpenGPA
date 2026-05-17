@@ -41,7 +41,7 @@ The parallel with `SkinningNode`/`positionPrevious` is the right one: for veloci
 - shader_reuses_current_transform_for_previous
 - motion_blur_velocity_plumbing
 
-## How OpenGPA Helps
+## How Beholder Helps
 `get_draw_call` exposes the draw's full attribute and uniform binding set. The agent can enumerate everything the vertex stage reads — `a_pos`, the four slots of `a_instanceMatrix`, `u_viewProj`, `u_prevViewProj` — and observe that no `prev`-qualified per-instance source exists. Cross-referencing this with the vertex shader source (also available per draw) confirms the previous-frame position is computed by reusing the current instance matrix. A `get_pixel` on color attachment 1 at the instance's coverage region returns `(0, 0, *, *)`, corroborating that the velocity MRT carries no instance-motion signal.
 
 ## Source
@@ -93,10 +93,10 @@ spec:
   - src/renderers/common/nodes/NodeBuilder.js
   - examples/jsm/tsl/display/MotionBlur.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a missing input to the velocity pass, not a numerical oddity. It is fully diagnosable from per-draw state: the agent can enumerate vertex attributes and uniforms on the draw that writes color attachment 1, see that every transform-related binding is present in "current" form but none in "previous" form, and correlate with the vertex shader source to confirm the previous-position computation reuses the current instance matrix. A follow-up pixel probe on the velocity attachment confirms the zero-velocity signal. No need to interpret a rendered color image or diff across frames.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

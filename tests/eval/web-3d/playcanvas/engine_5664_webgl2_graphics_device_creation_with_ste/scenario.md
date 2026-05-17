@@ -62,7 +62,7 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - spec-violation-only-visible-via-driver-error-string
 
-## How OpenGPA Helps
+## How Beholder Helps
 A `gpa trace` capture of the failing frame surfaces the exact `glBlitFramebuffer` call that emits `GL_INVALID_OPERATION`, including the source and destination FBO attachment formats — the mismatch (e.g. `DEPTH_COMPONENT24` vs `DEPTH24_STENCIL8`) is visible directly in the captured framebuffer-attachment metadata. Querying `/frames/current/draw_calls/<id>/framebuffer` for both the source and destination targets lets the agent pinpoint which render-target construction site picked the wrong depth format, which then leads `grep` to the offending PlayCanvas source file without needing to repro the bug interactively.
 
 ## Source
@@ -89,6 +89,6 @@ spec:
   fix_commit: (unresolved)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The failure is a driver-side `GL_INVALID_OPERATION` whose root cause is a framebuffer-attachment format mismatch — exactly the kind of low-level state OpenGPA captures verbatim per draw/blit call. Without GPA, the agent has only a console string and must reason about which of many render targets disagree; with GPA, the format pair is directly readable from the captured FBO state.
+- **Reasoning**: The failure is a driver-side `GL_INVALID_OPERATION` whose root cause is a framebuffer-attachment format mismatch — exactly the kind of low-level state Beholder captures verbatim per draw/blit call. Without GPA, the agent has only a console string and must reason about which of many render targets disagree; with GPA, the format pair is directly readable from the captured FBO state.

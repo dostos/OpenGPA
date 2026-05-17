@@ -102,7 +102,7 @@ secondary:
 - visual-symptom-only-vocabulary-in-user-report
 - subtle-perimeter-artifact-easily-confused-with-correct-mipmapping
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A capture of the rendered sprite would expose the texture-data
 bound at draw time. By inspecting the bound texture's edge texels
@@ -140,7 +140,7 @@ spec:
   fix_commit: 2073a2bbd6bc4930dca3bfd725d58a4348bba2b6
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user report says nothing about importers,
   alpha channel handling, or texture filtering — only "black
@@ -152,6 +152,6 @@ spec:
   fact the user could not have known to mention, and it points
   past the renderer toward the importer.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

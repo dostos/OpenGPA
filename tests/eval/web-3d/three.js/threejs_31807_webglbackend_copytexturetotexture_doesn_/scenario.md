@@ -79,7 +79,7 @@ pre-copy clear value.
 - layered-resource-mismatch (treating a 3D/array resource as 2D)
 - API-parity-drift (two backends claim identical semantics but diverge)
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the destination texture's per-layer state (e.g. a
 `texture/layer_histogram` or per-slice pixel sampling on the 3D texture)
 shows layer 0 populated and layers 1..N-1 at the initial clear value,
@@ -119,15 +119,15 @@ spec:
     instead of matching the source.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a structural mismatch between the draw-call
   trace (one blit, one layer bound) and the declared operation (copy a
-  full Box3 across all slices). OpenGPA's per-draw-call GL state and
+  full Box3 across all slices). Beholder's per-draw-call GL state and
   per-layer texture sampling make the single-slice scope of the copy
   directly observable, without needing the agent to read and compare
   the two backend implementations.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

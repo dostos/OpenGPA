@@ -4,14 +4,14 @@
 -->
 ---
 name: eval-driven-improvement
-description: Use when a feature/fix lands and you need to validate it actually helps, when exploring whether OpenGPA covers a new bug class, or when planning the next iteration. Triggers on "run the eval", "does this help", "test the improvement", "next iteration", "flywheel".
+description: Use when a feature/fix lands and you need to validate it actually helps, when exploring whether Beholder covers a new bug class, or when planning the next iteration. Triggers on "run the eval", "does this help", "test the improvement", "next iteration", "flywheel".
 ---
 
 # Eval-Driven Improvement
 
 ## Overview
 
-Iterative loop: mine real bugs, **verify the cohort**, evaluate OpenGPA's
+Iterative loop: mine real bugs, **verify the cohort**, evaluate Beholder's
 benefit vs code-only, fix gaps. The eval results drive what to build
 next — not hypotheses, not feature requests, not intuition.
 
@@ -24,7 +24,7 @@ verification gates between every step.
 
 - After any feature or fix lands
 - When exploring a new class of graphics bugs
-- When someone asks "does OpenGPA actually help with X?"
+- When someone asks "does Beholder actually help with X?"
 - When deciding what to build next
 - When previous eval numbers feel off (regression or unexplained jump)
 
@@ -295,7 +295,7 @@ Last. Don't automate something that shouldn't exist (step 1-2) or
 is poorly designed (step 3). The Tesla battery-mat story: weeks
 spent automating a process that turned out to be unnecessary.
 
-For OpenGPA: automation candidates only after the eval-pipeline +
+For Beholder: automation candidates only after the eval-pipeline +
 system surface have been audited for steps 1-2. Examples that earn
 their place: snapshot pipeline (replaced manual cloning with
 `SnapshotFetcher`), verifier (replaced manual review with
@@ -310,7 +310,7 @@ the fixed shape (template in `docs/eval-rounds/README.md`):
 - **Findings**: bullet points, what we learned that we didn't know
   before. Reference the per-scenario forensics if non-trivial.
 - **Added / modified**: split into two buckets:
-  - **System** (OpenGPA itself: shims, engine, API, MCP, backends,
+  - **System** (Beholder itself: shims, engine, API, MCP, backends,
     framework integration)
   - **Eval pipeline** (harness, scorer, prompts, mining, scenarios)
   Attribution matters — a lift from a new GL function intercept means

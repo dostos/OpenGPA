@@ -91,7 +91,7 @@ In GL terms: `glUniform1i(loc_uBackTexture, ...)` is called with the stale bindi
 - Silent failure (no GL error, rendering "succeeds")
 - The wrong texture is a valid, complete texture — just the wrong one
 
-## How OpenGPA Helps
+## How Beholder Helps
 A per-draw-call uniform dump shows `uBackTexture = 0` even though unit 0 already belongs to `uTexture`. Cross-referencing the texture-unit binding table with sampler uniforms immediately reveals the collision: unit 3 has a texture bound but no sampler uniform points at it, while unit 0 is referenced by two samplers.
 
 ## Source
@@ -130,10 +130,10 @@ spec:
   - src/rendering/renderers/shared/shader/Shader.ts
   - src/rendering/renderers/gl/shader/GlShaderSystem.ts
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug's signature — a sampler uniform holding an index that collides with another sampler while a texture at a different unit goes unused — is exactly the kind of cross-state inconsistency that a frame debugger surfaces trivially but is nearly invisible from JS-land source reading. Without OpenGPA, the reporter had to read PixiJS's binding fallback code end-to-end; with OpenGPA, one draw-call dump shows two sampler uniforms both equal to 0 plus a stranded texture at unit 3.
+- **Reasoning**: The bug's signature — a sampler uniform holding an index that collides with another sampler while a texture at a different unit goes unused — is exactly the kind of cross-state inconsistency that a frame debugger surfaces trivially but is nearly invisible from JS-land source reading. Without Beholder, the reporter had to read PixiJS's binding fallback code end-to-end; with Beholder, one draw-call dump shows two sampler uniforms both equal to 0 plus a stranded texture at unit 3.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

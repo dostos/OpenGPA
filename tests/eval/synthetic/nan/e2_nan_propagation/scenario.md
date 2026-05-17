@@ -65,9 +65,9 @@ and knowing IEEE 754 NaN semantics in GLSL.
 - **Plausible intent**: "Flatten a mesh for a shadow" is a legitimate use
   case, making the zero scale look intentional.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA captures uniform values at draw time, so derived matrices that
+Beholder captures uniform values at draw time, so derived matrices that
 contain Inf or NaN are visible in the per-draw snapshot rather than only
 inside the shader. A code-only agent must mentally execute the matrix
 inversion or add debug prints and recompile, which is significantly slower.

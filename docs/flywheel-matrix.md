@@ -1,4 +1,4 @@
-# OpenGPA Flywheel — Problem × Solution Matrix
+# Beholder Flywheel — Problem × Solution Matrix
 
 *Living document. Last updated 2026-04-24.*
 

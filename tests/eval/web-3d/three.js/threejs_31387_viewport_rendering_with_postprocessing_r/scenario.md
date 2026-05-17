@@ -53,7 +53,7 @@ In raw OpenGL terms the failure mode reduces to: `glClear(GL_COLOR_BUFFER_BIT)` 
 - glClear ignores viewport (only scissor constrains it)
 - Implicit framebuffer state held across pipeline phase boundaries
 
-## How OpenGPA Helps
+## How Beholder Helps
 The per-draw framebuffer-binding view shows that step 3's `glClear` and triangle draw target the *same* FBO as the post-processing tone-map quad — there is no rebind to the default framebuffer between the phases. Pixel sampling between draws further pinpoints when the center pixel transitions from red to white, attributing the loss directly to the clear call rather than to the minimap geometry.
 
 ## Source
@@ -82,10 +82,10 @@ spec:
   tolerance: 24
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Per-draw framebuffer-binding inspection plus pixel sampling between draws lets the agent attribute the lost scene to a specific `glClear` after the post-processing pass — something hard to see from a final screenshot alone, since the corner minimap still appears correctly and only the center has been overwritten.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

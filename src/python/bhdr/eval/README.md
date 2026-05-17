@@ -1,6 +1,6 @@
 # Eval Harness
 
-Eval harness for OpenGPA. Measures how effectively an LLM agent can diagnose rendering bugs using OpenGPA's tools. Loads scenarios, drives an agent through a debug session, scores the diagnosis, and writes a report.
+Eval harness for Beholder. Measures how effectively an LLM agent can diagnose rendering bugs using Beholder's tools. Loads scenarios, drives an agent through a debug session, scores the diagnosis, and writes a report.
 
 ## Key Files
 - `loader.py` — loads scenario definitions from `tests/eval/`

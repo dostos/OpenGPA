@@ -56,7 +56,7 @@ secondary:
 - diagnosis-requires-shader-source-reading-not-pixel-comparison
 - no-single-fix-commit-exists
 
-## How OpenGPA Helps
+## How Beholder Helps
 `gpa trace` on the affected draw call surfaces the linked fragment shader source for the MeshStandardMaterial program; grepping that source for `BRDF_GGX`, `DFGApprox`, or `EnvironmentBRDF` lets the agent localize the multi-scattering term that produces the rim. `/uniforms` on the same draw call exposes the prefiltered environment samplers and roughness LUT bindings, confirming the artefact comes from BRDF math and not from a missing/miswired envmap.
 
 ## Source
@@ -83,10 +83,10 @@ spec:
   fix_commit: (none)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: partial
 - **Reasoning**: GPA can surface the actual fragment shader source and uniform bindings driving the artefact, which is genuinely useful for localizing the multi-scattering term. But because no canonical fix exists, "helpfulness" reduces to "did the agent identify the BRDF chunk responsible" — a softer scoring target than a code_location match against a real fix PR.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

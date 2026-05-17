@@ -1,8 +1,14 @@
-# OpenGPA — Open Graphics Profiler for Agents
+# Beholder
 
 A live graphics debugger designed for AI agents. Intercepts OpenGL/Vulkan/WebGL
 calls, captures frame state, and exposes it via REST API and MCP tools so LLMs
 can inspect, understand, and debug 3D rendered output.
+
+Named for the D&D creature with many eyes — Beholder helps code agents *see*
+the 3D world.
+
+Internal namespace prefix: `bhdr`. The project was previously called *OpenGPA*;
+older artifacts may still carry the `gpa` / `gla` names.
 
 ---
 
@@ -15,16 +21,16 @@ bazel build //...
 # Install Python dependencies
 pip install -e ".[dev]"
 
-# Start OpenGPA engine (native capture mode)
-python -m gpa.launcher --port 18080
+# Start Beholder engine (native capture mode)
+python -m bhdr.launcher --port 18080
 # Prints:
-#   BHDR_SOCKET_PATH=/tmp/gpa.sock
+#   BHDR_SOCKET_PATH=/tmp/bhdr.sock
 #   BHDR_SHM_NAME=/bhdr_capture
 #   BHDR_AUTH_TOKEN=<token>
 
 # Run your OpenGL app with capture
-LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    BHDR_SOCKET_PATH=/tmp/gpa.sock \
+LD_PRELOAD=bazel-bin/src/shims/gl/libbhdr_gl.so \
+    BHDR_SOCKET_PATH=/tmp/bhdr.sock \
     BHDR_SHM_NAME=/bhdr_capture \
     BHDR_AUTH_TOKEN=<token> \
     ./your_gl_app
@@ -38,7 +44,7 @@ curl -H "Authorization: Bearer $TOKEN" \
 To load a RenderDoc capture file instead of live capture:
 
 ```bash
-python -m gpa.launcher --backend renderdoc --capture-file trace.rdc --port 18080
+python -m bhdr.launcher --backend renderdoc --capture-file trace.rdc --port 18080
 ```
 
 ---
@@ -55,7 +61,7 @@ python -m gpa.launcher --backend renderdoc --capture-file trace.rdc --port 18080
      | shm+socket     | shm+socket    | websocket
      v                v               v
 +---------------------------------------------+
-|          OpenGPA Core Engine (C++)          |
+|          Beholder Core Engine (C++)          |
 |                                             |
 |  Capture       State Store    Semantic      |
 |  Ingestion     (ring buffer,  Reconstructor |
@@ -67,7 +73,7 @@ python -m gpa.launcher --backend renderdoc --capture-file trace.rdc --port 18080
                       | pybind11
                       v
 +---------------------------------------------+
-|         OpenGPA Python Interface            |
+|         Beholder Python Interface            |
 |                                             |
 |  REST API (FastAPI)    MCP Server (stdio)   |
 +---------------------------------------------+
@@ -94,8 +100,8 @@ pybind11 bindings to the C++ query engine.
 | **RenderDoc** | Offline analysis of `.rdc` capture files | `--backend renderdoc --capture-file trace.rdc` |
 
 The native backend supports:
-- **OpenGL 3.3+** via `LD_PRELOAD` shim (`libgpa_gl.so`)
-- **Vulkan 1.0+** via implicit layer (`VK_LAYER_GPA_capture`)
+- **OpenGL 3.3+** via `LD_PRELOAD` shim (`libbhdr_gl.so`)
+- **Vulkan 1.0+** via implicit layer (`VK_LAYER_BHDR_capture`)
 - **WebGL 1.0/2.0** via Chromium browser extension + Node.js bridge
 
 The RenderDoc backend provides full-fidelity offline analysis when live capture
@@ -146,7 +152,7 @@ POST /api/v1/control/step?count=N
 GET  /api/v1/control/status
 ```
 
-Full response schema and examples: [`docs/superpowers/specs/2026-04-16-gpa-design.md`](docs/superpowers/specs/2026-04-16-gpa-design.md), Section 3.6.
+Full response schema and examples: [`docs/superpowers/specs/2026-04-16-bhdr-design.md`](docs/superpowers/specs/2026-04-16-bhdr-design.md), Section 3.6.
 
 ### MCP Tools
 
@@ -165,15 +171,15 @@ Six tools optimized for LLM interaction:
 
 ## MCP Integration (Claude Code)
 
-Add to your project's `.mcp.json` to use OpenGPA tools directly from Claude Code.
-Start OpenGPA first, then note the printed `BHDR_AUTH_TOKEN`.
+Add to your project's `.mcp.json` to use Beholder tools directly from Claude Code.
+Start Beholder first, then note the printed `BHDR_AUTH_TOKEN`.
 
 ```json
 {
   "mcpServers": {
-    "gpa": {
+    "beholder": {
       "command": "python",
-      "args": ["-m", "gpa.mcp.server"],
+      "args": ["-m", "bhdr.mcp.server"],
       "env": {
         "BHDR_BASE_URL": "http://127.0.0.1:18080/api/v1",
         "BHDR_TOKEN": "<paste BHDR_AUTH_TOKEN here>"
@@ -189,9 +195,9 @@ The MCP server uses stdio transport and makes no outbound network connections.
 
 ## Eval Suite
 
-OpenGPA ships with an adversarial evaluation suite of intentionally broken OpenGL
+Beholder ships with an adversarial evaluation suite of intentionally broken OpenGL
 scenes. Each scenario is designed so that code inspection alone scales poorly
-while 1-3 OpenGPA queries expose the root cause directly.
+while 1-3 Beholder queries expose the root cause directly.
 
 **10 adversarial scenarios (Category E):**
 
@@ -215,17 +221,17 @@ with the bug, expected output, ground-truth diagnosis, and a difficulty rating.
 
 ```bash
 # Run all Category E scenarios
-python -m gpa.eval.cli run --category E
+python -m bhdr.eval.cli run --category E
 
 # Run a single scenario
-python -m gpa.eval.cli run --scenario e1_state_leak
+python -m bhdr.eval.cli run --scenario e1_state_leak
 
-# Print metrics (token cost, tool calls, accuracy — with vs. without OpenGPA)
-python -m gpa.eval.cli report
+# Print metrics (token cost, tool calls, accuracy — with vs. without Beholder)
+python -m bhdr.eval.cli report
 ```
 
 See the full scenario descriptions and token-efficiency analysis in
-[`docs/superpowers/specs/2026-04-16-gpa-design.md`](docs/superpowers/specs/2026-04-16-gpa-design.md), Section 9.
+[`docs/superpowers/specs/2026-04-16-bhdr-design.md`](docs/superpowers/specs/2026-04-16-bhdr-design.md), Section 9.
 
 ---
 
@@ -239,13 +245,13 @@ See the full scenario descriptions and token-efficiency analysis in
 bazel build //...
 
 # Build only the OpenGL shim
-bazel build //src/shims/gl:libgpa_gl
+bazel build //src/shims/gl:libbhdr_gl
 
 # Build only the C++ core
 bazel build //src/core:bhdr_engine
 
 # Build Python bindings
-bazel build //src/bindings:_gpa_core
+bazel build //src/bindings:_bhdr_core
 ```
 
 **C++ dependencies** (fetched by Bazel via bzlmod):
@@ -310,7 +316,7 @@ bazel test //tests/integration/...
 | M2 | Query engine + REST API (normalizer, 22+ endpoints, pybind11, FastAPI) | Done |
 | M3 | Semantic reconstruction | Removed (replaced by Tier 3 metadata — no heuristics) |
 | M4 | MCP server (10 tools over stdio JSON-RPC) | Done |
-| M5 | Vulkan implicit layer (dispatch table chaining, VK_LAYER_GPA_capture) | Done (scaffolded, not E2E tested) |
+| M5 | Vulkan implicit layer (dispatch table chaining, VK_LAYER_BHDR_capture) | Done (scaffolded, not E2E tested) |
 | M6 | WebGL browser extension + Node.js bridge | Done (scaffolded, not E2E tested) |
 | M7 | Frame comparison (draw call + pixel diff at 3 depth levels) | Done |
 

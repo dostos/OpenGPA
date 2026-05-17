@@ -44,7 +44,7 @@ bin/gpa trace value 100.0 --origin dwarf-globals
 
 At shim init you'll see a stderr line such as:
 ```
-[OpenGPA] native-trace: scanned 1 modules, 12 globals (4 ms)
+[Beholder] native-trace: scanned 1 modules, 12 globals (4 ms)
 ```
 
 ## Tuning
@@ -70,7 +70,7 @@ At shim init you'll see a stderr line such as:
 - **Architecture:** the Phase 2 stack-local scanner
   (`BHDR_TRACE_NATIVE_STACK=1`) is x86_64 System V only. On other
   architectures the walker is compiled as a no-op and logs
-  `[OpenGPA] native-trace: stack trace unavailable on this architecture
+  `[Beholder] native-trace: stack trace unavailable on this architecture
   (x86_64 only)` once at the first scan. Globals-only (Phase 1) tracing
   is arch-neutral and still works.
 

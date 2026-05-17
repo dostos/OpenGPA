@@ -60,7 +60,7 @@ change_summary: Re-bind the correct texture before the second draw.
 ## Adversarial Principles
 - state-leak-from-previous-draw
 
-## How OpenGPA Helps
+## How Beholder Helps
 `inspect_drawcall(aspect=textures)` reveals the identical texture_id bound
 for both draws.
 

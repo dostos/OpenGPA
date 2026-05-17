@@ -52,7 +52,7 @@ resolve this issue along with #25820 and #25960.
 - transparent_sort_correctness
 - blend_order_dependent_output
 
-## How OpenGPA Helps
+## How Beholder Helps
 An agent can enumerate transparent draw calls in issue order via
 `list_draw_calls` and cross-check each one's model-space bounding-sphere
 center against its model-matrix translation. When these disagree on view-
@@ -104,7 +104,7 @@ spec:
   - src/renderers/webgl/WebGLRenderLists.js
   - src/core/Object3D.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is purely about the order of two transparent
   draw calls. Inspecting the GL command stream (draw-call enumeration +
@@ -112,6 +112,6 @@ spec:
   between origin-based ordering and geometry-center ordering without
   requiring any higher-level scene-graph knowledge.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

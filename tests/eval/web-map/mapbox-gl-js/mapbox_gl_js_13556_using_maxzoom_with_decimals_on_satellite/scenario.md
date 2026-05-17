@@ -122,12 +122,12 @@ to localize without either bisecting the repro or reading the fix.
 - derived_internal_cache_misconfig
 - symptom_spatially_tiled_but_cause_not_per_pixel
 
-## How OpenGPA Helps
-Limited. OpenGPA's WebGL shim could capture the browser frame and a per-
+## How Beholder Helps
+Limited. Beholder's WebGL shim could capture the browser frame and a per-
 draw inspection would show that specific tile draws sample from DEM /
 proxy textures that have no coverage at the required zoom (black /
 uninitialized regions) — that narrows the cause to the terrain tile
-pipeline rather than the satellite raster fetch. But OpenGPA has no
+pipeline rather than the satellite raster fetch. But Beholder has no
 visibility into the JS `SourceCache.maxzoom` field that is the actual
 bug, so the agent would still need to read the terrain source code to
 find the missing `Math.ceil`.
@@ -169,18 +169,18 @@ spec:
   trigger_precondition: map.transform.maxZoom is non-integer AND terrain enabled AND style == satellite-v9
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA's per-draw texture/uniform snapshots could surface
+- **Reasoning**: Beholder's per-draw texture/uniform snapshots could surface
   the downstream symptom — tile draws that sample an empty DEM / proxy
   texture region — and thereby localize the failure to the terrain tile
   pipeline rather than the raster fetch or the satellite shader. It
   cannot, however, directly observe the root cause, which is a JS-side
   numeric-precision mistake (fractional `maxzoom` forwarded into an
   integer-indexed `SourceCache`) upstream of any GL call. An agent with
-  OpenGPA would still need to read `src/terrain/terrain.ts` to identify
+  Beholder would still need to read `src/terrain/terrain.ts` to identify
   the missing `Math.ceil`.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

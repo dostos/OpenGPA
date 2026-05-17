@@ -43,12 +43,12 @@ bazel build //...
 
 # 3. Start engine (use Python 3.11)
 PY311="path/to/bazel/python3.11"
-PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m gpa.launcher \
-    --socket /tmp/gpa.sock --shm /gpa --port 18080 --token TOKEN
+PYTHONPATH="src/python:bazel-bin/src/bindings" $PY311 -m bhdr.launcher \
+    --socket /tmp/bhdr.sock --shm /bhdr --port 18080 --token TOKEN
 
 # 4. Capture a scenario
-LD_PRELOAD=bazel-bin/src/shims/gl/libgpa_gl.so \
-    BHDR_SOCKET_PATH=/tmp/gpa.sock BHDR_SHM_NAME=/gpa \
+LD_PRELOAD=bazel-bin/src/shims/gl/libbhdr_gl.so \
+    BHDR_SOCKET_PATH=/tmp/bhdr.sock BHDR_SHM_NAME=/bhdr \
     bazel-bin/tests/eval/synthetic/state-leak/e1_state_leak/e1_state_leak
 
 # 5. Query
@@ -58,9 +58,9 @@ curl -H "Authorization: Bearer TOKEN" localhost:18080/api/v1/frames/current/over
 ## Eval-Driven Development Loop
 
 1. **Mine** — Find real-world graphics bugs from GitHub issues. Curation pipeline writes scenarios with full fix metadata (`fix_pr_url`, `fix_sha`, `fix_parent_sha`, `bug_class`, `files`).
-2. **Verify** — `python -m gpa.eval.curation.verify tests/eval [--network --build]`. Quarantine broken scenarios to `tests/eval-quarantine/`. Skipping this stage = silent signal degradation.
+2. **Verify** — `python -m bhdr.eval.curation.verify tests/eval [--network --build]`. Quarantine broken scenarios to `tests/eval-quarantine/`. Skipping this stage = silent signal degradation.
 3. **Capture** — Run native scenarios under the GL/Vulkan shim. **Skip for WebGL/JS** — the native shim doesn't intercept browser GL calls.
-4. **Evaluate** — Run with/without OpenGPA across model tiers, compare accuracy × token cost.
+4. **Evaluate** — Run with/without Beholder across model tiers, compare accuracy × token cost.
 5. **Improve** — Fix capture bugs or add new capabilities based on eval gaps. Re-run eval to verify. Write `docs/eval-rounds/YYYY-MM-DD-<round>.md` with Ran / Findings / Added / Removed / Numbers / Open backlog. Append-only — don't rewrite prior rounds.
 
 The full skill: `~/.claude/skills/eval-driven-improvement/SKILL.md` (reference: `docs/skills/eval-driven-improvement.md`). Round-log template: `docs/eval-rounds/README.md`.
@@ -80,14 +80,14 @@ Eval scenarios live in `tests/eval/<category>/<framework>/<slug>/`. See `docs/ev
 
 ```bash
 # 1. Generate new queries from an instruction (LLM, deduped against scope-log)
-PYTHONPATH=src/python python3 -m gpa.eval.curation.gen_queries \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.gen_queries \
   --instruction "WebGPU compute shader artifacts" \
   --scope-log .eval-pipeline/scope-log.jsonl \
   --out /tmp/new_queries.yaml \
   --max-queries 10 --llm-backend claude-cli
 
 # 2. Mine those queries (or any existing query pack)
-PYTHONPATH=src/python python3 -m gpa.eval.curation.run \
+PYTHONPATH=src/python python3 -m bhdr.eval.curation.run \
   --queries /tmp/new_queries.yaml \
   --rules src/python/bhdr/eval/curation/mining_rules.yaml \
   --workdir .eval-pipeline \
@@ -111,7 +111,7 @@ Spec: `docs/superpowers/specs/2026-05-01-single-path-mining-design.md`.
 4. `src/shims/gl/frame_capture.c` — add to `BhdrDrawCallSnapshot` if serialized per draw call
 5. `src/core/engine.cpp` — add deserialization in `ingest_frame()`
 6. `src/core/normalize/normalized_types.h` — add to `NormalizedDrawCall`
-7. `src/bindings/py_gpa.cpp` — expose to Python
+7. `src/bindings/py_bhdr.cpp` — expose to Python
 
 ## Adding a New Capture Backend
 
@@ -145,7 +145,7 @@ See `native.py` and `renderdoc.py` for examples.
 | Vulkan layer (C) | `src/shims/vk/` |
 | WebGL extension (JS) | `src/shims/webgl/` |
 | Core engine (C++) | `src/core/` |
-| Python bindings | `src/bindings/py_gpa.cpp` |
+| Python bindings | `src/bindings/py_bhdr.cpp` |
 | REST API | `src/python/bhdr/api/` |
 | MCP server | `src/python/bhdr/mcp/` |
 | Framework integration | `src/python/bhdr/framework/` |

@@ -74,8 +74,8 @@ So the corroborated ground-truth diagnosis is: **on older Android Vulkan drivers
 - Cross-stack ambiguity (is it Godot's uniform-set binding code, the SPIR-V it emits, or the Adreno driver? Upstream never resolved this)
 - No upstream fix exists; agent must report honest uncertainty rather than claim a root cause
 
-## How OpenGPA Helps
-The 3-sprite threshold is observable as a state-change signature: OpenGPA's `list_draw_calls` on an affected capture shows the uniform-bearing program bound alongside two uniform-less programs, and `get_draw_call` reveals that the uniform buffer for the third sprite's material is allocated and bound even when the shader body reads nothing. That lets the agent corroborate the reporter's narrowing ("declaration, not use") by inspecting the captured uniform-buffer bindings per draw call rather than relying on shader source alone.
+## How Beholder Helps
+The 3-sprite threshold is observable as a state-change signature: Beholder's `list_draw_calls` on an affected capture shows the uniform-bearing program bound alongside two uniform-less programs, and `get_draw_call` reveals that the uniform buffer for the third sprite's material is allocated and bound even when the shader body reads nothing. That lets the agent corroborate the reporter's narrowing ("declaration, not use") by inspecting the captured uniform-buffer bindings per draw call rather than relying on shader source alone.
 
 ## Source
 - **URL**: https://github.com/godotengine/godot/issues/79760
@@ -103,7 +103,7 @@ spec:
     Scenario is device-specific (older Android Vulkan drivers). The minimal
     C repro here renders 3 quads where the third uses a fragment shader
     declaring a `uniform vec4 color` but not reading it from any mandatory
-    path; on desktop the frame renders correctly and OpenGPA can confirm
+    path; on desktop the frame renders correctly and Beholder can confirm
     that the uniform buffer for draw call #3 is bound even without a read.
     Matching signature is: a draw call exists whose program declares a
     uniform, the uniform is bound, and the same frame contains 2+ other
@@ -120,10 +120,10 @@ spec:
   - servers/rendering/renderer_rd/renderer_canvas_render_rd.cpp
   - servers/rendering/shader_compiler.cpp
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA can confirm the reporter's narrowing on a desktop capture (the uniform buffer for the third sprite's material is bound even when the fragment body is empty), which validates the "declaration, not use" hypothesis without needing the affected Android device. But the actual crash is inside a specific Adreno Vulkan driver on hardware OpenGPA cannot observe, so it cannot identify the ultimate fault line; it can only help the agent reach the same narrowed diagnosis the reporter did.
+- **Reasoning**: Beholder can confirm the reporter's narrowing on a desktop capture (the uniform buffer for the third sprite's material is bound even when the fragment body is empty), which validates the "declaration, not use" hypothesis without needing the affected Android device. But the actual crash is inside a specific Adreno Vulkan driver on hardware Beholder cannot observe, so it cannot identify the ultimate fault line; it can only help the agent reach the same narrowed diagnosis the reporter did.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -1,4 +1,4 @@
-# OpenGPA Core MVP (M1+M2) Implementation Plan
+# Beholder Core MVP (M1+M2) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -8,7 +8,7 @@
 
 **Tech Stack:** C (shim), C++17 (core engine), Python 3.11+ (REST API), Bazel (build), FlatBuffers (serialization), pybind11 (bindings), FastAPI (HTTP), GLM (math), Google Test (C++ tests), pytest (Python tests)
 
-**Spec:** `docs/superpowers/specs/2026-04-16-gla-design.md`
+**Spec:** `docs/superpowers/specs/2026-04-16-bhdr-design.md`
 
 **Scope:** Milestones M1 (OpenGL shim + basic capture) and M2 (Query engine + REST API). Milestones M3-M7 (semantic reconstruction, MCP server, Vulkan, WebGL, advanced queries) are separate plans.
 
@@ -1316,8 +1316,8 @@ from .routes_pixel import router as pixel_router
 from .routes_control import router as control_router
 
 def create_app(query_engine, auth_token: str) -> FastAPI:
-    """Create the OpenGPA REST API. MUST be served on 127.0.0.1 only (NFR-5.1)."""
-    app = FastAPI(title="OpenGPA", version="0.1.0")
+    """Create the Beholder REST API. MUST be served on 127.0.0.1 only (NFR-5.1)."""
+    app = FastAPI(title="Beholder", version="0.1.0")
     app.state.query_engine = query_engine
     app.state.auth_token = auth_token
 
@@ -1414,7 +1414,7 @@ from _gla_core import Engine, QueryEngine
 from gla.api.app import create_app
 
 def main():
-    parser = argparse.ArgumentParser(description="OpenGPA Engine + REST API")
+    parser = argparse.ArgumentParser(description="Beholder Engine + REST API")
     parser.add_argument("--socket", default="/tmp/gla.sock")
     parser.add_argument("--shm", default="/gla_capture")
     parser.add_argument("--shm-slots", type=int, default=4)

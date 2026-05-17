@@ -1,6 +1,6 @@
 # OpenGL Shim
 
-OpenGL LD_PRELOAD shim for OpenGPA. Intercepts GL calls via `dlsym`, maintains a shadow copy of GPU state, and captures completed frames into a shared memory ring buffer.
+OpenGL LD_PRELOAD shim for Beholder. Intercepts GL calls via `dlsym`, maintains a shadow copy of GPU state, and captures completed frames into a shared memory ring buffer.
 
 ## Key Files
 - `gl_shim.c` — entry point, `dlopen`/`dlsym` interception setup

@@ -99,7 +99,7 @@ secondary:
 - only-the-negative-half-flickers-positive-half-fine
 - floating-point-precision-bug-not-logic-bug
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A capture during the flickering shows the editor's gizmo draw
 call with two line segments per axis. On the broken frame, the
@@ -136,18 +136,18 @@ spec:
   fix_commit: dfcf803724a03af5685de2b58f8fafb62e951569
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user's vocabulary is "axes flicker, only the
   negative direction, only when zoomed out" — no engine
   internals at all. A code_only agent could grep "axes" or
   "gizmo" and reach reasonable candidates, but those files are
-  thousands of lines. With OpenGPA, capturing the per-vertex
+  thousands of lines. With Beholder, capturing the per-vertex
   clip-space coordinates of the gizmo line on a flickering
   frame directly shows one endpoint at w<=0 — narrowing the
   question from "what causes flicker" to "what code constructs
   this line's endpoint".
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

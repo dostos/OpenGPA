@@ -1,4 +1,4 @@
-"""Generate 100 synthetic adversarial OpenGPA eval scenarios.
+"""Generate 100 synthetic adversarial Beholder eval scenarios.
 
 Iterates through a taxonomy of (bug_class, capability) tuples and writes
 each scenario to tests/eval/e<N>_<slug>/.  Uses the Claude Code CLI
@@ -39,7 +39,7 @@ from bhdr.eval.curation.synth_generator import (                  # noqa: E402
 # Taxonomy: 100 (bug_class, capability, difficulty, principles) entries.
 #
 # Spread across the ~30 bug classes listed in the spec, hitting each of the
-# six OpenGPA capabilities (inspect_drawcall, query_pixel, query_scene,
+# six Beholder capabilities (inspect_drawcall, query_pixel, query_scene,
 # query_frame, compare_frames, explain_pixel).
 
 TAXONOMY: list[dict] = [

@@ -48,7 +48,7 @@ whose shared edge is almost, but not exactly, colinear.
 Because no upstream maintainer has confirmed this mechanism, the above
 is a best-effort model of the symptom rather than a verified root cause.
 Scoring should reward agents that correctly identify the missing-fill
-symptom and surface the seam pattern via OpenGPA; it should NOT require
+symptom and surface the seam pattern via Beholder; it should NOT require
 the agent to name a specific internal Mapbox function.
 
 See https://github.com/mapbox/mapbox-gl-js/issues/13299 for the full
@@ -61,7 +61,7 @@ thread.
 - unresolved_upstream_bug
 - tile_seam_quantization
 
-## How OpenGPA Helps
+## How Beholder Helps
 `GET /frames/current/overview` shows the two draw calls (one per tile
 patch), and `POST /frames/current/pixel` sampled along the seam returns
 the background clear color instead of the fill color, localising the
@@ -97,14 +97,14 @@ spec:
   max_background_fraction: 0.05
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA can confirm the gap is background-colored (not
+- **Reasoning**: Beholder can confirm the gap is background-colored (not
   a shader/blend bug) and show the two tile draw calls have
   non-coincident shared-edge vertices. But without upstream source for
   the Mapbox dynamic-tiling pipeline, the agent cannot name the
   offending internal function — only describe the mechanism.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

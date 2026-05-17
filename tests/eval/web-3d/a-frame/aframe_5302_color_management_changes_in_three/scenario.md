@@ -62,10 +62,10 @@ environment preset would render washed out.
 - Root cause spans two separate GL states (texture internal format + FB encode)
 - Output still looks "rendered" — just wrong
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the draw call's sampled texture shows `internalFormat = GL_RGB8`
 while `GL_FRAMEBUFFER_SRGB` is enabled on the default framebuffer — a
-mismatch OpenGPA can surface directly. The framebuffer dominant color (~188)
+mismatch Beholder can surface directly. The framebuffer dominant color (~188)
 vs. the texel value (128) also pinpoints that a gamma transform is happening
 exactly once too often on the output path.
 
@@ -101,16 +101,16 @@ spec:
   - src/components/material.js
   - src/components/environment.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: Tier-1 state capture exposes both the texture internal
   format (`GL_RGB8`) and the framebuffer sRGB-encode state (`GL_FRAMEBUFFER_SRGB`
   enabled). An agent asking for the draw call's sampled textures plus the
-  framebuffer state gets the mismatch in one query. Without OpenGPA, the
+  framebuffer state gets the mismatch in one query. Without Beholder, the
   agent would have to reason about an observed "washed out" screenshot in
   terms of invisible GL state — a pure textual round-trip with no
   ground truth.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

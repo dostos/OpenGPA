@@ -1,6 +1,6 @@
-# OpenGPA Vulkan Layer — Setup and Usage
+# Beholder Vulkan Layer — Setup and Usage
 
-The OpenGPA Vulkan layer (`VK_LAYER_BHDR_capture`) intercepts Vulkan API calls to capture graphics frame data, driver state, and resource operations for debugging and analysis.
+The Beholder Vulkan layer (`VK_LAYER_BHDR_capture`) intercepts Vulkan API calls to capture graphics frame data, driver state, and resource operations for debugging and analysis.
 
 ## Architecture
 
@@ -12,7 +12,7 @@ VK_LAYER_BHDR_capture (dispatch table chaining)
        |
        | IPC (Unix socket or shared memory)
        v
-OpenGPA Engine
+Beholder Engine
 ```
 
 The layer uses the standard Vulkan loader layer mechanism. It exports the required dispatch table functions:
@@ -69,7 +69,7 @@ The manifest (`bhdr_layer.json`) references `library_path: "./libVkLayer_bhdr_ca
         "library_path": "/full/path/to/libVkLayer_bhdr_capture.so",
         "api_version": "1.0.0",
         "implementation_version": "1",
-        "description": "OpenGPA frame capture layer for graphics debugging"
+        "description": "Beholder frame capture layer for graphics debugging"
     }
 }
 ```
@@ -113,9 +113,9 @@ VK_LOADER_DEBUG=all ./my_vulkan_app 2>&1 | grep -i gpa
   - Running with the layer only when needed
   - Enabling selective capture (frame range via IPC)
 
-## Integration with OpenGPA Engine
+## Integration with Beholder Engine
 
-The layer communicates with the OpenGPA engine via:
+The layer communicates with the Beholder engine via:
 - **IPC client**: `vk_ipc_client.c` — connects to engine over Unix socket or shared memory
 - **Capture state**: `vk_capture.c` — buffers and serializes frame data
 - **Dispatch table**: `vk_dispatch.c` — intercepts and routes API calls
@@ -124,7 +124,7 @@ To integrate, ensure the engine is listening on the configured IPC endpoint (def
 
 ## Testing
 
-See the [Vulkan test app guide](./vulkan-test-app.md) for how to build and run a minimal Vulkan application with the OpenGPA layer.
+See the [Vulkan test app guide](./vulkan-test-app.md) for how to build and run a minimal Vulkan application with the Beholder layer.
 
 ## E2E Validation Results (2026-04-16)
 

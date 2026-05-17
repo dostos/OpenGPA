@@ -95,8 +95,8 @@ The root cause is a framework-internal ordering issue: the GL-level symptom is s
 - missing_color_buffer_clear
 - preserve_drawing_buffer_semantics
 
-## How OpenGPA Helps
-An OpenGPA query over the command stream for frame N can report that between the two logical "render" passes no `glClear` with `GL_COLOR_BUFFER_BIT` is issued, while `glDrawArrays` writes new content into the same default framebuffer — directly flagging the missing clear that causes the trails.
+## How Beholder Helps
+An Beholder query over the command stream for frame N can report that between the two logical "render" passes no `glClear` with `GL_COLOR_BUFFER_BIT` is issued, while `glDrawArrays` writes new content into the same default framebuffer — directly flagging the missing clear that causes the trails.
 
 ## Source
 - **URL**: https://github.com/mrdoob/three.js/issues/28420
@@ -135,10 +135,10 @@ spec:
   - src/renderers/webgl/WebGLBackground.js  # base of fix PR #28445 (clear ordering vs. transmission pass)
   - src/renderers/WebGLRenderer.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
-- **Reasoning**: The bug reduces to a missing `glClear(GL_COLOR_BUFFER_BIT)` call between two draw sequences on the default framebuffer. An OpenGPA trace of the frame makes the absence of that clear, and the persistence of the prior draw's pixels, trivially inspectable — turning an opaque "trails" symptom into an explicit state-leak diagnosis.
+- **Reasoning**: The bug reduces to a missing `glClear(GL_COLOR_BUFFER_BIT)` call between two draw sequences on the default framebuffer. An Beholder trace of the frame makes the absence of that clear, and the persistence of the prior draw's pixels, trivially inspectable — turning an opaque "trails" symptom into an explicit state-leak diagnosis.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

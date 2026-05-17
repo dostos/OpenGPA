@@ -93,7 +93,7 @@ secondary:
 - one-frame-defect-not-stable-state
 - bug-lives-in-asset-system-not-renderer
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture of the broken frame would show the mesh's vertex
 buffer being re-uploaded (a `vkCmdCopyBuffer` / `vkCmdUpdateBuffer`
@@ -130,7 +130,7 @@ spec:
   fix_commit: 069fd874a4d93e2f921b494fb86d062451bc11dc
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The user's keyword trail ("flicker", "mutable
   borrow", "mesh") spans most of the engine — grep alone cannot
@@ -139,6 +139,6 @@ spec:
   to the asset/event side of the asset-system rather than to the
   renderer.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

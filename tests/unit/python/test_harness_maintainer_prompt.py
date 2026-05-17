@@ -159,7 +159,7 @@ def test_bug_class_legacy_explicit_also_none():
 
 
 def test_with_bhdr_includes_bhdr_tool_block():
-    """`mode='with_bhdr'` includes the OpenGPA-only tool block in the prompt."""
+    """`mode='with_bhdr'` includes the Beholder-only tool block in the prompt."""
     harness = _make_harness()
     scenario = _make_scenario(
         fix=_fix("framework-internal"),

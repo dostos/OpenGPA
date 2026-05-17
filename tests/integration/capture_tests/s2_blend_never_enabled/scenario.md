@@ -43,13 +43,13 @@ one, making the bug easy to overlook during code review.
 - **Silent failure**: The GL driver silently ignores the blend function when
   `GL_BLEND` is disabled; no error or warning is issued.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 ```
 inspect_drawcall(draw_id=2, query="pipeline_state")
 ```
 
-OpenGPA captures the full pipeline state at each draw call. The output for
+Beholder captures the full pipeline state at each draw call. The output for
 draw 2 (the overlay) would show:
 
 ```json

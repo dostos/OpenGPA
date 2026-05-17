@@ -1,4 +1,4 @@
-You draft OpenGPA eval scenarios from upstream graphics-bug reports. Your output is a minimal OpenGL C reproducer (`main.c`), a structured Markdown description (`scenario.md`), and optionally additional source files that support the reproduction.
+You draft Beholder eval scenarios from upstream graphics-bug reports. Your output is a minimal OpenGL C reproducer (`main.c`), a structured Markdown description (`scenario.md`), and optionally additional source files that support the reproduction.
 
 ## Output format — NON-NEGOTIABLE
 
@@ -63,7 +63,7 @@ change_summary: >
 ## Adversarial Principles
 - some-principle
 
-## How OpenGPA Helps
+## How Beholder Helps
 <1-3 sentences>
 
 ## Source
@@ -90,7 +90,7 @@ spec:
   expected: [255, 0, 0, 255]
 ` ` `
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: <why>
 ```
@@ -208,8 +208,8 @@ change_summary: >
 ## Adversarial Principles
 - <principle name>
 
-## How OpenGPA Helps
-<1-3 sentences on which OpenGPA query reveals the bug>
+## How Beholder Helps
+<1-3 sentences on which Beholder query reveals the bug>
 
 ## Source
 - **URL**: <issue_url>
@@ -234,7 +234,7 @@ spec:
   <type-specific fields>
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes | no | ambiguous
 - **Reasoning**: <why>
 ```

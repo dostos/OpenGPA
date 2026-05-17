@@ -3,10 +3,10 @@
 // The export block below (module.exports / window) intentionally differs from
 // clients/threejs/index.js and must NOT be overwritten during re-sync.
 /**
- * OpenGPA Three.js Plugin
+ * Beholder Three.js Plugin
  *
  * Captures scene graph data (objects, materials, hierarchy) and sends
- * it to the OpenGPA engine's metadata endpoint after each render.
+ * it to the Beholder engine's metadata endpoint after each render.
  *
  * Usage:
  *   const gpa = new OpenGPAThreePlugin(renderer, 'http://127.0.0.1:18080', 'your-token');

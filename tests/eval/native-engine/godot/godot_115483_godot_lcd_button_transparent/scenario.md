@@ -97,7 +97,7 @@ secondary:
 - first-instance-renders-correctly-only-duplicates-break
 - subpixel-text-vocabulary-leaks-via-title-not-body
 
-## How OpenGPA Helps
+## How Beholder Helps
 
 A frame capture of the broken case shows two consecutive draw
 calls: one rendering the first button (with state X), one
@@ -134,7 +134,7 @@ spec:
   fix_commit: 69a412afcd53dfa360d91e7993205bdc40951645
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The reporter's wording is "duplicated button has
   fully transparent background instead of semi-transparent". A
@@ -146,6 +146,6 @@ spec:
   flag, and that flag's name (`use_lcd`) directly points at
   the canvas renderer batch logic — past the entire UI layer.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation pending — code_only baseline not yet run.

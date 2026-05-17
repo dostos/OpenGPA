@@ -72,7 +72,7 @@ the diagnosis is grounded in (a) the WebGL/WebGPU output divergence
 demonstrated by the two jsfiddles in the issue body and (b) the reporter's
 confirmation that v0.181 contains the fix. The minimal C reproducer above
 ports the *pattern* — a shadow fragment shader that ignores texture alpha —
-into raw GL so OpenGPA can detect it without a WebGPU backend.
+into raw GL so Beholder can detect it without a WebGPU backend.
 
 ## Difficulty Rating
 3/5
@@ -82,7 +82,7 @@ into raw GL so OpenGPA can detect it without a WebGPU backend.
 - Multi-pass dependency (shadow pass shader differs from lit pass shader)
 - Silent correctness bug — no GL error, no validation warning
 
-## How OpenGPA Helps
+## How Beholder Helps
 The query
 `/api/v1/frames/current/draw_calls/{shadow_pass}/shaders` reveals that the
 shadow pass's fragment shader does not bind or sample the alpha texture that
@@ -116,14 +116,14 @@ spec:
   consequence: shadow_map_silhouette_equals_geometry_bbox_not_texture_alpha
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is a missing texture binding / missing discard in
-  one specific pass. OpenGPA's per-draw-call shader and uniform inspection
+  one specific pass. Beholder's per-draw-call shader and uniform inspection
   exposes exactly this kind of "shader X doesn't sample what shader Y
   samples" divergence without requiring the agent to read the framework's
   shader-stitching pipeline.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

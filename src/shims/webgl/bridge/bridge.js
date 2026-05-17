@@ -52,7 +52,7 @@ class BhdrBridge {
 
     this.engineSocket.on('connect', () => {
       this.connected = true;
-      console.log('[bridge] Connected to OpenGPA engine');
+      console.log('[bridge] Connected to Beholder engine');
       this.sendHandshake();
     });
 

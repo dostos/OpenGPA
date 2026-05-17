@@ -78,7 +78,7 @@ Optional: `diff_excerpt` with the key 3-5 lines of the patch, for scorer debuggi
 ## Bug Class
 ## Difficulty Rating
 ## Adversarial Principles
-## How OpenGPA Helps
+## How Beholder Helps
 ## Source
 ## Tier / API / Framework
 ## Bug Signature

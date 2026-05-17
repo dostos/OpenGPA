@@ -40,9 +40,9 @@ The two shader sources are byte-identical and the uniform name matches exactly, 
 - **Stale state**: a value set on one program looks "alive" but is silently discarded at the `glUseProgram` boundary.
 - **Implicit coupling**: identical uniform names across two programs suggest a shared binding that does not exist in GL's data model.
 
-## How OpenGPA Helps
+## How Beholder Helps
 
-OpenGPA reports the active program and the resolved values of its uniforms
+Beholder reports the active program and the resolved values of its uniforms
 at draw-call time, so it shows program B's uTint at its link-time default
 even though the CPU code has "set" it on program A. That makes the
 per-program scoping rule visible in a single record.

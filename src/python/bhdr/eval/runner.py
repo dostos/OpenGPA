@@ -1,4 +1,4 @@
-"""Scenario runner: compiles and runs eval GL apps under OpenGPA capture."""
+"""Scenario runner: compiles and runs eval GL apps under Beholder capture."""
 from __future__ import annotations
 
 import os
@@ -40,10 +40,10 @@ def _capture_via_rest(base_url: str, token: str) -> dict:
 
 
 class ScenarioRunner:
-    """Compiles and runs eval scenarios under OpenGPA capture.
+    """Compiles and runs eval scenarios under Beholder capture.
 
     The runner uses Bazel to build each scenario binary and then launches
-    it with LD_PRELOAD pointing at the OpenGPA shim library.
+    it with LD_PRELOAD pointing at the Beholder shim library.
     """
 
     def __init__(
@@ -142,15 +142,15 @@ class ScenarioRunner:
         return str(binary)
 
     def run_with_capture(self, scenario: ScenarioMetadata) -> int:
-        """Run the scenario binary under OpenGPA capture. Returns the captured frame_id.
+        """Run the scenario binary under Beholder capture. Returns the captured frame_id.
 
-        Sets up the environment required by the OpenGPA shim:
-          - LD_PRELOAD: path to the OpenGPA interceptor shared library
+        Sets up the environment required by the Beholder shim:
+          - LD_PRELOAD: path to the Beholder interceptor shared library
           - BHDR_BASE_URL: HTTP endpoint for the GPA server
           - BHDR_TOKEN: bearer token for authentication
 
         Waits up to self._capture_timeout seconds for frames to appear,
-        then queries the OpenGPA server for the latest frame_id.
+        then queries the Beholder server for the latest frame_id.
         """
         binary_path = self.build_scenario(scenario)
 
@@ -186,7 +186,7 @@ class ScenarioRunner:
         return Path(scenario.source_path).read_text(encoding="utf-8")
 
     def build_and_capture(self, scenario: ScenarioMetadata) -> dict:
-        """Build the scenario via Bazel, run it under Xvfb with OpenGPA shim, capture frame.
+        """Build the scenario via Bazel, run it under Xvfb with Beholder shim, capture frame.
 
         Returns a dict with keys:
           - framebuffer_png: bytes (always empty under the Tier-1 native
@@ -220,7 +220,7 @@ class ScenarioRunner:
     # ------------------------------------------------------------------
 
     def _get_latest_frame_id(self) -> int:
-        """Query OpenGPA server for the most recent frame_id."""
+        """Query Beholder server for the most recent frame_id."""
         import urllib.request
         import json
 

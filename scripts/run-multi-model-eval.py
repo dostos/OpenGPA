@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Multi-model eval runner for OpenGPA.
+Multi-model eval runner for Beholder.
 
 Tests each scenario across model tiers (haiku/sonnet/opus) in both modes
 (code-only / with-gpa). Measures accuracy, tokens, and tool usage patterns.
@@ -172,7 +172,7 @@ def print_summary(results: list[EvalRun]):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="OpenGPA Multi-Model Eval")
+    parser = argparse.ArgumentParser(description="Beholder Multi-Model Eval")
     parser.add_argument("--dry-run", action="store_true", help="List scenarios without running")
     parser.add_argument("--models", nargs="+", default=["haiku", "sonnet"],
                         help="Models to test (haiku, sonnet, opus)")

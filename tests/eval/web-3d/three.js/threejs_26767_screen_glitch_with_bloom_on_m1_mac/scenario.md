@@ -103,7 +103,7 @@ change_summary: >
 - nan-from-sqrt-of-negative
 - platform-dependent-manifestation
 
-## How OpenGPA Helps
+## How Beholder Helps
 Querying the RGBA16F render target pixel values reveals the negative
 components written by the lighting shader before the bloom pass consumes
 them. A histogram query on the irradiance FBO surfaces the negative range
@@ -136,14 +136,14 @@ spec:
   observed_contains: [NaN, 0.0]
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is invisible in the source C code alone — the
   diagnosis requires seeing that an intermediate HDR buffer holds negative
-  values before the second pass consumes them. OpenGPA's ability to read
+  values before the second pass consumes them. Beholder's ability to read
   back floating-point framebuffer contents between passes is precisely the
   capability needed.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

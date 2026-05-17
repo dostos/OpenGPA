@@ -122,8 +122,8 @@ limit" mistake. Link fails and the clear color dominates the frame.
 - shader-link-failure-without-visible-error
 - ubo-size-bounds
 
-## How OpenGPA Helps
-The user-visible symptom is only "the frame is empty." OpenGPA's draw-call
+## How Beholder Helps
+The user-visible symptom is only "the frame is empty." Beholder's draw-call
 inspection surfaces two raw facts that pinpoint the cause immediately:
 (1) the program bound for the draw has `GL_LINK_STATUS == GL_FALSE` with an
 info log citing `GL_MAX_UNIFORM_BLOCK_SIZE`, and (2) the draw generated
@@ -171,17 +171,17 @@ spec:
     framebuffer is therefore dominated by the clear color.
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug is entirely about raw GL state that Tier 1 capture
   already records — program link status, program info log, active uniform
-  block size, and the post-draw GL error. A coding agent without OpenGPA
+  block size, and the post-draw GL error. A coding agent without Beholder
   sees only "nothing rendered" and has to guess whether the mesh is off
-  screen, culled, depth-tested away, or the program is invalid. OpenGPA
+  screen, culled, depth-tested away, or the program is invalid. Beholder
   points directly at the link-status/info-log pair, which states the UBO
   overflow verbatim, eliminating the guesswork that made the original bug
   cross-platform and silent.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

@@ -79,8 +79,8 @@ pre-baked pipeline attachment record.
 - validation-error-distant-from-symptom
 - cross-pass-state-leak
 
-## How OpenGPA Helps
-OpenGPA's per-draw framebuffer attachment inventory and pipeline/pass state
+## How Beholder Helps
+Beholder's per-draw framebuffer attachment inventory and pipeline/pass state
 dumps let the agent diff what each draw call's bound FBO actually contains
 against what the corresponding shader pipeline was compiled to expect.
 Querying `/api/v1/frames/current/draw_calls/<id>` for the first background
@@ -128,10 +128,10 @@ spec:
   - examples/webgpu_volume_lighting.html
   - src/renderers/webgpu/utils/WebGPUPipelineUtils.js
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: ambiguous
-- **Reasoning**: OpenGPA's current Tier-1 capture is GL/Vulkan-oriented; WebGPU capture and cross-backend pipeline/pass inventory are not yet first-class. The scenario is a strong motivator for a WebGPU backend that records per-draw attachment state, but an agent using today's OpenGPA against the WebGL-backed variant would not see the bug at all (WebGL is fine). Helpfulness is contingent on landing a WebGPU capture backend that records `RenderPipelineDescriptor.depthStencil` alongside the active `RenderPassDescriptor` attachment list.
+- **Reasoning**: Beholder's current Tier-1 capture is GL/Vulkan-oriented; WebGPU capture and cross-backend pipeline/pass inventory are not yet first-class. The scenario is a strong motivator for a WebGPU backend that records per-draw attachment state, but an agent using today's Beholder against the WebGL-backed variant would not see the bug at all (WebGL is fine). Helpfulness is contingent on landing a WebGPU capture backend that records `RenderPipelineDescriptor.depthStencil` alongside the active `RenderPassDescriptor` attachment list.
 
-## Observed OpenGPA Helpfulness
+## Observed Beholder Helpfulness
 - **Verdict**: ambiguous
 - **Evidence**: validation skipped (--no-validate)

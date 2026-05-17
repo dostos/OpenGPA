@@ -82,8 +82,8 @@ secondary:
 - diagnosis-requires-grep-not-pixel-comparison
 - visual-quality-bug-not-correctness-bug
 
-## How OpenGPA Helps
-OpenGPA's `gpa trace` over a frame containing the rounded rect surfaces
+## How Beholder Helps
+Beholder's `gpa trace` over a frame containing the rounded rect surfaces
 the actual vertex stream that p5.js's WebGL retained-mode renderer
 emits for the corners — the agent can see how many segments / what
 control points are produced and compare against a circular arc, which
@@ -116,6 +116,6 @@ spec:
   fix_commit: (auto-resolve from PR #8743)
 ```
 
-## Predicted OpenGPA Helpfulness
+## Predicted Beholder Helpfulness
 - **Verdict**: yes
 - **Reasoning**: The bug shows up as a specific vertex stream (a quadratic-curve corner) emitted by the framework's retained-mode WebGL path. `gpa trace` plus the captured draw-call vertex buffer let the agent confirm "the framework is generating the wrong control points," which scopes the fix from the entire p5.js codebase down to the WebGL rect emitter — exactly where PR #8743 made the change.

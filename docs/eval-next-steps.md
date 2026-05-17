@@ -1,4 +1,4 @@
-# OpenGPA Eval — Strategic Direction
+# Beholder Eval — Strategic Direction
 
 This file captures cross-round strategic context. Per-round work-item
 backlog lives in `docs/eval-rounds/<date>-<round>.md`. **Don't put
@@ -10,11 +10,11 @@ Minimal single-file reproductions (200 lines) are too easy for any LLM
 model tier. R1–R3: 100% accuracy in both modes across Haiku and Sonnet.
 **Root cause**: the bug *is* the entire codebase. Nothing to search.
 
-## What shows OpenGPA's value
+## What shows Beholder's value
 
-OpenGPA's value appears when the agent must choose between:
+Beholder's value appears when the agent must choose between:
 - Reading 50,000 lines of framework source to trace state (slow)
-- Querying 3 OpenGPA endpoints to see actual runtime state (fast)
+- Querying 3 Beholder endpoints to see actual runtime state (fast)
 
 Requires eval scenarios that include the **actual upstream codebase**,
 not a minimal repro.
@@ -37,7 +37,7 @@ informs.
 
 ### Q1. WebGL coverage
 
-OpenGPA ties code_only on web-map at 71% (R12c). The shim doesn't
+Beholder ties code_only on web-map at 71% (R12c). The shim doesn't
 intercept browser WebGL — the tier-mismatch warning prevents bad
 with_bhdr token spend, but real *lift* on browser scenarios needs a
 WebGL backend. Two paths:
