@@ -101,7 +101,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 3. Assemble PYTHONPATH. Prepend bindings dir so `import _gpa_core` works.
+# 3. Assemble PYTHONPATH. Prepend bindings dir so `import _bhdr_core` works.
 # ---------------------------------------------------------------------------
 pypath="$root/src/python"
 if [ "$have_bindings" = "1" ]; then
@@ -114,7 +114,7 @@ fi
 export BHDR_PYTHON="$py"
 
 # Diagnostic hook used by unit tests (and humans): dump the resolved env and exit 0.
-if [ "${GPA_DIAG:-0}" = "1" ]; then
+if [ "${BHDR_DIAG:-0}" = "1" ]; then
     printf 'BHDR_PYTHON=%s\n' "$py"
     printf 'PYTHONPATH=%s\n' "$pypath${PYTHONPATH:+:$PYTHONPATH}"
     printf 'bindings_found=%s\n' "$have_bindings"

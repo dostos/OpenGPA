@@ -3,16 +3,16 @@
 // Walks `scene.traverse()` once per render(), pushes a debug-marker per
 // Mesh/Light/Group around the corresponding GL draw calls, and POSTs the
 // flattened scene tree to the engine annotations endpoint so that
-// `gpa scene-find` and `gpa explain-draw` can join GL draws back to
+// `bhdr scene-find` and `bhdr explain-draw` can join GL draws back to
 // framework objects.
 //
 // Drop-in usage (HTML page):
 //   <script type="module">
 //     import * as THREE from 'three';
-//     import { installGpaLinkPlugin } from './threejs_link_plugin.js';
+//     import { installBhdrLinkPlugin } from './threejs_link_plugin.js';
 //     const renderer = new THREE.WebGLRenderer();
 //     const scene    = new THREE.Scene();
-//     installGpaLinkPlugin({
+//     installBhdrLinkPlugin({
 //       scene, renderer,
 //       endpoint: 'http://localhost:18080',
 //       token:    window.BHDR_AUTH_TOKEN,
@@ -113,7 +113,7 @@ function _post(endpoint, frameId, token, body) {
   }).catch(() => { /* never break the render loop */ });
 }
 
-export function installGpaLinkPlugin(options) {
+export function installBhdrLinkPlugin(options) {
   const { scene, renderer } = options || {};
   if (!scene || !renderer) {
     console.warn("[bhdr-threejs-link] scene/renderer missing; plugin disabled");
@@ -146,9 +146,9 @@ export function installGpaLinkPlugin(options) {
   // (built-in three.js callbacks) so we don't have to monkey-patch the
   // private renderObject pipeline.
   scene.traverse((obj) => {
-    if (obj.userData && obj.userData.__gpaLinkInstrumented) return;
+    if (obj.userData && obj.userData.__bhdrLinkInstrumented) return;
     obj.userData = obj.userData || {};
-    obj.userData.__gpaLinkInstrumented = true;
+    obj.userData.__bhdrLinkInstrumented = true;
     const _origBefore = obj.onBeforeRender;
     const _origAfter = obj.onAfterRender;
     obj.onBeforeRender = function (rndr, scn, cam, geom, mat, group) {
@@ -217,5 +217,5 @@ export function installGpaLinkPlugin(options) {
 
 // Also expose under window for non-module loaders.
 if (typeof window !== "undefined") {
-  window.installGpaLinkPlugin = installGpaLinkPlugin;
+  window.installBhdrLinkPlugin = installBhdrLinkPlugin;
 }

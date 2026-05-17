@@ -1000,7 +1000,7 @@ diagnosis test).
 ## Round 10 — Maintainer-framing baseline (2026-04-24)
 
 First measurement under the new maintainer-framing scorer
-(`gpa.eval.scorer.score_maintainer_patch`): file-overlap instead of
+(`bhdr.eval.scorer.score_maintainer_patch`): file-overlap instead of
 keyword overlap, with out-of-tree rejection and partial credit for
 multi-file fixes. 9 framework-maintenance scenarios from commit
 `729a153`; 3 model tiers × 2 modes × 9 scenarios = **54 runs**.
@@ -1422,7 +1422,7 @@ effect for most cells.
 
 3. **Eval the trace-value endpoint with WebGL scenarios.** The native
    GL trace works on captured uniform values that are literals in the
-   C app. The real win comes from the JS shim's `gpa.trace.addRoot()`
+   C app. The real win comes from the JS shim's `bhdr.trace.addRoot()`
    hooking three.js objects — but no R10/R11 scenario exercises that
    path. Phase-2 browser-eval runner (`r21` pilot) needs at least 5
    scenarios to test JS-side trace.
@@ -1538,7 +1538,7 @@ classes.
    important signal about the mining-rule defaults.
 
 4. **claude-cli backend works end-to-end.** The new
-   subprocess-based agent (`gpa.eval.agents.cli_agent.CliAgent`
+   subprocess-based agent (`bhdr.eval.agents.cli_agent.CliAgent`
    + `CLAUDE_CLI_SPEC`) ran 14 scenarios sequentially with no
    harness errors. Stream-JSON parsing extracted DIAGNOSIS+FIX
    markers, tool counts, and per-scenario timings cleanly.
@@ -1579,7 +1579,7 @@ To convert these 14 scenarios from `code_only`-only to a real
 
 - `/data3/bhdr-eval-results/2026-05-04-round4-claude-cli/` (gitignored, ~44KB)
   - `results.json` — 14 EvalResult entries
-  - `report.md` — `gpa.eval.cli report` output
+  - `report.md` — `bhdr.eval.cli report` output
   - `system-status.md` — pre-run system snapshot
   - `run.log` — eval CLI stdout (one "Saved 14 result(s)" line)
 
@@ -1779,7 +1779,7 @@ real accuracy signal we need either:
 
 - `/data3/bhdr-eval-results/2026-05-04-round12b-with-gla/` (gitignored)
   - `results.json` — 14 EvalResult entries
-  - `report.md` — `gpa.eval.cli report` output
+  - `report.md` — `bhdr.eval.cli report` output
   - `system-status.md` — pre-run snapshot
   - `run.log` — eval CLI stdout
 - `/data3/opengpa-snapshots/` — 13 framework clones at bug state (~3 GB)
@@ -1934,9 +1934,9 @@ What shipped to unblock a meaningful re-run:
 2. **`fix_parent_sha` populated end-to-end.** `_fetch_fix_pr_metadata`
    calls `gh api repos/<o>/<r>/commits/<merge_sha>` and stores
    `parents[0].sha`. New scenarios get it automatically; existing ones
-   were backfilled by `gpa.eval.curation.backfill_parent_sha`
+   were backfilled by `bhdr.eval.curation.backfill_parent_sha`
    (18 scenarios patched, 1 lookup failure on a force-pushed PR).
-3. **Scenario verifier** (`gpa.eval.curation.verify`) with tiered
+3. **Scenario verifier** (`bhdr.eval.curation.verify`) with tiered
    checks (static / network / build) and a quarantine path. Run on the
    full cohort: **189 pass, 9 fail** out of 198. Quarantined to
    `tests/eval-quarantine/`:

@@ -73,10 +73,10 @@
   // Failure to load is non-fatal (e.g. running this scenario standalone
   // without the gpa runner). The runner serves the plugin at
   // /_plugins/threejs-link.js via the static-server alias map.
-  let installGpaLinkPlugin = null;
+  let installBhdrLinkPlugin = null;
   try {
     const mod = await import('bhdr-threejs-link');
-    installGpaLinkPlugin = mod.installGpaLinkPlugin;
+    installBhdrLinkPlugin = mod.installBhdrLinkPlugin;
   } catch (e) {
     console.warn('[r10] bhdr-threejs-link plugin not available:', e.message);
   }
@@ -149,8 +149,8 @@
   // endpoint. The CLI commands `gpa scene-find` and `gpa scene-explain
   // --pixel` join GL draws back to scene-graph nodes via the resulting
   // LinkRecord set.
-  if (installGpaLinkPlugin) {
-    installGpaLinkPlugin({
+  if (installBhdrLinkPlugin) {
+    installBhdrLinkPlugin({
       scene, renderer,
       endpoint: window.BHDR_ENDPOINT,
       token:    window.BHDR_AUTH_TOKEN,

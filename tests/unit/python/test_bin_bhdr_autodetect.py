@@ -1,4 +1,4 @@
-"""Tests for the `bin/gpa` wrapper's Python + extension autodetection.
+"""Tests for the `bin/bhdr` wrapper's Python + extension autodetection.
 
 Exercises the diagnostic mode (BHDR_DIAG=1) which prints the resolved
 BHDR_PYTHON + PYTHONPATH and exits 0 — this lets us assert wiring without
@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-BIN_GPA = REPO_ROOT / "bin" / "gpa"
+BIN_BHDR = REPO_ROOT / "bin" / "bhdr"
 BINDINGS_DIR = REPO_ROOT / "bazel-bin" / "src" / "bindings"
 
 
@@ -24,7 +24,7 @@ def _run_diag(extra_env: dict | None = None) -> tuple[int, str, str]:
     if extra_env:
         env.update(extra_env)
     proc = subprocess.run(
-        [str(BIN_GPA), "--help"],
+        [str(BIN_BHDR), "--help"],
         env=env,
         capture_output=True,
         text=True,
@@ -34,8 +34,8 @@ def _run_diag(extra_env: dict | None = None) -> tuple[int, str, str]:
 
 
 def test_bin_bhdr_exists_and_executable():
-    assert BIN_GPA.exists(), f"{BIN_GPA} missing"
-    assert os.access(BIN_GPA, os.X_OK), f"{BIN_GPA} not executable"
+    assert BIN_BHDR.exists(), f"{BIN_BHDR} missing"
+    assert os.access(BIN_BHDR, os.X_OK), f"{BIN_BHDR} not executable"
 
 
 def test_diag_exits_zero():
@@ -121,7 +121,7 @@ def test_diag_honors_bazel_output_base_override(tmp_path):
     py_stub.write_text("#!/bin/sh\nexit 0\n")
     py_stub.chmod(0o755)
 
-    # Invoke bin/gpa diag with an empty HOME so the default ~/.cache/bazel
+    # Invoke bin/bhdr diag with an empty HOME so the default ~/.cache/bazel
     # path doesn't win first. Redirect home to an empty tmpdir.
     empty_home = tmp_path / "empty_home"
     empty_home.mkdir()
@@ -136,7 +136,7 @@ def test_diag_honors_bazel_output_base_override(tmp_path):
     env["PATH"] = "/usr/bin:/bin"
 
     proc = subprocess.run(
-        [str(BIN_GPA), "--help"],
+        [str(BIN_BHDR), "--help"],
         env=env,
         capture_output=True,
         text=True,

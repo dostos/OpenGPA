@@ -53,10 +53,15 @@ def test_depth_section_deep_tier_keeps_r18_framing():
     assert "score you below threshold" in text or "single-file" in text.lower()
 
 
-def test_render_prompt_passes_count_through():
-    """End-to-end: rendering the maintainer prompt with ``fix_files_count``
-    should embed the appropriate depth text via the ``{depth_section}``
-    placeholder."""
+def test_render_prompt_accepts_fix_files_count_param():
+    """The plumbing (``fix_files_count`` kwarg on render_prompt) is
+    retained for any future smaller intervention, even though R19-P0
+    reverted the template-side usage (maintainer_framing.md no longer
+    contains a ``{depth_section}`` placeholder — see R19 round log).
+    Pure-function _build_depth_section is still exercised by the
+    parametrized tests above; this test just confirms the kwarg
+    doesn't break rendering when passed.
+    """
     p_small = render_prompt(
         "maintainer_framing",
         framework="godot",
@@ -73,18 +78,18 @@ def test_render_prompt_passes_count_through():
         upstream_snapshot_sha="abc123",
         fix_files_count=15,
     )
-    assert "pointed edit" in p_small
-    assert "pointed edit" not in p_large
-    assert "10+" in p_large
-    # Neither version should still carry the stale literal "{depth_section}"
+    # Both must render successfully — no exception, no placeholder leak.
     assert "{depth_section}" not in p_small
     assert "{depth_section}" not in p_large
+    # Both should carry the R18 blanket framing ("13-file refactor PRs
+    # are normal") since maintainer_framing.md was reverted.
+    assert "13-file refactor" in p_small
+    assert "13-file refactor" in p_large
 
 
 def test_render_prompt_default_when_count_omitted():
     """When the caller doesn't pass ``fix_files_count`` the prompt
-    falls back to the moderate tier — backward-compat for non-fix-
-    annotated scenarios."""
+    still renders the R18 blanket framing — backward-compat."""
     p = render_prompt(
         "maintainer_framing",
         framework="three.js",
@@ -92,5 +97,5 @@ def test_render_prompt_default_when_count_omitted():
         upstream_snapshot_repo=None,
         upstream_snapshot_sha=None,
     )
-    assert "render-pass helper" in p
+    assert "13-file refactor" in p
     assert "{depth_section}" not in p

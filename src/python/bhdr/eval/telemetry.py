@@ -21,10 +21,14 @@ from pathlib import Path
 from typing import Any
 
 
-# Heuristic: any Bash command whose first token is literally `gpa`, or that
-# contains a recognised gpa subcommand with a word boundary. We list the
-# subcommands explicitly so that "gpa" appearing as a filename fragment inside
-# an unrelated bash pipeline does not count.
+# Heuristic: any Bash command whose first token is literally `gpa` or
+# `bhdr`, or that contains a recognised subcommand with a word boundary.
+# The `gpa` literal is preserved on purpose: pre-Beholder rounds (R12c
+# through R18) used `gpa <subcommand>` in agent commands, and this
+# parser is run over historical stream-json captures by the dashboard.
+# Stripping the literal would silently lose all gpa-mode tool-call
+# counts from the R12c..R18 archive. Going forward, `bhdr` is the
+# canonical name; both match.
 _BHDR_SUBCOMMANDS = (
     "start",
     "stop",
@@ -37,7 +41,7 @@ _BHDR_SUBCOMMANDS = (
     "annotate",
     "annotations",
 )
-_BHDR_RE = re.compile(r"\bgpa\s+(" + "|".join(_BHDR_SUBCOMMANDS) + r")\b")
+_BHDR_RE = re.compile(r"\b(?:gpa|bhdr)\s+(" + "|".join(_BHDR_SUBCOMMANDS) + r")\b")
 _CURL_BHDR_RE = re.compile(r"^\s*curl\b[^\n]*(?::18080|/api/v1|\$BHDR_PORT)", re.MULTILINE)
 
 # Some runs route file access through MCP servers (serena) even when Read is
@@ -60,7 +64,8 @@ def _classify_bash(command: str) -> str:
         return "Bash"
     stripped = command.lstrip()
     # `gpa ` prefix or any `gpa <subcommand>` fragment
-    if stripped.startswith("gpa ") or _BHDR_RE.search(command):
+    if (stripped.startswith("gpa ") or stripped.startswith("bhdr ")
+            or _BHDR_RE.search(command)):
         return "gpa"
     if _CURL_BHDR_RE.search(command):
         return "curl"
