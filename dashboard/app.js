@@ -116,11 +116,16 @@
     headline.appendChild(num);
     const lab = document.createElement("div");
     lab.className = "corpus-headline-label";
+    const fixCount = c.with_fix_metadata || 0;
+    const snapCount = c.with_upstream_snapshot || 0;
+    const stableCount = c.with_expected_failure || 0;
     lab.innerHTML =
       `scenarios total<br>` +
-      `<span>${c.with_fix_metadata || 0} fix-annotated · ` +
-      `${c.with_upstream_snapshot || 0} with snapshot · ` +
-      `${c.with_expected_failure || 0} stable-failure</span>`;
+      `<span>` +
+      `<b title="parseable ## Fix block in scenario.md — required for file_level scoring">${fixCount} fix-annotated<sup>2</sup></b> · ` +
+      `<b title="upstream repo+SHA available — agent can grep the framework codebase">${snapCount} with snapshot<sup>3</sup></b> · ` +
+      `<b title="known stable failures excluded from regression delta">${stableCount} stable-failure<sup>4</sup></b>` +
+      `</span>`;
     headline.appendChild(lab);
     host.appendChild(headline);
 

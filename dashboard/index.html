@@ -136,6 +136,30 @@
           those rows are visible in the per-scenario trace but excluded
           from lift.
         </li>
+        <li id="fn-fix-annotated">
+          <em>Fix-annotated</em> = scenario.md carries a parseable
+          <code>## Fix</code> YAML block (<code>fix_pr_url</code>,
+          <code>fix_sha</code>, <code>bug_class</code>, <code>files</code>).
+          Required by the file-level scorer — without it the agent's
+          proposed patches can't be compared against ground truth, so
+          verdict orchestration falls through to <code>prose</code> /
+          <code>judge</code>.
+        </li>
+        <li id="fn-snapshot">
+          <em>With snapshot</em> = scenario references an upstream repo +
+          SHA. The harness clones the framework at the pre-fix state so
+          the agent can <code>read_upstream</code> / <code>grep_upstream</code>
+          across the real codebase, not just the scenario's minimal repro.
+          Snapshot and fix-annotation overlap but aren't equivalent —
+          many snapshot scenarios lack a resolved PR.
+        </li>
+        <li id="fn-stable-failure">
+          <em>Stable-failure</em> = scenario flagged in
+          <code>scenario.yaml: expected_failure</code> as a known
+          non-product failure (e.g. reasoning ceiling at this model tier,
+          mining picked the wrong PR). Counts but excluded from
+          regression-only solve-rate.
+        </li>
       </ol>
     </footer>
 
