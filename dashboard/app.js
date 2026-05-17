@@ -40,38 +40,61 @@
     const types = state.data.scenario_types.filter(t => t !== "unknown");
     const grid = document.getElementById("panel-grid");
     grid.innerHTML = "";
+    const chartDivs = [];
     for (const type of types) {
       const panel = document.createElement("div");
       panel.className = "panel";
       const title = document.createElement("div");
       title.className = "panel-title";
-      title.textContent = `${type} — ${state.metric === "solve_pct" ? "solve %" : "output tokens / solved"}`;
+      title.textContent = type;
       panel.appendChild(title);
       const chartDiv = document.createElement("div");
+      chartDiv.style.width = "100%";
       panel.appendChild(chartDiv);
       grid.appendChild(panel);
 
       const traces = buildTraces(type);
+      // Hide legend when only one trace — current data is opus-only,
+      // so "CO · opus" by itself is redundant noise. Once with_gla or
+      // additional tiers land, the legend reappears automatically.
+      const showLegend = traces.length > 1;
       const layout = {
-        height: 260,
-        margin: { l: 40, r: 12, t: 8, b: 32 },
+        height: 220,
+        margin: { l: 44, r: 12, t: 8, b: showLegend ? 56 : 32 },
         paper_bgcolor: "transparent",
         plot_bgcolor: "transparent",
-        font: { color: "#e2e8f0", size: 11 },
-        xaxis: { color: "#94a3b8", gridcolor: "#334155" },
+        font: { color: "#e2e8f0", size: 10 },
+        showlegend: showLegend,
+        xaxis: {
+          color: "#94a3b8",
+          gridcolor: "#334155",
+          type: "category",
+          automargin: true,
+          tickangle: -30,
+        },
         yaxis: {
           color: "#94a3b8",
           gridcolor: "#334155",
           rangemode: "tozero",
           ticksuffix: state.metric === "solve_pct" ? "%" : "",
+          automargin: true,
         },
-        legend: { font: { size: 10 }, orientation: "h", y: -0.25 },
+        legend: { font: { size: 9 }, orientation: "h", y: -0.32 },
       };
       Plotly.newPlot(chartDiv, traces, layout, {
         displayModeBar: false,
         responsive: true,
       });
+      chartDivs.push(chartDiv);
     }
+    // Re-fit charts after the grid settles (Plotly's responsive option
+    // sometimes misses the initial layout pass when the container's
+    // width is computed asynchronously).
+    requestAnimationFrame(() => {
+      for (const d of chartDivs) {
+        try { Plotly.Plots.resize(d); } catch (_e) {}
+      }
+    });
   }
 
   function buildTraces(type) {
@@ -156,19 +179,21 @@
       }
     }
 
-    // Header: scenario column + one column per (round, mode) that has data
+    // Header: scenario column + BOTH CO and GLA columns per round, even
+    // when one mode has no data. Blank GLA cells make the "no GPA
+    // capture for this round" condition structurally visible — that's
+    // a load-bearing piece of the dashboard's purpose. Pre-fix, the
+    // grid silently dropped GLA columns and read like single-mode data.
     const thead = document.createElement("thead");
     const trMode = document.createElement("tr");
     trMode.appendChild(elem("th", "scenario"));
     const roundColumns = []; // [{round_id, mode}]
     for (const round of state.data.rounds) {
       for (const mode of ["code_only", "with_gla"]) {
-        const anyRow = round.results.some(r =>
-          r.mode === mode && (state.tier === "all" || r.tier === state.tier)
-        );
-        if (!anyRow) continue;
         roundColumns.push({ round_id: round.id, mode });
-        trMode.appendChild(elem("th", `${round.id} · ${mode === "code_only" ? "CO" : "GLA"}`));
+        const th = elem("th", `${round.id} · ${mode === "code_only" ? "CO" : "GLA"}`);
+        if (mode === "with_gla") th.classList.add("col-gla");
+        trMode.appendChild(th);
       }
     }
     thead.appendChild(trMode);
@@ -198,6 +223,7 @@
         for (const col of roundColumns) {
           const cell = document.createElement("td");
           cell.className = "cell";
+          if (col.mode === "with_gla") cell.classList.add("col-gla");
           const r = s.byRound[`${col.round_id}|${col.mode}`];
           if (!r) {
             cell.textContent = "";

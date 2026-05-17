@@ -26,9 +26,10 @@ section { margin-bottom: 36px; }
 section h2 { color: var(--accent); font-size: 16px; margin: 0 0 12px; }
 
 /* Panels */
-#panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 14px; }
-.panel { background: var(--bg-secondary); border-radius: 6px; padding: 12px; }
-.panel-title { font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; font-family: ui-monospace, Menlo, monospace; }
+#panel-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+.panel { background: var(--bg-secondary); border-radius: 6px; padding: 10px 12px; min-width: 0; overflow: hidden; }
+.panel-title { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-family: ui-monospace, Menlo, monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel > div + div { width: 100% !important; }
 
 /* Grid */
 #grid-container { overflow-x: auto; }
@@ -42,6 +43,9 @@ table.timeline td.cell { cursor: help; min-width: 56px; }
 .cell-skipped { color: var(--text-secondary); }
 .type-header td { background: var(--bg-tertiary); color: var(--text-primary); text-align: left; font-weight: 600; padding-left: 8px; }
 tr.stable td:first-child::after { content: " ⊘"; color: var(--text-secondary); font-size: 10px; }
+/* GLA-mode columns: subtly distinct so missing data ("no GPA run") is visually obvious next to the populated CO columns. */
+table.timeline th.col-gla { color: var(--gla); }
+table.timeline td.cell.col-gla { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(251,146,60,0.05) 5px, rgba(251,146,60,0.05) 10px); }
 
 /* Cards */
 .card { background: var(--bg-secondary); border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border); }
