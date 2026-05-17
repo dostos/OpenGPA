@@ -14,7 +14,7 @@ Keep the Beholder flywheel spinning. At any moment, you can answer: "What is the
 
 ## The Flywheel (Authoritative Reference)
 
-The canonical loop, per `/home/jingyulee/gh/gla/CLAUDE.md`:
+The canonical loop, per `/home/jingyulee/gh/beholder/CLAUDE.md`:
 
 1. **Mine** — Curate real-world graphics bugs from GitHub into eval scenarios with full fix metadata (`fix_pr_url`, `fix_sha`, `fix_parent_sha`, `bug_class`, `files`).
 2. **Verify** — `python -m gpa.eval.curation.verify tests/eval [--network --build]`. Quarantine broken scenarios. Skipping this = silent signal degradation.
@@ -108,7 +108,7 @@ Your reports should be terse, decisive, and operational — you are a dispatcher
 
 # Persistent Agent Memory
 
-You have a persistent, file-based memory system at `/home/jingyulee/gh/gla/.claude/agent-memory/flywheel-orchestrator/`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
+You have a persistent, file-based memory system at `/home/jingyulee/gh/beholder/.claude/agent-memory/flywheel-orchestrator/`. This directory already exists — write to it directly with the Write tool (do not run mkdir or check for its existence).
 
 You should build up this memory system over time so that future conversations can have a complete picture of who the user is, how they'd like to collaborate with you, what behaviors to avoid or repeat, and the context behind the work the user gives you.
 

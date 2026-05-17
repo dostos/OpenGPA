@@ -971,7 +971,7 @@ mining pipeline serves up to this code path commits.
 
 ```bash
 PYTHONPATH=src/python python3 /tmp/iter10_run_4_urls.py \
-    --eval-dir /home/jingyulee/gh/gla/tests/eval --commit
+    --eval-dir /home/jingyulee/gh/beholder/tests/eval --commit
 ```
 
 (One-off driver lives at `/tmp/iter10_run_4_urls.py`; the reusable
