@@ -121,4 +121,4 @@ if [ "${GPA_DIAG:-0}" = "1" ]; then
     exit 0
 fi
 
-PYTHONPATH="$pypath${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m gpa.cli.main "$@"
+PYTHONPATH="$pypath${PYTHONPATH:+:$PYTHONPATH}" exec "$py" -m bhdr.cli.main "$@"

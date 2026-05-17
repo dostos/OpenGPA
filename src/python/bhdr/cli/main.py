@@ -60,7 +60,7 @@ def _add_session_arg(p: argparse.ArgumentParser) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="gpa",
+        prog="bhdr",
         description="Beholder — live graphics debugger CLI (Phase 1a).",
     )
     parser.add_argument("--version", action="version", version=f"gpa {__version__}")

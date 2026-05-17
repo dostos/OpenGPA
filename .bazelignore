@@ -1,0 +1,6 @@
+.claude/worktrees
+bazel-gla
+bazel-beholder
+bazel-out
+bazel-bin
+bazel-testlogs
